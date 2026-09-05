@@ -1,1 +1,6 @@
-
+{
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v1.0.0/app-release.apk",
+  "changelog": "Versão inicial estável com notificações inteligentes e backup local."
+}
