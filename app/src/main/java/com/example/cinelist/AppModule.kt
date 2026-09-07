@@ -32,4 +32,11 @@ object AppModule {
     fun provideMidiaRepository(midiaDao: MidiaDao): MidiaRepository {
         return MidiaRepository(midiaDao)
     }
+
+    // 🚀 NOVO: Ensina o Hilt a extrair o DAO de Notificações do mesmo Banco de Dados
+    @Provides
+    @Singleton
+    fun provideNotificacaoDao(database: AppDatabase): NotificacaoDao {
+        return database.notificacaoDao()
+    }
 }

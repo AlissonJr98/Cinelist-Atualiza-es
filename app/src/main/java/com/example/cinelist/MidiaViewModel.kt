@@ -17,10 +17,27 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MidiaViewModel @Inject constructor(
-    private val repository: MidiaRepository
+    private val repository: MidiaRepository,
+    private val notificacaoRepository: NotificacaoRepository
 ) : ViewModel() {
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
+
+    // ESTADO E CONTROLE DE NOTIFICAÇÕES
+    val todasNotificacoes: Flow<List<NotificacaoEntity>> = notificacaoRepository.todasNotificacoes
+    val quantidadeNaoLidas: Flow<Int> = notificacaoRepository.quantidadeNaoLidas
+
+    fun marcarNotificacaoComoLida(id: Int) {
+        viewModelScope.launch { notificacaoRepository.marcarComoLida(id) }
+    }
+
+    fun marcarTodasNotificacoesComoLidas() {
+        viewModelScope.launch { notificacaoRepository.marcarTodasComoLidas() }
+    }
+
+    fun deletarNotificacao(notificacao: NotificacaoEntity) {
+        viewModelScope.launch { notificacaoRepository.deletar(notificacao) }
+    }
 
     // ESTADO E CONTROLE DE ATUALIZAÇÃO SILENCIOSA OTA
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
@@ -49,7 +66,6 @@ class MidiaViewModel @Inject constructor(
     private val _carregandoApi = MutableStateFlow(false)
     val carregandoApi: StateFlow<Boolean> = _carregandoApi
 
-    // Filtros reativos do Paging 3
     private val _queryPaginada = MutableStateFlow("")
     val queryPaginada: StateFlow<String> = _queryPaginada
 
@@ -234,7 +250,6 @@ class MidiaViewModel @Inject constructor(
     fun importarMidiasEmLote(novasMidias: List<Midia>) {
         viewModelScope.launch {
             novasMidias.forEach { midia ->
-                // id = 0 para o Room auto-gerar a chave primária evitando conflitos
                 repository.inserir(midia.copy(id = 0))
             }
         }

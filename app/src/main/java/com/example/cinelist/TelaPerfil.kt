@@ -15,13 +15,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Animation
@@ -29,6 +34,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
@@ -36,10 +42,12 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -52,6 +60,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -72,7 +81,7 @@ fun configurarLembretes(context: Context, ativar: Boolean) {
     if (ativar) {
         val agora = Calendar.getInstance()
         val horarioDesejado = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 20) // 20:00h
+            set(Calendar.HOUR_OF_DAY, 20)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
@@ -98,7 +107,7 @@ fun configurarLembretes(context: Context, ativar: Boolean) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TelaPerfil(
     listaDeMidias: List<Midia>,
@@ -110,20 +119,28 @@ fun TelaPerfil(
     val usuarioAtual = firebaseAuth.currentUser
     val contexto = LocalContext.current
     val escopoCorrotina = rememberCoroutineScope()
+    val escopoTabs = rememberCoroutineScope()
 
     val sharedPreferences = remember {
         contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
     }
 
+    val titulosAbas = listOf("Perfil", "Notificações", "Estatísticas", "Histórico")
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { titulosAbas.size })
     var abaSelecionada by remember { mutableIntStateOf(0) }
-    val titulosAbas = listOf("Perfil", "Estatísticas", "Histórico")
+
+    LaunchedEffect(pagerState.currentPage) {
+        abaSelecionada = pagerState.currentPage
+    }
+
+    val listaNotificacoes by viewModel.todasNotificacoes.collectAsState(initial = emptyList())
+    val quantidadeNaoLidas by viewModel.quantidadeNaoLidas.collectAsState(initial = 0)
 
     // Estados do Verificador de Atualizações OTA
     var verificandoAtualizacao by remember { mutableStateOf(false) }
     var infoNovaVersao by remember { mutableStateOf<InfoAtualizacao?>(null) }
     var mostrarDialogoAtualizacao by remember { mutableStateOf(false) }
 
-    // Substitua pela URL onde você hospedará seu version.json (ex: GitHub Raw ou Gist)
     val urlJsonAtualizacao = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
 
     var receberNotificacoes by remember {
@@ -424,8 +441,18 @@ fun TelaPerfil(
                     titulosAbas.forEachIndexed { index, titulo ->
                         Tab(
                             selected = abaSelecionada == index,
-                            onClick = { abaSelecionada = index },
-                            text = { Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp) },
+                            onClick = {
+                                escopoTabs.launch { pagerState.animateScrollToPage(index) }
+                            },
+                            text = {
+                                if (index == 1 && quantidadeNaoLidas > 0) {
+                                    BadgedBox(badge = { Badge { Text(quantidadeNaoLidas.toString()) } }) {
+                                        Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                } else {
+                                    Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+                            },
                             selectedContentColor = MaterialTheme.colorScheme.primary,
                             unselectedContentColor = MaterialTheme.colorScheme.secondary
                         )
@@ -436,494 +463,604 @@ fun TelaPerfil(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
 
-        when (abaSelecionada) {
-            // ABA 0: PERFIL & PREFERÊNCIAS
-            0 -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { pagina ->
+            when (pagina) {
+                // ABA 0: PERFIL & PREFERÊNCIAS
+                0 -> {
+                    Column(
                         modifier = Modifier
-                            .size(86.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            .clickable { seletorGaleriaLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (fotoPerfilUriString.isNotEmpty()) {
-                            AsyncImage(
-                                model = fotoPerfilUriString,
-                                contentDescription = "Foto de perfil",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(text = nomeExibicao.take(1).uppercase(), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-
-                    Text(text = "Toque para alterar a foto", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 4.dp))
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    if (modoEdicaoNome) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = novoNome,
-                                onValueChange = { novoNome = it },
-                                label = { Text("Alterar Nome") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                        Box(
+                            modifier = Modifier
+                                .size(86.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                .clickable { seletorGaleriaLauncher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (fotoPerfilUriString.isNotEmpty()) {
+                                AsyncImage(
+                                    model = fotoPerfilUriString,
+                                    contentDescription = "Foto de perfil",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
                                 )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            if (carregandoNome) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                             } else {
-                                IconButton(onClick = {
-                                    if (novoNome.isNotBlank()) {
-                                        carregandoNome = true
-                                        val atualizacao = userProfileChangeRequest { displayName = novoNome.trim() }
-                                        usuarioAtual?.updateProfile(atualizacao)?.addOnCompleteListener { t ->
-                                            carregandoNome = false
-                                            if (t.isSuccessful) { nomeExibicao = novoNome.trim(); modoEdicaoNome = false }
-                                        }
-                                    }
-                                }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = Color.Green) }
+                                Text(text = nomeExibicao.take(1).uppercase(), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             }
                         }
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = nomeExibicao, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            IconButton(onClick = { modoEdicaoNome = true; novoNome = nomeExibicao }) {
-                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar nome", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    }
 
-                    Text(text = emailUsuario, fontSize = 14.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 12.dp))
+                        Text(text = "Toque para alterar a foto", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 4.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                    if (modoEdicaoBio) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = novaBio,
-                                onValueChange = { novaBio = it },
-                                label = { Text("Escreva algo sobre você...") },
-                                modifier = Modifier.weight(1f),
-                                maxLines = 2,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                    focusedLabelColor = MaterialTheme.colorScheme.primary
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(onClick = {
-                                biografia = novaBio.trim()
-                                sharedPreferences.edit().putString("bio", biografia).apply()
-                                modoEdicaoBio = false
-                            }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = Color.Green) }
-                        }
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                            Text(text = if (biografia.isEmpty()) "Adicione uma biografia..." else "\"$biografia\"", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }) {
-                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(text = "Resumo da Lista", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ItemEstatistica(titulo = "Total", valor = totalMidias.toString(), modifier = Modifier.weight(1f))
-                        ItemEstatistica(titulo = "Filmes", valor = totalFilmes.toString(), modifier = Modifier.weight(1f))
-                        ItemEstatistica(titulo = "Séries/Outros", valor = totalSeriesAnimes.toString(), modifier = Modifier.weight(1f))
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Text(text = "Preferências do CineList", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = "Gênero Favorito", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                Box {
-                                    Text(
-                                        text = generoFavorito,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        modifier = Modifier
-                                            .clickable { menuGeneroExpandido = true }
-                                            .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                        if (modoEdicaoNome) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = novoNome,
+                                    onValueChange = { novoNome = it },
+                                    label = { Text("Alterar Nome") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary
                                     )
-                                    DropdownMenu(expanded = menuGeneroExpandido, onDismissRequest = { menuGeneroExpandido = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                                        listaGeneros.forEach { item ->
-                                            DropdownMenuItem(
-                                                text = { Text(item, color = MaterialTheme.colorScheme.onSurface) },
-                                                onClick = {
-                                                    generoFavorito = item
-                                                    sharedPreferences.edit().putString("genero", generoFavorito).apply()
-                                                    menuGeneroExpandido = false
-                                                }
-                                            )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                if (carregandoNome) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                } else {
+                                    IconButton(onClick = {
+                                        if (novoNome.isNotBlank()) {
+                                            carregandoNome = true
+                                            val atualizacao = userProfileChangeRequest { displayName = novoNome.trim() }
+                                            usuarioAtual?.updateProfile(atualizacao)?.addOnCompleteListener { t ->
+                                                carregandoNome = false
+                                                if (t.isSuccessful) { nomeExibicao = novoNome.trim(); modoEdicaoNome = false }
+                                            }
+                                        }
+                                    }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = Color.Green) }
+                                }
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                                Text(text = nomeExibicao, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(onClick = { modoEdicaoNome = true; novoNome = nomeExibicao }) {
+                                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar nome", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+
+                        Text(text = emailUsuario, fontSize = 14.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 12.dp))
+
+                        if (modoEdicaoBio) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = novaBio,
+                                    onValueChange = { novaBio = it },
+                                    label = { Text("Escreva algo sobre você...") },
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 2,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(onClick = {
+                                    biografia = novaBio.trim()
+                                    sharedPreferences.edit().putString("bio", biografia).apply()
+                                    modoEdicaoBio = false
+                                }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = Color.Green) }
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                                Text(text = if (biografia.isEmpty()) "Adicione uma biografia..." else "\"$biografia\"", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }) {
+                                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(text = "Resumo da Lista", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ItemEstatistica(titulo = "Total", valor = totalMidias.toString(), modifier = Modifier.weight(1f))
+                            ItemEstatistica(titulo = "Filmes", valor = totalFilmes.toString(), modifier = Modifier.weight(1f))
+                            ItemEstatistica(titulo = "Séries/Outros", valor = totalSeriesAnimes.toString(), modifier = Modifier.weight(1f))
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(text = "Preferências do CineList", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = "Gênero Favorito", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                                    Box {
+                                        Text(
+                                            text = generoFavorito,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            modifier = Modifier
+                                                .clickable { menuGeneroExpandido = true }
+                                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                        DropdownMenu(expanded = menuGeneroExpandido, onDismissRequest = { menuGeneroExpandido = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                                            listaGeneros.forEach { item ->
+                                                DropdownMenuItem(
+                                                    text = { Text(item, color = MaterialTheme.colorScheme.onSurface) },
+                                                    onClick = {
+                                                        generoFavorito = item
+                                                        sharedPreferences.edit().putString("genero", generoFavorito).apply()
+                                                        menuGeneroExpandido = false
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                            // Switch de Notificações com agendamento diário para as 20h
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = "Lembretes e Notificações", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                    Text(text = "Avisos diários às 20h para continuar maratonando", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
-                                }
-                                Switch(
-                                    checked = receberNotificacoes,
-                                    onCheckedChange = { valor ->
-                                        if (valor) {
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                val jaTemPermissao = ContextCompat.checkSelfPermission(
-                                                    contexto,
-                                                    Manifest.permission.POST_NOTIFICATIONS
-                                                ) == PackageManager.PERMISSION_GRANTED
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = "Lembretes e Notificações", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                                        Text(text = "Avisos diários às 20h para continuar maratonando", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                    }
+                                    Switch(
+                                        checked = receberNotificacoes,
+                                        onCheckedChange = { valor ->
+                                            if (valor) {
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                    val jaTemPermissao = ContextCompat.checkSelfPermission(
+                                                        contexto,
+                                                        Manifest.permission.POST_NOTIFICATIONS
+                                                    ) == PackageManager.PERMISSION_GRANTED
 
-                                                if (jaTemPermissao) {
+                                                    if (jaTemPermissao) {
+                                                        receberNotificacoes = true
+                                                        sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                                                        configurarLembretes(contexto, true)
+                                                    } else {
+                                                        permissaoNotificacaoLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                                    }
+                                                } else {
                                                     receberNotificacoes = true
                                                     sharedPreferences.edit().putBoolean("notificacoes", true).apply()
                                                     configurarLembretes(contexto, true)
-                                                } else {
-                                                    permissaoNotificacaoLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                                 }
                                             } else {
-                                                receberNotificacoes = true
-                                                sharedPreferences.edit().putBoolean("notificacoes", true).apply()
-                                                configurarLembretes(contexto, true)
+                                                receberNotificacoes = false
+                                                sharedPreferences.edit().putBoolean("notificacoes", false).apply()
+                                                configurarLembretes(contexto, false)
                                             }
-                                        } else {
-                                            receberNotificacoes = false
-                                            sharedPreferences.edit().putBoolean("notificacoes", false).apply()
-                                            configurarLembretes(contexto, false)
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            checkedTrackColor = MaterialTheme.colorScheme.background
+                                        )
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    var modoEscuro by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
+
+                                    Text(text = "Tema Escuro do Aplicativo", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                                    Switch(
+                                        checked = modoEscuro,
+                                        onCheckedChange = { valor ->
+                                            modoEscuro = valor
+                                            sharedPreferences.edit().putBoolean("modo_escuro", valor).apply()
+                                        },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            checkedTrackColor = MaterialTheme.colorScheme.background
+                                        )
+                                    )
+                                }
+
+                                TextButton(onClick = { mostrarConfirmacaoReset = true }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4C4C))) {
+                                    Text("Limpar Todos os Dados da Lista", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "Atualizações do Aplicativo",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "Verifique e instale as versões mais recentes sem conectar ao computador.",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 12.sp
+                                )
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !verificandoAtualizacao) {
+                                            verificandoAtualizacao = true
+                                            escopoCorrotina.launch {
+                                                val info = withContext(Dispatchers.IO) {
+                                                    UpdateManager.checarAtualizacao(urlJsonAtualizacao)
+                                                }
+                                                verificandoAtualizacao = false
+
+                                                val versaoAtual = BuildConfig.VERSION_CODE
+                                                if (info != null && info.versaoCode > versaoAtual) {
+                                                    infoNovaVersao = info
+                                                    mostrarDialogoAtualizacao = true
+                                                } else if (info != null) {
+                                                    Toast.makeText(contexto, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(contexto, "Não foi possível verificar atualizações no momento.", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
                                         }
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                        checkedTrackColor = MaterialTheme.colorScheme.background
-                                    )
+                                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Verificar Atualização",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Instalada: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+
+                                    if (verificandoAtualizacao) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.SystemUpdate,
+                                            contentDescription = "Atualizar",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(
+                                    text = "Backup e Sincronização Local",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "Exporte sua lista para um arquivo JSON seguro ou restaure dados salvos previamente.",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 12.sp
+                                )
+
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(
+                                        onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Exportar (JSON)", fontSize = 12.sp)
+                                    }
+
+                                    Button(
+                                        onClick = { importarLauncher.launch(arrayOf("application/json")) },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                    ) {
+                                        Text("Importar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(text = "Informações da Conta", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(text = "Provedor de Login: ${usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(text = "ID do Usuário: ${usuarioAtual?.uid?.take(12)}...", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
+
+                                Spacer(modifier = Modifier.height(6.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Deseja excluir permanentemente sua conta?",
+                                    color = Color(0xFFFF4C4C),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { mostrarConfirmacaoExclusao = true }
+                                        .padding(vertical = 4.dp),
+                                    textAlign = TextAlign.Start
                                 )
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(8.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                var modoEscuro by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
+                        Button(
+                            onClick = { firebaseAuth.signOut(); onLogout() },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                        ) {
+                            Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        }
+                    }
+                }
 
-                                Text(text = "Tema Escuro do Aplicativo", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                Switch(
-                                    checked = modoEscuro,
-                                    onCheckedChange = { valor ->
-                                        modoEscuro = valor
-                                        sharedPreferences.edit().putBoolean("modo_escuro", valor).apply()
-                                    },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                        checkedTrackColor = MaterialTheme.colorScheme.background
-                                    )
+                // ABA 1: NOTIFICAÇÕES
+                1 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Notificações",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (listaNotificacoes.any { !it.lida }) {
+                                TextButton(onClick = { viewModel.marcarTodasNotificacoesComoLidas() }) {
+                                    Text("Marcar todas como lidas", fontSize = 12.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (listaNotificacoes.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Nenhuma notificação por aqui ainda.",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 14.sp
                                 )
                             }
-
-                            TextButton(onClick = { mostrarConfirmacaoReset = true }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4C4C))) {
-                                Text("Limpar Todos os Dados da Lista", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        } else {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(listaNotificacoes, key = { it.id }) { notificacao ->
+                                    ItemNotificacao(
+                                        notificacao = notificacao,
+                                        onClick = {
+                                            if (!notificacao.lida) viewModel.marcarNotificacaoComoLida(notificacao.id)
+                                        },
+                                        onDeletar = { viewModel.deletarNotificacao(notificacao) }
+                                    )
+                                }
                             }
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // CARD DE ATUALIZAÇÕES DO APP (OTA)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                // ABA 2: ESTATÍSTICAS E DASHBOARD COMPLETO
+                2 -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "Atualizações do Aplicativo",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                            Text(
-                                text = "Verifique e instale as versões mais recentes sem conectar ao computador.",
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontSize = 12.sp
-                            )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(text = "Sua Jornada Cinéfila", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "Métricas consolidadas a partir do seu histórico local de filmes, animes e séries maratonadas.", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                            }
+                        }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(enabled = !verificandoAtualizacao) {
-                                        verificandoAtualizacao = true
-                                        escopoCorrotina.launch {
-                                            val info = withContext(Dispatchers.IO) {
-                                                UpdateManager.checarAtualizacao(urlJsonAtualizacao)
-                                            }
-                                            verificandoAtualizacao = false
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            CardEstatisticaDetalhada(titulo = "Total Geral", valor = totalMidias.toString(), subtexto = "mídias cadastradas", modifier = Modifier.weight(1f))
+                            CardEstatisticaDetalhada(titulo = "Tempo Estimado", valor = tempoFormatado, subtexto = "horas assistidas", modifier = Modifier.weight(1f))
+                        }
 
-                                            val versaoAtual = BuildConfig.VERSION_CODE
-                                            if (info != null && info.versaoCode > versaoAtual) {
-                                                infoNovaVersao = info
-                                                mostrarDialogoAtualizacao = true
-                                            } else if (info != null) {
-                                                Toast.makeText(contexto, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(contexto, "Não foi possível verificar atualizações no momento.", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    }
-                                    .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            CardEstatisticaDetalhada(titulo = "Filmes Vistos", valor = filmesConcluidos.toString(), subtexto = "de $totalFilmes na lista", modifier = Modifier.weight(1f))
+                            CardEstatisticaDetalhada(titulo = "Séries Vistas", valor = seriesConcluidas.toString(), subtexto = "de $totalSeriesAnimes na lista", modifier = Modifier.weight(1f))
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            CardEstatisticaDetalhada(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtexto = "episódios maratonados", modifier = Modifier.weight(1f))
+                            CardEstatisticaDetalhada(titulo = "Média Avaliações", valor = "$mediaNotas ★", subtexto = "${midiasComNota.size} títulos avaliados", modifier = Modifier.weight(1f))
+                        }
+
+                        if (estatisticasGenero.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Column {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
-                                        text = "Verificar Atualização",
+                                        text = "Gêneros Predominantes",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
+                                        fontSize = 16.sp,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    ListaGenerosMaisAssistidos(dados = estatisticasGenero)
+                                }
+                            }
+                        }
+
+                        if (estatisticasPlataforma.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
-                                        text = "Instalada: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.secondary
+                                        text = "Onde Você Mais Assiste",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
-                                }
-
-                                if (verificandoAtualizacao) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.SystemUpdate,
-                                        contentDescription = "Atualizar",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    ListaPlataformasMaisUtilizadas(dados = estatisticasPlataforma)
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // CARD DE BACKUP E RESTAURAÇÃO (JSON)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                // ABA 3: HISTÓRICO DE CONCLUÍDOS
+                3 -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = "Backup e Sincronização Local",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                            Text(
-                                text = "Exporte sua lista para um arquivo JSON seguro ou restaure dados salvos previamente.",
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontSize = 12.sp
-                            )
+                        Text(
+                            text = "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
 
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(
-                                    onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Exportar (JSON)", fontSize = 12.sp)
-                                }
-
-                                Button(
-                                    onClick = { importarLauncher.launch(arrayOf("application/json")) },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text("Importar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                        if (listaHistoricoConcluido.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Nenhum item marcado como Concluído ainda.", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
+                            }
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(listaHistoricoConcluido) { itemConcluido ->
+                                    ItemMidiaCard(midia = itemConcluido, onClick = { /* Detalhes */ })
                                 }
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Text(text = "Informações da Conta", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(text = "Provedor de Login: ${usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "ID do Usuário: ${usuarioAtual?.uid?.take(12)}...", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
-
-                            Spacer(modifier = Modifier.height(6.dp))
-                            HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = "Deseja excluir permanentemente sua conta?",
-                                color = Color(0xFFFF4C4C),
-                                fontSize = 12.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { mostrarConfirmacaoExclusao = true }
-                                    .padding(vertical = 4.dp),
-                                textAlign = TextAlign.Start
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Button(
-                        onClick = { firebaseAuth.signOut(); onLogout() },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
-                    ) {
-                        Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
             }
+        }
+    }
+}
 
-            // ABA 1: ESTATÍSTICAS E DASHBOARD COMPLETO
-            1 -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "Sua Jornada Cinéfila", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "Métricas consolidadas a partir do seu histórico local de filmes, animes e séries maratonadas.", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
-                        }
-                    }
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CardEstatisticaDetalhada(titulo = "Total Geral", valor = totalMidias.toString(), subtexto = "mídias cadastradas", modifier = Modifier.weight(1f))
-                        CardEstatisticaDetalhada(titulo = "Tempo Estimado", valor = tempoFormatado, subtexto = "horas assistidas", modifier = Modifier.weight(1f))
-                    }
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CardEstatisticaDetalhada(titulo = "Filmes Vistos", valor = filmesConcluidos.toString(), subtexto = "de $totalFilmes na lista", modifier = Modifier.weight(1f))
-                        CardEstatisticaDetalhada(titulo = "Séries Vistas", valor = seriesConcluidas.toString(), subtexto = "de $totalSeriesAnimes na lista", modifier = Modifier.weight(1f))
-                    }
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CardEstatisticaDetalhada(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtexto = "episódios maratonados", modifier = Modifier.weight(1f))
-                        CardEstatisticaDetalhada(titulo = "Média Avaliações", valor = "$mediaNotas ★", subtexto = "${midiasComNota.size} títulos avaliados", modifier = Modifier.weight(1f))
-                    }
-
-                    if (estatisticasGenero.isNotEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Gêneros Predominantes",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                ListaGenerosMaisAssistidos(dados = estatisticasGenero)
-                            }
-                        }
-                    }
-
-                    if (estatisticasPlataforma.isNotEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Onde Você Mais Assiste",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                ListaPlataformasMaisUtilizadas(dados = estatisticasPlataforma)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+@Composable
+fun ItemNotificacao(
+    notificacao: NotificacaoEntity,
+    onClick: () -> Unit,
+    onDeletar: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (notificacao.lida)
+                MaterialTheme.colorScheme.surface
+            else
+                MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (notificacao.tipo == "ATUALIZACAO") Icons.Default.Update else Icons.Default.NotificationsActive,
+                contentDescription = notificacao.tipo,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = notificacao.titulo,
+                    fontWeight = if (notificacao.lida) FontWeight.Normal else FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = notificacao.mensagem,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-
-            // ABA 2: HISTÓRICO DE CONCLUÍDOS
-            2 -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)
-                ) {
-                    Text(
-                        text = "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    if (listaHistoricoConcluido.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Nenhum item marcado como Concluído ainda.", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
-                        }
-                    } else {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(listaHistoricoConcluido) { itemConcluido ->
-                                ItemMidiaCard(midia = itemConcluido, onClick = { /* Detalhes */ })
-                            }
-                        }
-                    }
-                }
+            IconButton(onClick = onDeletar) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remover",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }
