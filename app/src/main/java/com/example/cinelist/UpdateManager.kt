@@ -1,6 +1,9 @@
 package com.example.cinelist
 
 import android.app.DownloadManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,6 +16,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
@@ -35,6 +39,8 @@ data class InfoAtualizacao(
 object UpdateManager {
 
     const val URL_JSON_PADRAO = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
+    private const val CANAL_ID = "canal_atualizacoes_cinelist"
+    private const val ID_NOTIFICACAO = 2001
 
     suspend fun checarAtualizacao(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
         return withContext(Dispatchers.IO) {
@@ -71,6 +77,47 @@ object UpdateManager {
     suspend fun checarAtualizacaoSilenciosa(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
         val info = checarAtualizacao(urlEndpointJson) ?: return null
         return if (info.versaoCode > BuildConfig.VERSION_CODE) info else null
+    }
+
+    fun exibirNotificacaoAtualizacao(context: Context, info: InfoAtualizacao) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                CANAL_ID,
+                "Atualizações do CineList",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificações quando novas atualizações estiverem disponíveis"
+            }
+            notificationManager.createNotificationChannel(canal)
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("abrir_atualizacao", true)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val resumoNovidades = info.notasDaVersao.ifBlank { "Uma nova versão com melhorias está disponível." }
+
+        val notificacao = NotificationCompat.Builder(context, CANAL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Nova Versão CineList v${info.versaoNome}!")
+            .setContentText("Toque para ver as novidades e atualizar.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Novidades da v${info.versaoNome}:\n$resumoNovidades"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        notificationManager.notify(ID_NOTIFICACAO, notificacao)
     }
 
     fun baixarEInstalarApk(context: Context, apkUrl: String, nomeArquivo: String = "cinelist_update.apk") {

@@ -77,7 +77,7 @@ jobs:
             "versionCode": $VERSION_CODE,
             "versionName": "$VERSAO_NOME",
             "apkUrl": "$APK_URL",
-            "changelog": "Removidos os filtros duplicados da Minha Lista\nAdicionado swipe para trocar abas no Perfil\nCorreção na instalação automática $VERSAO_NOME."
+            "changelog": "Correção na area de notifações $VERSAO_NOME."
           }
           EOF
 

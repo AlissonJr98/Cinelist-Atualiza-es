@@ -16,7 +16,7 @@
 #git add .
 #git commit -m "Filtro duplicado na tela minha lista retirado"
 #git push origin main
-#git tag v1.0.12
-#git push origin v1.0.12
+#git tag v1.0.13
+#git push origin v1.0.13
 
 #Enviar codigos sem #

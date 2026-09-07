@@ -1,10 +1,12 @@
 package com.example.cinelist
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MidiaViewModel @Inject constructor(
     private val repository: MidiaRepository,
-    private val notificacaoRepository: NotificacaoRepository
+    private val notificacaoRepository: NotificacaoRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
@@ -52,6 +55,8 @@ class MidiaViewModel @Inject constructor(
             val update = UpdateManager.checarAtualizacaoSilenciosa()
             if (update != null) {
                 _updatePendente.value = update
+                // Dispara o alerta com as novidades direto na barra de notificações do Android
+                UpdateManager.exibirNotificacaoAtualizacao(context, update)
             }
         }
     }
