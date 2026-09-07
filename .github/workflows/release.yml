@@ -32,6 +32,9 @@ jobs:
         run: |
           python3 -c "import os, base64; open('app/cinelist-key.jks', 'wb').write(base64.b64decode(os.environ['KEYSTORE_B64']))"
 
+      - name: Conceder permissao de execucao ao Gradle
+        run: chmod +x ./gradlew
+
       - name: Compilar APK de Release Assinado
         run: ./gradlew assembleRelease
         env:
@@ -57,12 +60,8 @@ jobs:
       - name: Atualizar version.json
         run: |
           TAG="${{ github.ref_name }}"
-          # Extrai o número da tag limpo (ex: v1.0.1 vira 1.0.1)
           VERSAO_NOME="${TAG#v}"
-          
-          # Extrai o versionCode configurado no build.gradle.kts
           VERSION_CODE=$(grep -oE 'versionCode\s*=\s*[0-9]+' app/build.gradle.kts | grep -oE '[0-9]+' || date +%s)
-          
           APK_URL="https://github.com/${{ github.repository }}/releases/download/$TAG/CineList-$TAG.apk"
 
           cat <<EOF > version.json
