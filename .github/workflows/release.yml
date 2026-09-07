@@ -30,7 +30,7 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_B64" | tr -d '\r\n ' | base64 -d > app/cinelist-key.jks
+          python3 -c "import os, base64; open('app/cinelist-key.jks', 'wb').write(base64.b64decode(os.environ['KEYSTORE_B64']))"
 
       - name: Compilar APK de Release Assinado
         run: ./gradlew assembleRelease
