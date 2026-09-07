@@ -329,8 +329,9 @@ fun TelaPrincipal(
         count
     }
 
-    val quantidadeFiltrosAtivosMinhaLista = remember(filtroPlataforma, filtroStatusMinhaLista, ordenacaoMinhaLista) {
+    val quantidadeFiltrosAtivosMinhaLista = remember(categoriaSelecionada, filtroPlataforma, filtroStatusMinhaLista, ordenacaoMinhaLista) {
         var count = 0
+        if (categoriaSelecionada != "Todos") count++
         if (filtroPlataforma != "Todas") count++
         if (filtroStatusMinhaLista != "Ativos") count++
         if (ordenacaoMinhaLista != "Padrão (Assistindo primeiro)") count++
@@ -342,7 +343,7 @@ fun TelaPrincipal(
         viewModel.atualizarQueryEFiltrarPaginado(textoPesquisa, tipoPaginado)
     }
 
-    // BOTTOM SHEET: FILTROS DA MINHA LISTA
+    // BOTTOM SHEET: FILTROS DA MINHA LISTA (Centralizado com Categoria, Status, Ordenação e Plataforma)
     if (mostrarBottomSheetFiltrosMinhaLista) {
         ModalBottomSheet(
             onDismissRequest = { mostrarBottomSheetFiltrosMinhaLista = false },
@@ -371,6 +372,7 @@ fun TelaPrincipal(
                     if (quantidadeFiltrosAtivosMinhaLista > 0) {
                         TextButton(
                             onClick = {
+                                categoriaSelecionada = "Todos"
                                 filtroPlataforma = "Todas"
                                 filtroStatusMinhaLista = "Ativos"
                                 ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
@@ -382,6 +384,26 @@ fun TelaPrincipal(
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categoriasMinhaLista.forEach { cat ->
+                        FilterChip(
+                            selected = (categoriaSelecionada == cat),
+                            onClick = { categoriaSelecionada = cat },
+                            label = { Text(cat, fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        )
+                    }
+                }
 
                 Text("Exibir Status:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                 Row(
@@ -869,6 +891,7 @@ fun TelaPrincipal(
                     }
 
                     Column(modifier = Modifier.fillMaxSize()) {
+                        // BARRA DE FILTRO ÚNICO: Mostra o resumo e o botão de abrir o BottomSheet
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -876,28 +899,12 @@ fun TelaPrincipal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                categoriasMinhaLista.forEach { cat ->
-                                    FilterChip(
-                                        selected = (cat == categoriaSelecionada),
-                                        onClick = { categoriaSelecionada = cat },
-                                        label = { Text(cat, fontSize = 12.sp) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            containerColor = MaterialTheme.colorScheme.surface,
-                                            labelColor = MaterialTheme.colorScheme.secondary,
-                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (categoriaSelecionada != "Todos") "Exibindo: $categoriaSelecionada" else "Todos os títulos",
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
 
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -906,6 +913,7 @@ fun TelaPrincipal(
                                 if (quantidadeFiltrosAtivosMinhaLista > 0) {
                                     IconButton(
                                         onClick = {
+                                            categoriaSelecionada = "Todos"
                                             filtroPlataforma = "Todas"
                                             filtroStatusMinhaLista = "Ativos"
                                             ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
@@ -950,7 +958,7 @@ fun TelaPrincipal(
 
                         if (listaFiltrada.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(text = "Nenhum item encontrado nesta categoria.", color = MaterialTheme.colorScheme.secondary)
+                                Text(text = "Nenhum item encontrado com os filtros selecionados.", color = MaterialTheme.colorScheme.secondary)
                             }
                         } else {
                             LazyVerticalGrid(
