@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -126,17 +127,41 @@ object UpdateManager {
     private fun instalarApk(context: Context, arquivoApk: File) {
         if (!arquivoApk.exists()) return
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val intentPermissao = Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:${context.packageName}")
+                ).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intentPermissao)
+                return
+            }
+        }
+
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.provider",
             arquivoApk
         )
 
-        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-            data = uri
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-            putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+        }
+
+        val resolvedorIntentList = context.packageManager.queryIntentActivities(
+            intent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+        for (resolveInfo in resolvedorIntentList) {
+            val packageName = resolveInfo.activityInfo.packageName
+            context.grantUriPermission(
+                packageName,
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
         }
 
         context.startActivity(intent)
