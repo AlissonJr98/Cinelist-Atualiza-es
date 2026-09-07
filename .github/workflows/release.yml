@@ -27,8 +27,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Restaurar Keystore a partir do Secret
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/cinelist-key.jks
+          echo "$KEYSTORE_B64" | tr -d '\r\n ' | base64 -d > app/cinelist-key.jks
 
       - name: Compilar APK de Release Assinado
         run: ./gradlew assembleRelease
