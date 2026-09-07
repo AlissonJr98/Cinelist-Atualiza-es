@@ -64,6 +64,14 @@ jobs:
           VERSION_CODE=$(grep -oE 'versionCode\s*=\s*[0-9]+' app/build.gradle.kts | grep -oE '[0-9]+' || date +%s)
           APK_URL="https://github.com/${{ github.repository }}/releases/download/$TAG/CineList-$TAG.apk"
 
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 1. Muda para a branch main e sincroniza antes de tocar em qualquer arquivo
+          git checkout main
+          git pull origin main
+
+          # 2. Gera o version.json atualizado
           cat <<EOF > version.json
           {
             "versionCode": $VERSION_CODE,
@@ -73,9 +81,7 @@ jobs:
           }
           EOF
 
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout main || git checkout master
+          # 3. Commita e envia diretamente para a branch main
           git add version.json
           git commit -m "Auto: Atualiza version.json para $TAG [skip ci]" || echo "Nenhuma alteração no version.json"
-          git push origin HEAD
+          git push origin main
