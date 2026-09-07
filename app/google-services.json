@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "336901227453-jnp200pvc23b2rrf32lj1irghuu21du5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cinelist",
+            "certificate_hash": "c7a24b4389c568cac247b7ab0ab2e5f78618a727"
+          }
+        },
+        {
           "client_id": "336901227453-42ejfkk06rr8rifu7cs1lon7vvkjgkab.apps.googleusercontent.com",
           "client_type": 3
         }
