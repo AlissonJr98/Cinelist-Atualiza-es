@@ -447,10 +447,22 @@ fun TelaPerfil(
                             text = {
                                 if (index == 1 && quantidadeNaoLidas > 0) {
                                     BadgedBox(badge = { Badge { Text(quantidadeNaoLidas.toString()) } }) {
-                                        Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text(
+                                            titulo,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
                                 } else {
-                                    Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(
+                                        titulo,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             },
                             selectedContentColor = MaterialTheme.colorScheme.primary,
