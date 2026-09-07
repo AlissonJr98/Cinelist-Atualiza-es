@@ -1,6 +1,6 @@
 {
-  "versionCode": 10,
-  "versionName": "1.0.11",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v1.0.11/CineList-v1.0.11.apk",
-  "changelog": "Novas melhorias e correções implementadas na versão 1.0.11."
+  "versionCode": 12,
+  "versionName": "1.0.12",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v1.0.12/CineList-v1.0.12.apk",
+  "changelog": "Removidos os filtros duplicados da Minha Lista\nAdicionado swipe para trocar abas no Perfil\nCorreção na instalação automática 1.0.12."
 }
