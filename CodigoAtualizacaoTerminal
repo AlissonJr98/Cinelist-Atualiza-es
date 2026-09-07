@@ -14,9 +14,9 @@
 #Commitar e disparar a Tag
 #Mandar no terminal os codigos abaixo:
 #git add .
-#git commit -m "Novas melhorias implementadas"
+#git commit -m "Filtro duplicado na tela minha lista retirado"
 #git push origin main
-#git tag v1.0.10
-#git push origin v1.0.10
+#git tag v1.0.12
+#git push origin v1.0.12
 
 #Enviar codigos sem #

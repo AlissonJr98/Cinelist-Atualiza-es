@@ -19,11 +19,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -86,51 +88,166 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Modal de Atualização Silenciosa OTA
+                    // Modal com Lista de Alterações (Changelog) OTA
                     updateInfo?.let { info ->
-                        AlertDialog(
-                            onDismissRequest = { midiaViewModel.dispensarUpdate() },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.SystemUpdate,
-                                    contentDescription = "Atualização OTA",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            title = {
-                                Text(
-                                    text = "Nova Versão Disponível (${info.versaoNome})",
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            },
-                            text = {
-                                Text(
-                                    text = info.notasDaVersao.ifBlank { "Uma nova versão com melhorias está pronta para instalação." },
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            confirmButton = {
-                                Button(
-                                    onClick = {
-                                        midiaViewModel.dispensarUpdate()
-                                        UpdateManager.baixarEInstalarApk(contexto, info.urlApk)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text("Atualizar Agora", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { midiaViewModel.dispensarUpdate() }) {
-                                    Text("Mais Tarde", color = MaterialTheme.colorScheme.secondary)
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.surface
+                        DialogoNovidadesAtualizacao(
+                            info = info,
+                            onDispensar = { midiaViewModel.dispensarUpdate() },
+                            onConfirmarAtualizacao = {
+                                midiaViewModel.dispensarUpdate()
+                                UpdateManager.baixarEInstalarApk(contexto, info.urlApk)
+                            }
                         )
                     }
 
                     ConfiguracaoNavegacao()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DialogoNovidadesAtualizacao(
+    info: InfoAtualizacao,
+    onDispensar: () -> Unit,
+    onConfirmarAtualizacao: () -> Unit
+) {
+    val linhasNovidades = remember(info.notasDaVersao) {
+        info.notasDaVersao
+            .split("\n", ";")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+    }
+
+    Dialog(onDismissRequest = onDispensar) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(22.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Novidades",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "O que há de novo?",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Versão ${info.versaoNome} (Build ${info.versaoCode})",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Alterações implementadas:",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (linhasNovidades.isNotEmpty()) {
+                        linhasNovidades.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .padding(top = 2.dp)
+                                )
+                                Text(
+                                    text = item.removePrefix("-").trim(),
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 19.sp
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = info.notasDaVersao.ifBlank { "Melhorias gerais de estabilidade e novas otimizações no sistema." },
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDispensar,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Mais Tarde", color = MaterialTheme.colorScheme.secondary)
+                    }
+
+                    Button(
+                        onClick = onConfirmarAtualizacao,
+                        modifier = Modifier.weight(1.3f),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = "Atualizar Agora",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
         }
@@ -343,7 +460,6 @@ fun TelaPrincipal(
         viewModel.atualizarQueryEFiltrarPaginado(textoPesquisa, tipoPaginado)
     }
 
-    // BOTTOM SHEET: FILTROS DA MINHA LISTA (Centralizado com Categoria, Status, Ordenação e Plataforma)
     if (mostrarBottomSheetFiltrosMinhaLista) {
         ModalBottomSheet(
             onDismissRequest = { mostrarBottomSheetFiltrosMinhaLista = false },
@@ -480,7 +596,6 @@ fun TelaPrincipal(
         }
     }
 
-    // BOTTOM SHEET: FILTROS DE DESCOBERTA
     if (mostrarBottomSheetFiltrosDescobrir) {
         ModalBottomSheet(
             onDismissRequest = { mostrarBottomSheetFiltrosDescobrir = false },
@@ -595,7 +710,6 @@ fun TelaPrincipal(
         }
     }
 
-    // DIÁLOGO DE ADICIONAR MÍDIA
     if (mostrarDialogo) {
         AlertDialog(
             onDismissRequest = {
@@ -849,13 +963,11 @@ fun TelaPrincipal(
                 singleLine = true
             )
 
-            // Permite deslizar o dedo (swipe) entre "Minha Lista" e "Descobrir"
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 if (pagina == 0) {
-                    // PÁGINA 0: MINHA LISTA
                     val listaFiltrada = listaDeMidias.filter { midia ->
                         val bateTexto = midia.titulo.contains(textoPesquisa, ignoreCase = true)
                         val bateCategoria = if (categoriaSelecionada == "Todos") true else {
@@ -891,7 +1003,6 @@ fun TelaPrincipal(
                     }
 
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // BARRA DE FILTRO ÚNICO: Mostra o resumo e o botão de abrir o BottomSheet
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -973,7 +1084,6 @@ fun TelaPrincipal(
                         }
                     }
                 } else {
-                    // PÁGINA 1: DESCOBRIR
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
