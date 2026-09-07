@@ -9,7 +9,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
@@ -71,7 +74,6 @@ object UpdateManager {
     }
 
     fun baixarEInstalarApk(context: Context, apkUrl: String, nomeArquivo: String = "cinelist_update.apk") {
-        // Checagem prévia de permissão de instalação de apps desconhecidos no Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
                 val intentPermissao = Intent(
@@ -81,6 +83,9 @@ object UpdateManager {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(intentPermissao)
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(context, "Permita a instalação de fontes desconhecidas.", Toast.LENGTH_LONG).show()
+                }
                 return
             }
         }
@@ -98,7 +103,7 @@ object UpdateManager {
             .setTitle("Atualizando CineList")
             .setDescription("Baixando nova versão do aplicativo...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(destino))
+            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, nomeArquivo)
             .setMimeType("application/vnd.android.package-archive")
 
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
@@ -125,7 +130,12 @@ object UpdateManager {
     }
 
     private fun instalarApk(context: Context, arquivoApk: File) {
-        if (!arquivoApk.exists()) return
+        if (!arquivoApk.exists() || arquivoApk.length() == 0L) {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, "Erro: Arquivo do APK não encontrado ou incompleto.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
@@ -140,30 +150,37 @@ object UpdateManager {
             }
         }
 
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.provider",
-            arquivoApk
-        )
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-
-        val resolvedorIntentList = context.packageManager.queryIntentActivities(
-            intent,
-            PackageManager.MATCH_DEFAULT_ONLY
-        )
-        for (resolveInfo in resolvedorIntentList) {
-            val packageName = resolveInfo.activityInfo.packageName
-            context.grantUriPermission(
-                packageName,
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                arquivoApk
             )
-        }
 
-        context.startActivity(intent)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+
+            val resolvedorIntentList = context.packageManager.queryIntentActivities(
+                intent,
+                PackageManager.MATCH_DEFAULT_ONLY
+            )
+            for (resolveInfo in resolvedorIntentList) {
+                val packageName = resolveInfo.activityInfo.packageName
+                context.grantUriPermission(
+                    packageName,
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context, "Erro ao abrir o instalador: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
