@@ -3,6 +3,7 @@ package com.example.cinelist
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -12,6 +13,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -20,12 +23,14 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,9 +43,11 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
+import com.example.cinelist.ui.theme.CineListTheme
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -48,7 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val contexto = androidx.compose.ui.platform.LocalContext.current
+            val contexto = LocalContext.current
             val sharedPreferences = remember {
                 contexto.getSharedPreferences(
                     "ConfiguracoesPerfil",
@@ -71,11 +78,58 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
+            val midiaViewModel: MidiaViewModel = hiltViewModel()
+            val updateInfo by midiaViewModel.updatePendente.collectAsState()
+
             CineListTheme(darkTheme = modoEscuroAtivo) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // Modal de Atualização Silenciosa OTA
+                    updateInfo?.let { info ->
+                        AlertDialog(
+                            onDismissRequest = { midiaViewModel.dispensarUpdate() },
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.SystemUpdate,
+                                    contentDescription = "Atualização OTA",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            title = {
+                                Text(
+                                    text = "Nova Versão Disponível (${info.versaoNome})",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            text = {
+                                Text(
+                                    text = info.notasDaVersao.ifBlank { "Uma nova versão com melhorias está pronta para instalação." },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        midiaViewModel.dispensarUpdate()
+                                        UpdateManager.baixarEInstalarApk(contexto, info.urlApk)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Atualizar Agora", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { midiaViewModel.dispensarUpdate() }) {
+                                    Text("Mais Tarde", color = MaterialTheme.colorScheme.secondary)
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    }
+
                     ConfiguracaoNavegacao()
                 }
             }
@@ -220,7 +274,7 @@ fun ConfiguracaoNavegacao() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TelaPrincipal(
     listaDeMidias: List<Midia>,
@@ -230,7 +284,12 @@ fun TelaPrincipal(
     onTmdbItemClique: (TmdbFilme, String) -> Unit,
     onPerfilClique: () -> Unit
 ) {
-    var abaSelecionada by rememberSaveable { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { 2 }
+    )
+
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
 
     val streamingsFiltro = remember(listaDeMidias) {
@@ -723,18 +782,26 @@ fun TelaPrincipal(
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             TabRow(
-                selectedTabIndex = abaSelecionada,
+                selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary
             ) {
                 Tab(
-                    selected = abaSelecionada == 0,
-                    onClick = { abaSelecionada = 0 },
+                    selected = pagerState.currentPage == 0,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    },
                     text = { Text("Minha Lista", fontWeight = FontWeight.Bold) }
                 )
                 Tab(
-                    selected = abaSelecionada == 1,
-                    onClick = { abaSelecionada = 1 },
+                    selected = pagerState.currentPage == 1,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    },
                     text = { Text("Descobrir", fontWeight = FontWeight.Bold) }
                 )
             }
@@ -745,7 +812,7 @@ fun TelaPrincipal(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = {
                     Text(
-                        if (abaSelecionada == 0) "Pesquisar na minha lista..." else "Buscar online no TMDB...",
+                        if (pagerState.currentPage == 0) "Pesquisar na minha lista..." else "Buscar online no TMDB...",
                         color = MaterialTheme.colorScheme.secondary
                     )
                 },
@@ -760,273 +827,282 @@ fun TelaPrincipal(
                 singleLine = true
             )
 
-            // ABA 0: MINHA LISTA
-            if (abaSelecionada == 0) {
-                val listaFiltrada = listaDeMidias.filter { midia ->
-                    val bateTexto = midia.titulo.contains(textoPesquisa, ignoreCase = true)
-                    val bateCategoria = if (categoriaSelecionada == "Todos") true else {
-                        val tipoMapeado = when (categoriaSelecionada) {
-                            "Filmes" -> "Filme"
-                            "Séries" -> "Série"
-                            "Animes" -> "Anime"
-                            "Novelas" -> "Novela"
-                            "Doramas" -> "Dorama"
-                            else -> ""
+            // Permite deslizar o dedo (swipe) entre "Minha Lista" e "Descobrir"
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { pagina ->
+                if (pagina == 0) {
+                    // PÁGINA 0: MINHA LISTA
+                    val listaFiltrada = listaDeMidias.filter { midia ->
+                        val bateTexto = midia.titulo.contains(textoPesquisa, ignoreCase = true)
+                        val bateCategoria = if (categoriaSelecionada == "Todos") true else {
+                            val tipoMapeado = when (categoriaSelecionada) {
+                                "Filmes" -> "Filme"
+                                "Séries" -> "Série"
+                                "Animes" -> "Anime"
+                                "Novelas" -> "Novela"
+                                "Doramas" -> "Dorama"
+                                else -> ""
+                            }
+                            midia.tipo.equals(tipoMapeado, ignoreCase = true)
                         }
-                        midia.tipo.equals(tipoMapeado, ignoreCase = true)
-                    }
-                    val batePlataforma = if (filtroPlataforma == "Todas") true else {
-                        midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
-                    }
-                    val bateStatus = when (filtroStatusMinhaLista) {
-                        "Ativos" -> midia.status != "Concluído"
-                        "Quero Assistir" -> midia.status == "Quero Assistir"
-                        "Assistindo" -> midia.status == "Assistindo"
-                        "Concluído" -> midia.status == "Concluído"
-                        else -> true
-                    }
+                        val batePlataforma = if (filtroPlataforma == "Todas") true else {
+                            midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
+                        }
+                        val bateStatus = when (filtroStatusMinhaLista) {
+                            "Ativos" -> midia.status != "Concluído"
+                            "Quero Assistir" -> midia.status == "Quero Assistir"
+                            "Assistindo" -> midia.status == "Assistindo"
+                            "Concluído" -> midia.status == "Concluído"
+                            else -> true
+                        }
 
-                    bateTexto && bateCategoria && batePlataforma && bateStatus
-                }.let { lista ->
-                    when (ordenacaoMinhaLista) {
-                        "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
-                        "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
-                        "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
-                        else -> lista.sortedByDescending { it.status == "Assistindo" }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        categoriasMinhaLista.forEach { cat ->
-                            FilterChip(
-                                selected = (cat == categoriaSelecionada),
-                                onClick = { categoriaSelecionada = cat },
-                                label = { Text(cat, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    labelColor = MaterialTheme.colorScheme.secondary,
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
+                        bateTexto && bateCategoria && batePlataforma && bateStatus
+                    }.let { lista ->
+                        when (ordenacaoMinhaLista) {
+                            "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
+                            "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
+                            "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
+                            else -> lista.sortedByDescending { it.status == "Assistindo" }
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (quantidadeFiltrosAtivosMinhaLista > 0) {
-                            IconButton(
-                                onClick = {
-                                    filtroPlataforma = "Todas"
-                                    filtroStatusMinhaLista = "Ativos"
-                                    ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
-                                },
-                                modifier = Modifier.size(32.dp)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Limpar Filtros",
-                                    tint = Color(0xFFFF5252),
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                categoriasMinhaLista.forEach { cat ->
+                                    FilterChip(
+                                        selected = (cat == categoriaSelecionada),
+                                        onClick = { categoriaSelecionada = cat },
+                                        label = { Text(cat, fontSize = 12.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            labelColor = MaterialTheme.colorScheme.secondary,
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    )
+                                }
                             }
-                        }
 
-                        AssistChip(
-                            onClick = { mostrarBottomSheetFiltrosMinhaLista = true },
-                            label = {
-                                Text(
-                                    text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filtros",
-                                    tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                labelColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    }
-                }
+                            Spacer(modifier = Modifier.width(8.dp))
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                if (listaFiltrada.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Nenhum item encontrado nesta categoria.", color = MaterialTheme.colorScheme.secondary)
-                    }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
-                    ) {
-                        items(listaFiltrada) { mi ->
-                            ItemMidiaCard(midia = mi, onClick = { onItemClique(mi) })
-                        }
-                    }
-                }
-
-                // ABA 1: DESCOBRIR
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        tiposDisponiveis.forEach { tipo ->
-                            FilterChip(
-                                selected = (tipoPaginado == tipo),
-                                onClick = { viewModel.selecionarTipo(tipo) },
-                                label = { Text(tipo, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    labelColor = MaterialTheme.colorScheme.secondary,
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (quantidadeFiltrosAtivosDescobrir > 0) {
-                            IconButton(
-                                onClick = {
-                                    viewModel.selecionarProvedorStreaming(null)
-                                    viewModel.selecionarGenero(null)
-                                    viewModel.selecionarOrdenacao("popularity.desc")
-                                },
-                                modifier = Modifier.size(32.dp)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Limpar Filtros",
-                                    tint = Color(0xFFFF5252),
-                                    modifier = Modifier.size(18.dp)
+                                if (quantidadeFiltrosAtivosMinhaLista > 0) {
+                                    IconButton(
+                                        onClick = {
+                                            filtroPlataforma = "Todas"
+                                            filtroStatusMinhaLista = "Ativos"
+                                            ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Limpar Filtros",
+                                            tint = Color(0xFFFF5252),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                AssistChip(
+                                    onClick = { mostrarBottomSheetFiltrosMinhaLista = true },
+                                    label = {
+                                        Text(
+                                            text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.FilterList,
+                                            contentDescription = "Filtros",
+                                            tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                        labelColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
                             }
                         }
 
-                        AssistChip(
-                            onClick = { mostrarBottomSheetFiltrosDescobrir = true },
-                            label = {
-                                Text(
-                                    text = if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Filtros",
-                                    tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                    }
-                }
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    if (resultadosPaginadosApi.loadState.refresh is LoadState.Loading) {
-                        items(6) {
-                            ItemMidiaCardSkeleton()
-                        }
-                    } else {
-                        items(
-                            count = resultadosPaginadosApi.itemCount,
-                            key = resultadosPaginadosApi.itemKey { it.idTmdb },
-                            contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
-                        ) { index ->
-                            val item = resultadosPaginadosApi[index]
-                            if (item != null) {
-                                val midiaItem = Midia(
-                                    idTmdb = item.idTmdb,
-                                    titulo = item.titulo,
-                                    tipo = tipoPaginado,
-                                    status = "Descobrir",
-                                    nota = 0,
-                                    sinopse = item.sinopse,
-                                    imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                    genero = item.generoTexto,
-                                    plataforma = ""
-                                )
-                                ItemMidiaCard(
-                                    midia = midiaItem,
-                                    onClick = { onTmdbItemClique(item, tipoPaginado) }
-                                )
+                        if (listaFiltrada.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(text = "Nenhum item encontrado nesta categoria.", color = MaterialTheme.colorScheme.secondary)
                             }
-                        }
-                    }
-
-                    when (val appendState = resultadosPaginadosApi.loadState.append) {
-                        is LoadState.Loading -> {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(listaFiltrada) { mi ->
+                                    ItemMidiaCard(midia = mi, onClick = { onItemClique(mi) })
                                 }
                             }
                         }
-                        is LoadState.Error -> {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                Text(
-                                    text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.padding(16.dp)
+                    }
+                } else {
+                    // PÁGINA 1: DESCOBRIR
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                tiposDisponiveis.forEach { tipo ->
+                                    FilterChip(
+                                        selected = (tipoPaginado == tipo),
+                                        onClick = { viewModel.selecionarTipo(tipo) },
+                                        label = { Text(tipo, fontSize = 12.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            labelColor = MaterialTheme.colorScheme.secondary,
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (quantidadeFiltrosAtivosDescobrir > 0) {
+                                    IconButton(
+                                        onClick = {
+                                            viewModel.selecionarProvedorStreaming(null)
+                                            viewModel.selecionarGenero(null)
+                                            viewModel.selecionarOrdenacao("popularity.desc")
+                                        },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Limpar Filtros",
+                                            tint = Color(0xFFFF5252),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                AssistChip(
+                                    onClick = { mostrarBottomSheetFiltrosDescobrir = true },
+                                    label = {
+                                        Text(
+                                            text = if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.FilterList,
+                                            contentDescription = "Filtros",
+                                            tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                        labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
                             }
                         }
-                        else -> Unit
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            if (resultadosPaginadosApi.loadState.refresh is LoadState.Loading) {
+                                items(6) {
+                                    ItemMidiaCardSkeleton()
+                                }
+                            } else {
+                                items(
+                                    count = resultadosPaginadosApi.itemCount,
+                                    key = resultadosPaginadosApi.itemKey { it.idTmdb },
+                                    contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
+                                ) { index ->
+                                    val item = resultadosPaginadosApi[index]
+                                    if (item != null) {
+                                        val midiaItem = Midia(
+                                            idTmdb = item.idTmdb,
+                                            titulo = item.titulo,
+                                            tipo = tipoPaginado,
+                                            status = "Descobrir",
+                                            nota = 0,
+                                            sinopse = item.sinopse,
+                                            imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                            genero = item.generoTexto,
+                                            plataforma = ""
+                                        )
+                                        ItemMidiaCard(
+                                            midia = midiaItem,
+                                            onClick = { onTmdbItemClique(item, tipoPaginado) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            when (val appendState = resultadosPaginadosApi.loadState.append) {
+                                is LoadState.Loading -> {
+                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                        }
+                                    }
+                                }
+                                is LoadState.Error -> {
+                                    item(span = { GridItemSpan(maxLineSpan) }) {
+                                        Text(
+                                            text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.padding(16.dp)
+                                        )
+                                    }
+                                }
+                                else -> Unit
+                            }
+                        }
                     }
                 }
             }

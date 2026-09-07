@@ -28,10 +28,9 @@ data class InfoAtualizacao(
 
 object UpdateManager {
 
-    // Exemplo usando a API pública do GitHub Releases:
-    // https://api.github.com/repos/SEU_USUARIO/SEU_REPOSITORIO/releases/latest
-    // Ou uma URL direta de um JSON hospedado (ex: Raw do GitHub, Firebase, etc.)
-    suspend fun checarAtualizacao(urlEndpointJson: String): InfoAtualizacao? {
+    const val URL_JSON_PADRAO = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
+
+    suspend fun checarAtualizacao(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
         return withContext(Dispatchers.IO) {
             try {
                 val url = URL(urlEndpointJson)
@@ -47,8 +46,6 @@ object UpdateManager {
 
                     val json = JSONObject(resposta)
 
-                    // Se estiver usando um JSON simples personalizado:
-                    // { "versionCode": 5, "versionName": "1.2.0", "apkUrl": "https...", "changelog": "Novidades..." }
                     val versionCode = json.optInt("versionCode", 0)
                     val versionName = json.optString("versionName", "")
                     val apkUrl = json.optString("apkUrl", "")
@@ -63,6 +60,11 @@ object UpdateManager {
                 null
             }
         }
+    }
+
+    suspend fun checarAtualizacaoSilenciosa(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
+        val info = checarAtualizacao(urlEndpointJson) ?: return null
+        return if (info.versaoCode > BuildConfig.VERSION_CODE) info else null
     }
 
     fun baixarEInstalarApk(context: Context, apkUrl: String, nomeArquivo: String = "cinelist_update.apk") {
@@ -85,7 +87,6 @@ object UpdateManager {
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = manager.enqueue(request)
 
-        // Escuta o término do download para abrir o instalador
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
                 val idRecebido = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)

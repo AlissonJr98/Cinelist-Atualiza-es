@@ -1,0 +1,22 @@
+#Sincronizar a branch main local
+#Mandar no terminal o codigo abaixo:
+#git pull origin main
+
+#---------------------
+
+#Incrementar a versão do app
+#Incrementar a versão do app:app/build.gradle.kts.
+#versionCode = 2          // Sempre aumente +1 (ex: 2, 3, 4...)
+#versionName = "1.0.2"    // O nome visível para o usuário
+
+#---------------------
+
+#Commitar e disparar a Tag
+#Mandar no terminal os codigos abaixo:
+#git add .
+#git commit -m "Novas melhorias implementadas"
+#git push origin main
+#git tag v1.0.2
+#git push origin v1.0.2
+
+#Enviar codigos sem #

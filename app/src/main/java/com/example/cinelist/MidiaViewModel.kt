@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
@@ -20,6 +21,27 @@ class MidiaViewModel @Inject constructor(
 ) : ViewModel() {
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
+
+    // ESTADO E CONTROLE DE ATUALIZAÇÃO SILENCIOSA OTA
+    private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
+    val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
+
+    init {
+        verificarAtualizacaoSilenciosa()
+    }
+
+    fun verificarAtualizacaoSilenciosa() {
+        viewModelScope.launch {
+            val update = UpdateManager.checarAtualizacaoSilenciosa()
+            if (update != null) {
+                _updatePendente.value = update
+            }
+        }
+    }
+
+    fun dispensarUpdate() {
+        _updatePendente.value = null
+    }
 
     private val _resultadosBuscaApi = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val resultadosBuscaApi: StateFlow<List<TmdbFilme>> = _resultadosBuscaApi
