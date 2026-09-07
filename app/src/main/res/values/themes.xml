@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema único, leve e universal para o app rodar sem travar em nenhuma versão do Android -->
+    <style name="Theme.CineList" parent="android:Theme.NoTitleBar.Fullscreen">
+        <!-- Força a janela inicial do Android a abrir em preto puro -->
+        <item name="android:windowBackground">#000000</item>
+    </style>
+</resources>

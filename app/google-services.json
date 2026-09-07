@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "336901227453",
+    "project_id": "cinelist-b88e7",
+    "storage_bucket": "cinelist-b88e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336901227453:android:49d35d2e69f0d9ef7448d4",
+        "android_client_info": {
+          "package_name": "com.example.cinelist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "336901227453-2od55e7k5plpen7nil551ocn7c0mrjm7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cinelist",
+            "certificate_hash": "a035161eea0c894df51b282f54fe5ed465202530"
+          }
+        },
+        {
+          "client_id": "336901227453-42ejfkk06rr8rifu7cs1lon7vvkjgkab.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6aClsA5lxQTIANtI2sjsEBFxjA92yE4c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "336901227453-42ejfkk06rr8rifu7cs1lon7vvkjgkab.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

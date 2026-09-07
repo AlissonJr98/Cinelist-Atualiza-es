@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Pasta pública de Downloads onde o APK será salvo -->
+    <external-path name="external_files" path="." />
+    <external-cache-path name="external_cache" path="." />
+</paths>

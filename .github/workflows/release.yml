@@ -1,0 +1,80 @@
+name: Publicar Atualização OTA CineList
+
+on:
+  push:
+    tags:
+      - 'v*' # Dispara automaticamente quando você envia tags como v1.0.1, v1.1.0, etc.
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Restaurar Keystore a partir do Secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/cinelist-key.jks
+
+      - name: Compilar APK de Release Assinado
+        run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Renomear APK gerado
+        run: |
+          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/CineList-${{ github.ref_name }}.apk
+
+      - name: Criar Release no GitHub
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/release/CineList-${{ github.ref_name }}.apk
+          tag_name: ${{ github.ref_name }}
+          name: CineList ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Atualizar version.json
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Extrai o número da tag limpo (ex: v1.0.1 vira 1.0.1)
+          VERSAO_NOME="${TAG#v}"
+          
+          # Extrai o versionCode configurado no build.gradle.kts
+          VERSION_CODE=$(grep -oE 'versionCode\s*=\s*[0-9]+' app/build.gradle.kts | grep -oE '[0-9]+' || date +%s)
+          
+          APK_URL="https://github.com/${{ github.repository }}/releases/download/$TAG/CineList-$TAG.apk"
+
+          cat <<EOF > version.json
+          {
+            "versionCode": $VERSION_CODE,
+            "versionName": "$VERSAO_NOME",
+            "apkUrl": "$APK_URL",
+            "changelog": "Novas melhorias e correções implementadas na versão $VERSAO_NOME."
+          }
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main || git checkout master
+          git add version.json
+          git commit -m "Auto: Atualiza version.json para $TAG [skip ci]" || echo "Nenhuma alteração no version.json"
+          git push origin HEAD
