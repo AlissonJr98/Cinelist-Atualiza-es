@@ -55,9 +55,38 @@ class MidiaViewModel @Inject constructor(
             val update = UpdateManager.checarAtualizacaoSilenciosa()
             if (update != null) {
                 _updatePendente.value = update
+
                 // Dispara o alerta com as novidades direto na barra de notificações do Android
                 UpdateManager.exibirNotificacaoAtualizacao(context, update)
+
+                // Salva no banco de dados da aba interna de notificações (apenas 1x por versão)
+                salvarNotificacaoInternaSeNecessario(update)
             }
+        }
+    }
+
+    private suspend fun salvarNotificacaoInternaSeNecessario(update: InfoAtualizacao) {
+        val prefs = context.getSharedPreferences("ControleAtualizacoes", Context.MODE_PRIVATE)
+        val chaveRegistrada = "notificacao_registrada_${update.versaoCode}"
+
+        if (!prefs.getBoolean(chaveRegistrada, false)) {
+            val corpo = if (update.notasDaVersao.isNotBlank()) {
+                "Novidades da v${update.versaoNome}:\n${update.notasDaVersao}"
+            } else {
+                "Uma nova versão (v${update.versaoNome}) está pronta para download com melhorias gerais."
+            }
+
+            val novaNotificacao = NotificacaoEntity(
+                titulo = "Nova Versão v${update.versaoNome} Disponível",
+                mensagem = corpo,
+                dataCriacao = System.currentTimeMillis(),
+                lida = false,
+                tipo = "ATUALIZACAO",
+                idReferencia = update.versaoCode
+            )
+
+            notificacaoRepository.inserir(novaNotificacao)
+            prefs.edit().putBoolean(chaveRegistrada, true).apply()
         }
     }
 
