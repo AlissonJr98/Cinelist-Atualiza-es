@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,7 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Animation
@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
@@ -73,7 +74,10 @@ import com.google.firebase.auth.userProfileChangeRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 fun configurarLembretes(context: Context, ativar: Boolean) {
@@ -135,6 +139,11 @@ fun TelaPerfil(
 
     val listaNotificacoes by viewModel.todasNotificacoes.collectAsState(initial = emptyList())
     val quantidadeNaoLidas by viewModel.quantidadeNaoLidas.collectAsState(initial = 0)
+
+    // Controle de Exclusão e Visualização de Notificações
+    var notificacaoParaExcluir by remember { mutableStateOf<NotificacaoEntity?>(null) }
+    var notificacaoDetalhada by remember { mutableStateOf<NotificacaoEntity?>(null) }
+    var mostrarConfirmacaoLimparTudoNotif by remember { mutableStateOf(false) }
 
     // Estados do Verificador de Atualizações OTA
     var verificandoAtualizacao by remember { mutableStateOf(false) }
@@ -275,6 +284,113 @@ fun TelaPerfil(
             .sortedByDescending { it.second }
             .take(5)
             .toMap()
+    }
+
+    // Modal de Detalhes da Notificação / Changelog Completo
+    notificacaoDetalhada?.let { notif ->
+        val dataFormatada = remember(notif.dataCriacao) {
+            SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(notif.dataCriacao))
+        }
+
+        AlertDialog(
+            onDismissRequest = { notificacaoDetalhada = null },
+            icon = {
+                Icon(
+                    imageVector = if (notif.tipo == "ATUALIZACAO") Icons.Default.SystemUpdate else Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = notif.titulo,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Recebida em: $dataFormatada",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(
+                        text = notif.mensagem,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { notificacaoDetalhada = null }) {
+                    Text("Fechar")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    // Confirmação para deletar UMA notificação
+    notificacaoParaExcluir?.let { notif ->
+        AlertDialog(
+            onDismissRequest = { notificacaoParaExcluir = null },
+            title = { Text("Excluir Notificação", fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente excluir este aviso do seu histórico?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deletarNotificacao(notif)
+                        notificacaoParaExcluir = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Excluir", color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { notificacaoParaExcluir = null }) {
+                    Text("Cancelar")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    // Confirmação para LIMPAR TODAS as notificações
+    if (mostrarConfirmacaoLimparTudoNotif) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacaoLimparTudoNotif = false },
+            title = { Text("Limpar Histórico de Avisos", fontWeight = FontWeight.Bold) },
+            text = { Text("Todas as notificações de atualizações e lembretes serão apagadas.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.limparTodasNotificacoes()
+                        mostrarConfirmacaoLimparTudoNotif = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Limpar Tudo", color = MaterialTheme.colorScheme.onError)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacaoLimparTudoNotif = false }) {
+                    Text("Cancelar")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     // Diálogo de Nova Versão Disponível
@@ -855,7 +971,7 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 1: NOTIFICAÇÕES
+                // ABA 1: NOTIFICAÇÕES (Histórico Completo + Exclusão Individual e Limpeza Total)
                 1 -> {
                     Column(
                         modifier = Modifier
@@ -869,14 +985,28 @@ fun TelaPerfil(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Notificações",
+                                text = "Histórico de Notificações",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            if (listaNotificacoes.any { !it.lida }) {
-                                TextButton(onClick = { viewModel.marcarTodasNotificacoesComoLidas() }) {
-                                    Text("Marcar todas como lidas", fontSize = 12.sp)
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (listaNotificacoes.any { !it.lida }) {
+                                    TextButton(onClick = { viewModel.marcarTodasNotificacoesComoLidas() }) {
+                                        Text("Marcar lidas", fontSize = 12.sp)
+                                    }
+                                }
+
+                                if (listaNotificacoes.isNotEmpty()) {
+                                    IconButton(onClick = { mostrarConfirmacaoLimparTudoNotif = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteSweep,
+                                            contentDescription = "Limpar todas",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -885,21 +1015,33 @@ fun TelaPerfil(
 
                         if (listaNotificacoes.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = "Nenhuma notificação por aqui ainda.",
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 14.sp
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.NotificationsActive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Nenhuma notificação registrada ainda.",
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        fontSize = 14.sp
+                                    )
+                                }
                             }
                         } else {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 items(listaNotificacoes, key = { it.id }) { notificacao ->
                                     ItemNotificacao(
                                         notificacao = notificacao,
                                         onClick = {
-                                            if (!notificacao.lida) viewModel.marcarNotificacaoComoLida(notificacao.id)
+                                            if (!notificacao.lida) {
+                                                viewModel.marcarNotificacaoComoLida(notificacao.id)
+                                            }
+                                            notificacaoDetalhada = notificacao
                                         },
-                                        onDeletar = { viewModel.deletarNotificacao(notificacao) }
+                                        onDeletar = { notificacaoParaExcluir = notificacao }
                                     )
                                 }
                             }
@@ -1028,6 +1170,10 @@ fun ItemNotificacao(
     onClick: () -> Unit,
     onDeletar: () -> Unit
 ) {
+    val dataFormatada = remember(notificacao.dataCriacao) {
+        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(notificacao.dataCriacao))
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1036,12 +1182,14 @@ fun ItemNotificacao(
             containerColor = if (notificacao.lida)
                 MaterialTheme.colorScheme.surface
             else
-                MaterialTheme.colorScheme.primaryContainer
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
         ),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -1058,6 +1206,7 @@ fun ItemNotificacao(
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = notificacao.mensagem,
                     fontSize = 12.sp,
@@ -1065,12 +1214,18 @@ fun ItemNotificacao(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = dataFormatada,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                )
             }
             IconButton(onClick = onDeletar) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Remover",
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                     modifier = Modifier.size(18.dp)
                 )
             }

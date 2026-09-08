@@ -42,6 +42,10 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch { notificacaoRepository.deletar(notificacao) }
     }
 
+    fun limparTodasNotificacoes() {
+        viewModelScope.launch { notificacaoRepository.limparTodas() }
+    }
+
     // ESTADO E CONTROLE DE ATUALIZAÇÃO SILENCIOSA OTA
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
     val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()

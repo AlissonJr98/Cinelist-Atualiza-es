@@ -1,8 +1,11 @@
 package com.example.cinelist
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,6 +81,17 @@ class MainActivity : ComponentActivity() {
                     }
                 sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+
+            // Solicitação de permissão de notificação para Android 13+ (Tiramisu)
+            val launcherPermissaoNotificacao = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { _ -> }
+
+            LaunchedEffect(Unit) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    launcherPermissaoNotificacao.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
 
             val midiaViewModel: MidiaViewModel = hiltViewModel()
@@ -387,6 +401,13 @@ fun ConfiguracaoNavegacao() {
                 onLogout = { navController.navigate("login") { popUpTo("home") { inclusive = true } } }
             )
         }
+
+        composable("notificacoes") {
+            TelaNotificacoes(
+                viewModel = viewModel,
+                onVoltar = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -460,7 +481,6 @@ fun TelaPrincipal(
         viewModel.atualizarQueryEFiltrarPaginado(textoPesquisa, tipoPaginado)
     }
 
-    // BOTTOM SHEET: FILTROS DA MINHA LISTA
     if (mostrarBottomSheetFiltrosMinhaLista) {
         ModalBottomSheet(
             onDismissRequest = { mostrarBottomSheetFiltrosMinhaLista = false },
@@ -597,7 +617,6 @@ fun TelaPrincipal(
         }
     }
 
-    // BOTTOM SHEET: FILTROS DE DESCOBERTA (Com Categoria/Tipo agora incluso)
     if (mostrarBottomSheetFiltrosDescobrir) {
         ModalBottomSheet(
             onDismissRequest = { mostrarBottomSheetFiltrosDescobrir = false },
@@ -733,7 +752,6 @@ fun TelaPrincipal(
         }
     }
 
-    // DIÁLOGO DE ADICIONAR MÍDIA
     if (mostrarDialogo) {
         AlertDialog(
             onDismissRequest = {
@@ -992,7 +1010,6 @@ fun TelaPrincipal(
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 if (pagina == 0) {
-                    // PÁGINA 0: MINHA LISTA
                     val listaFiltrada = listaDeMidias.filter { midia ->
                         val bateTexto = midia.titulo.contains(textoPesquisa, ignoreCase = true)
                         val bateCategoria = if (categoriaSelecionada == "Todos") true else {
@@ -1109,7 +1126,6 @@ fun TelaPrincipal(
                         }
                     }
                 } else {
-                    // PÁGINA 1: DESCOBRIR (Barra de chips removida, mantendo apenas o botão de filtro único)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
