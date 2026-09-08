@@ -1,22 +1,17 @@
-#Sincronizar a branch main local
-#Mandar no terminal o codigo abaixo:
-#git pull origin main
+# 1. Remove a tag v1.0.18 local e remotamente
+git tag -d v1.0.X
+git push origin --delete v1.0.X
 
-#---------------------
+# 2. Adiciona os arquivos modificados (themes.xml, MainActivity.kt, etc.)
+git add .
 
-#Incrementar a versão do app
-#Incrementar a versão do app:app/build.gradle.kts.
-#versionCode = 2          // Sempre aumente +1 (ex: 2, 3, 4...)
-#versionName = "1.0.2"    // O nome visível para o usuário
+# 3. Cria o commit das alterações
+git commit -m "fix: restaura visibilidade da status bar e remove fullscreen do tema"
 
-#---------------------
+# 4. Sincroniza com a branch main remota
+git pull origin main --rebase
+git push origin main
 
-#Commitar e disparar a Tag
-#Mandar no terminal os codigos abaixo:
-#git add .
-#git commit -m "BUG Filmes"
-#git push origin main
-#git tag v1.0.18
-#git push origin v1.0.18
-
-#Enviar codigos sem #
+# 5. Recria e envia a tag v1.0.X para acionar o workflow
+git tag v1.0.X
+git push origin v1.0.X

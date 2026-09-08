@@ -1,6 +1,7 @@
 package com.example.cinelist
 
 import android.app.Activity
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -53,11 +54,33 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.cinelist.ui.theme.CineListTheme
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
+
+fun agendarChecagemAtualizacaoSegundoPlano(context: Context) {
+    val restricoes = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
+    val requisicao = PeriodicWorkRequestBuilder<AtualizacaoWorker>(6, TimeUnit.HOURS)
+        .setConstraints(restricoes)
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "CineListVerificacaoOta",
+        ExistingPeriodicWorkPolicy.KEEP,
+        requisicao
+    )
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -67,6 +90,9 @@ class MainActivity : ComponentActivity() {
 
         // Habilita Edge-to-Edge nativo
         enableEdgeToEdge()
+
+        // Ativa verificação periódica de atualizações em background com o app fechado
+        agendarChecagemAtualizacaoSegundoPlano(this)
 
         setContent {
             val contexto = LocalContext.current
@@ -94,16 +120,13 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            // Garante exibição permanente da barra de status e contraste correto dos ícones
+            // Exibição da barra de status e contraste dos ícones
             if (!view.isInEditMode) {
                 SideEffect {
                     val window = (contexto as Activity).window
                     val insetsController = WindowCompat.getInsetsController(window, view)
 
-                    // Força a barra a ficar visível
                     insetsController.show(WindowInsetsCompat.Type.statusBars())
-
-                    // Ícones brancos no modo escuro e escuros no modo claro
                     insetsController.isAppearanceLightStatusBars = !modoEscuroAtivo
                 }
             }
@@ -1228,13 +1251,11 @@ fun TelaPrincipal(
                             } else {
                                 items(
                                     count = resultadosPaginadosApi.itemCount,
-                                    // Chave única composta que resolve colisões de ID entre filme e série
                                     key = resultadosPaginadosApi.itemKey { "${it.mediaType ?: "midia"}_${it.idTmdb}" },
                                     contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
                                 ) { index ->
                                     val item = resultadosPaginadosApi[index]
                                     if (item != null) {
-                                        // Determina dinamicamente se é Série ou Filme baseado na resposta real do TMDB
                                         val tipoReal = when {
                                             tipoPaginado != "Todos" -> tipoPaginado
                                             item.mediaType.equals("tv", ignoreCase = true) -> "Série"

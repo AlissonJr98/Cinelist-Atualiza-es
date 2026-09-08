@@ -77,7 +77,7 @@ jobs:
             "versionCode": $VERSION_CODE,
             "versionName": "$VERSAO_NOME",
             "apkUrl": "$APK_URL",
-            "changelog": "Correção na area de notifações$VERSAO_NOME."
+            "changelog": "Correção barra de status$VERSAO_NOME."
           }
           EOF
 
