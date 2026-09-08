@@ -56,37 +56,39 @@ class MidiaViewModel @Inject constructor(
             if (update != null) {
                 _updatePendente.value = update
 
-                // Dispara o alerta com as novidades direto na barra de notificações do Android
+                // 1. Notificação nativa na barra de status do sistema
                 UpdateManager.exibirNotificacaoAtualizacao(context, update)
 
-                // Salva no banco de dados da aba interna de notificações (apenas 1x por versão)
-                salvarNotificacaoInternaSeNecessario(update)
+                // 2. Notificação interna gravada na tabela Room
+                salvarNotificacaoInterna(update)
             }
         }
     }
 
-    private suspend fun salvarNotificacaoInternaSeNecessario(update: InfoAtualizacao) {
-        val prefs = context.getSharedPreferences("ControleAtualizacoes", Context.MODE_PRIVATE)
-        val chaveRegistrada = "notificacao_registrada_${update.versaoCode}"
+    private suspend fun salvarNotificacaoInterna(update: InfoAtualizacao) {
+        val jaRegistrada = notificacaoRepository.contarNotificacaoRecente(
+            idRef = update.versaoCode,
+            tipo = "ATUALIZACAO",
+            desde = 0L
+        ) > 0
 
-        if (!prefs.getBoolean(chaveRegistrada, false)) {
+        if (!jaRegistrada) {
             val corpo = if (update.notasDaVersao.isNotBlank()) {
-                "Novidades da v${update.versaoNome}:\n${update.notasDaVersao}"
+                "Novidades da versão ${update.versaoNome}:\n${update.notasDaVersao}"
             } else {
-                "Uma nova versão (v${update.versaoNome}) está pronta para download com melhorias gerais."
+                "Uma nova versão (${update.versaoNome}) com melhorias e correções está disponível para instalação."
             }
 
             val novaNotificacao = NotificacaoEntity(
+                tipo = "ATUALIZACAO",
                 titulo = "Nova Versão v${update.versaoNome} Disponível",
                 mensagem = corpo,
                 dataCriacao = System.currentTimeMillis(),
                 lida = false,
-                tipo = "ATUALIZACAO",
                 idReferencia = update.versaoCode
             )
 
             notificacaoRepository.inserir(novaNotificacao)
-            prefs.edit().putBoolean(chaveRegistrada, true).apply()
         }
     }
 

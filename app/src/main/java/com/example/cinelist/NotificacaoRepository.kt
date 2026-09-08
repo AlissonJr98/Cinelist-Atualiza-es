@@ -16,4 +16,6 @@ class NotificacaoRepository @Inject constructor(
     suspend fun marcarTodasComoLidas() = notificacaoDao.marcarTodasComoLidas()
     suspend fun deletar(notificacao: NotificacaoEntity) = notificacaoDao.deletar(notificacao)
     suspend fun limparTodas() = notificacaoDao.limparTodas()
+    suspend fun contarNotificacaoRecente(idRef: Int, tipo: String, desde: Long): Int =
+        notificacaoDao.contarNotificacaoRecente(idRef, tipo, desde)
 }

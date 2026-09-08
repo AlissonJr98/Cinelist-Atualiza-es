@@ -718,7 +718,7 @@ fun TelaPerfil(
                                     fontSize = 15.sp
                                 )
                                 Text(
-                                    text = "Verifique e instale as versões mais recentes sem conectar ao computador.",
+                                    text = "Verifique e instale as versões mais recentes do Cinelist",
                                     color = MaterialTheme.colorScheme.secondary,
                                     fontSize = 12.sp
                                 )
