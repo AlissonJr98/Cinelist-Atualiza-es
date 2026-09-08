@@ -1,6 +1,5 @@
 package com.example.cinelist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,7 +31,6 @@ fun TelaNotificacoes(
     var notificacaoParaExcluir by remember { mutableStateOf<NotificacaoEntity?>(null) }
     var mostrarConfirmacaoLimparTudo by remember { mutableStateOf(false) }
 
-    // Diálogo de confirmação para exclusão única
     notificacaoParaExcluir?.let { notif ->
         AlertDialog(
             onDismissRequest = { notificacaoParaExcluir = null },
@@ -59,7 +56,6 @@ fun TelaNotificacoes(
         )
     }
 
-    // Diálogo de confirmação para limpar tudo
     if (mostrarConfirmacaoLimparTudo) {
         AlertDialog(
             onDismissRequest = { mostrarConfirmacaoLimparTudo = false },

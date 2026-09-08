@@ -88,7 +88,7 @@ object UpdateManager {
                 "Atualizações do CineList",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações quando novas atualizações estiverem disponíveis"
+                description = "Notificações quando novas versões estiverem disponíveis"
             }
             notificationManager.createNotificationChannel(canal)
         }
@@ -110,7 +110,7 @@ object UpdateManager {
         val notificacao = NotificationCompat.Builder(context, CANAL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Nova Versão CineList v${info.versaoNome}!")
-            .setContentText("Toque para ver as novidades e atualizar.")
+            .setContentText("Toque para conferir as novidades e atualizar.")
             .setStyle(NotificationCompat.BigTextStyle().bigText("Novidades da v${info.versaoNome}:\n$resumoNovidades"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

@@ -1,5 +1,6 @@
 package com.example.cinelist
 
+import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -35,11 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -59,8 +62,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Impede sobreposição das barras do sistema
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+
         setContent {
             val contexto = LocalContext.current
+            val view = LocalView.current
+
             val sharedPreferences = remember {
                 contexto.getSharedPreferences(
                     "ConfiguracoesPerfil",
@@ -83,7 +92,24 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            // Solicitação de permissão de notificação para Android 13+ (Tiramisu)
+            // Garante ícones do sistema legíveis no modo escuro e claro
+            if (!view.isInEditMode) {
+                SideEffect {
+                    val window = (contexto as Activity).window
+                    val insetsController = WindowCompat.getInsetsController(window, view)
+
+                    insetsController.isAppearanceLightStatusBars = !modoEscuroAtivo
+
+                    @Suppress("DEPRECATION")
+                    window.statusBarColor = if (modoEscuroAtivo) {
+                        android.graphics.Color.parseColor("#121212")
+                    } else {
+                        android.graphics.Color.parseColor("#FFFFFF")
+                    }
+                }
+            }
+
+            // Permissão de notificação para Android 13+
             val launcherPermissaoNotificacao = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
             ) { _ -> }
@@ -321,7 +347,7 @@ val generosSeries = listOf(
 )
 
 val categoriasMinhaLista = listOf("Todos", "Filmes", "Séries", "Animes", "Novelas", "Doramas")
-val tiposDisponiveis = listOf("Filme", "Série", "Anime", "Novela", "Dorama")
+val tiposDisponiveis = listOf("Todos", "Filme", "Série", "Anime", "Novela", "Dorama")
 
 @Composable
 fun ConfiguracaoNavegacao() {
@@ -460,7 +486,7 @@ fun TelaPrincipal(
 
     val quantidadeFiltrosAtivosDescobrir = remember(tipoPaginado, provedorSelecionadoId, generoSelecionadoId, ordenacaoSelecionada) {
         var count = 0
-        if (tipoPaginado != "Filme") count++
+        if (tipoPaginado != "Todos") count++
         if (provedorSelecionadoId != null) count++
         if (generoSelecionadoId != null) count++
         if (ordenacaoSelecionada != "popularity.desc") count++
@@ -645,7 +671,7 @@ fun TelaPrincipal(
                     if (quantidadeFiltrosAtivosDescobrir > 0) {
                         TextButton(
                             onClick = {
-                                viewModel.selecionarTipo("Filme")
+                                viewModel.selecionarTipo("Todos")
                                 viewModel.selecionarProvedorStreaming(null)
                                 viewModel.selecionarGenero(null)
                                 viewModel.selecionarOrdenacao("popularity.desc")
@@ -718,7 +744,7 @@ fun TelaPrincipal(
                     }
                 }
 
-                val listaGenerosExibir = if (tipoPaginado == "Filme") generosFilmes else generosSeries
+                val listaGenerosExibir = if (tipoPaginado == "Série" || tipoPaginado == "Anime") generosSeries else generosFilmes
                 Text("Gêneros:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                 Row(
                     modifier = Modifier
@@ -837,7 +863,7 @@ fun TelaPrincipal(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        tiposDisponiveis.forEach { t ->
+                        listOf("Filme", "Série", "Anime", "Novela", "Dorama").forEach { t ->
                             FilterChip(
                                 selected = (novoTipo == t),
                                 onClick = {
@@ -1126,6 +1152,7 @@ fun TelaPrincipal(
                         }
                     }
                 } else {
+                    // PÁGINA 1: DESCOBRIR
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
@@ -1148,7 +1175,7 @@ fun TelaPrincipal(
                                 if (quantidadeFiltrosAtivosDescobrir > 0) {
                                     IconButton(
                                         onClick = {
-                                            viewModel.selecionarTipo("Filme")
+                                            viewModel.selecionarTipo("Todos")
                                             viewModel.selecionarProvedorStreaming(null)
                                             viewModel.selecionarGenero(null)
                                             viewModel.selecionarOrdenacao("popularity.desc")
@@ -1206,10 +1233,11 @@ fun TelaPrincipal(
                                 ) { index ->
                                     val item = resultadosPaginadosApi[index]
                                     if (item != null) {
+                                        val tipoExibicao = if (tipoPaginado == "Todos") "Filme" else tipoPaginado
                                         val midiaItem = Midia(
                                             idTmdb = item.idTmdb,
                                             titulo = item.titulo,
-                                            tipo = tipoPaginado,
+                                            tipo = tipoExibicao,
                                             status = "Descobrir",
                                             nota = 0,
                                             sinopse = item.sinopse,
@@ -1219,7 +1247,7 @@ fun TelaPrincipal(
                                         )
                                         ItemMidiaCard(
                                             midia = midiaItem,
-                                            onClick = { onTmdbItemClique(item, tipoPaginado) }
+                                            onClick = { onTmdbItemClique(item, tipoExibicao) }
                                         )
                                     }
                                 }

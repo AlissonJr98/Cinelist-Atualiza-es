@@ -60,10 +60,10 @@ class MidiaViewModel @Inject constructor(
             if (update != null) {
                 _updatePendente.value = update
 
-                // 1. Notificação nativa na barra de status do sistema
+                // 1. Notificação nativa na barra de status
                 UpdateManager.exibirNotificacaoAtualizacao(context, update)
 
-                // 2. Notificação interna gravada na tabela Room
+                // 2. Notificação gravada na tabela Room
                 salvarNotificacaoInterna(update)
             }
         }
@@ -109,7 +109,8 @@ class MidiaViewModel @Inject constructor(
     private val _queryPaginada = MutableStateFlow("")
     val queryPaginada: StateFlow<String> = _queryPaginada
 
-    private val _tipoPaginado = MutableStateFlow("Filme")
+    // Inicia como "Todos" para busca geral sem filtros
+    private val _tipoPaginado = MutableStateFlow("Todos")
     val tipoPaginado: StateFlow<String> = _tipoPaginado
 
     private val _provedorSelecionadoId = MutableStateFlow<Int?>(null)
@@ -162,6 +163,7 @@ class MidiaViewModel @Inject constructor(
     fun limparBuscaApi() {
         _resultadosBuscaApi.value = emptyList()
         _queryPaginada.value = ""
+        _tipoPaginado.value = "Todos"
         _provedorSelecionadoId.value = null
         _generoSelecionadoId.value = null
         _ordenacaoSelecionada.value = "popularity.desc"
