@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema único, leve e universal para o app rodar sem travar em nenhuma versão do Android -->
-    <style name="Theme.CineList" parent="android:Theme.NoTitleBar.Fullscreen">
-        <!-- Força a janela inicial do Android a abrir em preto puro -->
+    <!-- Tema sem Fullscreen para manter relógio, bateria e status bar visíveis -->
+    <style name="Theme.CineList" parent="android:Theme.Material.NoActionBar">
+        <!-- Mantém a abertura inicial em preto puro sem esconder o sistema -->
         <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:windowFullscreen">false</item>
     </style>
 </resources>

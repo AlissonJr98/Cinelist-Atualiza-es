@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -63,7 +65,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        WindowCompat.setDecorFitsSystemWindows(window, true)
+        // Habilita Edge-to-Edge nativo
+        enableEdgeToEdge()
 
         setContent {
             val contexto = LocalContext.current
@@ -91,19 +94,17 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
+            // Garante exibição permanente da barra de status e contraste correto dos ícones
             if (!view.isInEditMode) {
                 SideEffect {
                     val window = (contexto as Activity).window
                     val insetsController = WindowCompat.getInsetsController(window, view)
 
-                    insetsController.isAppearanceLightStatusBars = !modoEscuroAtivo
+                    // Força a barra a ficar visível
+                    insetsController.show(WindowInsetsCompat.Type.statusBars())
 
-                    @Suppress("DEPRECATION")
-                    window.statusBarColor = if (modoEscuroAtivo) {
-                        android.graphics.Color.parseColor("#121212")
-                    } else {
-                        android.graphics.Color.parseColor("#FFFFFF")
-                    }
+                    // Ícones brancos no modo escuro e escuros no modo claro
+                    insetsController.isAppearanceLightStatusBars = !modoEscuroAtivo
                 }
             }
 
@@ -122,7 +123,9 @@ class MainActivity : ComponentActivity() {
 
             CineListTheme(darkTheme = modoEscuroAtivo) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     updateInfo?.let { info ->
