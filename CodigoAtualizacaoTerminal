@@ -14,9 +14,9 @@
 #Commitar e disparar a Tag
 #Mandar no terminal os codigos abaixo:
 #git add .
-#git commit -m "Retirada do filtro duplo na tela descobrir e outras melhorias"
+#git commit -m "BUG Filmes"
 #git push origin main
-#git tag v1.0.17
-#git push origin v1.0.17
+#git tag v1.0.18
+#git push origin v1.0.18
 
 #Enviar codigos sem #

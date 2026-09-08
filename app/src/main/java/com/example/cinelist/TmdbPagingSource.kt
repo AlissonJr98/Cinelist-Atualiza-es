@@ -7,80 +7,138 @@ class TmdbPagingSource(
     private val apiService: TmdbApiService,
     private val query: String,
     private val tipo: String,
-    private val provedorId: Int? = null,
-    private val generoId: Int? = null,
-    private val sortBy: String = "popularity.desc"
+    private val provedorId: Int?,
+    private val generoId: Int?,
+    private val sortBy: String
 ) : PagingSource<Int, TmdbFilme>() {
-
-    override fun getRefreshKey(state: PagingState<Int, TmdbFilme>): Int? {
-        return state.anchorPosition?.let { anchorPosition ->
-            val anchorPage = state.closestPageToPosition(anchorPosition)
-            anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
-        }
-    }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, TmdbFilme> {
         val paginaAtual = params.key ?: 1
-
         return try {
-            val ehFilme = tipo.equals("Filme", ignoreCase = true)
+            val listaResultado: List<TmdbFilme>
+            val totalPaginas: Int
 
-            val resposta = if (query.isNotBlank()) {
-                if (ehFilme) {
-                    apiService.buscarFilme(nomeFilme = query, pagina = paginaAtual)
-                } else {
-                    apiService.buscarSerieOuAnime(nomeSerie = query, pagina = paginaAtual)
+            if (query.isNotBlank()) {
+                // PESQUISA POR NOME
+                when {
+                    tipo.equals("Filme", ignoreCase = true) -> {
+                        val resp = apiService.buscarFilme(query, paginaAtual)
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "movie") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true) ||
+                            tipo.equals("Novela", ignoreCase = true) || tipo.equals("Dorama", ignoreCase = true) -> {
+                        val resp = apiService.buscarSerieOuAnime(query, paginaAtual)
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    else -> {
+                        // "Todos": busca unificada multi-search ignorando pessoas (atores/diretores)
+                        val resp = apiService.buscarMulti(query, paginaAtual)
+                        listaResultado = resp.resultados.filter {
+                            it.mediaType.equals("movie", ignoreCase = true) || it.mediaType.equals("tv", ignoreCase = true)
+                        }
+                        totalPaginas = resp.totalPaginas
+                    }
                 }
             } else {
-                val provedorStr = provedorId?.toString()
-                var generoFinal = generoId?.toString()
-                var idiomaOriginal: String? = null
+                // DESCOBERTA SEM TEXTO
+                when {
+                    tipo.equals("Filme", ignoreCase = true) -> {
+                        val resp = apiService.descobrirFilmes(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            sortBy = sortBy
+                        )
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "movie") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    tipo.equals("Série", ignoreCase = true) -> {
+                        val resp = apiService.descobrirSeries(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            sortBy = sortBy
+                        )
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    tipo.equals("Anime", ignoreCase = true) -> {
+                        val resp = apiService.descobrirSeries(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            idiomaOriginal = "ja",
+                            sortBy = sortBy
+                        )
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    tipo.equals("Novela", ignoreCase = true) -> {
+                        val resp = apiService.descobrirSeries(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            sortBy = sortBy
+                        )
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    tipo.equals("Dorama", ignoreCase = true) -> {
+                        val resp = apiService.descobrirSeries(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            idiomaOriginal = "ko",
+                            sortBy = sortBy
+                        )
+                        listaResultado = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPaginas = resp.totalPaginas
+                    }
+                    else -> {
+                        // "Todos": combina filmes e séries da página para exibição mista
+                        val filmesResp = apiService.descobrirFilmes(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            sortBy = sortBy
+                        )
+                        val seriesResp = apiService.descobrirSeries(
+                            pagina = paginaAtual,
+                            provedores = provedorId?.toString(),
+                            generos = generoId?.toString(),
+                            sortBy = sortBy
+                        )
 
-                when (tipo) {
-                    "Anime" -> {
-                        // Gênero 16 (Animação) + produções japonesas
-                        generoFinal = if (generoId != null) "$generoId,16" else "16"
-                        idiomaOriginal = "ja"
-                    }
-                    "Novela" -> {
-                        // Gênero 10766 (Soap / Novela)
-                        generoFinal = if (generoId != null) "$generoId,10766" else "10766"
-                    }
-                    "Dorama" -> {
-                        // Produções da Coreia do Sul (K-Dramas)
-                        idiomaOriginal = "ko"
-                    }
-                }
+                        val filmes = filmesResp.resultados.map { it.copy(mediaType = "movie") }
+                        val series = seriesResp.resultados.map { it.copy(mediaType = "tv") }
 
-                if (ehFilme) {
-                    apiService.descobrirFilmes(
-                        pagina = paginaAtual,
-                        provedores = provedorStr,
-                        generos = generoFinal,
-                        sortBy = sortBy
-                    )
-                } else {
-                    apiService.descobrirSeries(
-                        pagina = paginaAtual,
-                        provedores = provedorStr,
-                        generos = generoFinal,
-                        idiomaOriginal = idiomaOriginal,
-                        sortBy = sortBy
-                    )
+                        listaResultado = filmes.zip(series) { f, s -> listOf(f, s) }.flatten() +
+                                if (filmes.size > series.size) filmes.drop(series.size) else series.drop(filmes.size)
+
+                        totalPaginas = maxOf(filmesResp.totalPaginas, seriesResp.totalPaginas)
+                    }
                 }
             }
 
-            val itens = resposta.resultados ?: emptyList()
-            val proximaChave = if (itens.isEmpty()) null else paginaAtual + 1
-            val chaveAnterior = if (paginaAtual == 1) null else paginaAtual - 1
+            val proximaChave = if (paginaAtual < totalPaginas && listaResultado.isNotEmpty()) paginaAtual + 1 else null
+            val chaveAnterior = if (paginaAtual > 1) paginaAtual - 1 else null
 
             LoadResult.Page(
-                data = itens,
+                data = listaResultado,
                 prevKey = chaveAnterior,
                 nextKey = proximaChave
             )
         } catch (e: Exception) {
             LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, TmdbFilme>): Int? {
+        return state.anchorPosition?.let { pos ->
+            val pagina = state.closestPageToPosition(pos)
+            pagina?.prevKey?.plus(1) ?: pagina?.nextKey?.minus(1)
         }
     }
 }

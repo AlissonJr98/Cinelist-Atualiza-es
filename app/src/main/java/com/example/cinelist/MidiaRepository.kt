@@ -11,41 +11,24 @@ import javax.inject.Singleton
 class MidiaRepository @Inject constructor(
     private val midiaDao: MidiaDao
 ) {
-
     val todasAsMidias: Flow<List<Midia>> = midiaDao.buscarTodasAsMidias()
 
-    suspend fun inserir(midia: Midia) {
-        midiaDao.inserirMidia(midia)
-    }
-
-    suspend fun atualizar(midia: Midia) {
-        midiaDao.atualizarMidia(midia)
-    }
-
-    suspend fun deletar(midia: Midia) {
-        midiaDao.deletarMidia(midia)
-    }
-
-    suspend fun buscarNoTmdb(nome: String, tipo: String): List<TmdbFilme> {
-        val ehSerieOuAnime = tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)
-        return if (ehSerieOuAnime) {
-            RetrofitClient.apiService.buscarSerieOuAnime(nomeSerie = nome).resultados ?: emptyList()
-        } else {
-            RetrofitClient.apiService.buscarFilme(nomeFilme = nome).resultados ?: emptyList()
-        }
-    }
+    suspend fun inserir(midia: Midia) = midiaDao.inserirMidia(midia)
+    suspend fun atualizar(midia: Midia) = midiaDao.atualizarMidia(midia)
+    suspend fun deletar(midia: Midia) = midiaDao.deletarMidia(midia)
 
     fun buscarNoTmdbPaginado(
         query: String,
         tipo: String,
-        provedorId: Int? = null,
-        generoId: Int? = null,
-        sortBy: String = "popularity.desc"
+        provedorId: Int?,
+        generoId: Int?,
+        sortBy: String
     ): Flow<PagingData<TmdbFilme>> {
         return Pager(
             config = PagingConfig(
                 pageSize = 20,
-                enablePlaceholders = false
+                enablePlaceholders = false,
+                initialLoadSize = 20
             ),
             pagingSourceFactory = {
                 TmdbPagingSource(
@@ -58,5 +41,17 @@ class MidiaRepository @Inject constructor(
                 )
             }
         ).flow
+    }
+
+    suspend fun buscarNoTmdb(nome: String, tipo: String): List<TmdbFilme> {
+        return if (tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)) {
+            RetrofitClient.apiService.buscarSerieOuAnime(nome).resultados.map { it.copy(mediaType = "tv") }
+        } else if (tipo.equals("Filme", ignoreCase = true)) {
+            RetrofitClient.apiService.buscarFilme(nome).resultados.map { it.copy(mediaType = "movie") }
+        } else {
+            RetrofitClient.apiService.buscarMulti(nome).resultados.filter {
+                it.mediaType.equals("movie", ignoreCase = true) || it.mediaType.equals("tv", ignoreCase = true)
+            }
+        }
     }
 }

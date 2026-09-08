@@ -6,6 +6,13 @@ import retrofit2.http.Query
 
 interface TmdbApiService {
 
+    @GET("search/multi")
+    suspend fun buscarMulti(
+        @Query("query") query: String,
+        @Query("page") pagina: Int = 1,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbResposta
+
     @GET("search/movie")
     suspend fun buscarFilme(
         @Query("query") nomeFilme: String,

@@ -63,7 +63,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Impede sobreposição das barras do sistema
         WindowCompat.setDecorFitsSystemWindows(window, true)
 
         setContent {
@@ -92,7 +91,6 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            // Garante ícones do sistema legíveis no modo escuro e claro
             if (!view.isInEditMode) {
                 SideEffect {
                     val window = (contexto as Activity).window
@@ -109,7 +107,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Permissão de notificação para Android 13+
             val launcherPermissaoNotificacao = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
             ) { _ -> }
@@ -1228,16 +1225,25 @@ fun TelaPrincipal(
                             } else {
                                 items(
                                     count = resultadosPaginadosApi.itemCount,
-                                    key = resultadosPaginadosApi.itemKey { it.idTmdb },
+                                    // Chave única composta que resolve colisões de ID entre filme e série
+                                    key = resultadosPaginadosApi.itemKey { "${it.mediaType ?: "midia"}_${it.idTmdb}" },
                                     contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
                                 ) { index ->
                                     val item = resultadosPaginadosApi[index]
                                     if (item != null) {
-                                        val tipoExibicao = if (tipoPaginado == "Todos") "Filme" else tipoPaginado
+                                        // Determina dinamicamente se é Série ou Filme baseado na resposta real do TMDB
+                                        val tipoReal = when {
+                                            tipoPaginado != "Todos" -> tipoPaginado
+                                            item.mediaType.equals("tv", ignoreCase = true) -> "Série"
+                                            item.mediaType.equals("movie", ignoreCase = true) -> "Filme"
+                                            item.ehSerie -> "Série"
+                                            else -> "Filme"
+                                        }
+
                                         val midiaItem = Midia(
                                             idTmdb = item.idTmdb,
                                             titulo = item.titulo,
-                                            tipo = tipoExibicao,
+                                            tipo = tipoReal,
                                             status = "Descobrir",
                                             nota = 0,
                                             sinopse = item.sinopse,
@@ -1247,7 +1253,7 @@ fun TelaPrincipal(
                                         )
                                         ItemMidiaCard(
                                             midia = midiaItem,
-                                            onClick = { onTmdbItemClique(item, tipoExibicao) }
+                                            onClick = { onTmdbItemClique(item, tipoReal) }
                                         )
                                     }
                                 }

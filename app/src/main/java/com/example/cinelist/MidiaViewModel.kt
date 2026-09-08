@@ -26,7 +26,7 @@ class MidiaViewModel @Inject constructor(
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
 
-    // ESTADO E CONTROLE DE NOTIFICAÇÕES
+    // CONTROLE DE NOTIFICAÇÕES
     val todasNotificacoes: Flow<List<NotificacaoEntity>> = notificacaoRepository.todasNotificacoes
     val quantidadeNaoLidas: Flow<Int> = notificacaoRepository.quantidadeNaoLidas
 
@@ -46,7 +46,7 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch { notificacaoRepository.limparTodas() }
     }
 
-    // ESTADO E CONTROLE DE ATUALIZAÇÃO SILENCIOSA OTA
+    // ATUALIZAÇÃO SILENCIOSA OTA
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
     val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
 
@@ -59,11 +59,7 @@ class MidiaViewModel @Inject constructor(
             val update = UpdateManager.checarAtualizacaoSilenciosa()
             if (update != null) {
                 _updatePendente.value = update
-
-                // 1. Notificação nativa na barra de status
                 UpdateManager.exibirNotificacaoAtualizacao(context, update)
-
-                // 2. Notificação gravada na tabela Room
                 salvarNotificacaoInterna(update)
             }
         }
@@ -109,7 +105,6 @@ class MidiaViewModel @Inject constructor(
     private val _queryPaginada = MutableStateFlow("")
     val queryPaginada: StateFlow<String> = _queryPaginada
 
-    // Inicia como "Todos" para busca geral sem filtros
     private val _tipoPaginado = MutableStateFlow("Todos")
     val tipoPaginado: StateFlow<String> = _tipoPaginado
 
@@ -214,12 +209,20 @@ class MidiaViewModel @Inject constructor(
     private val _recomendacoesMidia = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val recomendacoesMidia: StateFlow<List<TmdbFilme>> = _recomendacoesMidia
 
+    private fun verificarSeEhSerie(tipo: String): Boolean {
+        return tipo.equals("Série", ignoreCase = true) ||
+                tipo.equals("Anime", ignoreCase = true) ||
+                tipo.equals("Novela", ignoreCase = true) ||
+                tipo.equals("Dorama", ignoreCase = true) ||
+                tipo.equals("tv", ignoreCase = true)
+    }
+
     fun buscarDetalhesEstendidos(idTmdb: Int, tipo: String) {
         if (idTmdb == 0) return
 
         viewModelScope.launch {
             try {
-                val ehSerieOuAnime = tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)
+                val ehSerieOuAnime = verificarSeEhSerie(tipo)
 
                 val detalhes = if (ehSerieOuAnime) {
                     RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb)
@@ -267,7 +270,8 @@ class MidiaViewModel @Inject constructor(
         if (idTmdb == 0) return
         viewModelScope.launch {
             try {
-                val resposta = if (tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)) {
+                val ehSerieOuAnime = verificarSeEhSerie(tipo)
+                val resposta = if (ehSerieOuAnime) {
                     RetrofitClient.apiService.obterProvedoresSerieOuAnime(idSerie = idTmdb)
                 } else {
                     RetrofitClient.apiService.obterProvedoresFilme(idFilme = idTmdb)
