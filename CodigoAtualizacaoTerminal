@@ -13,5 +13,5 @@ git pull origin main --rebase
 git push origin main
 
 # 5. Recria e envia a tag v1.0.X para acionar o workflow
-git tag v1.0.X
-git push origin v1.0.X
+git tag v1.0.20
+git push origin v1.0.20
