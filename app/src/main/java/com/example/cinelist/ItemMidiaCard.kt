@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,7 +23,8 @@ import coil.compose.SubcomposeAsyncImage
 @Composable
 fun ItemMidiaCard(
     midia: Midia,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onIncrementarEpisodio: (() -> Unit)? = null
 ) {
     val corStatus = when (midia.status) {
         "Assistindo" -> Color(0xFF00BFFF)
@@ -30,6 +32,11 @@ fun ItemMidiaCard(
         "Descobrir" -> Color(0xFFFF9800)
         else -> Color(0xFF888888)
     }
+
+    val ehSerieOuAnime = midia.tipo.equals("Série", ignoreCase = true) ||
+            midia.tipo.equals("Anime", ignoreCase = true) ||
+            midia.tipo.equals("Novela", ignoreCase = true) ||
+            midia.tipo.equals("Dorama", ignoreCase = true)
 
     Card(
         modifier = Modifier
@@ -54,7 +61,6 @@ fun ItemMidiaCard(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         loading = {
-                            // 🚀 Aplica o efeito Shimmer enquanto a capa baixa da internet
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -102,28 +108,91 @@ fun ItemMidiaCard(
                     }
                 }
 
-                // Progresso de tempo ou episódio
-                val jaTeveProgresso = midia.minutoParado > 0 || midia.episodioAtual > 1 || midia.temporadaAtual > 1
-                if (jaTeveProgresso && midia.status != "Concluído") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .background(Color(0xCC000000))
-                            .padding(vertical = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val textoProgresso = if (midia.tipo.equals("Filme", ignoreCase = true)) {
-                            "Parou em: ${midia.minutoParado} min"
-                        } else {
-                            "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}"
+                // Progresso de Filme ou Botão de Ação Rápida +1 Ep para Séries/Animes
+                if (midia.status != "Concluído") {
+                    if (!ehSerieOuAnime && midia.minutoParado > 0) {
+                        // Progresso para Filmes
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(Color(0xCC000000))
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Parou em: ${midia.minutoParado} min",
+                                color = Color(0xFFFFD700),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                        Text(
-                            text = textoProgresso,
-                            color = Color(0xFFFFD700),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    } else if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
+                        // Barra de Ação Rápida: Exibe T/E e botão "+1 Ep"
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter),
+                            color = Color(0xDD000000)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Surface(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { onIncrementarEpisodio() },
+                                    color = MaterialTheme.colorScheme.primary
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Adicionar Episódio",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Text(
+                                            text = "1 Ep",
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else if (ehSerieOuAnime && (midia.episodioAtual > 1 || midia.temporadaAtual > 1)) {
+                        // Exibição padrão quando não estiver assistindo ou sem callback
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(Color(0xCC000000))
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}",
+                                color = Color(0xFFFFD700),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -186,7 +255,6 @@ fun ItemMidiaCard(
     }
 }
 
-// 🚀 SKELETON COMPLETO: Usado na lista enquanto o TMDB busca a página inicial
 @Composable
 fun ItemMidiaCardSkeleton() {
     Card(
@@ -197,7 +265,6 @@ fun ItemMidiaCardSkeleton() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            // Pôster fake com shimmer
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,7 +273,6 @@ fun ItemMidiaCardSkeleton() {
             )
 
             Column(modifier = Modifier.padding(8.dp)) {
-                // Título fake
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
@@ -217,7 +283,6 @@ fun ItemMidiaCardSkeleton() {
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Subtítulo fake (Tipo • Gênero)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
@@ -228,7 +293,6 @@ fun ItemMidiaCardSkeleton() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Estrelas fake
                 Box(
                     modifier = Modifier
                         .width(60.dp)

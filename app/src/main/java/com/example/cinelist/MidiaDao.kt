@@ -10,19 +10,22 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MidiaDao {
 
-    // 1. Função exclusiva para ADICIONAR uma nova mídia pela primeira vez
     @Insert
     suspend fun inserirMidia(midia: Midia)
 
-    // 2. Função exclusiva para ATUALIZAR os minutos/episódios de uma mídia que já existe
     @Update
     suspend fun atualizarMidia(midia: Midia)
 
-    // 3. Buscar todas as mídias salvas
     @Query("SELECT * FROM midias")
     fun buscarTodasAsMidias(): Flow<List<Midia>>
 
-    // 4. Deletar uma mídia
     @Delete
     suspend fun deletarMidia(midia: Midia)
+
+    // Ajustado para 'midias' (plural) para bater com o SELECT acima
+    @Query("UPDATE midias SET episodioAtual = episodioAtual + 1 WHERE id = :idMidia")
+    suspend fun incrementarEpisodio(idMidia: Int)
+
+    @Query("UPDATE midias SET temporadaAtual = :temporada, episodioAtual = :episodio WHERE id = :idMidia")
+    suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int)
 }

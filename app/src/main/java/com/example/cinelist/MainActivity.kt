@@ -88,10 +88,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Habilita Edge-to-Edge nativo
         enableEdgeToEdge()
-
-        // Ativa verificação periódica de atualizações em background com o app fechado
         agendarChecagemAtualizacaoSegundoPlano(this)
 
         setContent {
@@ -120,7 +117,6 @@ class MainActivity : ComponentActivity() {
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            // Exibição da barra de status e contraste dos ícones
             if (!view.isInEditMode) {
                 SideEffect {
                     val window = (contexto as Activity).window
@@ -1168,8 +1164,12 @@ fun TelaPrincipal(
                                 modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
                                 contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
-                                items(listaFiltrada) { mi ->
-                                    ItemMidiaCard(midia = mi, onClick = { onItemClique(mi) })
+                                items(listaFiltrada, key = { it.id }) { mi ->
+                                    ItemMidiaCard(
+                                        midia = mi,
+                                        onClick = { onItemClique(mi) },
+                                        onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) }
+                                    )
                                 }
                             }
                         }

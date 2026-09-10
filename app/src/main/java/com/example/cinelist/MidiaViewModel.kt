@@ -300,4 +300,16 @@ class MidiaViewModel @Inject constructor(
             }
         }
     }
+
+    fun incrementarEpisodioRapido(midia: Midia) {
+        viewModelScope.launch {
+            repository.incrementarEpisodio(midia.id)
+        }
+    }
+
+    fun definirProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
+        viewModelScope.launch {
+            repository.atualizarProgressoEpisodio(idMidia, temporada, episodio)
+        }
+    }
 }

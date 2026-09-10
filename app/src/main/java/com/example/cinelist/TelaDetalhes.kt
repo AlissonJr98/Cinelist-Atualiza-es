@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -111,6 +112,7 @@ fun TelaDetalhes(
     var episodioAtual by remember { mutableIntStateOf(1) }
     var minutoParado by remember { mutableIntStateOf(0) }
     var status by remember { mutableStateOf("Quero Assistir") }
+    var abaTemporadaVisualizada by remember { mutableIntStateOf(1) }
 
     val provedoresFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
@@ -139,6 +141,7 @@ fun TelaDetalhes(
             episodioAtual = midiaSalva.episodioAtual
             minutoParado = midiaSalva.minutoParado
             status = midiaSalva.status
+            abaTemporadaVisualizada = midiaSalva.temporadaAtual
         } else {
             idTmdbDinamico = id
             tipoDinamico = tipoInicial
@@ -312,11 +315,11 @@ fun TelaDetalhes(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val tituloDinamico = when {
-                midiaSalva != null -> midiaSalva.titulo
-                recomendacaoSelecionada != null -> recomendacaoSelecionada?.titulo ?: "Título"
-                detalhesApi != null -> detalhesApi?.titulo ?: "Detalhes"
-                else -> "Carregando..."
-            }
+                    midiaSalva != null -> midiaSalva.titulo
+                    recomendacaoSelecionada != null -> recomendacaoSelecionada?.titulo ?: "Título"
+                    detalhesApi != null -> detalhesApi?.titulo ?: "Detalhes"
+                    else -> "Carregando..."
+                }
 
                 Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(text = "$tipoDinamico • ${midiaSalva?.genero ?: "Geral"}", fontSize = 15.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
@@ -543,14 +546,98 @@ fun TelaDetalhes(
                     Text(text = "Seu Progresso de Visualização:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (!ehFilme) {
-                            ContadorProgresso(label = "Temporada Atual", valor = temporadaAtual, onIncrementar = { temporadaAtual++ }, onDecrementar = { if (temporadaAtual > 1) temporadaAtual-- })
+                    if (!ehFilme) {
+                        // 🚀 RASTREADOR INTERATIVO DE EPISÓDIOS (OPÇÃO 2)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "Régua de Episódios",
+                                    color = Color(0xFFFFD700),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                // Seletor de Temporadas (T1, T2...)
+                                Text(text = "Temporadas:", color = Color.Gray, fontSize = 12.sp)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    val maxTemporadas = maxOf(temporadaAtual + 2, 6)
+                                    (1..maxTemporadas).forEach { temp ->
+                                        FilterChip(
+                                            selected = (abaTemporadaVisualizada == temp),
+                                            onClick = { abaTemporadaVisualizada = temp },
+                                            label = { Text("T$temp", fontSize = 12.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = Color(0xFFFFD700),
+                                                selectedLabelColor = Color.Black,
+                                                containerColor = Color(0xFF2A2A2A),
+                                                labelColor = Color.LightGray
+                                            )
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Régua de Episódios da Temporada Selecionada
+                                Text(
+                                    text = "Toque no último episódio assistido da Temporada $abaTemporadaVisualizada:",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    (1..30).forEach { ep ->
+                                        val jaAssistido = (abaTemporadaVisualizada < temporadaAtual) ||
+                                                (abaTemporadaVisualizada == temporadaAtual && ep <= episodioAtual)
+                                        val epAtual = (abaTemporadaVisualizada == temporadaAtual && ep == episodioAtual)
+
+                                        FilterChip(
+                                            selected = jaAssistido,
+                                            onClick = {
+                                                temporadaAtual = abaTemporadaVisualizada
+                                                episodioAtual = ep
+                                                if (status == "Quero Assistir") status = "Assistindo"
+                                            },
+                                            leadingIcon = if (epAtual) {
+                                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                                            } else null,
+                                            label = { Text("E$ep", fontSize = 11.sp, fontWeight = if (epAtual) FontWeight.Bold else FontWeight.Normal) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = if (epAtual) Color(0xFFFFD700) else Color(0x66FFD700),
+                                                selectedLabelColor = if (epAtual) Color.Black else Color.White,
+                                                containerColor = Color(0xFF2A2A2A),
+                                                labelColor = Color.LightGray
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ContadorProgresso(label = "Temporada Atual", valor = temporadaAtual, onIncrementar = { temporadaAtual++; abaTemporadaVisualizada = temporadaAtual }, onDecrementar = { if (temporadaAtual > 1) { temporadaAtual--; abaTemporadaVisualizada = temporadaAtual } })
                             ContadorProgresso(label = "Episódio Assistido", valor = episodioAtual, onIncrementar = { episodioAtual++ }, onDecrementar = { if (episodioAtual > 1) episodioAtual-- })
                             ContadorProgresso(label = "Minutos Assistidos", valor = minutoParado, onIncrementar = { minutoParado += 5 }, onDecrementar = { if (minutoParado > 0) minutoParado -= 5 })
-                        } else {
-                            ContadorProgresso(label = "Minuto Parado no Filme", valor = minutoParado, onIncrementar = { minutoParado += 10 }, onDecrementar = { if (minutoParado > 0) minutoParado -= 10 })
                         }
+                    } else {
+                        ContadorProgresso(label = "Minuto Parado no Filme", valor = minutoParado, onIncrementar = { minutoParado += 10 }, onDecrementar = { if (minutoParado > 0) minutoParado -= 10 })
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))

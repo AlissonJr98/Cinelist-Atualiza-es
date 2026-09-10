@@ -17,6 +17,11 @@ class MidiaRepository @Inject constructor(
     suspend fun atualizar(midia: Midia) = midiaDao.atualizarMidia(midia)
     suspend fun deletar(midia: Midia) = midiaDao.deletarMidia(midia)
 
+    suspend fun incrementarEpisodio(idMidia: Int) = midiaDao.incrementarEpisodio(idMidia)
+
+    suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) =
+        midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
+
     fun buscarNoTmdbPaginado(
         query: String,
         tipo: String,
