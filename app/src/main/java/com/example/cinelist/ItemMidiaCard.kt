@@ -1,14 +1,20 @@
 package com.example.cinelist
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,11 +26,132 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemMidiaCard(
     midia: Midia,
     onClick: () -> Unit,
-    onIncrementarEpisodio: (() -> Unit)? = null
+    onIncrementarEpisodio: (() -> Unit)? = null,
+    onDeletar: (() -> Unit)? = null,
+    onAlternarStatusConcluido: (() -> Unit)? = null,
+    jaAdicionado: Boolean = false,
+    onAdicionarRapido: (() -> Unit)? = null
+) {
+    if (onDeletar == null && onAlternarStatusConcluido == null) {
+        ConteudoItemMidiaCard(
+            midia = midia,
+            onClick = onClick,
+            onIncrementarEpisodio = onIncrementarEpisodio,
+            jaAdicionado = jaAdicionado,
+            onAdicionarRapido = onAdicionarRapido
+        )
+    } else {
+        val currentOnDeletar by rememberUpdatedState(onDeletar)
+        val currentOnAlternarConcluido by rememberUpdatedState(onAlternarStatusConcluido)
+
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { valorDismiss ->
+                when (valorDismiss) {
+                    SwipeToDismissBoxValue.EndToStart -> {
+                        currentOnDeletar?.invoke()
+                        true
+                    }
+                    SwipeToDismissBoxValue.StartToEnd -> {
+                        currentOnAlternarConcluido?.invoke()
+                        false
+                    }
+                    SwipeToDismissBoxValue.Settled -> false
+                }
+            }
+        )
+
+        SwipeToDismissBox(
+            state = dismissState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            enableDismissFromStartToEnd = onAlternarStatusConcluido != null,
+            enableDismissFromEndToStart = onDeletar != null,
+            backgroundContent = {
+                val direcao = dismissState.dismissDirection
+                val corFundo by animateColorAsState(
+                    targetValue = when (direcao) {
+                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
+                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F)
+                        SwipeToDismissBoxValue.Settled -> Color.Transparent
+                    },
+                    label = "cor_swipe"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(corFundo)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = when (direcao) {
+                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                        else -> Alignment.CenterEnd
+                    }
+                ) {
+                    if (direcao == SwipeToDismissBoxValue.StartToEnd) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Concluir",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = if (midia.status == "Concluído") "Reabrir" else "Concluir",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Excluir",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Excluir",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        ) {
+            ConteudoItemMidiaCard(
+                midia = midia,
+                onClick = onClick,
+                onIncrementarEpisodio = onIncrementarEpisodio,
+                jaAdicionado = jaAdicionado,
+                onAdicionarRapido = onAdicionarRapido
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConteudoItemMidiaCard(
+    midia: Midia,
+    onClick: () -> Unit,
+    onIncrementarEpisodio: (() -> Unit)? = null,
+    jaAdicionado: Boolean = false,
+    onAdicionarRapido: (() -> Unit)? = null
 ) {
     val corStatus = when (midia.status) {
         "Assistindo" -> Color(0xFF00BFFF)
@@ -41,7 +168,6 @@ fun ItemMidiaCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(6.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -90,7 +216,7 @@ fun ItemMidiaCard(
                     )
                 }
 
-                // Etiqueta de Status por cima da imagem
+                // Etiqueta de Status (se não for da tela Descobrir)
                 if (midia.status != "Descobrir") {
                     Box(
                         modifier = Modifier
@@ -108,10 +234,35 @@ fun ItemMidiaCard(
                     }
                 }
 
-                // Progresso de Filme ou Botão de Ação Rápida +1 Ep para Séries/Animes
-                if (midia.status != "Concluído") {
+                // BOTÃO DE ADIÇÃO RÁPIDA (Topo Direito)
+                if (onAdicionarRapido != null || jaAdicionado) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                            )
+                            .clickable(enabled = !jaAdicionado) {
+                                onAdicionarRapido?.invoke()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (jaAdicionado) Icons.Default.Check else Icons.Default.Add,
+                            contentDescription = if (jaAdicionado) "Já Adicionado" else "Adicionar à Lista",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Barra inferior de Progresso
+                if (midia.status != "Concluído" && midia.status != "Descobrir") {
                     if (!ehSerieOuAnime && midia.minutoParado > 0) {
-                        // Progresso para Filmes
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -128,7 +279,6 @@ fun ItemMidiaCard(
                             )
                         }
                     } else if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
-                        // Barra de Ação Rápida: Exibe T/E e botão "+1 Ep"
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -177,7 +327,6 @@ fun ItemMidiaCard(
                             }
                         }
                     } else if (ehSerieOuAnime && (midia.episodioAtual > 1 || midia.temporadaAtual > 1)) {
-                        // Exibição padrão quando não estiver assistindo ou sem callback
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()

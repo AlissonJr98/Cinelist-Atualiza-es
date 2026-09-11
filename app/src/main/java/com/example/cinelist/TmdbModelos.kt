@@ -23,6 +23,15 @@ data class TmdbFilme(
         get() = mediaType.equals("tv", ignoreCase = true)
 }
 
+data class TmdbProximoEpisodio(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String? = null,
+    @SerializedName("air_date") val dataExibicao: String? = null,
+    @SerializedName("episode_number") val numeroEpisodio: Int = 0,
+    @SerializedName("season_number") val numeroTemporada: Int = 0,
+    @SerializedName("overview") val sinopse: String? = null
+)
+
 data class TmdbDetalhesEstendidos(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
@@ -35,7 +44,8 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("number_of_episodes") val totalEpisodios: Int = 1,
     @SerializedName("runtime") val duracaoFilme: Int? = null,
     @SerializedName("episode_run_time") val duracaoEpisodios: List<Int>? = null,
-    @SerializedName("tagline") val fraseEfeito: String? = null
+    @SerializedName("tagline") val fraseEfeito: String? = null,
+    @SerializedName("next_episode_to_air") val proximoEpisodio: TmdbProximoEpisodio? = null
 ) {
     val sinopseApi: String
         get() = sinopse

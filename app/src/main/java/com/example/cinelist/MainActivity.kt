@@ -1042,15 +1042,24 @@ fun TelaPrincipal(
                 )
             }
 
+            // BARRA DE PESQUISA MULTICAMPOS (TÍTULO, GÊNERO, PLATAFORMA)
             TextField(
                 value = textoPesquisa,
                 onValueChange = { textoPesquisa = it },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = {
                     Text(
-                        if (pagerState.currentPage == 0) "Pesquisar na minha lista..." else "Buscar online no TMDB...",
-                        color = MaterialTheme.colorScheme.secondary
+                        if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 13.sp
                     )
+                },
+                trailingIcon = {
+                    if (textoPesquisa.isNotBlank()) {
+                        IconButton(onClick = { textoPesquisa = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary)
+                        }
+                    }
                 },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1063,13 +1072,63 @@ fun TelaPrincipal(
                 singleLine = true
             )
 
+            // RÉGUA DE CHIPS RÁPIDOS NA MINHA LISTA
+            if (pagerState.currentPage == 0) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = (filtroStatusMinhaLista == "Todos" && filtroPlataforma == "Todas"),
+                        onClick = {
+                            filtroStatusMinhaLista = "Todos"
+                            filtroPlataforma = "Todas"
+                        },
+                        label = { Text("Todos", fontSize = 11.sp) }
+                    )
+
+                    listOf("Assistindo", "Quero Assistir", "Concluído").forEach { statusOpcao ->
+                        FilterChip(
+                            selected = (filtroStatusMinhaLista == statusOpcao),
+                            onClick = {
+                                filtroStatusMinhaLista = if (filtroStatusMinhaLista == statusOpcao) "Ativos" else statusOpcao
+                            },
+                            label = { Text(statusOpcao, fontSize = 11.sp) }
+                        )
+                    }
+
+                    streamingsFiltro.filter { it != "Todas" }.forEach { streaming ->
+                        FilterChip(
+                            selected = (filtroPlataforma == streaming),
+                            onClick = {
+                                filtroPlataforma = if (filtroPlataforma == streaming) "Todas" else streaming
+                            },
+                            label = { Text("🍿 $streaming", fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                }
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 if (pagina == 0) {
                     val listaFiltrada = listaDeMidias.filter { midia ->
-                        val bateTexto = midia.titulo.contains(textoPesquisa, ignoreCase = true)
+                        val termoBusca = textoPesquisa.trim()
+                        val bateTexto = termoBusca.isBlank() ||
+                                midia.titulo.contains(termoBusca, ignoreCase = true) ||
+                                midia.genero.contains(termoBusca, ignoreCase = true) ||
+                                midia.plataforma.contains(termoBusca, ignoreCase = true)
+
                         val bateCategoria = if (categoriaSelecionada == "Todos") true else {
                             val tipoMapeado = when (categoriaSelecionada) {
                                 "Filmes" -> "Filme"
@@ -1111,9 +1170,9 @@ fun TelaPrincipal(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (categoriaSelecionada != "Todos") "Exibindo: $categoriaSelecionada" else "Todos os títulos",
+                                text = "${listaFiltrada.size} título(s) exibido(s)",
                                 color = MaterialTheme.colorScheme.secondary,
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
 
@@ -1121,9 +1180,10 @@ fun TelaPrincipal(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if (quantidadeFiltrosAtivosMinhaLista > 0) {
+                                if (quantidadeFiltrosAtivosMinhaLista > 0 || textoPesquisa.isNotBlank()) {
                                     IconButton(
                                         onClick = {
+                                            textoPesquisa = ""
                                             categoriaSelecionada = "Todos"
                                             filtroPlataforma = "Todas"
                                             filtroStatusMinhaLista = "Ativos"
@@ -1144,8 +1204,8 @@ fun TelaPrincipal(
                                     onClick = { mostrarBottomSheetFiltrosMinhaLista = true },
                                     label = {
                                         Text(
-                                            text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
-                                            fontSize = 12.sp,
+                                            text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Mais Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                     },
@@ -1154,7 +1214,7 @@ fun TelaPrincipal(
                                             imageVector = Icons.Default.FilterList,
                                             contentDescription = "Filtros",
                                             tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     },
                                     colors = AssistChipDefaults.assistChipColors(
@@ -1165,11 +1225,11 @@ fun TelaPrincipal(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         if (listaFiltrada.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(text = "Nenhum item encontrado com os filtros selecionados.", color = MaterialTheme.colorScheme.secondary)
+                                Text(text = "Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary)
                             }
                         } else {
                             LazyVerticalGrid(
@@ -1181,14 +1241,21 @@ fun TelaPrincipal(
                                     ItemMidiaCard(
                                         midia = mi,
                                         onClick = { onItemClique(mi) },
-                                        onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) }
+                                        onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) },
+                                        onDeletar = {
+                                            viewModel.deletar(mi)
+                                        },
+                                        onAlternarStatusConcluido = {
+                                            val novoStatus = if (mi.status == "Concluído") "Assistindo" else "Concluído"
+                                            viewModel.atualizar(mi.copy(status = novoStatus))
+                                        }
                                     )
                                 }
                             }
                         }
                     }
                 } else {
-                    // PÁGINA 1: DESCOBRIR
+                    // PÁGINA 1: DESCOBRIR (COM BOTÃO DE ADIÇÃO RÁPIDA NO CARD)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
@@ -1288,9 +1355,26 @@ fun TelaPrincipal(
                                             genero = item.generoTexto,
                                             plataforma = ""
                                         )
+
+                                        val jaNaLista = listaDeMidias.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
+
                                         ItemMidiaCard(
                                             midia = midiaItem,
-                                            onClick = { onTmdbItemClique(item, tipoReal) }
+                                            onClick = { onTmdbItemClique(item, tipoReal) },
+                                            jaAdicionado = jaNaLista,
+                                            onAdicionarRapido = {
+                                                onAdicionarClique(
+                                                    item.idTmdb,
+                                                    item.titulo,
+                                                    tipoReal,
+                                                    "Quero Assistir",
+                                                    0,
+                                                    item.sinopse,
+                                                    if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                                    item.generoTexto,
+                                                    "Outros"
+                                                )
+                                            }
                                         )
                                     }
                                 }

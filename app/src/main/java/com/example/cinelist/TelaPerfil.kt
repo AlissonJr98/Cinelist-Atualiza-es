@@ -763,7 +763,7 @@ fun TelaPerfil(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(text = "Lembretes e Notificações", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                        Text(text = "Avisos diários às 20h para continuar maratonando", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text(text = "Avisos diários para continuar maratonando", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                     }
                                     Switch(
                                         checked = receberNotificacoes,
