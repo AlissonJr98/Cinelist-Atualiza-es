@@ -5,23 +5,27 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "midias")
 data class Midia(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val idTmdb: Int = 0,
-    val titulo: String = "",
-    val tipo: String = "Filme",
-    val status: String = "Quero Assistir",
-    val nota: Int = 0,
-    val temporadaAtual: Int = 1,
-    val episodioAtual: Int = 1,
-    val minutoParado: Int = 0,
-    val jaEncerrou: Boolean = false,
-    val sinopse: String = "",
-    val imagemCapa: String = "",
-    val genero: String = "Não Informado",
-    val duracaoTotal: Int = 0,
-    val plataforma: String = "Outros"
+    @PrimaryKey(autoGenerate = true) var id: Int = 0,
+    var idTmdb: Int = 0,
+    var titulo: String = "",
+    var tipo: String = "Filme",
+    var status: String = "Quero Assistir",
+    var nota: Int = 0,
+    var temporadaAtual: Int = 1,
+    var episodioAtual: Int = 1,
+    var minutoParado: Int = 0,
+    var jaEncerrou: Boolean = false,
+    var sinopse: String = "",
+    var imagemCapa: String = "",
+    var genero: String = "Não Informado",
+    var duracaoTotal: Int = 0,
+    var plataforma: String = "Outros"
 ) {
-    // Converte a entidade para Map garantindo compatibilidade com o Firestore
+    // Construtor vazio explícito exigido pelo Firestore
+    constructor() : this(
+        0, 0, "", "Filme", "Quero Assistir", 0, 1, 1, 0, false, "", "", "Não Informado", 0, "Outros"
+    )
+
     fun toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,

@@ -379,19 +379,29 @@ fun ConfiguracaoNavegacao() {
     NavHost(navController = navController, startDestination = rotaInicial) {
         composable("login") {
             TelaLogin(
-                onLoginSucesso = { navController.navigate("home") { popUpTo("login") { inclusive = true } } },
+                onLoginSucesso = {
+                    viewModel.iniciarSincronizacaoSilenciosaNuvem()
+                    navController.navigate("home") { popUpTo("login") { inclusive = true } }
+                },
                 onNavegarParaCadastro = { navController.navigate("cadastro") }
             )
         }
 
         composable("cadastro") {
             TelaCadastro(
-                onCadastroSucesso = { navController.navigate("home") { popUpTo("login") { inclusive = true } } },
+                onCadastroSucesso = {
+                    viewModel.iniciarSincronizacaoSilenciosaNuvem()
+                    navController.navigate("home") { popUpTo("login") { inclusive = true } }
+                },
                 onVoltarParaLogin = { navController.popBackStack() }
             )
         }
 
         composable("home") {
+            LaunchedEffect(Unit) {
+                viewModel.iniciarSincronizacaoSilenciosaNuvem()
+            }
+
             val listaDeMidiasReal by viewModel.todasAsMidias.collectAsState(initial = emptyList())
 
             TelaPrincipal(

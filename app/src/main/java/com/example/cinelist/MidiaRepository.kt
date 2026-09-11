@@ -84,10 +84,34 @@ class MidiaRepository @Inject constructor(
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext
             val snapshot = colecao.get().await()
-            val midiasNuvem = snapshot.toObjects(Midia::class.java)
+
+            val midiasNuvem = snapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.toObject(Midia::class.java) ?: Midia(
+                        id = doc.getLong("id")?.toInt() ?: 0,
+                        idTmdb = doc.getLong("idTmdb")?.toInt() ?: 0,
+                        titulo = doc.getString("titulo") ?: "",
+                        tipo = doc.getString("tipo") ?: "Filme",
+                        status = doc.getString("status") ?: "Quero Assistir",
+                        nota = doc.getLong("nota")?.toInt() ?: 0,
+                        temporadaAtual = doc.getLong("temporadaAtual")?.toInt() ?: 1,
+                        episodioAtual = doc.getLong("episodioAtual")?.toInt() ?: 1,
+                        minutoParado = doc.getLong("minutoParado")?.toInt() ?: 0,
+                        jaEncerrou = doc.getBoolean("jaEncerrou") ?: false,
+                        sinopse = doc.getString("sinopse") ?: "",
+                        imagemCapa = doc.getString("imagemCapa") ?: "",
+                        genero = doc.getString("genero") ?: "Não Informado",
+                        duracaoTotal = doc.getLong("duracaoTotal")?.toInt() ?: 0,
+                        plataforma = doc.getString("plataforma") ?: "Outros"
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
             val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
 
-            // 1. Nuvem -> Local
+            // 1. Nuvem -> Local (Restaura os títulos salvos na conta)
             midiasNuvem.forEach { midiaNuvem ->
                 val jaExisteLocal = midiasLocais.any {
                     (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
@@ -98,7 +122,7 @@ class MidiaRepository @Inject constructor(
                 }
             }
 
-            // 2. Local -> Nuvem
+            // 2. Local -> Nuvem (Sobe novos itens se houver)
             val batch = firestore.batch()
             var temItensBatch = false
             midiasLocais.forEach { midiaLocal ->
