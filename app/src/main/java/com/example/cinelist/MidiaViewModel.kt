@@ -52,6 +52,13 @@ class MidiaViewModel @Inject constructor(
 
     init {
         verificarAtualizacaoSilenciosa()
+        iniciarSincronizacaoSilenciosaNuvem()
+    }
+
+    fun iniciarSincronizacaoSilenciosaNuvem() {
+        viewModelScope.launch {
+            repository.sincronizacaoAutomaticaSilenciosa()
+        }
     }
 
     fun verificarAtualizacaoSilenciosa() {

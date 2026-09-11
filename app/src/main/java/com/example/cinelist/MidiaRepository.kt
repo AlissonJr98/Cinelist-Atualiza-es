@@ -29,8 +29,9 @@ class MidiaRepository @Inject constructor(
     }
 
     suspend fun inserir(midia: Midia) {
-        midiaDao.inserirMidia(midia)
-        sincronizarItemIndividualFirestore(midia)
+        val idGerado = midiaDao.inserirMidia(midia)
+        val midiaComId = if (midia.id == 0) midia.copy(id = idGerado.toInt()) else midia
+        sincronizarItemIndividualFirestore(midiaComId)
     }
 
     suspend fun atualizar(midia: Midia) {
@@ -45,23 +46,19 @@ class MidiaRepository @Inject constructor(
 
     suspend fun incrementarEpisodio(idMidia: Int) {
         midiaDao.incrementarEpisodio(idMidia)
-        // Busca a mídia atualizada no banco e sobe para o Firestore
-        val lista = todasAsMidias.firstOrNull()
-        val midiaAtualizada = lista?.find { it.id == idMidia }
+        val midiaAtualizada = midiaDao.buscarPorId(idMidia)
         midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
     }
 
     suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
         midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
-        val lista = todasAsMidias.firstOrNull()
-        val midiaAtualizada = lista?.find { it.id == idMidia }
+        val midiaAtualizada = midiaDao.buscarPorId(idMidia)
         midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
     }
 
     private suspend fun sincronizarItemIndividualFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext
-            // Usa o ID local ou idTmdb como chave única do documento
             val chaveDoc = if (midia.id != 0) midia.id.toString() else "tmdb_${midia.idTmdb}"
             colecao.document(chaveDoc).set(midia.toMap(), SetOptions.merge()).await()
         } catch (e: Exception) {
@@ -79,15 +76,54 @@ class MidiaRepository @Inject constructor(
     }
 
     /**
-     * Puxa todo o backup da nuvem e restaura na tabela local Room se não existir.
-     * Pode ser disparado ao fazer login ou manualmente nas opções de perfil.
+     * Sincronização Automática em Background:
+     * 1. Puxa dados da nuvem para o Room caso não existam no aparelho.
+     * 2. Sobe qualquer item local legado para o Firestore caso ainda não esteja lá.
      */
+    suspend fun sincronizacaoAutomaticaSilenciosa() = withContext(Dispatchers.IO) {
+        try {
+            val colecao = obterColecaoUsuario() ?: return@withContext
+            val snapshot = colecao.get().await()
+            val midiasNuvem = snapshot.toObjects(Midia::class.java)
+            val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+
+            // 1. Nuvem -> Local
+            midiasNuvem.forEach { midiaNuvem ->
+                val jaExisteLocal = midiasLocais.any {
+                    (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
+                            it.titulo.equals(midiaNuvem.titulo, ignoreCase = true)
+                }
+                if (!jaExisteLocal) {
+                    midiaDao.inserirMidia(midiaNuvem.copy(id = 0))
+                }
+            }
+
+            // 2. Local -> Nuvem
+            val batch = firestore.batch()
+            var temItensBatch = false
+            midiasLocais.forEach { midiaLocal ->
+                val chaveDoc = if (midiaLocal.id != 0) midiaLocal.id.toString() else "tmdb_${midiaLocal.idTmdb}"
+                val jaEstaNaNuvem = midiasNuvem.any { it.id == midiaLocal.id || (it.idTmdb != 0 && it.idTmdb == midiaLocal.idTmdb) }
+                if (!jaEstaNaNuvem) {
+                    val ref = colecao.document(chaveDoc)
+                    batch.set(ref, midiaLocal.toMap(), SetOptions.merge())
+                    temItensBatch = true
+                }
+            }
+
+            if (temItensBatch) {
+                batch.commit().await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     suspend fun restaurarDoFirestore(): Int = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext 0
             val snapshot = colecao.get().await()
             val midiasNuvem = snapshot.toObjects(Midia::class.java)
-
             val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
 
             var importadas = 0
@@ -109,9 +145,6 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    /**
-     * Realiza o envio forçado de todas as mídias locais para o Cloud Firestore
-     */
     suspend fun backupCompletoParaFirestore(): Boolean = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext false

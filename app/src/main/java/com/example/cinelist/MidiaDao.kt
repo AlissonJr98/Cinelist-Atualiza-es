@@ -3,6 +3,7 @@ package com.example.cinelist
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
@@ -10,8 +11,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MidiaDao {
 
-    @Insert
-    suspend fun inserirMidia(midia: Midia)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun inserirMidia(midia: Midia): Long
 
     @Update
     suspend fun atualizarMidia(midia: Midia)
@@ -19,10 +20,12 @@ interface MidiaDao {
     @Query("SELECT * FROM midias")
     fun buscarTodasAsMidias(): Flow<List<Midia>>
 
+    @Query("SELECT * FROM midias WHERE id = :id LIMIT 1")
+    suspend fun buscarPorId(id: Int): Midia?
+
     @Delete
     suspend fun deletarMidia(midia: Midia)
 
-    // Ajustado para 'midias' (plural) para bater com o SELECT acima
     @Query("UPDATE midias SET episodioAtual = episodioAtual + 1 WHERE id = :idMidia")
     suspend fun incrementarEpisodio(idMidia: Int)
 
