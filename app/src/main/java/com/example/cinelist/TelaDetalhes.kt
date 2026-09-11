@@ -1043,22 +1043,67 @@ fun PlayerTrailerNativo(
                         javaScriptEnabled = true
                         domStorageEnabled = true
                         mediaPlaybackRequiresUserGesture = false
+                        databaseEnabled = true
                         cacheMode = WebSettings.LOAD_DEFAULT
-                        // User-Agent de navegador desktop Chrome para evitar restrição 152-4 em webviews
-                        userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                        // User-Agent móvel padrão do Chrome
+                        userAgentString = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
                     }
-                    webViewClient = WebViewClient()
+                    webViewClient = object : WebViewClient() {}
                     webChromeClient = WebChromeClient()
 
-                    val urlEmbed = "https://www.youtube-nocookie.com/embed/$chaveVideo?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&widget_referrer=https://www.youtube.com"
-                    val headersExtras = mapOf("Referer" to "https://www.youtube.com")
-                    loadUrl(urlEmbed, headersExtras)
+                    val htmlPlayer = """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                            <meta name="referrer" content="strict-origin-when-cross-origin">
+                            <style>
+                                * { margin: 0; padding: 0; box-sizing: border-box; }
+                                html, body { width: 100%; height: 100%; background: #000000; overflow: hidden; }
+                                iframe { width: 100%; height: 100%; border: none; }
+                            </style>
+                        </head>
+                        <body>
+                            <iframe 
+                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.youtube.com" 
+                                frameborder="0"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                allowfullscreen>
+                            </iframe>
+                        </body>
+                        </html>
+                    """.trimIndent()
+
+                    loadDataWithBaseURL("https://www.youtube.com", htmlPlayer, "text/html", "utf-8", "https://www.youtube.com")
                 }
             },
             update = { webView ->
-                val urlEmbed = "https://www.youtube-nocookie.com/embed/$chaveVideo?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&widget_referrer=https://www.youtube.com"
-                val headersExtras = mapOf("Referer" to "https://www.youtube.com")
-                webView.loadUrl(urlEmbed, headersExtras)
+                val htmlPlayer = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                        <meta name="referrer" content="strict-origin-when-cross-origin">
+                        <style>
+                            * { margin: 0; padding: 0; box-sizing: border-box; }
+                            html, body { width: 100%; height: 100%; background: #000000; overflow: hidden; }
+                            iframe { width: 100%; height: 100%; border: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <iframe 
+                            src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.youtube.com" 
+                            frameborder="0"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                        </iframe>
+                    </body>
+                    </html>
+                """.trimIndent()
+
+                webView.loadDataWithBaseURL("https://www.youtube.com", htmlPlayer, "text/html", "utf-8", "https://www.youtube.com")
             }
         )
 
