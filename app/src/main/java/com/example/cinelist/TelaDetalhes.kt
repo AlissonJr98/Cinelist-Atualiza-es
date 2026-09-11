@@ -1,10 +1,18 @@
 package com.example.cinelist
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.view.ViewGroup
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -16,7 +24,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -33,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
@@ -56,6 +68,7 @@ fun TelaDetalhes(
     var idTmdbDinamico by remember { mutableStateOf<Int?>(null) }
     var tipoDinamico by remember { mutableStateOf(tipoInicial) }
     var recomendacaoSelecionada by remember { mutableStateOf<TmdbFilme?>(null) }
+    var exibindoPlayerNativo by remember { mutableStateOf(false) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -149,6 +162,7 @@ fun TelaDetalhes(
     }
 
     LaunchedEffect(idTmdbDinamico, tipoDinamico) {
+        exibindoPlayerNativo = false
         idTmdbDinamico?.let { tmdbId ->
             if (tmdbId > 0) {
                 viewModel.buscarDetalhesEstendidos(idTmdb = tmdbId, tipo = tipoDinamico)
@@ -253,58 +267,67 @@ fun TelaDetalhes(
                 .verticalScroll(rememberScrollState())
         ) {
 
+            // ÁREA SUPERIOR: BACKDROP COM PÔSTER OU PLAYER NATIVO EMBUTIDO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
+                    .height(if (exibindoPlayerNativo) 240.dp else 280.dp)
             ) {
-                if (detalhesApi != null && !detalhesApi?.urlBackdrop.isNullOrBlank()) {
-                    AsyncImage(
-                        model = detalhesApi?.urlBackdrop,
-                        contentDescription = "Banner de Fundo",
+                if (exibindoPlayerNativo && !chaveTrailer.isNullOrBlank()) {
+                    PlayerTrailerNativo(
+                        chaveVideo = chaveTrailer!!,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        onFechar = { exibindoPlayerNativo = false }
                     )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color(0xAA121212), Color(0xFF121212)),
-                                startY = 100f
-                            )
+                } else {
+                    if (detalhesApi != null && !detalhesApi?.urlBackdrop.isNullOrBlank()) {
+                        AsyncImage(
+                            model = detalhesApi?.urlBackdrop,
+                            contentDescription = "Banner de Fundo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
-                )
+                    }
 
-                Card(
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(220.dp)
-                        .align(Alignment.Center),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2A2A2A)), contentAlignment = Alignment.Center) {
-                        val urlPosterExibicao = when {
-                            midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
-                            recomendacaoSelecionada?.caminhoPoster != null -> "https://image.tmdb.org/t/p/w500${recomendacaoSelecionada?.caminhoPoster}"
-                            !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
-                            !detalhesApi?.urlBackdrop.isNullOrBlank() -> detalhesApi?.urlBackdrop
-                            else -> null
-                        }
-
-                        if (!urlPosterExibicao.isNullOrBlank()) {
-                            AsyncImage(
-                                model = urlPosterExibicao,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color(0xAA121212), Color(0xFF121212)),
+                                    startY = 100f
+                                )
                             )
-                        } else {
-                            Text("SEM CAPA", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .width(150.dp)
+                            .height(220.dp)
+                            .align(Alignment.Center),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2A2A2A)), contentAlignment = Alignment.Center) {
+                            val urlPosterExibicao = when {
+                                midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
+                                recomendacaoSelecionada?.caminhoPoster != null -> "https://image.tmdb.org/t/p/w500${recomendacaoSelecionada?.caminhoPoster}"
+                                !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
+                                !detalhesApi?.urlBackdrop.isNullOrBlank() -> detalhesApi?.urlBackdrop
+                                else -> null
+                            }
+
+                            if (!urlPosterExibicao.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = urlPosterExibicao,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text("SEM CAPA", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
@@ -365,23 +388,56 @@ fun TelaDetalhes(
                     }
                 }
 
+                // CONTROLES DE TRAILER: PLAYER NATIVO EMBUTIDO + BOTÃO EXTERNO
                 if (!chaveTrailer.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$chaveTrailer"))
-                            val intentNavegador = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$chaveTrailer"))
-                            try {
-                                contexto.startActivity(intentApp)
-                            } catch (ex: Exception) {
-                                contexto.startActivity(intentNavegador)
-                            }
-                        },
+
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
-                        shape = RoundedCornerShape(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("ASSISTIR TRAILER OFICIAL", color = Color.White, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { exibindoPlayerNativo = !exibindoPlayerNativo },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (exibindoPlayerNativo) Color(0xFF333333) else Color(0xFFFF0000)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (exibindoPlayerNativo) Icons.Default.Close else Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (exibindoPlayerNativo) "FECHAR PLAYER" else "VER TRAILER NATIVO",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$chaveTrailer"))
+                                val intentNavegador = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$chaveTrailer"))
+                                try {
+                                    contexto.startActivity(intentApp)
+                                } catch (ex: Exception) {
+                                    contexto.startActivity(intentNavegador)
+                                }
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Abrir no YouTube",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
@@ -547,7 +603,6 @@ fun TelaDetalhes(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (!ehFilme) {
-                        // 🚀 RASTREADOR INTERATIVO DE EPISÓDIOS (OPÇÃO 2)
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
@@ -562,7 +617,6 @@ fun TelaDetalhes(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                // Seletor de Temporadas (T1, T2...)
                                 Text(text = "Temporadas:", color = Color.Gray, fontSize = 12.sp)
                                 Row(
                                     modifier = Modifier
@@ -588,7 +642,6 @@ fun TelaDetalhes(
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Régua de Episódios da Temporada Selecionada
                                 Text(
                                     text = "Toque no último episódio assistido da Temporada $abaTemporadaVisualizada:",
                                     color = Color.Gray,
@@ -810,6 +863,102 @@ fun TelaDetalhes(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun PlayerTrailerNativo(
+    chaveVideo: String,
+    modifier: Modifier = Modifier,
+    onFechar: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .background(Color.Black)
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.mediaPlaybackRequiresUserGesture = false
+                    settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                    webChromeClient = WebChromeClient()
+
+                    val htmlIframe = """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                            <style>
+                                body { margin: 0; padding: 0; background-color: #000000; overflow: hidden; }
+                                .video-container { position: relative; width: 100vw; height: 100vh; }
+                                iframe { width: 100%; height: 100%; border: none; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="video-container">
+                                <iframe 
+                                    src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        </body>
+                        </html>
+                    """.trimIndent()
+
+                    loadDataWithBaseURL("https://www.youtube.com", htmlIframe, "text/html", "utf-8", null)
+                }
+            },
+            update = { webView ->
+                val htmlIframe = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                        <style>
+                            body { margin: 0; padding: 0; background-color: #000000; overflow: hidden; }
+                            .video-container { position: relative; width: 100vw; height: 100vh; }
+                            iframe { width: 100%; height: 100%; border: none; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="video-container">
+                            <iframe 
+                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </body>
+                    </html>
+                """.trimIndent()
+                webView.loadDataWithBaseURL("https://www.youtube.com", htmlIframe, "text/html", "utf-8", null)
+            }
+        )
+
+        IconButton(
+            onClick = onFechar,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
+                .background(Color.Black.copy(alpha = 0.7f), CircleShape)
+                .size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Fechar Player",
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

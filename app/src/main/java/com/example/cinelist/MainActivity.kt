@@ -487,6 +487,12 @@ fun TelaPrincipal(
 
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
 
+    // Limpa o texto da busca e o cache de pesquisa ao mudar de aba
+    LaunchedEffect(pagerState.currentPage) {
+        textoPesquisa = ""
+        viewModel.limparBuscaApi()
+    }
+
     val streamingsFiltro = remember(listaDeMidias) {
         listOf("Todas") + listaDeMidias.map { it.plataforma }.filter { it.isNotBlank() && it != "Não Informado" }.distinct().sorted()
     }
@@ -1042,7 +1048,7 @@ fun TelaPrincipal(
                 )
             }
 
-            // BARRA DE PESQUISA MULTICAMPOS (TÍTULO, GÊNERO, PLATAFORMA)
+            // BARRA DE PESQUISA (com limpeza de busca)
             TextField(
                 value = textoPesquisa,
                 onValueChange = { textoPesquisa = it },
@@ -1071,51 +1077,6 @@ fun TelaPrincipal(
                 ),
                 singleLine = true
             )
-
-            // RÉGUA DE CHIPS RÁPIDOS NA MINHA LISTA
-            if (pagerState.currentPage == 0) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilterChip(
-                        selected = (filtroStatusMinhaLista == "Todos" && filtroPlataforma == "Todas"),
-                        onClick = {
-                            filtroStatusMinhaLista = "Todos"
-                            filtroPlataforma = "Todas"
-                        },
-                        label = { Text("Todos", fontSize = 11.sp) }
-                    )
-
-                    listOf("Assistindo", "Quero Assistir", "Concluído").forEach { statusOpcao ->
-                        FilterChip(
-                            selected = (filtroStatusMinhaLista == statusOpcao),
-                            onClick = {
-                                filtroStatusMinhaLista = if (filtroStatusMinhaLista == statusOpcao) "Ativos" else statusOpcao
-                            },
-                            label = { Text(statusOpcao, fontSize = 11.sp) }
-                        )
-                    }
-
-                    streamingsFiltro.filter { it != "Todas" }.forEach { streaming ->
-                        FilterChip(
-                            selected = (filtroPlataforma == streaming),
-                            onClick = {
-                                filtroPlataforma = if (filtroPlataforma == streaming) "Todas" else streaming
-                            },
-                            label = { Text("🍿 $streaming", fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        )
-                    }
-                }
-            }
 
             HorizontalPager(
                 state = pagerState,
@@ -1204,7 +1165,7 @@ fun TelaPrincipal(
                                     onClick = { mostrarBottomSheetFiltrosMinhaLista = true },
                                     label = {
                                         Text(
-                                            text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Mais Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
+                                            text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -1255,7 +1216,7 @@ fun TelaPrincipal(
                         }
                     }
                 } else {
-                    // PÁGINA 1: DESCOBRIR (COM BOTÃO DE ADIÇÃO RÁPIDA NO CARD)
+                    // PÁGINA 1: DESCOBRIR
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier
