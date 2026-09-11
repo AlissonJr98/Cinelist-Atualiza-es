@@ -60,6 +60,13 @@ interface TmdbApiService {
         @Query("language") idioma: String = "pt-BR"
     ): TmdbDetalhesEstendidos
 
+    @GET("tv/{series_id}/season/{season_number}")
+    suspend fun obterEpisodiosTemporada(
+        @Path("series_id") idSerie: Int,
+        @Path("season_number") numeroTemporada: Int,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbTemporadaDetalhes
+
     @GET("movie/{movie_id}/watch/providers")
     suspend fun obterProvedoresFilme(
         @Path("movie_id") idFilme: Int
@@ -105,4 +112,16 @@ interface TmdbApiService {
         @Path("series_id") idSerie: Int,
         @Query("language") idioma: String = "pt-BR"
     ): TmdbRecomendacoesResposta
+
+    @GET("movie/{movie_id}/images")
+    suspend fun obterImagensFilme(
+        @Path("movie_id") idFilme: Int,
+        @Query("include_image_language") idiomas: String = "pt,en,null"
+    ): TmdbImagensResposta
+
+    @GET("tv/{series_id}/images")
+    suspend fun obterImagensSerieOuAnime(
+        @Path("series_id") idSerie: Int,
+        @Query("include_image_language") idiomas: String = "pt,en,null"
+    ): TmdbImagensResposta
 }

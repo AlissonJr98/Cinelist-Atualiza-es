@@ -26,7 +26,6 @@ class MidiaViewModel @Inject constructor(
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
 
-    // CONTROLE DE NOTIFICAÇÕES
     val todasNotificacoes: Flow<List<NotificacaoEntity>> = notificacaoRepository.todasNotificacoes
     val quantidadeNaoLidas: Flow<Int> = notificacaoRepository.quantidadeNaoLidas
 
@@ -46,7 +45,6 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch { notificacaoRepository.limparTodas() }
     }
 
-    // ATUALIZAÇÃO SILENCIOSA OTA
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
     val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
 
@@ -216,12 +214,38 @@ class MidiaViewModel @Inject constructor(
     private val _recomendacoesMidia = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val recomendacoesMidia: StateFlow<List<TmdbFilme>> = _recomendacoesMidia
 
+    private val _episodiosTemporada = MutableStateFlow<List<TmdbEpisodioItem>>(emptyList())
+    val episodiosTemporada: StateFlow<List<TmdbEpisodioItem>> = _episodiosTemporada
+
+    private val _carregandoEpisodios = MutableStateFlow(false)
+    val carregandoEpisodios: StateFlow<Boolean> = _carregandoEpisodios
+
+    // GALERIA DE IMAGENS E BACKDROPS
+    private val _galeriaImagens = MutableStateFlow<List<TmdbImagemItem>>(emptyList())
+    val galeriaImagens: StateFlow<List<TmdbImagemItem>> = _galeriaImagens
+
     private fun verificarSeEhSerie(tipo: String): Boolean {
         return tipo.equals("Série", ignoreCase = true) ||
                 tipo.equals("Anime", ignoreCase = true) ||
                 tipo.equals("Novela", ignoreCase = true) ||
                 tipo.equals("Dorama", ignoreCase = true) ||
                 tipo.equals("tv", ignoreCase = true)
+    }
+
+    fun buscarEpisodiosTemporada(idTmdb: Int, numeroTemporada: Int) {
+        if (idTmdb == 0) return
+        viewModelScope.launch {
+            _carregandoEpisodios.value = true
+            try {
+                val resultado = RetrofitClient.apiService.obterEpisodiosTemporada(idTmdb, numeroTemporada)
+                _episodiosTemporada.value = resultado.episodios
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _episodiosTemporada.value = emptyList()
+            } finally {
+                _carregandoEpisodios.value = false
+            }
+        }
     }
 
     fun buscarDetalhesEstendidos(idTmdb: Int, tipo: String) {
@@ -263,12 +287,22 @@ class MidiaViewModel @Inject constructor(
                 }
                 _recomendacoesMidia.value = recomendacoesResposta.recomendacoes ?: emptyList()
 
+                // BUSCA IMAGENS DA GALERIA
+                val imagensResposta = if (ehSerieOuAnime) {
+                    RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
+                } else {
+                    RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
+                }
+                val todasImagens = (imagensResposta.backdrops ?: emptyList()) + (imagensResposta.posters ?: emptyList())
+                _galeriaImagens.value = todasImagens.distinctBy { it.caminhoArquivo }
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 _detalhesEstendidosApi.value = null
                 _elencoMidia.value = emptyList()
                 _chaveTrailerYoutube.value = null
                 _recomendacoesMidia.value = emptyList()
+                _galeriaImagens.value = emptyList()
             }
         }
     }
@@ -298,6 +332,8 @@ class MidiaViewModel @Inject constructor(
         _elencoMidia.value = emptyList()
         _chaveTrailerYoutube.value = null
         _recomendacoesMidia.value = emptyList()
+        _episodiosTemporada.value = emptyList()
+        _galeriaImagens.value = emptyList()
     }
 
     fun importarMidiasEmLote(novasMidias: List<Midia>) {

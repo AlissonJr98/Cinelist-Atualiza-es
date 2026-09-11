@@ -119,3 +119,40 @@ data class TmdbVideoItem(
 data class TmdbRecomendacoesResposta(
     @SerializedName("results") val recomendacoes: List<TmdbFilme>? = null
 )
+
+data class TmdbTemporadaDetalhes(
+    @SerializedName("season_number") val numeroTemporada: Int = 1,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("episodes") val episodios: List<TmdbEpisodioItem> = emptyList()
+)
+
+data class TmdbEpisodioItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("episode_number") val numeroEpisodio: Int = 1,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("overview") val sinopse: String = "",
+    @SerializedName("still_path") val caminhoImagem: String? = null,
+    @SerializedName("vote_average") val avaliacao: Double = 0.0
+) {
+    val urlImagemHorizontal: String
+        get() = if (!caminhoImagem.isNullOrBlank()) "https://image.tmdb.org/t/p/w300$caminhoImagem" else ""
+}
+
+// MODELOS PARA GALERIA DE IMAGENS E BACKDROPS
+data class TmdbImagensResposta(
+    @SerializedName("backdrops") val backdrops: List<TmdbImagemItem>? = emptyList(),
+    @SerializedName("posters") val posters: List<TmdbImagemItem>? = emptyList()
+)
+
+data class TmdbImagemItem(
+    @SerializedName("file_path") val caminhoArquivo: String = "",
+    @SerializedName("vote_average") val mediaVotos: Double = 0.0,
+    @SerializedName("width") val largura: Int = 0,
+    @SerializedName("height") val altura: Int = 0
+) {
+    val urlMiniatura: String
+        get() = if (caminhoArquivo.isNotBlank()) "https://image.tmdb.org/t/p/w500$caminhoArquivo" else ""
+
+    val urlOriginal: String
+        get() = if (caminhoArquivo.isNotBlank()) "https://image.tmdb.org/t/p/original$caminhoArquivo" else ""
+}

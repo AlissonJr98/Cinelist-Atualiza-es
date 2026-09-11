@@ -7,12 +7,10 @@ import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -45,6 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
@@ -69,12 +69,16 @@ fun TelaDetalhes(
     var tipoDinamico by remember { mutableStateOf(tipoInicial) }
     var recomendacaoSelecionada by remember { mutableStateOf<TmdbFilme?>(null) }
     var exibindoPlayerNativo by remember { mutableStateOf(false) }
+    var imagemModalExpandida by remember { mutableStateOf<String?>(null) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
     val elencoAtivo by viewModel.elencoMidia.collectAsState()
     val chaveTrailer by viewModel.chaveTrailerYoutube.collectAsState()
     val recomendacoesAtivas by viewModel.recomendacoesMidia.collectAsState()
+    val episodiosTmdb by viewModel.episodiosTemporada.collectAsState()
+    val carregandoEpisodios by viewModel.carregandoEpisodios.collectAsState()
+    val galeriaImagens by viewModel.galeriaImagens.collectAsState()
 
     val jaExisteNaLista = remember(idTmdbDinamico, todasAsMidiasbyBanco) {
         todasAsMidiasbyBanco.any { it.idTmdb == idTmdbDinamico && it.idTmdb != 0 }
@@ -144,6 +148,14 @@ fun TelaDetalhes(
         }
     }
 
+    val ehSerieOuAnime = remember(tipoDinamico) {
+        tipoDinamico.equals("Série", ignoreCase = true) ||
+                tipoDinamico.equals("Anime", ignoreCase = true) ||
+                tipoDinamico.equals("Novela", ignoreCase = true) ||
+                tipoDinamico.equals("Dorama", ignoreCase = true) ||
+                tipoDinamico.equals("tv", ignoreCase = true)
+    }
+
     LaunchedEffect(midiaSalva, id, tipoInicial) {
         if (midiaSalva != null) {
             idTmdbDinamico = midiaSalva.idTmdb
@@ -168,6 +180,13 @@ fun TelaDetalhes(
                 viewModel.buscarDetalhesEstendidos(idTmdb = tmdbId, tipo = tipoDinamico)
                 viewModel.buscarOndeAssistir(idTmdb = tmdbId, tipo = tipoDinamico)
             }
+        }
+    }
+
+    LaunchedEffect(idTmdbDinamico, abaTemporadaVisualizada, ehSerieOuAnime) {
+        val tmdbId = idTmdbDinamico ?: 0
+        if (tmdbId > 0 && ehSerieOuAnime) {
+            viewModel.buscarEpisodiosTemporada(tmdbId, abaTemporadaVisualizada)
         }
     }
 
@@ -201,6 +220,41 @@ fun TelaDetalhes(
 
     DisposableEffect(Unit) {
         onDispose { viewModel.limparDetalhesEstendidos() }
+    }
+
+    imagemModalExpandida?.let { urlFoto ->
+        Dialog(
+            onDismissRequest = { imagemModalExpandida = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.95f))
+                    .clickable { imagemModalExpandida = null },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = urlFoto,
+                    contentDescription = "Foto Expandida",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Fit
+                )
+
+                IconButton(
+                    onClick = { imagemModalExpandida = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .background(Color(0x88000000), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -267,7 +321,6 @@ fun TelaDetalhes(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // ÁREA SUPERIOR: BACKDROP COM PÔSTER OU PLAYER NATIVO EMBUTIDO
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -388,7 +441,6 @@ fun TelaDetalhes(
                     }
                 }
 
-                // CONTROLES DE TRAILER: PLAYER NATIVO EMBUTIDO + BOTÃO EXTERNO
                 if (!chaveTrailer.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -508,6 +560,44 @@ fun TelaDetalhes(
                     }
                 }
 
+                if (galeriaImagens.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = "Galeria de Fotos & Cenas:",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        galeriaImagens.take(15).forEach { imagemItem ->
+                            Card(
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .height(105.dp)
+                                    .clickable {
+                                        imagemModalExpandida = imagemItem.urlOriginal
+                                    },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+                            ) {
+                                AsyncImage(
+                                    model = imagemItem.urlMiniatura,
+                                    contentDescription = "Cena da Mídia",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (elencoAtivo.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
@@ -580,6 +670,151 @@ fun TelaDetalhes(
                     }
                 }
 
+                if (ehSerieOuAnime) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(text = "Guia de Episódios:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = "Selecione a Temporada:", color = Color.Gray, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            val totalTempDisponiveis = detalhesApi?.totalTemporadas ?: maxOf(temporadaAtual + 1, 1)
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                (1..totalTempDisponiveis).forEach { temp ->
+                                    FilterChip(
+                                        selected = (abaTemporadaVisualizada == temp),
+                                        onClick = { abaTemporadaVisualizada = temp },
+                                        label = { Text("Temporada $temp", fontSize = 12.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFFFFD700),
+                                            selectedLabelColor = Color.Black,
+                                            containerColor = Color(0xFF2A2A2A),
+                                            labelColor = Color.LightGray
+                                        )
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            if (carregandoEpisodios) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(80.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color(0xFFFFD700), modifier = Modifier.size(24.dp))
+                                }
+                            } else if (episodiosTmdb.isNotEmpty()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    episodiosTmdb.forEach { epItem ->
+                                        val jaAssistido = (abaTemporadaVisualizada < temporadaAtual) ||
+                                                (abaTemporadaVisualizada == temporadaAtual && epItem.numeroEpisodio <= episodioAtual)
+                                        val ehOAtual = (abaTemporadaVisualizada == temporadaAtual && epItem.numeroEpisodio == episodioAtual)
+
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    temporadaAtual = abaTemporadaVisualizada
+                                                    episodioAtual = epItem.numeroEpisodio
+                                                    if (status == "Quero Assistir") status = "Assistindo"
+                                                },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = if (ehOAtual) Color(0xFF2E2E1A) else Color(0xFF252525)
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                if (epItem.urlImagemHorizontal.isNotBlank()) {
+                                                    AsyncImage(
+                                                        model = epItem.urlImagemHorizontal,
+                                                        contentDescription = epItem.nome,
+                                                        modifier = Modifier
+                                                            .width(80.dp)
+                                                            .height(48.dp)
+                                                            .clip(RoundedCornerShape(4.dp)),
+                                                        contentScale = ContentScale.Crop
+                                                    )
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                }
+
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "Ep. ${epItem.numeroEpisodio} • ${epItem.nome.ifBlank { "Sem Título" }}",
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (ehOAtual) Color(0xFFFFD700) else Color.White,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    if (epItem.sinopse.isNotBlank()) {
+                                                        Text(
+                                                            text = epItem.sinopse,
+                                                            fontSize = 11.sp,
+                                                            color = Color.LightGray,
+                                                            maxLines = 2,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.width(8.dp))
+
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(28.dp)
+                                                        .clip(CircleShape)
+                                                        .background(
+                                                            if (ehOAtual) Color(0xFFFFD700)
+                                                            else if (jaAssistido) Color(0x664CAF50)
+                                                            else Color(0xFF333333)
+                                                        ),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    if (jaAssistido || ehOAtual) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = "Assistido",
+                                                            tint = if (ehOAtual) Color.Black else Color.White,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = "Nenhum detalhe extra de episódios encontrado para esta temporada.",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (midiaSalva != null) {
                     Spacer(modifier = Modifier.height(20.dp))
 
@@ -603,87 +838,6 @@ fun TelaDetalhes(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (!ehFilme) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "Régua de Episódios",
-                                    color = Color(0xFFFFD700),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Text(text = "Temporadas:", color = Color.Gray, fontSize = 12.sp)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    val maxTemporadas = maxOf(temporadaAtual + 2, 6)
-                                    (1..maxTemporadas).forEach { temp ->
-                                        FilterChip(
-                                            selected = (abaTemporadaVisualizada == temp),
-                                            onClick = { abaTemporadaVisualizada = temp },
-                                            label = { Text("T$temp", fontSize = 12.sp) },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = Color(0xFFFFD700),
-                                                selectedLabelColor = Color.Black,
-                                                containerColor = Color(0xFF2A2A2A),
-                                                labelColor = Color.LightGray
-                                            )
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                Text(
-                                    text = "Toque no último episódio assistido da Temporada $abaTemporadaVisualizada:",
-                                    color = Color.Gray,
-                                    fontSize = 12.sp
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    (1..30).forEach { ep ->
-                                        val jaAssistido = (abaTemporadaVisualizada < temporadaAtual) ||
-                                                (abaTemporadaVisualizada == temporadaAtual && ep <= episodioAtual)
-                                        val epAtual = (abaTemporadaVisualizada == temporadaAtual && ep == episodioAtual)
-
-                                        FilterChip(
-                                            selected = jaAssistido,
-                                            onClick = {
-                                                temporadaAtual = abaTemporadaVisualizada
-                                                episodioAtual = ep
-                                                if (status == "Quero Assistir") status = "Assistindo"
-                                            },
-                                            leadingIcon = if (epAtual) {
-                                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                                            } else null,
-                                            label = { Text("E$ep", fontSize = 11.sp, fontWeight = if (epAtual) FontWeight.Bold else FontWeight.Normal) },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = if (epAtual) Color(0xFFFFD700) else Color(0x66FFD700),
-                                                selectedLabelColor = if (epAtual) Color.Black else Color.White,
-                                                containerColor = Color(0xFF2A2A2A),
-                                                labelColor = Color.LightGray
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             ContadorProgresso(label = "Temporada Atual", valor = temporadaAtual, onIncrementar = { temporadaAtual++; abaTemporadaVisualizada = temporadaAtual }, onDecrementar = { if (temporadaAtual > 1) { temporadaAtual--; abaTemporadaVisualizada = temporadaAtual } })
                             ContadorProgresso(label = "Episódio Assistido", valor = episodioAtual, onIncrementar = { episodioAtual++ }, onDecrementar = { if (episodioAtual > 1) episodioAtual-- })
@@ -875,8 +1029,7 @@ fun PlayerTrailerNativo(
     onFechar: () -> Unit
 ) {
     Box(
-        modifier = modifier
-            .background(Color.Black)
+        modifier = modifier.background(Color.Black)
     ) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -886,62 +1039,26 @@ fun PlayerTrailerNativo(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
-                    settings.javaScriptEnabled = true
-                    settings.domStorageEnabled = true
-                    settings.mediaPlaybackRequiresUserGesture = false
-                    settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        mediaPlaybackRequiresUserGesture = false
+                        cacheMode = WebSettings.LOAD_DEFAULT
+                        // User-Agent de navegador desktop Chrome para evitar restrição 152-4 em webviews
+                        userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    }
+                    webViewClient = WebViewClient()
                     webChromeClient = WebChromeClient()
 
-                    val htmlIframe = """
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                            <style>
-                                body { margin: 0; padding: 0; background-color: #000000; overflow: hidden; }
-                                .video-container { position: relative; width: 100vw; height: 100vh; }
-                                iframe { width: 100%; height: 100%; border: none; }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="video-container">
-                                <iframe 
-                                    src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen>
-                                </iframe>
-                            </div>
-                        </body>
-                        </html>
-                    """.trimIndent()
-
-                    loadDataWithBaseURL("https://www.youtube.com", htmlIframe, "text/html", "utf-8", null)
+                    val urlEmbed = "https://www.youtube-nocookie.com/embed/$chaveVideo?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&widget_referrer=https://www.youtube.com"
+                    val headersExtras = mapOf("Referer" to "https://www.youtube.com")
+                    loadUrl(urlEmbed, headersExtras)
                 }
             },
             update = { webView ->
-                val htmlIframe = """
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                        <style>
-                            body { margin: 0; padding: 0; background-color: #000000; overflow: hidden; }
-                            .video-container { position: relative; width: 100vw; height: 100vh; }
-                            iframe { width: 100%; height: 100%; border: none; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="video-container">
-                            <iframe 
-                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                allowfullscreen>
-                            </iframe>
-                        </div>
-                    </body>
-                    </html>
-                """.trimIndent()
-                webView.loadDataWithBaseURL("https://www.youtube.com", htmlIframe, "text/html", "utf-8", null)
+                val urlEmbed = "https://www.youtube-nocookie.com/embed/$chaveVideo?autoplay=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com&widget_referrer=https://www.youtube.com"
+                val headersExtras = mapOf("Referer" to "https://www.youtube.com")
+                webView.loadUrl(urlEmbed, headersExtras)
             }
         )
 
