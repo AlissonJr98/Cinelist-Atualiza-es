@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 34
-        versionCode = 22
-        versionName = "1.0.22"
+        versionCode = 23
+        versionName = "1.0.23"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -101,6 +101,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation("com.google.firebase:firebase-firestore-ktx")
 
     // Retrofit + Conversor Gson para APIs
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

@@ -312,4 +312,18 @@ class MidiaViewModel @Inject constructor(
             repository.atualizarProgressoEpisodio(idMidia, temporada, episodio)
         }
     }
+
+    fun sincronizarNuvemManual(onResultado: (Int) -> Unit) {
+        viewModelScope.launch {
+            val totalRestaurado = repository.restaurarDoFirestore()
+            onResultado(totalRestaurado)
+        }
+    }
+
+    fun fazerBackupCompletoNuvem(onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = repository.backupCompletoParaFirestore()
+            onResultado(sucesso)
+        }
+    }
 }

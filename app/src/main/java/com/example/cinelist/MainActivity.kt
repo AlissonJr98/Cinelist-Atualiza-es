@@ -443,7 +443,10 @@ fun ConfiguracaoNavegacao() {
                 listaDeMidias = listaDeMidiasReal,
                 viewModel = viewModel,
                 onVoltar = { navController.popBackStack() },
-                onLogout = { navController.navigate("login") { popUpTo("home") { inclusive = true } } }
+                onLogout = { navController.navigate("login") { popUpTo("home") { inclusive = true } } },
+                onMidiaClique = { midia ->
+                    navController.navigate("detalhes/${midia.id}/${midia.tipo}")
+                }
             )
         }
 

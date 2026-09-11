@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material.icons.filled.Tv
@@ -117,7 +118,8 @@ fun TelaPerfil(
     listaDeMidias: List<Midia>,
     viewModel: MidiaViewModel,
     onVoltar: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onMidiaClique: ((Midia) -> Unit)? = null
 ) {
     val firebaseAuth = FirebaseAuth.getInstance()
     val usuarioAtual = firebaseAuth.currentUser
@@ -140,12 +142,10 @@ fun TelaPerfil(
     val listaNotificacoes by viewModel.todasNotificacoes.collectAsState(initial = emptyList())
     val quantidadeNaoLidas by viewModel.quantidadeNaoLidas.collectAsState(initial = 0)
 
-    // Controle de Exclusão e Visualização de Notificações
     var notificacaoParaExcluir by remember { mutableStateOf<NotificacaoEntity?>(null) }
     var notificacaoDetalhada by remember { mutableStateOf<NotificacaoEntity?>(null) }
     var mostrarConfirmacaoLimparTudoNotif by remember { mutableStateOf(false) }
 
-    // Estados do Verificador de Atualizações OTA
     var verificandoAtualizacao by remember { mutableStateOf(false) }
     var infoNovaVersao by remember { mutableStateOf<InfoAtualizacao?>(null) }
     var mostrarDialogoAtualizacao by remember { mutableStateOf(false) }
@@ -227,11 +227,15 @@ fun TelaPerfil(
     var menuGeneroExpandido by remember { mutableStateOf(false) }
     val listaGeneros = listOf("Ação", "Animes", "Comédia", "Drama", "Ficção Científica", "Terror", "Suspense", "Romance", "Novelas", "Doramas")
 
+    var metaAnualDefinida by remember { mutableIntStateOf(sharedPreferences.getInt("meta_anual_filmes", 50)) }
+    var modoEdicaoMeta by remember { mutableStateOf(false) }
+
     var mostrarConfirmacaoReset by remember { mutableStateOf(false) }
     var mostrarConfirmacaoExclusao by remember { mutableStateOf(false) }
     var erroExclusao by remember { mutableStateOf("") }
     var carregandoExclusao by remember { mutableStateOf(false) }
 
+    // CÁLCULOS ESTATÍSTICOS AVANÇADOS
     val totalMidias = listaDeMidias.size
     val totalFilmes = listaDeMidias.count { it.tipo.equals("Filme", ignoreCase = true) }
     val totalSeriesAnimes = listaDeMidias.count {
@@ -244,9 +248,14 @@ fun TelaPerfil(
     val filmesConcluidos = listaDeMidias.count { it.tipo.equals("Filme", ignoreCase = true) && it.status == "Concluído" }
     val seriesEAnimes = listaDeMidias.filter { !it.tipo.equals("Filme", ignoreCase = true) }
     val seriesConcluidas = seriesEAnimes.count { it.status == "Concluído" }
+    val totalConcluidosGeral = filmesConcluidos + seriesConcluidas
+
+    val taxaConclusaoPercentual = if (totalMidias > 0) (totalConcluidosGeral * 100) / totalMidias else 0
 
     val totalEpisodiosAssistidos = seriesEAnimes.sumOf { if (it.episodioAtual > 0) it.episodioAtual - 1 else 0 }
-    val minutosTotais = (filmesConcluidos * 115) + (totalEpisodiosAssistidos * 45)
+    val minutosParadosFilmes = listaDeMidias.filter { it.tipo.equals("Filme", ignoreCase = true) && it.status != "Concluído" }.sumOf { it.minutoParado }
+
+    val minutosTotais = (filmesConcluidos * 115) + (totalEpisodiosAssistidos * 45) + minutosParadosFilmes
     val horasTotais = minutosTotais / 60
     val diasTotais = horasTotais / 24
     val horasRestantes = horasTotais % 24
@@ -255,9 +264,15 @@ fun TelaPerfil(
 
     val midiasComNota = listaDeMidias.filter { it.nota > 0 }
     val mediaNotas = if (midiasComNota.isNotEmpty()) {
-        String.format("%.1f", midiasComNota.map { it.nota }.average())
+        String.format(Locale.US, "%.1f", midiasComNota.map { it.nota }.average())
     } else {
         "0.0"
+    }
+
+    val distribuicaoNotas = remember(listaDeMidias) {
+        (5 downTo 1).associateWith { estrela ->
+            listaDeMidias.count { it.nota == estrela }
+        }
     }
 
     val listaHistoricoConcluido = remember(listaDeMidias) {
@@ -286,7 +301,6 @@ fun TelaPerfil(
             .toMap()
     }
 
-    // Modal de Detalhes da Notificação / Changelog Completo
     notificacaoDetalhada?.let { notif ->
         val dataFormatada = remember(notif.dataCriacao) {
             SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(notif.dataCriacao))
@@ -341,7 +355,6 @@ fun TelaPerfil(
         )
     }
 
-    // Confirmação para deletar UMA notificação
     notificacaoParaExcluir?.let { notif ->
         AlertDialog(
             onDismissRequest = { notificacaoParaExcluir = null },
@@ -367,7 +380,6 @@ fun TelaPerfil(
         )
     }
 
-    // Confirmação para LIMPAR TODAS as notificações
     if (mostrarConfirmacaoLimparTudoNotif) {
         AlertDialog(
             onDismissRequest = { mostrarConfirmacaoLimparTudoNotif = false },
@@ -393,7 +405,6 @@ fun TelaPerfil(
         )
     }
 
-    // Diálogo de Nova Versão Disponível
     if (mostrarDialogoAtualizacao && infoNovaVersao != null) {
         AlertDialog(
             onDismissRequest = { mostrarDialogoAtualizacao = false },
@@ -971,7 +982,7 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 1: NOTIFICAÇÕES (Histórico Completo + Exclusão Individual e Limpeza Total)
+                // ABA 1: NOTIFICAÇÕES
                 1 -> {
                     Column(
                         modifier = Modifier
@@ -1049,7 +1060,7 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 2: ESTATÍSTICAS E DASHBOARD COMPLETO
+                // ABA 2: ESTATÍSTICAS AVANÇADAS & RETROSPECTIVA
                 2 -> {
                     Column(
                         modifier = Modifier
@@ -1065,9 +1076,126 @@ fun TelaPerfil(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(text = "Sua Jornada Cinéfila", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(text = "Métricas consolidadas a partir do seu histórico local de filmes, animes e séries maratonadas.", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = "Sua Jornada Cinéfila", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = "Métricas consolidadas a partir do seu histórico local de filmes, animes e séries maratonadas.", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Taxa de Conclusão Global",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "$totalConcluidosGeral de $totalMidias ($taxaConclusaoPercentual%)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                LinearProgressIndicator(
+                                    progress = { if (totalMidias > 0) totalConcluidosGeral.toFloat() / totalMidias.toFloat() else 0f },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.background
+                                )
+                            }
+                        }
+
+                        // META ANUAL DE TÍTULOS CONCLUÍDOS
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "🎯 Meta de Títulos Concluídos",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "$totalConcluidosGeral de $metaAnualDefinida títulos concluídos",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+
+                                    IconButton(onClick = { modoEdicaoMeta = !modoEdicaoMeta }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Ajustar Meta",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                if (modoEdicaoMeta) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        listOf(25, 50, 75, 100).forEach { metaOpcao ->
+                                            FilterChip(
+                                                selected = (metaAnualDefinida == metaOpcao),
+                                                onClick = {
+                                                    metaAnualDefinida = metaOpcao
+                                                    sharedPreferences.edit().putInt("meta_anual_filmes", metaOpcao).apply()
+                                                    modoEdicaoMeta = false
+                                                },
+                                                label = { Text("$metaOpcao", fontSize = 11.sp) }
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                val progressoMeta = if (metaAnualDefinida > 0) {
+                                    (totalConcluidosGeral.toFloat() / metaAnualDefinida.toFloat()).coerceIn(0f, 1f)
+                                } else 0f
+
+                                LinearProgressIndicator(
+                                    progress = { progressoMeta },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    color = Color(0xFFFFD700),
+                                    trackColor = MaterialTheme.colorScheme.background
+                                )
                             }
                         }
 
@@ -1084,6 +1212,26 @@ fun TelaPerfil(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             CardEstatisticaDetalhada(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtexto = "episódios maratonados", modifier = Modifier.weight(1f))
                             CardEstatisticaDetalhada(titulo = "Média Avaliações", valor = "$mediaNotas ★", subtexto = "${midiasComNota.size} títulos avaliados", modifier = Modifier.weight(1f))
+                        }
+
+                        // DISTRIBUIÇÃO DE NOTAS PESSOAIS
+                        if (midiasComNota.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Distribuição de Avaliações",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    GraficoDistribuicaoNotas(dados = distribuicaoNotas, totalAvaliados = midiasComNota.size)
+                                }
+                            }
                         }
 
                         if (estatisticasGenero.isNotEmpty()) {
@@ -1152,13 +1300,60 @@ fun TelaPerfil(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(listaHistoricoConcluido) { itemConcluido ->
-                                    ItemMidiaCard(midia = itemConcluido, onClick = { /* Detalhes */ })
+                                items(listaHistoricoConcluido, key = { it.id }) { itemConcluido ->
+                                    ItemMidiaCard(
+                                        midia = itemConcluido,
+                                        onClick = { onMidiaClique?.invoke(itemConcluido) }
+                                    )
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun GraficoDistribuicaoNotas(dados: Map<Int, Int>, totalAvaliados: Int) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        dados.forEach { (estrela, quantidade) ->
+            val fracao = if (totalAvaliados > 0) quantidade.toFloat() / totalAvaliados.toFloat() else 0f
+            val porcentagem = if (totalAvaliados > 0) (quantidade * 100) / totalAvaliados else 0
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.width(42.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(text = "$estrela", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
+                }
+
+                LinearProgressIndicator(
+                    progress = { fracao },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = Color(0xFFFFD700),
+                    trackColor = MaterialTheme.colorScheme.background
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = "$quantidade (${porcentagem}%)",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.width(55.dp),
+                    textAlign = TextAlign.End
+                )
             }
         }
     }
