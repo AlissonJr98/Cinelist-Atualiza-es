@@ -39,11 +39,6 @@ class MidiaRepository @Inject constructor(
         sincronizarItemIndividualFirestore(midia)
     }
 
-    suspend fun deletar(midia: Midia) {
-        midiaDao.deletarMidia(midia)
-        removerItemFirestore(midia.id)
-    }
-
     suspend fun incrementarEpisodio(idMidia: Int) {
         midiaDao.incrementarEpisodio(idMidia)
         val midiaAtualizada = midiaDao.buscarPorId(idMidia)
@@ -66,20 +61,61 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    private suspend fun removerItemFirestore(idMidia: Int) = withContext(Dispatchers.IO) {
+    private suspend fun removerItemFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext
-            colecao.document(idMidia.toString()).delete().await()
+
+            // 1. Apaga pelos IDs diretos conhecidos
+            if (midia.id != 0) {
+                colecao.document(midia.id.toString()).delete().await()
+            }
+            if (midia.idTmdb != 0) {
+                colecao.document("tmdb_${midia.idTmdb}").delete().await()
+            }
+
+            // 2. Busca por segurança se o documento foi salvo com idTmdb ou título correspondente
+            val docsPorTmdb = if (midia.idTmdb != 0) {
+                colecao.whereEqualTo("idTmdb", midia.idTmdb).get().await()
+            } else null
+            docsPorTmdb?.documents?.forEach { doc -> doc.reference.delete().await() }
+
+            if (midia.titulo.isNotBlank()) {
+                val docsPorTitulo = colecao.whereEqualTo("titulo", midia.titulo).get().await()
+                docsPorTitulo.documents.forEach { doc -> doc.reference.delete().await() }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    /**
-     * Sincronização Automática em Background:
-     * 1. Puxa dados da nuvem para o Room caso não existam no aparelho.
-     * 2. Sobe qualquer item local legado para o Firestore caso ainda não esteja lá.
-     */
+    suspend fun deletar(midia: Midia) {
+        midiaDao.deletarMidia(midia)
+        removerItemFirestore(midia)
+    }
+
+    suspend fun limparTudoCompleto() = withContext(Dispatchers.IO) {
+        try {
+            // 1. Apaga tudo do Firestore em lote
+            val colecao = obterColecaoUsuario()
+            if (colecao != null) {
+                val snapshot = colecao.get().await()
+                if (!snapshot.isEmpty) {
+                    val batch = firestore.batch()
+                    snapshot.documents.forEach { doc ->
+                        batch.delete(doc.reference)
+                    }
+                    batch.commit().await()
+                }
+            }
+
+            // 2. Apaga tudo do Room local
+            val locais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+            locais.forEach { midiaDao.deletarMidia(it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     suspend fun sincronizacaoAutomaticaSilenciosa() = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext
@@ -111,7 +147,7 @@ class MidiaRepository @Inject constructor(
 
             val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
 
-            // 1. Nuvem -> Local (Restaura os títulos salvos na conta)
+            // 1. Nuvem -> Local
             midiasNuvem.forEach { midiaNuvem ->
                 val jaExisteLocal = midiasLocais.any {
                     (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
@@ -122,7 +158,7 @@ class MidiaRepository @Inject constructor(
                 }
             }
 
-            // 2. Local -> Nuvem (Sobe novos itens se houver)
+            // 2. Local -> Nuvem
             val batch = firestore.batch()
             var temItensBatch = false
             midiasLocais.forEach { midiaLocal ->

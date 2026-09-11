@@ -464,7 +464,7 @@ fun TelaPerfil(
             confirmButton = {
                 Button(
                     onClick = {
-                        listaDeMidias.forEach { viewModel.deletar(it) }
+                        viewModel.limparTodaALista()
                         mostrarConfirmacaoReset = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))

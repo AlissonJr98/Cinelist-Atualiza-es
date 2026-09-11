@@ -333,4 +333,10 @@ class MidiaViewModel @Inject constructor(
             onResultado(sucesso)
         }
     }
+
+    fun limparTodaALista() {
+        viewModelScope.launch {
+            repository.limparTudoCompleto()
+        }
+    }
 }
