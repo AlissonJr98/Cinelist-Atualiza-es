@@ -45,6 +45,8 @@ class MidiaViewModel @Inject constructor(
 
     init {
         carregarGrupoAtivoInicial()
+        verificarAtualizacaoSilenciosa()
+        iniciarSincronizacaoSilenciosaNuvem()
     }
 
     private fun carregarGrupoAtivoInicial() {
@@ -52,7 +54,9 @@ class MidiaViewModel @Inject constructor(
             val grupoAtivo = repository.obterGrupoAtivoLocal()
             if (grupoAtivo != null) {
                 _casalIdAtivo.value = grupoAtivo.grupoId
-                observarGrupoFirestore(grupoAtivo.grupoId)
+                if (grupoAtivo.grupoId.isNotBlank()) {
+                    observarGrupoFirestore(grupoAtivo.grupoId)
+                }
             }
         }
     }
@@ -71,7 +75,9 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch {
             repository.salvarOuEntrarNoGrupo(grupoId, nomeGrupo, tipo)
             _casalIdAtivo.value = grupoId
-            observarGrupoFirestore(grupoId)
+            if (grupoId.isNotBlank()) {
+                observarGrupoFirestore(grupoId)
+            }
         }
     }
 
@@ -147,11 +153,6 @@ class MidiaViewModel @Inject constructor(
 
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
     val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
-
-    init {
-        verificarAtualizacaoSilenciosa()
-        iniciarSincronizacaoSilenciosaNuvem()
-    }
 
     fun iniciarSincronizacaoSilenciosaNuvem() {
         viewModelScope.launch {
