@@ -12,15 +12,15 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class MidiaRepositoryTest {
 
-    // 🧪 Criamos um "dublê" (mock) do nosso DAO. Não usaremos o banco real.
     private val midiaDao: MidiaDao = mockk(relaxed = true)
+    private val notificacaoRepository: NotificacaoRepository = mockk(relaxed = true)
 
     private lateinit var repository: MidiaRepository
 
     @Before
     fun setup() {
-        // Inicializamos o repositório passando o nosso DAO simulado
-        repository = MidiaRepository(midiaDao)
+        // Inicializamos o repositório passando o nosso DAO e NotificacaoRepository simulados
+        repository = MidiaRepository(midiaDao, notificacaoRepository)
     }
 
     @Test

@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "com.example.cinelist"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.cinelist"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 30
-        versionName = "1.0.30"
+        targetSdk = 35
+        versionCode = 31
+        versionName = "1.0.31"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,7 +24,6 @@ android {
         }
     }
 
-    // Assinatura automatizada (lê variáveis locais ou as injetadas pelo GitHub Actions)
     signingConfigs {
         create("release") {
             val keystoreFile = file("cinelist-key.jks")
@@ -65,7 +64,7 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true // Habilita BuildConfig.VERSION_CODE e VERSION_NAME para o UpdateManager
+        buildConfig = true
     }
 
     packaging {
@@ -83,7 +82,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Google Play Services Auth
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Room Database via KSP
     implementation(libs.androidx.room.runtime)
@@ -116,6 +115,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-ripple")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
@@ -128,6 +128,9 @@ dependencies {
 
     // Gráficos
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // YouTube Player
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
     // Testes Unitários e Instrumentados
     testImplementation(libs.mockk)

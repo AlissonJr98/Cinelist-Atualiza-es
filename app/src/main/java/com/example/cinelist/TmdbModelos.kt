@@ -17,7 +17,8 @@ data class TmdbFilme(
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
     @SerializedName("media_type") val mediaType: String? = null,
     @SerializedName("genre_ids") val generosIds: List<Int>? = emptyList(),
-    val generoTexto: String = "Geral"
+    val generoTexto: String = "Geral",
+    var plataformaDetectada: String = ""
 ) {
     val ehSerie: Boolean
         get() = mediaType.equals("tv", ignoreCase = true)
@@ -30,6 +31,11 @@ data class TmdbProximoEpisodio(
     @SerializedName("episode_number") val numeroEpisodio: Int = 0,
     @SerializedName("season_number") val numeroTemporada: Int = 0,
     @SerializedName("overview") val sinopse: String? = null
+)
+
+data class TmdbGenero(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = ""
 )
 
 data class TmdbDetalhesEstendidos(
@@ -45,8 +51,12 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("runtime") val duracaoFilme: Int? = null,
     @SerializedName("episode_run_time") val duracaoEpisodios: List<Int>? = null,
     @SerializedName("tagline") val fraseEfeito: String? = null,
-    @SerializedName("next_episode_to_air") val proximoEpisodio: TmdbProximoEpisodio? = null
+    @SerializedName("next_episode_to_air") val proximoEpisodio: TmdbProximoEpisodio? = null,
+    @SerializedName("genres") val generos: List<TmdbGenero>? = emptyList()
 ) {
+    val generoTexto: String
+        get() = generos?.map { it.nome }?.filter { it.isNotBlank() }?.joinToString(", ")?.ifBlank { "Geral" } ?: "Geral"
+
     val sinopseApi: String
         get() = sinopse
 
@@ -138,7 +148,6 @@ data class TmdbEpisodioItem(
         get() = if (!caminhoImagem.isNullOrBlank()) "https://image.tmdb.org/t/p/w300$caminhoImagem" else ""
 }
 
-// MODELOS PARA GALERIA DE IMAGENS E BACKDROPS
 data class TmdbImagensResposta(
     @SerializedName("backdrops") val backdrops: List<TmdbImagemItem>? = emptyList(),
     @SerializedName("posters") val posters: List<TmdbImagemItem>? = emptyList()

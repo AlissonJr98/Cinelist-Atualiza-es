@@ -7,7 +7,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -16,22 +19,89 @@ import javax.inject.Singleton
 
 @Singleton
 class MidiaRepository @Inject constructor(
-    private val midiaDao: MidiaDao
+    private val midiaDao: MidiaDao,
+    private val notificacaoRepository: NotificacaoRepository
 ) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
     val todasAsMidias: Flow<List<Midia>> = midiaDao.buscarTodasAsMidias()
+    val midiasPessoais: Flow<List<Midia>> = midiaDao.buscarMidiasPessoais()
+    val gruposSalvos: Flow<List<GrupoEntity>> = midiaDao.buscarTodosOsGrupos()
+
+    fun buscarMidiasPorGrupo(grupoId: String): Flow<List<Midia>> {
+        return midiaDao.buscarMidiasPorGrupo(grupoId)
+    }
+
+    suspend fun obterGrupoAtivoLocal(): GrupoEntity? {
+        return midiaDao.buscarGrupoAtivo()
+    }
+
+    suspend fun ativarGrupoLocal(grupoId: String) {
+        midiaDao.desativarTodosOsGrupos()
+        if (grupoId.isNotBlank()) {
+            midiaDao.definirGrupoAtivo(grupoId)
+        }
+    }
+
+    suspend fun salvarOuEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String) {
+        val grupo = GrupoEntity(grupoId = grupoId, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
+        midiaDao.desativarTodosOsGrupos()
+        midiaDao.inserirGrupo(grupo)
+    }
+
+    suspend fun deletarGrupoLocal(grupo: GrupoEntity) {
+        midiaDao.deletarGrupo(grupo)
+    }
 
     private fun obterColecaoUsuario(): com.google.firebase.firestore.CollectionReference? {
         val uid = auth.currentUser?.uid ?: return null
         return firestore.collection("usuarios").document(uid).collection("midias")
     }
 
+    private fun obterColecaoCasal(casalId: String): com.google.firebase.firestore.CollectionReference? {
+        if (casalId.isBlank()) return null
+        return firestore.collection("casais").document(casalId).collection("midias")
+    }
+
     suspend fun inserir(midia: Midia) {
-        val idGerado = midiaDao.inserirMidia(midia)
-        val midiaComId = if (midia.id == 0) midia.copy(id = idGerado.toInt()) else midia
-        sincronizarItemIndividualFirestore(midiaComId)
+        val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+        val usuarioAtual = auth.currentUser
+        val emailOuUid = usuarioAtual?.email ?: usuarioAtual?.uid ?: "Alguém"
+
+        val plataformaNormalizada = if (midia.plataforma.isBlank() || midia.plataforma.equals("Não Informado", ignoreCase = true) || midia.plataforma.equals("Outros", ignoreCase = true) || midia.plataforma.equals("TV / Original", ignoreCase = true)) {
+            val tituloLower = midia.titulo.lowercase()
+            when {
+                tituloLower.contains("reacher") || tituloLower.contains("the boys") || tituloLower.contains("invincible") || tituloLower.contains("rings of power") -> "Prime Video"
+                else -> if (midia.tipo.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
+            }
+        } else {
+            midia.plataforma
+        }
+
+        val autorFinal = if (midia.isCasal && midia.adicionadoPor.isBlank()) emailOuUid else midia.adicionadoPor
+
+        val midiaTratada = midia.copy(
+            plataforma = plataformaNormalizada,
+            adicionadoPor = autorFinal
+        )
+
+        val midiaExistente = midiasLocais.find {
+            it.isCasal == midiaTratada.isCasal && it.casalId == midiaTratada.casalId && (
+                    (it.idTmdb != 0 && it.idTmdb == midiaTratada.idTmdb) ||
+                            (it.titulo.equals(midiaTratada.titulo, ignoreCase = true) && it.tipo.equals(midiaTratada.tipo, ignoreCase = true))
+                    )
+        }
+
+        if (midiaExistente != null) {
+            val midiaAtualizada = midiaTratada.copy(id = midiaExistente.id)
+            midiaDao.atualizarMidia(midiaAtualizada)
+            sincronizarItemIndividualFirestore(midiaAtualizada)
+        } else {
+            val idGerado = midiaDao.inserirMidia(midiaTratada)
+            val midiaComId = if (midiaTratada.id == 0) midiaTratada.copy(id = idGerado.toInt()) else midiaTratada
+            sincronizarItemIndividualFirestore(midiaComId)
+        }
     }
 
     suspend fun atualizar(midia: Midia) {
@@ -53,9 +123,13 @@ class MidiaRepository @Inject constructor(
 
     private suspend fun sincronizarItemIndividualFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
-            val colecao = obterColecaoUsuario() ?: return@withContext
-            val chaveDoc = if (midia.id != 0) midia.id.toString() else "tmdb_${midia.idTmdb}"
-            colecao.document(chaveDoc).set(midia.toMap(), SetOptions.merge()).await()
+            val colecao = if (midia.isCasal) {
+                obterColecaoCasal(midia.casalId)
+            } else {
+                obterColecaoUsuario()
+            }
+            val chaveDoc = if (midia.idTmdb != 0) "tmdb_${midia.idTmdb}" else midia.id.toString()
+            colecao?.document(chaveDoc)?.set(midia.toMap(), SetOptions.merge())?.await()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -63,25 +137,17 @@ class MidiaRepository @Inject constructor(
 
     private suspend fun removerItemFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
-            val colecao = obterColecaoUsuario() ?: return@withContext
+            val colecao = if (midia.isCasal) {
+                obterColecaoCasal(midia.casalId)
+            } else {
+                obterColecaoUsuario()
+            } ?: return@withContext
 
-            // 1. Apaga pelos IDs diretos conhecidos
-            if (midia.id != 0) {
-                colecao.document(midia.id.toString()).delete().await()
-            }
             if (midia.idTmdb != 0) {
                 colecao.document("tmdb_${midia.idTmdb}").delete().await()
             }
-
-            // 2. Busca por segurança se o documento foi salvo com idTmdb ou título correspondente
-            val docsPorTmdb = if (midia.idTmdb != 0) {
-                colecao.whereEqualTo("idTmdb", midia.idTmdb).get().await()
-            } else null
-            docsPorTmdb?.documents?.forEach { doc -> doc.reference.delete().await() }
-
-            if (midia.titulo.isNotBlank()) {
-                val docsPorTitulo = colecao.whereEqualTo("titulo", midia.titulo).get().await()
-                docsPorTitulo.documents.forEach { doc -> doc.reference.delete().await() }
+            if (midia.id != 0) {
+                colecao.document(midia.id.toString()).delete().await()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -93,27 +159,67 @@ class MidiaRepository @Inject constructor(
         removerItemFirestore(midia)
     }
 
-    suspend fun limparTudoCompleto() = withContext(Dispatchers.IO) {
-        try {
-            // 1. Apaga tudo do Firestore em lote
-            val colecao = obterColecaoUsuario()
-            if (colecao != null) {
-                val snapshot = colecao.get().await()
-                if (!snapshot.isEmpty) {
-                    val batch = firestore.batch()
-                    snapshot.documents.forEach { doc ->
-                        batch.delete(doc.reference)
+    // Sincronização em tempo real para o grupo específico via Firestore Snapshot Listener
+    fun observarMidiasDoGrupoFirestore(grupoId: String): Flow<List<Midia>> = callbackFlow {
+        val colecao = obterColecaoCasal(grupoId)
+        if (colecao == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val usuarioAtualEmail = auth.currentUser?.email ?: auth.currentUser?.uid ?: ""
+
+        val listener = colecao.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(emptyList())
+                return@addSnapshotListener
+            }
+
+            val midiasNuvem = snapshot?.documents?.mapNotNull { doc ->
+                try {
+                    doc.toObject(Midia::class.java)
+                } catch (e: Exception) {
+                    null
+                }
+            } ?: emptyList()
+
+            launch(Dispatchers.IO) {
+                val locais = midiaDao.buscarMidiasPorGrupo(grupoId).firstOrNull() ?: emptyList()
+                midiasNuvem.forEach { nuvem ->
+                    val existente = locais.find { (it.idTmdb != 0 && it.idTmdb == nuvem.idTmdb) || it.titulo.equals(nuvem.titulo, ignoreCase = true) }
+                    if (existente != null) {
+                        midiaDao.atualizarMidia(nuvem.copy(id = existente.id, isCasal = true, casalId = grupoId))
+                    } else {
+                        midiaDao.inserirMidia(nuvem.copy(id = 0, isCasal = true, casalId = grupoId))
+
+                        if (nuvem.adicionadoPor.isNotBlank() && !nuvem.adicionadoPor.equals(usuarioAtualEmail, ignoreCase = true)) {
+                            val jaNotificado = notificacaoRepository.contarNotificacaoRecente(
+                                idRef = nuvem.idTmdb,
+                                tipo = "NOVO_GRUPO",
+                                desde = System.currentTimeMillis() - 60000
+                            ) > 0
+
+                            if (!jaNotificado) {
+                                val novaNotificacao = NotificacaoEntity(
+                                    tipo = "NOVO_GRUPO",
+                                    titulo = "Novo item na lista compartilhada",
+                                    mensagem = "${nuvem.adicionadoPor} adicionou \"${nuvem.titulo}\" para o grupo!",
+                                    dataCriacao = System.currentTimeMillis(),
+                                    lida = false,
+                                    idReferencia = nuvem.idTmdb
+                                )
+                                notificacaoRepository.inserir(novaNotificacao)
+                            }
+                        }
                     }
-                    batch.commit().await()
                 }
             }
 
-            // 2. Apaga tudo do Room local
-            val locais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
-            locais.forEach { midiaDao.deletarMidia(it) }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            trySend(midiasNuvem)
         }
+
+        awaitClose { listener.remove() }
     }
 
     suspend fun sincronizacaoAutomaticaSilenciosa() = withContext(Dispatchers.IO) {
@@ -123,56 +229,26 @@ class MidiaRepository @Inject constructor(
 
             val midiasNuvem = snapshot.documents.mapNotNull { doc ->
                 try {
-                    doc.toObject(Midia::class.java) ?: Midia(
-                        id = doc.getLong("id")?.toInt() ?: 0,
-                        idTmdb = doc.getLong("idTmdb")?.toInt() ?: 0,
-                        titulo = doc.getString("titulo") ?: "",
-                        tipo = doc.getString("tipo") ?: "Filme",
-                        status = doc.getString("status") ?: "Quero Assistir",
-                        nota = doc.getLong("nota")?.toInt() ?: 0,
-                        temporadaAtual = doc.getLong("temporadaAtual")?.toInt() ?: 1,
-                        episodioAtual = doc.getLong("episodioAtual")?.toInt() ?: 1,
-                        minutoParado = doc.getLong("minutoParado")?.toInt() ?: 0,
-                        jaEncerrou = doc.getBoolean("jaEncerrou") ?: false,
-                        sinopse = doc.getString("sinopse") ?: "",
-                        imagemCapa = doc.getString("imagemCapa") ?: "",
-                        genero = doc.getString("genero") ?: "Não Informado",
-                        duracaoTotal = doc.getLong("duracaoTotal")?.toInt() ?: 0,
-                        plataforma = doc.getString("plataforma") ?: "Outros"
-                    )
+                    doc.toObject(Midia::class.java)
                 } catch (e: Exception) {
                     null
                 }
             }
 
-            val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+            val midiasLocais = midiaDao.buscarMidiasPessoais().firstOrNull() ?: emptyList()
 
-            // 1. Nuvem -> Local
             midiasNuvem.forEach { midiaNuvem ->
-                val jaExisteLocal = midiasLocais.any {
+                val midiaExistente = midiasLocais.find {
                     (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
-                            it.titulo.equals(midiaNuvem.titulo, ignoreCase = true)
+                            (it.titulo.equals(midiaNuvem.titulo, ignoreCase = true) && it.tipo.equals(midiaNuvem.tipo, ignoreCase = true))
                 }
-                if (!jaExisteLocal) {
-                    midiaDao.inserirMidia(midiaNuvem.copy(id = 0))
-                }
-            }
 
-            // 2. Local -> Nuvem
-            val batch = firestore.batch()
-            var temItensBatch = false
-            midiasLocais.forEach { midiaLocal ->
-                val chaveDoc = if (midiaLocal.id != 0) midiaLocal.id.toString() else "tmdb_${midiaLocal.idTmdb}"
-                val jaEstaNaNuvem = midiasNuvem.any { it.id == midiaLocal.id || (it.idTmdb != 0 && it.idTmdb == midiaLocal.idTmdb) }
-                if (!jaEstaNaNuvem) {
-                    val ref = colecao.document(chaveDoc)
-                    batch.set(ref, midiaLocal.toMap(), SetOptions.merge())
-                    temItensBatch = true
+                val itemTratado = midiaNuvem.copy(isCasal = false, casalId = "")
+                if (midiaExistente != null) {
+                    midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                } else {
+                    midiaDao.inserirMidia(itemTratado.copy(id = 0))
                 }
-            }
-
-            if (temItensBatch) {
-                batch.commit().await()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -183,22 +259,31 @@ class MidiaRepository @Inject constructor(
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext 0
             val snapshot = colecao.get().await()
-            val midiasNuvem = snapshot.toObjects(Midia::class.java)
-            val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
 
-            var importadas = 0
-            midiasNuvem.forEach { midiaNuvem ->
-                val jaExiste = midiasLocais.any {
-                    (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
-                            it.titulo.equals(midiaNuvem.titulo, ignoreCase = true)
-                }
-
-                if (!jaExiste) {
-                    midiaDao.inserirMidia(midiaNuvem.copy(id = 0))
-                    importadas++
+            val midiasNuvem = snapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.toObject(Midia::class.java)
+                } catch (e: Exception) {
+                    null
                 }
             }
-            importadas
+
+            val midiasLocais = midiaDao.buscarMidiasPessoais().firstOrNull() ?: emptyList()
+
+            midiasNuvem.forEach { midiaNuvem ->
+                val midiaExistente = midiasLocais.find {
+                    (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
+                            (it.titulo.equals(midiaNuvem.titulo, ignoreCase = true) && it.tipo.equals(midiaNuvem.tipo, ignoreCase = true))
+                }
+
+                val itemTratado = midiaNuvem.copy(isCasal = false, casalId = "")
+                if (midiaExistente != null) {
+                    midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                } else {
+                    midiaDao.inserirMidia(itemTratado.copy(id = 0))
+                }
+            }
+            midiasNuvem.size
         } catch (e: Exception) {
             e.printStackTrace()
             0
@@ -208,19 +293,28 @@ class MidiaRepository @Inject constructor(
     suspend fun backupCompletoParaFirestore(): Boolean = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario() ?: return@withContext false
-            val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+            val midiasLocais = midiaDao.buscarMidiasPessoais().firstOrNull() ?: emptyList()
 
-            val batch = firestore.batch()
             midiasLocais.forEach { midia ->
-                val chaveDoc = if (midia.id != 0) midia.id.toString() else "tmdb_${midia.idTmdb}"
-                val ref = colecao.document(chaveDoc)
-                batch.set(ref, midia.toMap(), SetOptions.merge())
+                val chaveDoc = if (midia.idTmdb != 0) "tmdb_${midia.idTmdb}" else midia.id.toString()
+                colecao.document(chaveDoc).set(midia.toMap(), SetOptions.merge()).await()
             }
-            batch.commit().await()
             true
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    suspend fun limparTudoCompleto() = withContext(Dispatchers.IO) {
+        try {
+            val colecao = obterColecaoUsuario()
+            colecao?.get()?.await()?.documents?.forEach { it.reference.delete().await() }
+
+            val locais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
+            locais.forEach { midiaDao.deletarMidia(it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -232,11 +326,7 @@ class MidiaRepository @Inject constructor(
         sortBy: String
     ): Flow<PagingData<TmdbFilme>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                enablePlaceholders = false,
-                initialLoadSize = 20
-            ),
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false, initialLoadSize = 20),
             pagingSourceFactory = {
                 TmdbPagingSource(
                     apiService = RetrofitClient.apiService,

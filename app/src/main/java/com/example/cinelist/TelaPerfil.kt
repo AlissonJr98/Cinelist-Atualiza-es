@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Movie
@@ -76,41 +78,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-
-fun configurarLembretes(context: Context, ativar: Boolean) {
-    val workManager = WorkManager.getInstance(context)
-    if (ativar) {
-        val agora = Calendar.getInstance()
-        val horarioDesejado = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 20)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-
-        if (agora.after(horarioDesejado)) {
-            horarioDesejado.add(Calendar.DAY_OF_YEAR, 1)
-        }
-
-        val atrasoInicialMs = horarioDesejado.timeInMillis - agora.timeInMillis
-
-        val requisicao = PeriodicWorkRequestBuilder<LembreteWorker>(24L, TimeUnit.HOURS)
-            .setInitialDelay(atrasoInicialMs, TimeUnit.MILLISECONDS)
-            .build()
-
-        workManager.enqueueUniquePeriodicWork(
-            "CineListLembretesDiarios",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            requisicao
-        )
-    } else {
-        workManager.cancelUniqueWork("CineListLembretesDiarios")
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -119,7 +89,8 @@ fun TelaPerfil(
     viewModel: MidiaViewModel,
     onVoltar: () -> Unit,
     onLogout: () -> Unit,
-    onMidiaClique: ((Midia) -> Unit)? = null
+    onMidiaClique: ((Midia) -> Unit)? = null,
+    onCalendarioClique: (() -> Unit)? = null
 ) {
     val firebaseAuth = FirebaseAuth.getInstance()
     val usuarioAtual = firebaseAuth.currentUser
@@ -129,6 +100,15 @@ fun TelaPerfil(
 
     val sharedPreferences = remember {
         contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+    }
+
+    var mostrarDialogoAmigos by remember { mutableStateOf(false) }
+
+    if (mostrarDialogoAmigos) {
+        DialogoAmigos(
+            viewModel = viewModel,
+            onDispensar = { mostrarDialogoAmigos = false }
+        )
     }
 
     val titulosAbas = listOf("Perfil", "Notificações", "Estatísticas", "Histórico")
@@ -235,7 +215,6 @@ fun TelaPerfil(
     var erroExclusao by remember { mutableStateOf("") }
     var carregandoExclusao by remember { mutableStateOf(false) }
 
-    // CÁLCULOS ESTATÍSTICOS AVANÇADOS
     val totalMidias = listaDeMidias.size
     val totalFilmes = listaDeMidias.count { it.tipo.equals("Filme", ignoreCase = true) }
     val totalSeriesAnimes = listaDeMidias.count {
@@ -547,6 +526,11 @@ fun TelaPerfil(
                             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                         }
                     },
+                    actions = {
+                        IconButton(onClick = { onCalendarioClique?.invoke() }) {
+                            Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = "Calendário", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.primary,
@@ -607,7 +591,6 @@ fun TelaPerfil(
             modifier = Modifier.fillMaxSize()
         ) { pagina ->
             when (pagina) {
-                // ABA 0: PERFIL & PREFERÊNCIAS
                 0 -> {
                     Column(
                         modifier = Modifier
@@ -711,6 +694,36 @@ fun TelaPerfil(
                                 IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }) {
                                     Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
                                 }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Botão de acesso ao Calendário de Lançamentos
+                        Button(
+                            onClick = { onCalendarioClique?.invoke() },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Text(text = "Calendário de Lançamentos", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Botão de acesso ao Módulo Social / Amigos
+                        Button(
+                            onClick = { mostrarDialogoAmigos = true },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                Text(text = "Amigos & Listas Compartilhadas", color = MaterialTheme.colorScheme.onSecondaryContainer, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                         }
 
@@ -982,7 +995,6 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 1: NOTIFICAÇÕES
                 1 -> {
                     Column(
                         modifier = Modifier
@@ -1060,7 +1072,6 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 2: ESTATÍSTICAS AVANÇADAS & RETROSPECTIVA
                 2 -> {
                     Column(
                         modifier = Modifier
@@ -1125,7 +1136,6 @@ fun TelaPerfil(
                             }
                         }
 
-                        // META ANUAL DE TÍTULOS CONCLUÍDOS
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -1214,7 +1224,6 @@ fun TelaPerfil(
                             CardEstatisticaDetalhada(titulo = "Média Avaliações", valor = "$mediaNotas ★", subtexto = "${midiasComNota.size} títulos avaliados", modifier = Modifier.weight(1f))
                         }
 
-                        // DISTRIBUIÇÃO DE NOTAS PESSOAIS
                         if (midiasComNota.isNotEmpty()) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1276,7 +1285,6 @@ fun TelaPerfil(
                     }
                 }
 
-                // ABA 3: HISTÓRICO DE CONCLUÍDOS
                 3 -> {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)
@@ -1315,46 +1323,37 @@ fun TelaPerfil(
     }
 }
 
+fun configurarLembretes(context: Context, ativar: Boolean) {
+    val workManager = WorkManager.getInstance(context)
+    if (ativar) {
+        val requisicao = PeriodicWorkRequestBuilder<LembreteWorker>(24, TimeUnit.HOURS).build()
+        workManager.enqueueUniquePeriodicWork(
+            "LembretesDiariosCineList",
+            ExistingPeriodicWorkPolicy.KEEP,
+            requisicao
+        )
+    } else {
+        workManager.cancelUniqueWork("LembretesDiariosCineList")
+    }
+}
+
 @Composable
-fun GraficoDistribuicaoNotas(dados: Map<Int, Int>, totalAvaliados: Int) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        dados.forEach { (estrela, quantidade) ->
-            val fracao = if (totalAvaliados > 0) quantidade.toFloat() / totalAvaliados.toFloat() else 0f
-            val porcentagem = if (totalAvaliados > 0) (quantidade * 100) / totalAvaliados else 0
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.width(42.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(text = "$estrela", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
-                }
-
-                LinearProgressIndicator(
-                    progress = { fracao },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = Color(0xFFFFD700),
-                    trackColor = MaterialTheme.colorScheme.background
-                )
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Text(
-                    text = "$quantidade (${porcentagem}%)",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.width(55.dp),
-                    textAlign = TextAlign.End
-                )
-            }
+fun ItemEstatistica(
+    titulo: String,
+    valor: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = valor, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+            Text(text = titulo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }
@@ -1366,64 +1365,65 @@ fun ItemNotificacao(
     onDeletar: () -> Unit
 ) {
     val dataFormatada = remember(notificacao.dataCriacao) {
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(notificacao.dataCriacao))
+        java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(notificacao.dataCriacao))
     }
-
     Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (notificacao.lida) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (notificacao.lida)
-                MaterialTheme.colorScheme.surface
-            else
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .clickable { onClick() }
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (notificacao.tipo == "ATUALIZACAO") Icons.Default.Update else Icons.Default.NotificationsActive,
-                contentDescription = notificacao.tipo,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = if (notificacao.tipo == "ATUALIZACAO") Icons.Default.SystemUpdate else Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = notificacao.titulo,
+                        fontWeight = if (notificacao.lida) FontWeight.SemiBold else FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                IconButton(onClick = onDeletar, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Excluir",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = notificacao.mensagem,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = notificacao.titulo,
-                    fontWeight = if (notificacao.lida) FontWeight.Normal else FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = notificacao.mensagem,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.secondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = dataFormatada,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-                )
-            }
-            IconButton(onClick = onDeletar) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remover",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = dataFormatada,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.secondary
+            )
         }
     }
 }
@@ -1436,39 +1436,39 @@ fun CardEstatisticaDetalhada(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.height(108.dp),
+        modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(text = titulo, color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(text = titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = valor, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = valor, color = MaterialTheme.colorScheme.primary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subtexto, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
+            Text(text = subtexto, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-fun ItemEstatistica(titulo: String, valor: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(text = valor, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = titulo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+fun GraficoDistribuicaoNotas(dados: Map<Int, Int>, totalAvaliados: Int) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        dados.forEach { (nota, quantidade) ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "$nota ★", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(30.dp))
+                val porcentagem = if (totalAvaliados > 0) quantidade.toFloat() / totalAvaliados else 0f
+                LinearProgressIndicator(
+                    progress = { porcentagem },
+                    modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Text(text = quantidade.toString(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.width(24.dp))
+            }
         }
     }
 }
@@ -1476,44 +1476,22 @@ fun ItemEstatistica(titulo: String, valor: String, modifier: Modifier = Modifier
 @Composable
 fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
     val total = dados.values.sum()
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         dados.forEach { (genero, quantidade) ->
-            val porcentagem = if (total > 0) (quantidade * 100 / total) else 0
-            val progressoFracao = if (total > 0) (quantidade.toFloat() / total.toFloat()) else 0f
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconeGenero(genero)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = genero,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "$quantidade (${porcentagem}%)",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = genero, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(90.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val porcentagem = if (total > 0) quantidade.toFloat() / total else 0f
                 LinearProgressIndicator(
-                    progress = { progressoFracao },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.background
+                    progress = { porcentagem },
+                    modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+                Text(text = quantidade.toString(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.width(24.dp))
             }
         }
     }
@@ -1522,77 +1500,23 @@ fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
 @Composable
 fun ListaPlataformasMaisUtilizadas(dados: Map<String, Int>) {
     val total = dados.values.sum()
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         dados.forEach { (plataforma, quantidade) ->
-            val porcentagem = if (total > 0) (quantidade * 100 / total) else 0
-            val progressoFracao = if (total > 0) (quantidade.toFloat() / total.toFloat()) else 0f
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tv,
-                        contentDescription = plataforma,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = plataforma,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "$quantidade (${porcentagem}%)",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = plataforma, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(90.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val porcentagem = if (total > 0) quantidade.toFloat() / total else 0f
                 LinearProgressIndicator(
-                    progress = { progressoFracao },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.secondary,
-                    trackColor = MaterialTheme.colorScheme.background
+                    progress = { porcentagem },
+                    modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.tertiary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+                Text(text = quantidade.toString(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.width(24.dp))
             }
         }
     }
-}
-
-@Composable
-fun IconeGenero(genero: String) {
-    val icone = when (genero.lowercase()) {
-        "ação", "ação e aventura" -> Icons.Default.LocalFireDepartment
-        "aventura" -> Icons.Default.Explore
-        "animação" -> Icons.Default.Animation
-        "comédia" -> Icons.Default.Mood
-        "crime" -> Icons.Default.Gavel
-        "drama" -> Icons.Default.Favorite
-        "fantasia", "sci-fi & fantasy" -> Icons.Default.AutoAwesome
-        "ficção científica" -> Icons.Default.RocketLaunch
-        "suspense" -> Icons.Default.Visibility
-        "terror" -> Icons.Default.DarkMode
-        "anime" -> Icons.Default.CatchingPokemon
-        "novela", "novelas", "soap" -> Icons.Default.Theaters
-        "dorama", "doramas" -> Icons.Default.Favorite
-        else -> Icons.Default.Movie
-    }
-
-    Icon(
-        imageVector = icone,
-        contentDescription = genero,
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.size(20.dp)
-    )
 }

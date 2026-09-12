@@ -19,11 +19,16 @@ data class Midia(
     var imagemCapa: String = "",
     var genero: String = "Não Informado",
     var duracaoTotal: Int = 0,
-    var plataforma: String = "Outros"
+    var plataforma: String = "Outros",
+    var favorito: Boolean = false,
+    var listaCustomizada: String = "Geral",
+    var isCasal: Boolean = false,
+    var casalId: String = "",
+    var adicionadoPor: String = ""
 ) {
     // Construtor vazio explícito exigido pelo Firestore
     constructor() : this(
-        0, 0, "", "Filme", "Quero Assistir", 0, 1, 1, 0, false, "", "", "Não Informado", 0, "Outros"
+        0, 0, "", "Filme", "Quero Assistir", 0, 1, 1, 0, false, "", "", "Não Informado", 0, "Outros", false, "Geral", false, "", ""
     )
 
     fun toMap(): Map<String, Any> {
@@ -42,7 +47,12 @@ data class Midia(
             "imagemCapa" to imagemCapa,
             "genero" to genero,
             "duracaoTotal" to duracaoTotal,
-            "plataforma" to plataforma
+            "plataforma" to plataforma,
+            "favorito" to favorito,
+            "listaCustomizada" to listaCustomizada,
+            "isCasal" to isCasal,
+            "casalId" to casalId,
+            "adicionadoPor" to adicionadoPor
         )
     }
 }

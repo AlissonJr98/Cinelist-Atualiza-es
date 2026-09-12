@@ -1,13 +1,17 @@
 package com.example.cinelist
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.net.Uri
 import android.view.ViewGroup
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -24,6 +28,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -45,11 +51,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,19 +70,31 @@ fun TelaDetalhes(
     id: Int,
     tipoInicial: String = "Filme",
     viewModel: MidiaViewModel,
-    onVoltar: () -> Unit
+    onVoltar: () -> Unit,
+    onRecomendacaoClique: (Int, String) -> Unit = { _, _ -> }
 ) {
+    // Coleta o casalId ativo no ViewModel para saber onde salvar se for novo
+    val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+    val isModoCasal = casalIdAtivo.isNotBlank()
+
+    // Observa as listas correspondentes de acordo com o modo ativo
+    val listaAtualBanco by (if (isModoCasal) viewModel.midiasGrupoAtivo else viewModel.midiasPessoais).collectAsState(initial = emptyList())
     val todasAsMidiasbyBanco by viewModel.todasAsMidias.collectAsState(initial = emptyList())
 
-    val midiaSalva = remember(todasAsMidiasbyBanco, id) {
-        todasAsMidiasbyBanco.find { it.id == id || (it.idTmdb != 0 && it.idTmdb == id) }
+    val midiaSalva = remember(listaAtualBanco, todasAsMidiasbyBanco, id, isModoCasal) {
+        listaAtualBanco.find { it.idTmdb == id } ?: listaAtualBanco.find { it.id == id }
+        ?: todasAsMidiasbyBanco.find { it.idTmdb == id && it.isCasal == isModoCasal }
     }
 
-    var idTmdbDinamico by remember { mutableStateOf<Int?>(null) }
-    var tipoDinamico by remember { mutableStateOf(tipoInicial) }
-    var recomendacaoSelecionada by remember { mutableStateOf<TmdbFilme?>(null) }
+    val idRealBuscaApi = remember(midiaSalva, id) {
+        midiaSalva?.let { if (it.idTmdb != 0) it.idTmdb else null } ?: id
+    }
+
+    val tipoRealUtilizado = midiaSalva?.tipo ?: tipoInicial
+
     var exibindoPlayerNativo by remember { mutableStateOf(false) }
     var imagemModalExpandida by remember { mutableStateOf<String?>(null) }
+    var mostrarConfirmacaoExclusao by remember { mutableStateOf(false) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -80,13 +105,14 @@ fun TelaDetalhes(
     val carregandoEpisodios by viewModel.carregandoEpisodios.collectAsState()
     val galeriaImagens by viewModel.galeriaImagens.collectAsState()
 
-    val jaExisteNaLista = remember(idTmdbDinamico, todasAsMidiasbyBanco) {
-        todasAsMidiasbyBanco.any { it.idTmdb == idTmdbDinamico && it.idTmdb != 0 }
+    val jaExisteNaLista = remember(idRealBuscaApi, listaAtualBanco) {
+        listaAtualBanco.any { (it.idTmdb != 0 && it.idTmdb == idRealBuscaApi) || it.id == idRealBuscaApi }
     }
 
     val contexto = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    fun abrirAplicativoStreaming(contexto: android.content.Context, nomeProvedor: String) {
+    fun abrirAplicativoStreaming(contexto: Context, nomeProvedor: String) {
         val pacoteApp = when {
             nomeProvedor.contains("Netflix", ignoreCase = true) -> "com.netflix.mediaclient"
             nomeProvedor.contains("Prime Video", ignoreCase = true) -> "com.amazon.amazonvideo.livingroom"
@@ -127,9 +153,14 @@ fun TelaDetalhes(
     var sinopse by remember { mutableStateOf("") }
     var temporadaAtual by remember { mutableIntStateOf(1) }
     var episodioAtual by remember { mutableIntStateOf(1) }
-    var minutoParado by remember { mutableIntStateOf(0) }
     var status by remember { mutableStateOf("Quero Assistir") }
+    var listaCustomizada by remember { mutableStateOf("Geral") }
     var abaTemporadaVisualizada by remember { mutableIntStateOf(1) }
+    var ehFavorito by remember { mutableStateOf(false) }
+
+    val colecoesExistentes = remember(listaAtualBanco) {
+        listOf("Geral") + listaAtualBanco.map { it.listaCustomizada }.filter { it.isNotBlank() && it != "Geral" }.distinct().sorted()
+    }
 
     val provedoresFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
@@ -148,52 +179,46 @@ fun TelaDetalhes(
         }
     }
 
-    val ehSerieOuAnime = remember(tipoDinamico) {
-        tipoDinamico.equals("Série", ignoreCase = true) ||
-                tipoDinamico.equals("Anime", ignoreCase = true) ||
-                tipoDinamico.equals("Novela", ignoreCase = true) ||
-                tipoDinamico.equals("Dorama", ignoreCase = true) ||
-                tipoDinamico.equals("tv", ignoreCase = true)
+    val ehSerieOuAnime = remember(tipoRealUtilizado) {
+        tipoRealUtilizado.equals("Série", ignoreCase = true) ||
+                tipoRealUtilizado.equals("Anime", ignoreCase = true) ||
+                tipoRealUtilizado.equals("Novela", ignoreCase = true) ||
+                tipoRealUtilizado.equals("Dorama", ignoreCase = true) ||
+                tipoRealUtilizado.equals("tv", ignoreCase = true)
     }
 
-    LaunchedEffect(midiaSalva, id, tipoInicial) {
+    LaunchedEffect(midiaSalva) {
         if (midiaSalva != null) {
-            idTmdbDinamico = midiaSalva.idTmdb
-            tipoDinamico = midiaSalva.tipo
             nota = midiaSalva.nota
             sinopse = midiaSalva.sinopse
             temporadaAtual = midiaSalva.temporadaAtual
             episodioAtual = midiaSalva.episodioAtual
-            minutoParado = midiaSalva.minutoParado
             status = midiaSalva.status
+            listaCustomizada = midiaSalva.listaCustomizada.ifBlank { "Geral" }
             abaTemporadaVisualizada = midiaSalva.temporadaAtual
-        } else {
-            idTmdbDinamico = id
-            tipoDinamico = tipoInicial
+            ehFavorito = midiaSalva.favorito
         }
     }
 
-    LaunchedEffect(idTmdbDinamico, tipoDinamico) {
+    LaunchedEffect(idRealBuscaApi, tipoRealUtilizado) {
+        viewModel.limparDetalhesEstendidos()
         exibindoPlayerNativo = false
-        idTmdbDinamico?.let { tmdbId ->
-            if (tmdbId > 0) {
-                viewModel.buscarDetalhesEstendidos(idTmdb = tmdbId, tipo = tipoDinamico)
-                viewModel.buscarOndeAssistir(idTmdb = tmdbId, tipo = tipoDinamico)
-            }
+        abaTemporadaVisualizada = midiaSalva?.temporadaAtual ?: 1
+        if (idRealBuscaApi > 0) {
+            viewModel.buscarDetalhesEstendidos(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
+            viewModel.buscarOndeAssistir(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
         }
     }
 
-    LaunchedEffect(idTmdbDinamico, abaTemporadaVisualizada, ehSerieOuAnime) {
-        val tmdbId = idTmdbDinamico ?: 0
-        if (tmdbId > 0 && ehSerieOuAnime) {
-            viewModel.buscarEpisodiosTemporada(tmdbId, abaTemporadaVisualizada)
+    LaunchedEffect(idRealBuscaApi, abaTemporadaVisualizada, ehSerieOuAnime) {
+        if (idRealBuscaApi > 0 && ehSerieOuAnime) {
+            viewModel.buscarEpisodiosTemporada(idRealBuscaApi, abaTemporadaVisualizada)
         }
     }
 
-    val capaParaPaleta = remember(midiaSalva, recomendacaoSelecionada, detalhesApi) {
+    val capaParaPaleta = remember(midiaSalva, detalhesApi) {
         when {
             midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
-            recomendacaoSelecionada?.caminhoPoster != null -> "https://image.tmdb.org/t/p/w500${recomendacaoSelecionada?.caminhoPoster}"
             detalhesApi?.urlPosterVertical != null -> detalhesApi?.urlPosterVertical
             detalhesApi?.urlBackdrop != null -> detalhesApi?.urlBackdrop
             else -> null
@@ -220,6 +245,31 @@ fun TelaDetalhes(
 
     DisposableEffect(Unit) {
         onDispose { viewModel.limparDetalhesEstendidos() }
+    }
+
+    if (mostrarConfirmacaoExclusao && midiaSalva != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarConfirmacaoExclusao = false },
+            title = { Text("Excluir Mídia", fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente remover \"${midiaSalva.titulo}\" da lista?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        mostrarConfirmacaoExclusao = false
+                        viewModel.deletar(midiaSalva)
+                        onVoltar()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                ) {
+                    Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarConfirmacaoExclusao = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     imagemModalExpandida?.let { urlFoto ->
@@ -260,7 +310,7 @@ fun TelaDetalhes(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalhes da Mídia", fontWeight = FontWeight.Bold) },
+                title = { Text(if (isModoCasal) "Detalhes (Casal ❤️)" else "Detalhes da Mídia", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = Color.White)
@@ -269,33 +319,33 @@ fun TelaDetalhes(
                 actions = {
                     midiaSalva?.let { midiaReal ->
                         IconButton(onClick = {
-                            val textoProgresso = if (midiaReal.tipo.equals("Filme", ignoreCase = true)) {
-                                if (minutoParado > 0 && status != "Concluído") "estou no minuto $minutoParado" else "vou assistir"
-                            } else {
-                                if (status == "Concluído") "concluí tudo" else "estou na Temporada $temporadaAtual • Ep $episodioAtual"
-                            }
-
-                            val mensagemFinal = """
-                                🍿 Olha o meu progresso no CineList!
-                                🎬 *${midiaReal.titulo}* (${midiaReal.tipo})
-                                📊 Status: $status ($textoProgresso)
-                                ⭐ Minha Avaliação: ${"★".repeat(nota)}
-                                
-                                Gerenciado pelo meu app CineList! 💻🔥
-                            """.trimIndent()
-
-                            val intentCompartilhar = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, mensagemFinal)
-                                type = "text/plain"
-                            }
-
-                            contexto.startActivity(Intent.createChooser(intentCompartilhar, "Compartilhar progresso via:"))
+                            val novoFavorito = !ehFavorito
+                            ehFavorito = novoFavorito
+                            viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
                         }) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar", tint = Color(0xFFFFD700))
+                            Icon(
+                                imageVector = if (ehFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (ehFavorito) "Remover dos favoritos" else "Favoritar",
+                                tint = if (ehFavorito) Color(0xFFFF3366) else Color.White
+                            )
                         }
 
-                        IconButton(onClick = { viewModel.deletar(midiaReal); onVoltar() }) {
+                        IconButton(onClick = {
+                            compartilharCardEstilizado(
+                                contexto = contexto,
+                                coroutineScope = coroutineScope,
+                                midia = midiaReal.copy(
+                                    nota = nota,
+                                    status = status,
+                                    temporadaAtual = temporadaAtual,
+                                    episodioAtual = episodioAtual
+                                )
+                            )
+                        }) {
+                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card", tint = Color(0xFFFFD700))
+                        }
+
+                        IconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
                             Icon(imageVector = Icons.Default.Delete, contentDescription = "Deletar", tint = Color(0xFFFF4C4C))
                         }
                     }
@@ -365,7 +415,6 @@ fun TelaDetalhes(
                         Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2A2A2A)), contentAlignment = Alignment.Center) {
                             val urlPosterExibicao = when {
                                 midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
-                                recomendacaoSelecionada?.caminhoPoster != null -> "https://image.tmdb.org/t/p/w500${recomendacaoSelecionada?.caminhoPoster}"
                                 !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
                                 !detalhesApi?.urlBackdrop.isNullOrBlank() -> detalhesApi?.urlBackdrop
                                 else -> null
@@ -390,15 +439,10 @@ fun TelaDetalhes(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val tituloDinamico = when {
-                    midiaSalva != null -> midiaSalva.titulo
-                    recomendacaoSelecionada != null -> recomendacaoSelecionada?.titulo ?: "Título"
-                    detalhesApi != null -> detalhesApi?.titulo ?: "Detalhes"
-                    else -> "Carregando..."
-                }
+                val tituloDinamico = midiaSalva?.titulo ?: detalhesApi?.titulo ?: if (detalhesApi == null && idRealBuscaApi > 0) "Carregando..." else "Título Indisponível"
 
                 Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(text = "$tipoDinamico • ${midiaSalva?.genero ?: "Geral"}", fontSize = 15.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
+                Text(text = "$tipoRealUtilizado • ${midiaSalva?.genero ?: detalhesApi?.generoTexto ?: "Geral"}", fontSize = 15.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
 
                 if (detalhesApi != null && !detalhesApi?.fraseEfeito.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
@@ -833,22 +877,6 @@ fun TelaDetalhes(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    val ehFilme = midiaSalva.tipo.equals("Filme", ignoreCase = true)
-                    Text(text = "Seu Progresso de Visualização:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (!ehFilme) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ContadorProgresso(label = "Temporada Atual", valor = temporadaAtual, onIncrementar = { temporadaAtual++; abaTemporadaVisualizada = temporadaAtual }, onDecrementar = { if (temporadaAtual > 1) { temporadaAtual--; abaTemporadaVisualizada = temporadaAtual } })
-                            ContadorProgresso(label = "Episódio Assistido", valor = episodioAtual, onIncrementar = { episodioAtual++ }, onDecrementar = { if (episodioAtual > 1) episodioAtual-- })
-                            ContadorProgresso(label = "Minutos Assistidos", valor = minutoParado, onIncrementar = { minutoParado += 5 }, onDecrementar = { if (minutoParado > 0) minutoParado -= 5 })
-                        }
-                    } else {
-                        ContadorProgresso(label = "Minuto Parado no Filme", valor = minutoParado, onIncrementar = { minutoParado += 10 }, onDecrementar = { if (minutoParado > 0) minutoParado -= 10 })
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
                     Text(text = "Status Atual da Mídia:", color = Color.White, fontWeight = FontWeight.Bold)
                     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("Quero Assistir", "Assistindo", "Concluído").forEach { s ->
@@ -865,6 +893,46 @@ fun TelaDetalhes(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(text = "Coleção Temática / Lista:", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        colecoesExistentes.forEach { col ->
+                            FilterChip(
+                                selected = (listaCustomizada == col),
+                                onClick = { listaCustomizada = col },
+                                label = { Text(col, fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color(0xFFFFD700),
+                                    selectedLabelColor = Color.Black,
+                                    containerColor = Color(0xFF1E1E1E),
+                                    labelColor = Color.Gray
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = if (colecoesExistentes.contains(listaCustomizada)) "" else listaCustomizada,
+                        onValueChange = { listaCustomizada = it },
+                        label = { Text("Ou criar nova coleção...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFFFFD700),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -872,12 +940,7 @@ fun TelaDetalhes(
                 Text(text = "Sinopse / Visão Geral:", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
 
-                val sinopseDinamica = when {
-                    midiaSalva != null && sinopse.isNotBlank() -> sinopse
-                    recomendacaoSelecionada != null -> recomendacaoSelecionada?.sinopse ?: ""
-                    detalhesApi != null -> detalhesApi?.sinopseApi ?: ""
-                    else -> "Carregando sinopse..."
-                }
+                val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopseApi ?: "Carregando sinopse...")
 
                 OutlinedTextField(
                     value = sinopseDinamica,
@@ -904,14 +967,21 @@ fun TelaDetalhes(
                     ) {
                         recomendacoesAtivas.take(10).forEach { recomendacao ->
                             val urlPoster = "https://image.tmdb.org/t/p/w300${recomendacao.caminhoPoster}"
+                            val tipoRecomendacao = when {
+                                recomendacao.mediaType.equals("tv", ignoreCase = true) -> "Série"
+                                recomendacao.mediaType.equals("movie", ignoreCase = true) -> "Filme"
+                                recomendacao.ehSerie -> "Série"
+                                tipoRealUtilizado.equals("Série", ignoreCase = true) -> "Série"
+                                else -> "Filme"
+                            }
 
                             Card(
                                 modifier = Modifier
                                     .width(100.dp)
                                     .height(150.dp)
                                     .clickable {
-                                        recomendacaoSelecionada = recomendacao
-                                        idTmdbDinamico = recomendacao.idTmdb
+                                        viewModel.limparDetalhesEstendidos()
+                                        onRecomendacaoClique(recomendacao.idTmdb, tipoRecomendacao)
                                     },
                                 shape = RoundedCornerShape(8.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -947,21 +1017,22 @@ fun TelaDetalhes(
                 if (midiaSalva != null) {
                     Button(
                         onClick = {
-                            val midiaAtualizada = Midia(
-                                id = midiaSalva.id,
-                                idTmdb = midiaSalva.idTmdb,
-                                titulo = midiaSalva.titulo,
-                                tipo = midiaSalva.tipo,
+                            val streamingAtualizado = provedoresFiltrados.firstOrNull()?.nomeProvedor
+                                ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                ?: midiaSalva.plataforma
+
+                            val midiaAtualizada = midiaSalva.copy(
                                 nota = nota,
                                 temporadaAtual = temporadaAtual,
                                 episodioAtual = episodioAtual,
-                                minutoParado = minutoParado,
                                 jaEncerrou = (status == "Concluído"),
                                 status = status,
                                 sinopse = sinopse,
-                                imagemCapa = midiaSalva.imagemCapa,
-                                genero = midiaSalva.genero,
-                                plataforma = midiaSalva.plataforma
+                                favorito = ehFavorito,
+                                listaCustomizada = listaCustomizada.ifBlank { "Geral" },
+                                plataforma = streamingAtualizado,
+                                isCasal = isModoCasal,
+                                casalId = casalIdAtivo
                             )
                             viewModel.atualizar(midiaAtualizada)
                             onVoltar()
@@ -974,20 +1045,19 @@ fun TelaDetalhes(
                 } else {
                     Button(
                         onClick = {
-                            val streamingPrincipal = provedoresStreaming.firstOrNull()?.nomeProvedor ?: "Não Informado"
-                            val tituloParaSalvar = recomendacaoSelecionada?.titulo ?: detalhesApi?.titulo ?: "Título"
-                            val capaParaSalvar = when {
-                                recomendacaoSelecionada?.caminhoPoster != null -> "https://image.tmdb.org/t/p/w500${recomendacaoSelecionada?.caminhoPoster}"
-                                !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical ?: ""
-                                else -> ""
-                            }
-                            val sinopseParaSalvar = recomendacaoSelecionada?.sinopse ?: detalhesApi?.sinopseApi ?: ""
+                            val streamingPrincipal = provedoresFiltrados.firstOrNull()?.nomeProvedor
+                                ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
+
+                            val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
+                            val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
+                            val sinopseParaSalvar = detalhesApi?.sinopseApi ?: ""
 
                             val novaMidia = Midia(
                                 id = 0,
-                                idTmdb = idTmdbDinamico ?: id,
+                                idTmdb = idRealBuscaApi,
                                 titulo = tituloParaSalvar,
-                                tipo = tipoDinamico,
+                                tipo = tipoRealUtilizado,
                                 nota = 0,
                                 temporadaAtual = 1,
                                 episodioAtual = 1,
@@ -997,10 +1067,15 @@ fun TelaDetalhes(
                                 sinopse = sinopseParaSalvar,
                                 imagemCapa = capaParaSalvar,
                                 genero = "Geral",
-                                plataforma = streamingPrincipal
+                                plataforma = streamingPrincipal,
+                                favorito = false,
+                                listaCustomizada = "Geral",
+                                isCasal = isModoCasal,
+                                casalId = casalIdAtivo
                             )
                             viewModel.inserir(novaMidia)
-                            Toast.makeText(contexto, "Adicionado à sua lista!", Toast.LENGTH_SHORT).show()
+                            val mensagemToast = if (isModoCasal) "Adicionado à lista do casal ❤️!" else "Adicionado à sua lista!"
+                            Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
                             onVoltar()
                         },
                         enabled = !jaExisteNaLista,
@@ -1008,7 +1083,7 @@ fun TelaDetalhes(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                     ) {
                         Text(
-                            text = if (jaExisteNaLista) "JÁ ESTÁ NA SUA LISTA" else "ADICIONAR À MINHA LISTA",
+                            text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA" else (if (isModoCasal) "ADICIONAR À LISTA DO CASAL" else "ADICIONAR À MINHA LISTA"),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -1028,13 +1103,24 @@ fun PlayerTrailerNativo(
     modifier: Modifier = Modifier,
     onFechar: () -> Unit
 ) {
+    var webViewRef by remember { mutableStateOf<android.webkit.WebView?>(null) }
+
+    DisposableEffect(chaveVideo) {
+        onDispose {
+            webViewRef?.destroy()
+        }
+    }
+
     Box(
-        modifier = modifier.background(Color.Black)
+        modifier = modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .background(Color.Black)
     ) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                WebView(ctx).apply {
+                android.webkit.WebView(ctx).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
@@ -1044,13 +1130,14 @@ fun PlayerTrailerNativo(
                         domStorageEnabled = true
                         mediaPlaybackRequiresUserGesture = false
                         databaseEnabled = true
-                        cacheMode = WebSettings.LOAD_DEFAULT
-                        // User-Agent móvel padrão do Chrome
+                        cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                         userAgentString = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
                     }
-                    webViewClient = object : WebViewClient() {}
-                    webChromeClient = WebChromeClient()
 
+                    webChromeClient = android.webkit.WebChromeClient()
+                    webViewClient = android.webkit.WebViewClient()
+
+                    val appPackage = ctx.packageName
                     val htmlPlayer = """
                         <!DOCTYPE html>
                         <html>
@@ -1065,7 +1152,7 @@ fun PlayerTrailerNativo(
                         </head>
                         <body>
                             <iframe 
-                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.youtube.com" 
+                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1" 
                                 frameborder="0"
                                 referrerpolicy="strict-origin-when-cross-origin"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -1075,40 +1162,17 @@ fun PlayerTrailerNativo(
                         </html>
                     """.trimIndent()
 
-                    loadDataWithBaseURL("https://www.youtube.com", htmlPlayer, "text/html", "utf-8", "https://www.youtube.com")
+                    loadDataWithBaseURL("https://$appPackage", htmlPlayer, "text/html", "utf-8", null)
+                    webViewRef = this
                 }
-            },
-            update = { webView ->
-                val htmlPlayer = """
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                        <meta name="referrer" content="strict-origin-when-cross-origin">
-                        <style>
-                            * { margin: 0; padding: 0; box-sizing: border-box; }
-                            html, body { width: 100%; height: 100%; background: #000000; overflow: hidden; }
-                            iframe { width: 100%; height: 100%; border: none; }
-                        </style>
-                    </head>
-                    <body>
-                        <iframe 
-                            src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.youtube.com" 
-                            frameborder="0"
-                            referrerpolicy="strict-origin-when-cross-origin"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                            allowfullscreen>
-                        </iframe>
-                    </body>
-                    </html>
-                """.trimIndent()
-
-                webView.loadDataWithBaseURL("https://www.youtube.com", htmlPlayer, "text/html", "utf-8", "https://www.youtube.com")
             }
         )
 
         IconButton(
-            onClick = onFechar,
+            onClick = {
+                webViewRef?.destroy()
+                onFechar()
+            },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp)
@@ -1125,32 +1189,214 @@ fun PlayerTrailerNativo(
     }
 }
 
-@Composable
-fun ContadorProgresso(
-    label: String,
-    valor: Int,
-    onIncrementar: () -> Unit,
-    onDecrementar: () -> Unit
+private fun compartilharCardEstilizado(
+    contexto: Context,
+    coroutineScope: CoroutineScope,
+    midia: Midia
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, color = Color.White, fontSize = 14.sp)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onDecrementar) {
-                Text("-", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
-            Text(
-                text = valor.toString(),
-                color = Color.White,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            IconButton(onClick = onIncrementar) {
-                Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Toast.makeText(contexto, "Gerando card estilizado...", Toast.LENGTH_SHORT).show()
+
+    coroutineScope.launch {
+        val bitmap = withContext(Dispatchers.IO) {
+            gerarBitmapCardEstilizado(contexto, midia)
+        }
+
+        val uriImagem = withContext(Dispatchers.IO) {
+            salvarBitmapEmCache(contexto, bitmap)
+        }
+
+        val textoProgresso = if (midia.tipo.equals("Filme", ignoreCase = true)) {
+            if (midia.status == "Concluído") "já assisti" else "quero assistir"
+        } else {
+            if (midia.status == "Concluído") "concluí tudo" else "estou na T${midia.temporadaAtual} • Ep ${midia.episodioAtual}"
+        }
+
+        val mensagemTexto = """
+            🍿 Olha o meu progresso no CineList!
+            🎬 *${midia.titulo}* (${midia.tipo})
+            📊 Status: ${midia.status} ($textoProgresso)
+            ⭐ Avaliação: ${"★".repeat(midia.nota.coerceAtLeast(0))}
+            
+            Gerenciado pelo app CineList! 🔥
+        """.trimIndent()
+
+        val intentCompartilhar = Intent().apply {
+            action = Intent.ACTION_SEND
+            if (uriImagem != null) {
+                type = "image/png"
+                clipData = ClipData.newRawUri("card", uriImagem)
+                putExtra(Intent.EXTRA_STREAM, uriImagem)
+                putExtra(Intent.EXTRA_TEXT, mensagemTexto)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } else {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, mensagemTexto)
             }
         }
+
+        val chooserIntent = Intent.createChooser(intentCompartilhar, "Compartilhar card via:").apply {
+            if (uriImagem != null) {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+
+        contexto.startActivity(chooserIntent)
+    }
+}
+
+private suspend fun gerarBitmapCardEstilizado(contexto: Context, midia: Midia): Bitmap {
+    val largura = 1080
+    val altura = 1600
+    val bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    val paintFundo = Paint().apply {
+        isAntiAlias = true
+        shader = android.graphics.LinearGradient(
+            0f, 0f, 0f, altura.toFloat(),
+            intArrayOf(
+                android.graphics.Color.parseColor("#1C1E24"),
+                android.graphics.Color.parseColor("#121214"),
+                android.graphics.Color.parseColor("#090A0B")
+            ),
+            null,
+            android.graphics.Shader.TileMode.CLAMP
+        )
+    }
+    canvas.drawRect(0f, 0f, largura.toFloat(), altura.toFloat(), paintFundo)
+
+    val paintHeader = Paint().apply {
+        color = android.graphics.Color.parseColor("#FFD700")
+        textSize = 54f
+        isFakeBoldText = true
+        isAntiAlias = true
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    canvas.drawText("🍿 CineList", 70f, 130f, paintHeader)
+
+    val paintSubheader = Paint().apply {
+        color = android.graphics.Color.parseColor("#A0A5B5")
+        textSize = 32f
+        isAntiAlias = true
+    }
+    canvas.drawText("Meu Diário de Cinema & Séries", 70f, 185f, paintSubheader)
+
+    var bitmapPoster: Bitmap? = null
+    if (midia.imagemCapa.isNotBlank()) {
+        try {
+            val requisicao = ImageRequest.Builder(contexto)
+                .data(midia.imagemCapa)
+                .allowHardware(false)
+                .build()
+            val resultado = coil.ImageLoader(contexto).execute(requisicao)
+            if (resultado is SuccessResult) {
+                bitmapPoster = resultado.drawable.toBitmap()
+            }
+        } catch (_: Exception) {}
+    }
+
+    val rectPoster = RectF(70f, 240f, largura - 70f, 1080f)
+    val paintPosterBg = Paint().apply {
+        color = android.graphics.Color.parseColor("#262933")
+        isAntiAlias = true
+    }
+    canvas.drawRoundRect(rectPoster, 36f, 36f, paintPosterBg)
+
+    if (bitmapPoster != null) {
+        val path = android.graphics.Path().apply {
+            addRoundRect(rectPoster, 36f, 36f, android.graphics.Path.Direction.CW)
+        }
+        canvas.save()
+        canvas.clipPath(path)
+        val srcRect = Rect(0, 0, bitmapPoster.width, bitmapPoster.height)
+        canvas.drawBitmap(bitmapPoster, srcRect, rectPoster, Paint(Paint.FILTER_BITMAP_FLAG))
+        canvas.restore()
+    } else {
+        val paintTextoSemCapa = Paint().apply {
+            color = android.graphics.Color.GRAY
+            textSize = 42f
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        canvas.drawText("SEM CAPA", rectPoster.centerX(), rectPoster.centerY(), paintTextoSemCapa)
+    }
+
+    val paintTitulo = Paint().apply {
+        color = android.graphics.Color.WHITE
+        textSize = 58f
+        isFakeBoldText = true
+        isAntiAlias = true
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    val tituloTruncado = if (midia.titulo.length > 28) midia.titulo.take(28) + "..." else midia.titulo
+    canvas.drawText(tituloTruncado, 70f, 1165f, paintTitulo)
+
+    val paintGenero = Paint().apply {
+        color = android.graphics.Color.parseColor("#9E9E9E")
+        textSize = 34f
+        isAntiAlias = true
+    }
+    canvas.drawText("${midia.tipo} • ${midia.genero}", 70f, 1220f, paintGenero)
+
+    val textoBadge = when {
+        midia.tipo.equals("Filme", ignoreCase = true) -> midia.status
+        midia.status == "Concluído" -> "Concluído (Tudo Assistido)"
+        else -> "${midia.status} • T${midia.temporadaAtual} Ep ${midia.episodioAtual}"
+    }
+
+    val paintBadgeBg = Paint().apply {
+        color = when (midia.status) {
+            "Assistindo" -> android.graphics.Color.parseColor("#00BFFF")
+            "Concluído" -> android.graphics.Color.parseColor("#32CD32")
+            else -> android.graphics.Color.parseColor("#FFD700")
+        }
+        isAntiAlias = true
+    }
+    val rectBadge = RectF(70f, 1260f, 70f + (textoBadge.length * 24f) + 40f, 1335f)
+    canvas.drawRoundRect(rectBadge, 20f, 20f, paintBadgeBg)
+
+    val paintBadgeTexto = Paint().apply {
+        color = android.graphics.Color.BLACK
+        textSize = 32f
+        isFakeBoldText = true
+        isAntiAlias = true
+    }
+    canvas.drawText(textoBadge, 90f, 1310f, paintBadgeTexto)
+
+    val paintEstrelas = Paint().apply {
+        color = android.graphics.Color.parseColor("#FFD700")
+        textSize = 56f
+        isAntiAlias = true
+    }
+    val estrelas = if (midia.nota > 0) "★".repeat(midia.nota) + "☆".repeat(5 - midia.nota) else "Sem avaliação"
+    canvas.drawText(estrelas, 70f, 1420f, paintEstrelas)
+
+    val paintRodape = Paint().apply {
+        color = android.graphics.Color.parseColor("#606575")
+        textSize = 28f
+        isAntiAlias = true
+    }
+    canvas.drawText("Compartilhado pelo app CineList • Organizando histórias", 70f, 1515f, paintRodape)
+
+    return bitmap
+}
+
+private fun salvarBitmapEmCache(contexto: Context, bitmap: Bitmap): Uri? {
+    return try {
+        val pastaImagens = File(contexto.cacheDir, "shared_images").apply { mkdirs() }
+        val arquivo = File(pastaImagens, "cinelist_card_${System.currentTimeMillis()}.png")
+        val stream = FileOutputStream(arquivo)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        stream.flush()
+        stream.close()
+
+        FileProvider.getUriForFile(
+            contexto,
+            "${contexto.packageName}.provider",
+            arquivo
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
