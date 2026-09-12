@@ -6,7 +6,7 @@ git push origin --delete v1.0.X
 git add .
 
 # 3. Cria o commit das alterações
-git commit -m "fix: ver trailer nativo"
+git commit -m "fix: Casal e melhorias"
 
 # 4. Sincroniza com a branch main remota
 git pull origin main --rebase
