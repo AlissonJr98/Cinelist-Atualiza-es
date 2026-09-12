@@ -1813,13 +1813,14 @@ fun DialogoGerenciarSalasCompartilhadas(
     viewModel: MidiaViewModel,
     onDispensar: () -> Unit
 ) {
+    val contexto = LocalContext.current
     val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
 
     var nomeGrupoInput by remember { mutableStateOf("") }
     var codigoGrupoInput by remember { mutableStateOf("") }
     var tipoGrupoSelecionado by remember { mutableStateOf("Casal") }
-    var abaModoCriarEntrar by remember { mutableStateOf(0) } // 0 = Selecionar, 1 = Criar/Entrar
+    var abaModoCriarEntrar by remember { mutableStateOf(0) }
 
     AlertDialog(
         onDismissRequest = onDispensar,
@@ -1828,7 +1829,7 @@ fun DialogoGerenciarSalasCompartilhadas(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 380.dp)
+                    .heightIn(max = 400.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1876,7 +1877,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                         onDispensar()
                                     },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (ehAtiva) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    containerColor = ehAtiva.let { if (it) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant }
                                 )
                             ) {
                                 Row(
@@ -1888,7 +1889,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(grupo.nomeGrupo.ifBlank { grupo.grupoId }, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                        Text("Tipo: ${grupo.tipoGrupo} • Código: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                        Text("Código: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                                     }
                                     IconButton(onClick = { viewModel.excluirGrupoSalvo(grupo) }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = Color(0xFFFF5252))
@@ -1908,21 +1909,37 @@ fun DialogoGerenciarSalasCompartilhadas(
 
                     OutlinedTextField(
                         value = codigoGrupoInput,
-                        onValueChange = { codigoGrupoInput = it },
-                        label = { Text("Código / ID da Sala (ou gere um)") },
+                        onValueChange = { codigoGrupoInput = it.uppercase() },
+                        label = { Text("Código da Sala (ex: CINE-1234)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         OutlinedButton(
                             onClick = {
-                                val novoId = "grupo_${System.currentTimeMillis()}"
-                                codigoGrupoInput = novoId
+                                codigoGrupoInput = viewModel.gerarNovoCodigoGrupo()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Gerar Código", fontSize = 12.sp)
+                        }
+
+                        if (codigoGrupoInput.isNotBlank()) {
+                            OutlinedButton(
+                                onClick = {
+                                    val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("Código da Sala CineList", codigoGrupoInput)
+                                    clipboard.setPrimaryClip(clip)
+                                    android.widget.Toast.makeText(contexto, "Código copiado para a área de transferência!", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Copiar Código", fontSize = 12.sp)
+                            }
                         }
                     }
 
@@ -1930,7 +1947,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                         onClick = {
                             if (codigoGrupoInput.isNotBlank()) {
                                 val nomeFinal = nomeGrupoInput.ifBlank { "Lista Compartilhada" }
-                                viewModel.criarOuEntrarNoGrupo(codigoGrupoInput.trim(), nomeFinal, tipoGrupoSelecionado)
+                                viewModel.criarOuEntrarNoGrupo(codigoGrupoInput.trim().uppercase(), nomeFinal, tipoGrupoSelecionado)
                                 onDispensar()
                             }
                         },

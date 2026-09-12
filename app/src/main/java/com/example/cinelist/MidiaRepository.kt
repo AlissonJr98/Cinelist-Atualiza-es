@@ -16,6 +16,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 @Singleton
 class MidiaRepository @Inject constructor(
@@ -44,10 +45,36 @@ class MidiaRepository @Inject constructor(
         }
     }
 
+    // Gera um código aleatório curto e amigável (ex: CINE-7482)
+    fun gerarCodigoAleatorio(): String {
+        val numero = Random.nextInt(1000, 9999)
+        return "CINE-$numero"
+    }
+
     suspend fun salvarOuEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String) {
-        val grupo = GrupoEntity(grupoId = grupoId, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
+        val grupoLimpo = grupoId.trim().uppercase()
+        val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
         midiaDao.desativarTodosOsGrupos()
         midiaDao.inserirGrupo(grupo)
+
+        // Garante que o documento raiz do grupo existe no Firestore para permitir sincronização cruzada
+        withContext(Dispatchers.IO) {
+            try {
+                val docRef = firestore.collection("grupos").document(grupoLimpo)
+                val snapshot = docRef.get().await()
+                if (!snapshot.exists()) {
+                    val dadosGrupo = mapOf(
+                        "grupoId" to grupoLimpo,
+                        "nomeGrupo" to nomeGrupo,
+                        "tipoGrupo" to tipo,
+                        "criadoEm" to System.currentTimeMillis()
+                    )
+                    docRef.set(dadosGrupo).await()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     suspend fun deletarGrupoLocal(grupo: GrupoEntity) {
@@ -59,15 +86,27 @@ class MidiaRepository @Inject constructor(
         return firestore.collection("usuarios").document(uid).collection("midias")
     }
 
-    private fun obterColecaoCasal(casalId: String): com.google.firebase.firestore.CollectionReference? {
-        if (casalId.isBlank()) return null
-        return firestore.collection("casais").document(casalId).collection("midias")
+    // Caminho compartilhado na raiz do Firestore acessível por qualquer membro da sala
+    private fun obterColecaoGrupo(grupoId: String): com.google.firebase.firestore.CollectionReference? {
+        if (grupoId.isBlank()) return null
+        return firestore.collection("grupos").document(grupoId).collection("midias")
+    }
+
+    // Busca o nome real do usuário no Firestore (usuarios_publicos)
+    private suspend fun obterNomeRealUsuario(): String {
+        val usuario = auth.currentUser ?: return "Alguém"
+        return try {
+            val doc = firestore.collection("usuarios_publicos").document(usuario.uid).get().await()
+            val nome = doc.getString("nome")
+            if (!nome.isNullOrBlank()) nome else usuario.email?.substringBefore("@") ?: "Alguém"
+        } catch (e: Exception) {
+            usuario.email?.substringBefore("@") ?: "Alguém"
+        }
     }
 
     suspend fun inserir(midia: Midia) {
         val midiasLocais = midiaDao.buscarTodasAsMidias().firstOrNull() ?: emptyList()
-        val usuarioAtual = auth.currentUser
-        val emailOuUid = usuarioAtual?.email ?: usuarioAtual?.uid ?: "Alguém"
+        val nomeReal = obterNomeRealUsuario()
 
         val plataformaNormalizada = if (midia.plataforma.isBlank() || midia.plataforma.equals("Não Informado", ignoreCase = true) || midia.plataforma.equals("Outros", ignoreCase = true) || midia.plataforma.equals("TV / Original", ignoreCase = true)) {
             val tituloLower = midia.titulo.lowercase()
@@ -79,7 +118,7 @@ class MidiaRepository @Inject constructor(
             midia.plataforma
         }
 
-        val autorFinal = if (midia.isCasal && midia.adicionadoPor.isBlank()) emailOuUid else midia.adicionadoPor
+        val autorFinal = if (midia.isCasal && midia.adicionadoPor.isBlank()) nomeReal else midia.adicionadoPor
 
         val midiaTratada = midia.copy(
             plataforma = plataformaNormalizada,
@@ -124,7 +163,7 @@ class MidiaRepository @Inject constructor(
     private suspend fun sincronizarItemIndividualFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
             val colecao = if (midia.isCasal) {
-                obterColecaoCasal(midia.casalId)
+                obterColecaoGrupo(midia.casalId)
             } else {
                 obterColecaoUsuario()
             }
@@ -138,7 +177,7 @@ class MidiaRepository @Inject constructor(
     private suspend fun removerItemFirestore(midia: Midia) = withContext(Dispatchers.IO) {
         try {
             val colecao = if (midia.isCasal) {
-                obterColecaoCasal(midia.casalId)
+                obterColecaoGrupo(midia.casalId)
             } else {
                 obterColecaoUsuario()
             } ?: return@withContext
@@ -159,16 +198,16 @@ class MidiaRepository @Inject constructor(
         removerItemFirestore(midia)
     }
 
-    // Sincronização em tempo real para o grupo específico via Firestore Snapshot Listener
+    // Sincronização em tempo real para o grupo via Firestore Snapshot Listener
     fun observarMidiasDoGrupoFirestore(grupoId: String): Flow<List<Midia>> = callbackFlow {
-        val colecao = obterColecaoCasal(grupoId)
+        val colecao = obterColecaoGrupo(grupoId)
         if (colecao == null) {
             trySend(emptyList())
             close()
             return@callbackFlow
         }
 
-        val usuarioAtualEmail = auth.currentUser?.email ?: auth.currentUser?.uid ?: ""
+        val usuarioAtualUid = auth.currentUser?.uid ?: ""
 
         val listener = colecao.addSnapshotListener { snapshot, error ->
             if (error != null) {
@@ -193,7 +232,8 @@ class MidiaRepository @Inject constructor(
                     } else {
                         midiaDao.inserirMidia(nuvem.copy(id = 0, isCasal = true, casalId = grupoId))
 
-                        if (nuvem.adicionadoPor.isNotBlank() && !nuvem.adicionadoPor.equals(usuarioAtualEmail, ignoreCase = true)) {
+                        // Dispara notificação se o item foi adicionado por outro membro
+                        if (nuvem.adicionadoPor.isNotBlank()) {
                             val jaNotificado = notificacaoRepository.contarNotificacaoRecente(
                                 idRef = nuvem.idTmdb,
                                 tipo = "NOVO_GRUPO",

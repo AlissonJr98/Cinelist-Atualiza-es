@@ -503,4 +503,8 @@ class MidiaViewModel @Inject constructor(
             repository.limparTudoCompleto()
         }
     }
+
+    fun gerarNovoCodigoGrupo(): String {
+        return repository.gerarCodigoAleatorio()
+    }
 }
