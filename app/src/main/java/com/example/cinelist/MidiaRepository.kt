@@ -45,13 +45,11 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    // Gera um código aleatório curto e amigável (ex: CINE-7482)
     fun gerarCodigoAleatorio(): String {
         val numero = Random.nextInt(1000, 9999)
         return "CINE-$numero"
     }
 
-    // Valida e entra em um grupo existente na nuvem
     suspend fun verificarEEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String, senhaDigitada: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             val grupoLimpo = grupoId.trim().uppercase()
@@ -71,7 +69,6 @@ class MidiaRepository @Inject constructor(
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
 
-            // Tenta salvar o último grupo ativo no perfil do usuário de forma segura (sem travar se falhar)
             try {
                 val uid = auth.currentUser?.uid
                 if (uid != null) {
@@ -90,7 +87,6 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    // Cria um novo grupo na nuvem com senha opcional
     suspend fun criarNovoGrupoNaNuvem(grupoId: String, nomeGrupo: String, tipo: String, senha: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val grupoLimpo = grupoId.trim().uppercase()
@@ -109,7 +105,6 @@ class MidiaRepository @Inject constructor(
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
 
-            // Tenta salvar o último grupo ativo no perfil do usuário de forma segura (sem travar se falhar)
             try {
                 val uid = auth.currentUser?.uid
                 if (uid != null) {
@@ -143,7 +138,6 @@ class MidiaRepository @Inject constructor(
         return firestore.collection("grupos").document(grupoId).collection("midias")
     }
 
-    // Busca o nome real do usuário no Firestore (usuarios_publicos)
     private suspend fun obterNomeRealUsuario(): String {
         val usuario = auth.currentUser ?: return "Alguém"
         return try {
@@ -182,10 +176,11 @@ class MidiaRepository @Inject constructor(
             adicionadoPor = autorFinal
         )
 
+        // Busca rigorosa para evitar duplicados locais
         val midiaExistente = midiasLocais.find {
             it.isCasal == midiaTratada.isCasal && it.casalId == midiaTratada.casalId && (
                     (it.idTmdb != 0 && it.idTmdb == midiaTratada.idTmdb) ||
-                            (it.titulo.equals(midiaTratada.titulo, ignoreCase = true) && it.tipo.equals(midiaTratada.tipo, ignoreCase = true))
+                            (it.titulo.trim().equals(midiaTratada.titulo.trim(), ignoreCase = true) && it.tipo.equals(midiaTratada.tipo, ignoreCase = true))
                     )
         }
 
@@ -255,6 +250,7 @@ class MidiaRepository @Inject constructor(
         removerItemFirestore(midia)
     }
 
+    // Sincronização em tempo real (Adição e Remoção sincronizadas)
     fun observarMidiasDoGrupoFirestore(grupoId: String): Flow<List<Midia>> = callbackFlow {
         val colecao = obterColecaoGrupo(grupoId)
         if (colecao == null) {
@@ -279,8 +275,14 @@ class MidiaRepository @Inject constructor(
 
             launch(Dispatchers.IO) {
                 val locais = midiaDao.buscarMidiasPorGrupo(grupoId).firstOrNull() ?: emptyList()
+
+                // 1. Sincroniza adições e atualizações vindas da nuvem
                 midiasNuvem.forEach { nuvem ->
-                    val existente = locais.find { (it.idTmdb != 0 && it.idTmdb == nuvem.idTmdb) || it.titulo.equals(nuvem.titulo, ignoreCase = true) }
+                    val existente = locais.find {
+                        (it.idTmdb != 0 && it.idTmdb == nuvem.idTmdb) ||
+                                it.titulo.trim().equals(nuvem.titulo.trim(), ignoreCase = true)
+                    }
+
                     if (existente != null) {
                         midiaDao.atualizarMidia(nuvem.copy(id = existente.id, isCasal = true, casalId = grupoId))
                     } else {
@@ -307,6 +309,17 @@ class MidiaRepository @Inject constructor(
                         }
                     }
                 }
+
+                // 2. Remove localmente itens que foram deletados na nuvem por outro aparelho
+                locais.forEach { local ->
+                    val aindaExisteNaNuvem = midiasNuvem.any { nuvem ->
+                        (local.idTmdb != 0 && local.idTmdb == nuvem.idTmdb) ||
+                                local.titulo.trim().equals(nuvem.titulo.trim(), ignoreCase = true)
+                    }
+                    if (!aindaExisteNaNuvem) {
+                        midiaDao.deletarMidia(local)
+                    }
+                }
             }
 
             trySend(midiasNuvem)
@@ -317,7 +330,6 @@ class MidiaRepository @Inject constructor(
 
     suspend fun sincronizacaoAutomaticaSilenciosa() = withContext(Dispatchers.IO) {
         try {
-            // 1. Sincroniza a lista pessoal do Firestore
             val colecao = obterColecaoUsuario()
             if (colecao != null) {
                 val snapshot = colecao.get().await()
@@ -346,7 +358,6 @@ class MidiaRepository @Inject constructor(
                 }
             }
 
-            // 2. Restaura os grupos salvos caso o armazenamento local tenha sido limpo
             restaurarGruposDoUsuario()
 
         } catch (e: Exception) {
@@ -354,7 +365,6 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    // Restaura o grupo ativo do usuário na nuvem se o banco local estiver vazio
     suspend fun restaurarGruposDoUsuario() = withContext(Dispatchers.IO) {
         try {
             val uid = auth.currentUser?.uid ?: return@withContext
