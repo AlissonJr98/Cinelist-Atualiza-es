@@ -1819,8 +1819,11 @@ fun DialogoGerenciarSalasCompartilhadas(
 
     var nomeGrupoInput by remember { mutableStateOf("") }
     var codigoGrupoInput by remember { mutableStateOf("") }
+    var senhaGrupoInput by remember { mutableStateOf("") }
     var tipoGrupoSelecionado by remember { mutableStateOf("Casal") }
-    var abaModoCriarEntrar by remember { mutableStateOf(0) }
+    var abaModoCriarEntrar by remember { mutableStateOf(0) } // 0 = Salvas, 1 = Criar, 2 = Entrar
+    var mensagemErro by remember { mutableStateOf<String?>(null) }
+    var carregando by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDispensar,
@@ -1829,21 +1832,28 @@ fun DialogoGerenciarSalasCompartilhadas(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp)
+                    .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TabRow(selectedTabIndex = abaModoCriarEntrar) {
-                    Tab(
-                        selected = abaModoCriarEntrar == 0,
-                        onClick = { abaModoCriarEntrar = 0 },
-                        text = { Text("Minhas Salas") }
-                    )
-                    Tab(
-                        selected = abaModoCriarEntrar == 1,
-                        onClick = { abaModoCriarEntrar = 1 },
-                        text = { Text("Criar / Entrar") }
-                    )
+                    Tab(selected = abaModoCriarEntrar == 0, onClick = { abaModoCriarEntrar = 0; mensagemErro = null }, text = { Text("Salas") })
+                    Tab(selected = abaModoCriarEntrar == 1, onClick = { abaModoCriarEntrar = 1; mensagemErro = null }, text = { Text("Criar") })
+                    Tab(selected = abaModoCriarEntrar == 2, onClick = { abaModoCriarEntrar = 2; mensagemErro = null }, text = { Text("Entrar") })
+                }
+
+                if (!mensagemErro.isNullOrBlank()) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = mensagemErro ?: "",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
                 }
 
                 if (abaModoCriarEntrar == 0) {
@@ -1865,7 +1875,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                     }
 
                     if (gruposSalvos.isEmpty()) {
-                        Text("Nenhuma sala compartilhada salva ainda. Vá em 'Criar / Entrar' para adicionar uma!", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                        Text("Nenhuma sala salva ainda. Toque em 'Criar' ou 'Entrar' acima!", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
                     } else {
                         gruposSalvos.forEach { grupo ->
                             val ehAtiva = casalIdAtivo == grupo.grupoId
@@ -1877,7 +1887,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                         onDispensar()
                                     },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = ehAtiva.let { if (it) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant }
+                                    containerColor = if (ehAtiva) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                                 )
                             ) {
                                 Row(
@@ -1898,11 +1908,11 @@ fun DialogoGerenciarSalasCompartilhadas(
                             }
                         }
                     }
-                } else {
+                } else if (abaModoCriarEntrar == 1) {
                     OutlinedTextField(
                         value = nomeGrupoInput,
                         onValueChange = { nomeGrupoInput = it },
-                        label = { Text("Nome da Lista (ex: Com a Mô, Amigos)") },
+                        label = { Text("Nome da Sala (ex: Casal ❤️)") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -1910,35 +1920,37 @@ fun DialogoGerenciarSalasCompartilhadas(
                     OutlinedTextField(
                         value = codigoGrupoInput,
                         onValueChange = { codigoGrupoInput = it.uppercase() },
-                        label = { Text("Código da Sala (ex: CINE-1234)") },
+                        label = { Text("Código da Sala") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    OutlinedTextField(
+                        value = senhaGrupoInput,
+                        onValueChange = { senhaGrupoInput = it },
+                        label = { Text("Senha de Acesso (Opcional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
-                            onClick = {
-                                codigoGrupoInput = viewModel.gerarNovoCodigoGrupo()
-                            },
+                            onClick = { codigoGrupoInput = viewModel.gerarNovoCodigoGrupo() },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Gerar Código", fontSize = 12.sp)
                         }
-
                         if (codigoGrupoInput.isNotBlank()) {
                             OutlinedButton(
                                 onClick = {
                                     val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newPlainText("Código da Sala CineList", codigoGrupoInput)
+                                    val clip = android.content.ClipData.newPlainText("Código da Sala", codigoGrupoInput)
                                     clipboard.setPrimaryClip(clip)
-                                    android.widget.Toast.makeText(contexto, "Código copiado para a área de transferência!", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(contexto, "Código copiado!", android.widget.Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Copiar Código", fontSize = 12.sp)
+                                Text("Copiar", fontSize = 12.sp)
                             }
                         }
                     }
@@ -1946,15 +1958,69 @@ fun DialogoGerenciarSalasCompartilhadas(
                     Button(
                         onClick = {
                             if (codigoGrupoInput.isNotBlank()) {
+                                carregando = true
                                 val nomeFinal = nomeGrupoInput.ifBlank { "Lista Compartilhada" }
-                                viewModel.criarOuEntrarNoGrupo(codigoGrupoInput.trim().uppercase(), nomeFinal, tipoGrupoSelecionado)
-                                onDispensar()
+                                viewModel.criarGrupoComSenha(codigoGrupoInput, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso ->
+                                    carregando = false
+                                    if (sucesso) onDispensar()
+                                    else mensagemErro = "Erro ao criar grupo na nuvem."
+                                }
+                            } else {
+                                mensagemErro = "Preencha o código do grupo."
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !carregando,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Salvar e Entrar na Sala", fontWeight = FontWeight.Bold)
+                        if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                        else Text("Criar e Entrar na Sala", fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = nomeGrupoInput,
+                        onValueChange = { nomeGrupoInput = it },
+                        label = { Text("Apelido Local da Lista (ex: Com o Amor)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = codigoGrupoInput,
+                        onValueChange = { codigoGrupoInput = it.uppercase() },
+                        label = { Text("Código da Sala Criada") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = senhaGrupoInput,
+                        onValueChange = { senhaGrupoInput = it },
+                        label = { Text("Senha da Sala (se houver)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Button(
+                        onClick = {
+                            if (codigoGrupoInput.isNotBlank()) {
+                                carregando = true
+                                val nomeFinal = nomeGrupoInput.ifBlank { "Lista Compartilhada" }
+                                viewModel.entrarEmGrupoExistente(codigoGrupoInput, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso, erro ->
+                                    carregando = false
+                                    if (sucesso) onDispensar()
+                                    else mensagemErro = erro
+                                }
+                            } else {
+                                mensagemErro = "Digite o código da sala."
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !carregando,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                        else Text("Verificar e Entrar na Sala", fontWeight = FontWeight.Bold)
                     }
                 }
             }

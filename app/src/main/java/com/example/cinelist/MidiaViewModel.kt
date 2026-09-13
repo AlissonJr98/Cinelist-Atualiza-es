@@ -71,12 +71,28 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
-    fun criarOuEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String) {
+    fun criarGrupoComSenha(grupoId: String, nomeGrupo: String, tipo: String, senha: String, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
-            repository.salvarOuEntrarNoGrupo(grupoId, nomeGrupo, tipo)
-            _casalIdAtivo.value = grupoId
-            if (grupoId.isNotBlank()) {
-                observarGrupoFirestore(grupoId)
+            val sucesso = repository.criarNovoGrupoNaNuvem(grupoId, nomeGrupo, tipo, senha)
+            if (sucesso) {
+                val idLimpo = grupoId.trim().uppercase()
+                _casalIdAtivo.value = idLimpo
+                observarGrupoFirestore(idLimpo)
+            }
+            onResultado(sucesso)
+        }
+    }
+
+    fun entrarEmGrupoExistente(grupoId: String, nomeGrupo: String, tipo: String, senhaDigitada: String, onResultado: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            val resultado = repository.verificarEEntrarNoGrupo(grupoId, nomeGrupo, tipo, senhaDigitada)
+            if (resultado.isSuccess) {
+                val idLimpo = grupoId.trim().uppercase()
+                _casalIdAtivo.value = idLimpo
+                observarGrupoFirestore(idLimpo)
+                onResultado(true, null)
+            } else {
+                onResultado(false, resultado.exceptionOrNull()?.localizedMessage ?: "Erro ao entrar no grupo.")
             }
         }
     }
@@ -500,11 +516,13 @@ class MidiaViewModel @Inject constructor(
 
     fun limparTodaALista() {
         viewModelScope.launch {
-            repository.limparTudoCompleto()
+            repository.limparTodaALista()
         }
     }
 
     fun gerarNovoCodigoGrupo(): String {
         return repository.gerarCodigoAleatorio()
     }
+
+
 }

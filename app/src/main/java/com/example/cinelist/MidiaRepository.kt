@@ -51,29 +51,54 @@ class MidiaRepository @Inject constructor(
         return "CINE-$numero"
     }
 
-    suspend fun salvarOuEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String) {
-        val grupoLimpo = grupoId.trim().uppercase()
-        val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
-        midiaDao.desativarTodosOsGrupos()
-        midiaDao.inserirGrupo(grupo)
+    // Valida e entra em um grupo existente na nuvem
+    suspend fun verificarEEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String, senhaDigitada: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            val grupoLimpo = grupoId.trim().uppercase()
+            val docRef = firestore.collection("grupos").document(grupoLimpo)
+            val snapshot = docRef.get().await()
 
-        // Garante que o documento raiz do grupo existe no Firestore para permitir sincronização cruzada
-        withContext(Dispatchers.IO) {
-            try {
-                val docRef = firestore.collection("grupos").document(grupoLimpo)
-                val snapshot = docRef.get().await()
-                if (!snapshot.exists()) {
-                    val dadosGrupo = mapOf(
-                        "grupoId" to grupoLimpo,
-                        "nomeGrupo" to nomeGrupo,
-                        "tipoGrupo" to tipo,
-                        "criadoEm" to System.currentTimeMillis()
-                    )
-                    docRef.set(dadosGrupo).await()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            if (!snapshot.exists()) {
+                return@withContext Result.failure(Exception("Este código de grupo não existe."))
             }
+
+            val senhaSalva = snapshot.getString("senha") ?: ""
+            if (senhaSalva.isNotBlank() && senhaSalva != senhaDigitada.trim()) {
+                return@withContext Result.failure(Exception("Senha incorreta para este grupo."))
+            }
+
+            val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
+            midiaDao.desativarTodosOsGrupos()
+            midiaDao.inserirGrupo(grupo)
+
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Cria um novo grupo na nuvem com senha opcional
+    suspend fun criarNovoGrupoNaNuvem(grupoId: String, nomeGrupo: String, tipo: String, senha: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val grupoLimpo = grupoId.trim().uppercase()
+            val docRef = firestore.collection("grupos").document(grupoLimpo)
+
+            val dadosGrupo = mapOf(
+                "grupoId" to grupoLimpo,
+                "nomeGrupo" to nomeGrupo,
+                "tipoGrupo" to tipo,
+                "senha" to senha.trim(),
+                "criadoEm" to System.currentTimeMillis()
+            )
+            docRef.set(dadosGrupo).await()
+
+            val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
+            midiaDao.desativarTodosOsGrupos()
+            midiaDao.inserirGrupo(grupo)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
@@ -86,7 +111,6 @@ class MidiaRepository @Inject constructor(
         return firestore.collection("usuarios").document(uid).collection("midias")
     }
 
-    // Caminho compartilhado na raiz do Firestore acessível por qualquer membro da sala
     private fun obterColecaoGrupo(grupoId: String): com.google.firebase.firestore.CollectionReference? {
         if (grupoId.isBlank()) return null
         return firestore.collection("grupos").document(grupoId).collection("midias")
@@ -198,7 +222,6 @@ class MidiaRepository @Inject constructor(
         removerItemFirestore(midia)
     }
 
-    // Sincronização em tempo real para o grupo via Firestore Snapshot Listener
     fun observarMidiasDoGrupoFirestore(grupoId: String): Flow<List<Midia>> = callbackFlow {
         val colecao = obterColecaoGrupo(grupoId)
         if (colecao == null) {
@@ -206,8 +229,6 @@ class MidiaRepository @Inject constructor(
             close()
             return@callbackFlow
         }
-
-        val usuarioAtualUid = auth.currentUser?.uid ?: ""
 
         val listener = colecao.addSnapshotListener { snapshot, error ->
             if (error != null) {
@@ -232,7 +253,6 @@ class MidiaRepository @Inject constructor(
                     } else {
                         midiaDao.inserirMidia(nuvem.copy(id = 0, isCasal = true, casalId = grupoId))
 
-                        // Dispara notificação se o item foi adicionado por outro membro
                         if (nuvem.adicionadoPor.isNotBlank()) {
                             val jaNotificado = notificacaoRepository.contarNotificacaoRecente(
                                 idRef = nuvem.idTmdb,
@@ -346,7 +366,7 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    suspend fun limparTudoCompleto() = withContext(Dispatchers.IO) {
+    suspend fun limparTodaALista() = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario()
             colecao?.get()?.await()?.documents?.forEach { it.reference.delete().await() }
