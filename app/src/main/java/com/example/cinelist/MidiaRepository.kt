@@ -71,13 +71,17 @@ class MidiaRepository @Inject constructor(
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
 
-            // Salva o último grupo ativo no perfil do usuário para restauração após limpar dados
-            val uid = auth.currentUser?.uid
-            if (uid != null) {
-                firestore.collection("usuarios").document(uid).set(
-                    mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
-                    SetOptions.merge()
-                ).await()
+            // Tenta salvar o último grupo ativo no perfil do usuário de forma segura (sem travar se falhar)
+            try {
+                val uid = auth.currentUser?.uid
+                if (uid != null) {
+                    firestore.collection("usuarios").document(uid).set(
+                        mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
+                        SetOptions.merge()
+                    ).await()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
             Result.success(true)
@@ -105,13 +109,17 @@ class MidiaRepository @Inject constructor(
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
 
-            // Salva o último grupo ativo no perfil do usuário para restauração após limpar dados
-            val uid = auth.currentUser?.uid
-            if (uid != null) {
-                firestore.collection("usuarios").document(uid).set(
-                    mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
-                    SetOptions.merge()
-                ).await()
+            // Tenta salvar o último grupo ativo no perfil do usuário de forma segura (sem travar se falhar)
+            try {
+                val uid = auth.currentUser?.uid
+                if (uid != null) {
+                    firestore.collection("usuarios").document(uid).set(
+                        mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
+                        SetOptions.merge()
+                    ).await()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
             true
