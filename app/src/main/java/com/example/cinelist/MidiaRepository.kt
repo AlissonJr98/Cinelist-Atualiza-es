@@ -71,6 +71,15 @@ class MidiaRepository @Inject constructor(
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
 
+            // Salva o último grupo ativo no perfil do usuário para restauração após limpar dados
+            val uid = auth.currentUser?.uid
+            if (uid != null) {
+                firestore.collection("usuarios").document(uid).set(
+                    mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
+                    SetOptions.merge()
+                ).await()
+            }
+
             Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
@@ -95,6 +104,16 @@ class MidiaRepository @Inject constructor(
             val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
             midiaDao.desativarTodosOsGrupos()
             midiaDao.inserirGrupo(grupo)
+
+            // Salva o último grupo ativo no perfil do usuário para restauração após limpar dados
+            val uid = auth.currentUser?.uid
+            if (uid != null) {
+                firestore.collection("usuarios").document(uid).set(
+                    mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
+                    SetOptions.merge()
+                ).await()
+            }
+
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -122,9 +141,15 @@ class MidiaRepository @Inject constructor(
         return try {
             val doc = firestore.collection("usuarios_publicos").document(usuario.uid).get().await()
             val nome = doc.getString("nome")
-            if (!nome.isNullOrBlank()) nome else usuario.email?.substringBefore("@") ?: "Alguém"
+            if (!nome.isNullOrBlank()) {
+                nome
+            } else {
+                val email = usuario.email ?: ""
+                if (email.contains("@")) email.substringBefore("@").replaceFirstChar { it.uppercase() } else "Alguém"
+            }
         } catch (e: Exception) {
-            usuario.email?.substringBefore("@") ?: "Alguém"
+            val email = usuario.email ?: ""
+            if (email.contains("@")) email.substringBefore("@").replaceFirstChar { it.uppercase() } else "Alguém"
         }
     }
 
@@ -284,30 +309,57 @@ class MidiaRepository @Inject constructor(
 
     suspend fun sincronizacaoAutomaticaSilenciosa() = withContext(Dispatchers.IO) {
         try {
-            val colecao = obterColecaoUsuario() ?: return@withContext
-            val snapshot = colecao.get().await()
+            // 1. Sincroniza a lista pessoal do Firestore
+            val colecao = obterColecaoUsuario()
+            if (colecao != null) {
+                val snapshot = colecao.get().await()
+                val midiasNuvem = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        doc.toObject(Midia::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
 
-            val midiasNuvem = snapshot.documents.mapNotNull { doc ->
-                try {
-                    doc.toObject(Midia::class.java)
-                } catch (e: Exception) {
-                    null
+                val midiasLocais = midiaDao.buscarMidiasPessoais().firstOrNull() ?: emptyList()
+
+                midiasNuvem.forEach { midiaNuvem ->
+                    val midiaExistente = midiasLocais.find {
+                        (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
+                                (it.titulo.equals(midiaNuvem.titulo, ignoreCase = true) && it.tipo.equals(midiaNuvem.tipo, ignoreCase = true))
+                    }
+
+                    val itemTratado = midiaNuvem.copy(isCasal = false, casalId = "")
+                    if (midiaExistente != null) {
+                        midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                    } else {
+                        midiaDao.inserirMidia(itemTratado.copy(id = 0))
+                    }
                 }
             }
 
-            val midiasLocais = midiaDao.buscarMidiasPessoais().firstOrNull() ?: emptyList()
+            // 2. Restaura os grupos salvos caso o armazenamento local tenha sido limpo
+            restaurarGruposDoUsuario()
 
-            midiasNuvem.forEach { midiaNuvem ->
-                val midiaExistente = midiasLocais.find {
-                    (it.idTmdb != 0 && it.idTmdb == midiaNuvem.idTmdb) ||
-                            (it.titulo.equals(midiaNuvem.titulo, ignoreCase = true) && it.tipo.equals(midiaNuvem.tipo, ignoreCase = true))
-                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
-                val itemTratado = midiaNuvem.copy(isCasal = false, casalId = "")
-                if (midiaExistente != null) {
-                    midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
-                } else {
-                    midiaDao.inserirMidia(itemTratado.copy(id = 0))
+    // Restaura o grupo ativo do usuário na nuvem se o banco local estiver vazio
+    suspend fun restaurarGruposDoUsuario() = withContext(Dispatchers.IO) {
+        try {
+            val uid = auth.currentUser?.uid ?: return@withContext
+            val gruposLocais = midiaDao.buscarTodosOsGrupos().firstOrNull() ?: emptyList()
+
+            if (gruposLocais.isEmpty()) {
+                val docUsuario = firestore.collection("usuarios").document(uid).get().await()
+                val ultimoGrupo = docUsuario.getString("ultimoGrupoAtivo") ?: ""
+                val nomeUltimoGrupo = docUsuario.getString("ultimoNomeGrupo") ?: "Lista Compartilhada"
+
+                if (ultimoGrupo.isNotBlank()) {
+                    val grupo = GrupoEntity(grupoId = ultimoGrupo, nomeGrupo = nomeUltimoGrupo, tipoGrupo = "Casal", ativo = true)
+                    midiaDao.inserirGrupo(grupo)
                 }
             }
         } catch (e: Exception) {
