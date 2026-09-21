@@ -17,18 +17,28 @@ interface MidiaDao {
     @Update
     suspend fun atualizarMidia(midia: Midia)
 
-    @Query("SELECT * FROM midias")
+    // Retorna apenas mídias estritamente pessoais (não pertencem a nenhum grupo)
+    @Query("SELECT * FROM midias WHERE isCasal = 0 OR isCasal IS NULL OR casalId = ''")
     fun buscarTodasAsMidias(): Flow<List<Midia>>
 
-    @Query("SELECT * FROM midias WHERE isCasal = 0")
+    // Garante que traga apenas as pessoais genuínas
+    @Query("SELECT * FROM midias WHERE isCasal = 0 OR isCasal IS NULL OR casalId = ''")
     fun buscarMidiasPessoais(): Flow<List<Midia>>
 
     @Query("SELECT * FROM midias WHERE isCasal = 1")
     fun buscarMidiasCasal(): Flow<List<Midia>>
 
-    // Busca mídias de um grupo/sala específico pelo ID
+    // Busca mídias de um grupo/sala específico pelo ID exato
     @Query("SELECT * FROM midias WHERE isCasal = 1 AND casalId = :grupoId")
     fun buscarMidiasPorGrupo(grupoId: String): Flow<List<Midia>>
+
+    // Histórico estritamente pessoal (apenas itens concluídos particulares)
+    @Query("SELECT * FROM midias WHERE (isCasal = 0 OR isCasal IS NULL OR casalId = '') AND (status = 'Concluído' OR status = 'Concluido')")
+    fun buscarHistoricoPessoal(): Flow<List<Midia>>
+
+    // Histórico estritamente de um grupo/sala ativo
+    @Query("SELECT * FROM midias WHERE isCasal = 1 AND casalId = :grupoId AND (status = 'Concluído' OR status = 'Concluido')")
+    fun buscarHistoricoGrupo(grupoId: String): Flow<List<Midia>>
 
     @Query("SELECT * FROM midias WHERE id = :id LIMIT 1")
     suspend fun buscarPorId(id: Int): Midia?
@@ -44,6 +54,9 @@ interface MidiaDao {
 
     @Query("UPDATE midias SET favorito = :favorito WHERE id = :idMidia")
     suspend fun atualizarFavorito(idMidia: Int, favorito: Boolean)
+
+    @Query("UPDATE midias SET status = :novoStatus WHERE id = :idMidia")
+    suspend fun atualizarStatusMidia(idMidia: Int, novoStatus: String)
 
     // --- GERENCIAMENTO DE GRUPOS / SALAS COMPARTILHADAS LOCALMENTE ---
 

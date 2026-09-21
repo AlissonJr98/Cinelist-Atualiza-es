@@ -26,14 +26,15 @@ object AppModule {
         return database.midiaDao()
     }
 
-    // 🚀 Ensina o Hilt a construir o seu Repositório injetando o DAO e o repositório de notificações
+    // 🚀 Ensina o Hilt a construir o seu Repositório injetando o Context, o DAO e o repositório de notificações
     @Provides
     @Singleton
     fun provideMidiaRepository(
+        @ApplicationContext context: Context,
         midiaDao: MidiaDao,
         notificacaoRepository: NotificacaoRepository
     ): MidiaRepository {
-        return MidiaRepository(midiaDao, notificacaoRepository)
+        return MidiaRepository(context, midiaDao, notificacaoRepository)
     }
 
     // 🚀 NOVO: Ensina o Hilt a extrair o DAO de Notificações do mesmo Banco de Dados

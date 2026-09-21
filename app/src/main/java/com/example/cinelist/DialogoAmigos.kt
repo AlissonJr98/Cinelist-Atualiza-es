@@ -167,11 +167,11 @@ fun DialogoAmigos(
                                 }
                                 IconButton(
                                     onClick = {
-                                        viewModel.adicionarAmigo(usuario.uid) { sucesso ->
+                                        viewModel.enviarSolicitacaoAmigo(usuario.uid) { sucesso, erroMsg ->
                                             if (sucesso) {
-                                                Toast.makeText(contexto, "${usuario.nome} adicionado aos amigos!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(contexto, "Solicitação de amizade enviada para ${usuario.nome}!", Toast.LENGTH_SHORT).show()
                                             } else {
-                                                Toast.makeText(contexto, "Erro ao adicionar amigo.", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(contexto, erroMsg ?: "Erro ao enviar solicitação.", Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     },

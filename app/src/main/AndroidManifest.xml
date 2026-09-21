@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
@@ -17,7 +18,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CineList">
 
-        <!-- FileProvider para compartilhar o APK baixado com o instalador do Android -->
+        <!-- Serviço Firebase Cloud Messaging -->
+        <service
+            android:name=".CineFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="canal_solicitacoes_amizade" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -28,6 +45,7 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
+        <!-- A Activity principal a apontar para o tema limpo do app -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

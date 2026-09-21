@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -25,9 +26,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.OpenInNew
@@ -57,6 +60,7 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,11 +77,9 @@ fun TelaDetalhes(
     onVoltar: () -> Unit,
     onRecomendacaoClique: (Int, String) -> Unit = { _, _ -> }
 ) {
-    // Coleta o casalId ativo no ViewModel para saber onde salvar se for novo
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
     val isModoCasal = casalIdAtivo.isNotBlank()
 
-    // Observa as listas correspondentes de acordo com o modo ativo
     val listaAtualBanco by (if (isModoCasal) viewModel.midiasGrupoAtivo else viewModel.midiasPessoais).collectAsState(initial = emptyList())
     val todasAsMidiasbyBanco by viewModel.todasAsMidias.collectAsState(initial = emptyList())
 
@@ -95,6 +97,10 @@ fun TelaDetalhes(
     var exibindoPlayerNativo by remember { mutableStateOf(false) }
     var imagemModalExpandida by remember { mutableStateOf<String?>(null) }
     var mostrarConfirmacaoExclusao by remember { mutableStateOf(false) }
+
+    var mostrarDialogFimTemporada by remember { mutableStateOf(false) }
+    var temporadaConcluidaAlvo by remember { mutableIntStateOf(1) }
+    var proximaTemporadaExiste by remember { mutableStateOf(false) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -244,7 +250,58 @@ fun TelaDetalhes(
     }
 
     DisposableEffect(Unit) {
-        onDispose { viewModel.limparDetalhesEstendidos() }
+        onDispose {
+            viewModel.limparDetalhesEstendidos()
+            if (isModoCasal) {
+                viewModel.pararAssistirAgora()
+            }
+        }
+    }
+
+    if (mostrarDialogFimTemporada && midiaSalva != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogFimTemporada = false },
+            title = { Text("Fim da Temporada $temporadaConcluidaAlvo! 🎬", fontWeight = FontWeight.Bold) },
+            text = {
+                val textoMsg = if (proximaTemporadaExiste) {
+                    "Este era o último episódio da Temporada $temporadaConcluidaAlvo. Deseja avançar para a próxima temporada e manter o status como Assistindo, ou marcar a série inteira como Concluída?"
+                } else {
+                    "Este era o último episódio disponível da série. Deseja marcar a série como Concluída?"
+                }
+                Text(textoMsg)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        mostrarDialogFimTemporada = false
+                        if (proximaTemporadaExiste) {
+                            temporadaAtual = temporadaConcluidaAlvo + 1
+                            episodioAtual = 1
+                            status = "Assistindo"
+                            Toast.makeText(contexto, "Avançando para a Temporada $temporadaAtual! 🚀", Toast.LENGTH_SHORT).show()
+                        } else {
+                            status = "Concluído"
+                            if (isModoCasal) viewModel.pararAssistirAgora()
+                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                ) {
+                    Text(if (proximaTemporadaExiste) "Avançar Temporada" else "Marcar Concluída", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogFimTemporada = false
+                        status = "Concluído"
+                        if (isModoCasal) viewModel.pararAssistirAgora()
+                    }
+                ) {
+                    Text("Marcar Concluída", color = Color.White)
+                }
+            }
+        )
     }
 
     if (mostrarConfirmacaoExclusao && midiaSalva != null) {
@@ -456,6 +513,25 @@ fun TelaDetalhes(
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // BOTÃO DE CONSULTA DE CINEMAS E INGRESSOS (Se for filme)
+                if (!ehSerieOuAnime) {
+                    Button(
+                        onClick = {
+                            val query = Uri.encode("cinemas e ingressos para $tituloDinamico")
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=$query"))
+                            contexto.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Consultar Sessões e Ingressos 🎟️", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -776,6 +852,13 @@ fun TelaDetalhes(
                                                     temporadaAtual = abaTemporadaVisualizada
                                                     episodioAtual = epItem.numeroEpisodio
                                                     if (status == "Quero Assistir") status = "Assistindo"
+
+                                                    val ultimoEpisodioDaLista = episodiosTmdb.maxOfOrNull { it.numeroEpisodio } ?: epItem.numeroEpisodio
+                                                    if (epItem.numeroEpisodio >= ultimoEpisodioDaLista) {
+                                                        temporadaConcluidaAlvo = abaTemporadaVisualizada
+                                                        proximaTemporadaExiste = (temporadaConcluidaAlvo < totalTempDisponiveis)
+                                                        mostrarDialogFimTemporada = true
+                                                    }
                                                 },
                                             shape = RoundedCornerShape(8.dp),
                                             colors = CardDefaults.cardColors(
@@ -859,10 +942,20 @@ fun TelaDetalhes(
                     }
                 }
 
+                if (midiaSalva != null && isModoCasal) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    SecaoAvaliacoesSala(
+                        midia = midiaSalva,
+                        onSalvarAvaliacao = { notaMembro, comentarioMembro ->
+                            viewModel.avaliarMidiaNaSala(midiaSalva, notaMembro, comentarioMembro)
+                        }
+                    )
+                }
+
                 if (midiaSalva != null) {
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Text(text = "Sua Nota Pessoal:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "Sua Nota Geral:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Row(modifier = Modifier.padding(top = 4.dp)) {
                         repeat(5) { index ->
                             val estrelaAtiva = index < nota
@@ -882,7 +975,12 @@ fun TelaDetalhes(
                         listOf("Quero Assistir", "Assistindo", "Concluído").forEach { s ->
                             FilterChip(
                                 selected = (status == s),
-                                onClick = { status = s },
+                                onClick = {
+                                    status = s
+                                    if (s.equals("Concluído", ignoreCase = true) && isModoCasal) {
+                                        viewModel.pararAssistirAgora()
+                                    }
+                                },
                                 label = { Text(s, fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = Color(0xFFFFD700),
@@ -940,7 +1038,7 @@ fun TelaDetalhes(
                 Text(text = "Sinopse / Visão Geral:", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
 
-                val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopseApi ?: "Carregando sinopse...")
+                val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopse ?: "Carregando sinopse...")
 
                 OutlinedTextField(
                     value = sinopseDinamica,
@@ -1014,6 +1112,36 @@ fun TelaDetalhes(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                if (midiaSalva != null && isModoCasal) {
+                    Button(
+                        onClick = {
+                            status = "Assistindo"
+                            val midiaAtualizada = midiaSalva.copy(
+                                temporadaAtual = temporadaAtual,
+                                episodioAtual = episodioAtual,
+                                status = "Assistindo",
+                                jaEncerrou = false
+                            )
+                            viewModel.atualizar(midiaAtualizada)
+                            viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
+                            Toast.makeText(contexto, "Transmitindo e alterando status para 'Assistindo'! 🎬", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (ehSerieOuAnime) "ASSISTIR T$temporadaAtual • EP $episodioAtual AGORA (SALA)" else "ASSISTINDO FILME AGORA (SALA)",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 13.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 if (midiaSalva != null) {
                     Button(
                         onClick = {
@@ -1021,11 +1149,14 @@ fun TelaDetalhes(
                                 ?: provedoresStreaming.firstOrNull()?.nomeProvedor
                                 ?: midiaSalva.plataforma
 
+                            val concluido = (status.equals("Concluído", ignoreCase = true) || status.equals("Concluido", ignoreCase = true))
+                            val querAssistir = status.equals("Quero Assistir", ignoreCase = true)
+
                             val midiaAtualizada = midiaSalva.copy(
                                 nota = nota,
                                 temporadaAtual = temporadaAtual,
                                 episodioAtual = episodioAtual,
-                                jaEncerrou = (status == "Concluído"),
+                                jaEncerrou = concluido,
                                 status = status,
                                 sinopse = sinopse,
                                 favorito = ehFavorito,
@@ -1035,10 +1166,18 @@ fun TelaDetalhes(
                                 casalId = casalIdAtivo
                             )
                             viewModel.atualizar(midiaAtualizada)
+
+                            if (status.equals("Assistindo", ignoreCase = true) && isModoCasal) {
+                                viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
+                            } else if (concluido || querAssistir) {
+                                viewModel.pararAssistirAgora()
+                            }
+
                             onVoltar()
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("SALVAR ALTERAÇÕES", color = Color.Black, fontWeight = FontWeight.Bold)
                     }
@@ -1051,7 +1190,7 @@ fun TelaDetalhes(
 
                             val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
                             val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
-                            val sinopseParaSalvar = detalhesApi?.sinopseApi ?: ""
+                            val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
 
                             val novaMidia = Midia(
                                 id = 0,
@@ -1079,8 +1218,9 @@ fun TelaDetalhes(
                             onVoltar()
                         },
                         enabled = !jaExisteNaLista,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA" else (if (isModoCasal) "ADICIONAR À LISTA DO CASAL" else "ADICIONAR À MINHA LISTA"),
@@ -1096,307 +1236,208 @@ fun TelaDetalhes(
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled")
+fun compartilharCardEstilizado(
+    contexto: Context,
+    coroutineScope: CoroutineScope,
+    midia: Midia
+) {
+    coroutineScope.launch(Dispatchers.IO) {
+        try {
+            val width = 1080
+            val height = 1920
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+            paint.color = android.graphics.Color.parseColor("#121212")
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+            var coverBitmap: Bitmap? = null
+            if (midia.imagemCapa.isNotBlank()) {
+                val request = ImageRequest.Builder(contexto)
+                    .data(midia.imagemCapa)
+                    .allowHardware(false)
+                    .build()
+                val result = coil.ImageLoader(contexto).execute(request)
+                if (result is SuccessResult) {
+                    coverBitmap = result.drawable.toBitmap()
+                }
+            }
+
+            if (coverBitmap != null) {
+                val rectF = RectF(140f, 200f, 940f, 1200f)
+                canvas.drawBitmap(coverBitmap, null, rectF, paint)
+            } else {
+                paint.color = android.graphics.Color.parseColor("#2A2A2A")
+                val rectF = RectF(140f, 200f, 940f, 1200f)
+                canvas.drawRoundRect(rectF, 40f, 40f, paint)
+            }
+
+            paint.color = android.graphics.Color.WHITE
+            paint.textSize = 80f
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            paint.textAlign = Paint.Align.CENTER
+
+            val tituloLimitado = if (midia.titulo.length > 25) midia.titulo.take(22) + "..." else midia.titulo
+            canvas.drawText(tituloLimitado, width / 2f, 1350f, paint)
+
+            paint.color = android.graphics.Color.parseColor("#FFD700")
+            paint.textSize = 60f
+            canvas.drawText("Nota: ${midia.nota} ★", width / 2f, 1480f, paint)
+
+            paint.color = android.graphics.Color.LTGRAY
+            paint.textSize = 50f
+            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            canvas.drawText("Status: ${midia.status}", width / 2f, 1580f, paint)
+
+            if (midia.tipo.equals("Série", ignoreCase = true) || midia.tipo.equals("Anime", ignoreCase = true)) {
+                canvas.drawText("Temporada ${midia.temporadaAtual} • Ep ${midia.episodioAtual}", width / 2f, 1680f, paint)
+            }
+
+            paint.color = android.graphics.Color.DKGRAY
+            paint.textSize = 40f
+            canvas.drawText("Gerado por CineList", width / 2f, 1850f, paint)
+
+            val cachePath = File(contexto.cacheDir, "images")
+            cachePath.mkdirs()
+            val file = File(cachePath, "compartilhar_midia.png")
+            val fileOutputStream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+            fileOutputStream.flush()
+            fileOutputStream.close()
+
+            val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.provider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TEXT, "Dá uma olhada no que estou acompanhando: ${midia.titulo} 🎬")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newRawUri("", uri)
+            }
+            contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via"))
+
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(contexto, "Erro ao gerar card de compartilhamento.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+@Composable
+fun SecaoAvaliacoesSala(
+    midia: Midia,
+    onSalvarAvaliacao: (Int, String) -> Unit
+) {
+    var notaMembro by remember { mutableIntStateOf(5) }
+    var comentarioMembro by remember { mutableStateOf("") }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Avaliações da Sala", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (midia.avaliacoesGrupo.isEmpty()) {
+                Text("Nenhuma avaliação ainda.", color = Color.Gray, fontSize = 14.sp)
+            } else {
+                midia.avaliacoesGrupo.forEach { (_, avaliacao) ->
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(avaliacao.autorNome, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("${avaliacao.nota}/5 ★", color = Color(0xFFFFD700), fontSize = 14.sp)
+                        }
+                        if (avaliacao.comentario.isNotBlank()) {
+                            Text(avaliacao.comentario, color = Color.LightGray, fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.DarkGray)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Sua Avaliação", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.padding(vertical = 8.dp)) {
+                repeat(5) { index ->
+                    val estrelaAtiva = index < notaMembro
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = if (estrelaAtiva) Color(0xFFFFD700) else Color.DarkGray,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { notaMembro = index + 1 }
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = comentarioMembro,
+                onValueChange = { comentarioMembro = it },
+                label = { Text("Comentário (Opcional)") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFFFFD700),
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    onSalvarAvaliacao(notaMembro, comentarioMembro)
+                    comentarioMembro = ""
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+            ) {
+                Text("ENVIAR AVALIAÇÃO", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
 @Composable
 fun PlayerTrailerNativo(
     chaveVideo: String,
     modifier: Modifier = Modifier,
     onFechar: () -> Unit
 ) {
-    var webViewRef by remember { mutableStateOf<android.webkit.WebView?>(null) }
+    Box(modifier = modifier) {
+        val context = LocalContext.current
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
-    DisposableEffect(chaveVideo) {
-        onDispose {
-            webViewRef?.destroy()
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(240.dp)
-            .background(Color.Black)
-    ) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                android.webkit.WebView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = false
-                        databaseEnabled = true
-                        cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-                        userAgentString = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
-                    }
-
-                    webChromeClient = android.webkit.WebChromeClient()
-                    webViewClient = android.webkit.WebViewClient()
-
-                    val appPackage = ctx.packageName
-                    val htmlPlayer = """
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                            <meta name="referrer" content="strict-origin-when-cross-origin">
-                            <style>
-                                * { margin: 0; padding: 0; box-sizing: border-box; }
-                                html, body { width: 100%; height: 100%; background: #000000; overflow: hidden; }
-                                iframe { width: 100%; height: 100%; border: none; }
-                            </style>
-                        </head>
-                        <body>
-                            <iframe 
-                                src="https://www.youtube.com/embed/$chaveVideo?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1" 
-                                frameborder="0"
-                                referrerpolicy="strict-origin-when-cross-origin"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                allowfullscreen>
-                            </iframe>
-                        </body>
-                        </html>
-                    """.trimIndent()
-
-                    loadDataWithBaseURL("https://$appPackage", htmlPlayer, "text/html", "utf-8", null)
-                    webViewRef = this
+            factory = {
+                com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView(context).apply {
+                    lifecycleOwner.lifecycle.addObserver(this)
+                    addYouTubePlayerListener(object : com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener() {
+                        override fun onReady(youTubePlayer: com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer) {
+                            youTubePlayer.loadVideo(chaveVideo, 0f)
+                        }
+                    })
                 }
             }
         )
-
         IconButton(
-            onClick = {
-                webViewRef?.destroy()
-                onFechar()
-            },
+            onClick = onFechar,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(8.dp)
-                .background(Color.Black.copy(alpha = 0.7f), CircleShape)
-                .size(32.dp)
+                .background(Color(0x88000000), CircleShape)
         ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Fechar Player",
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(Icons.Default.Close, contentDescription = "Fechar Trailer", tint = Color.White)
         }
-    }
-}
-
-private fun compartilharCardEstilizado(
-    contexto: Context,
-    coroutineScope: CoroutineScope,
-    midia: Midia
-) {
-    Toast.makeText(contexto, "Gerando card estilizado...", Toast.LENGTH_SHORT).show()
-
-    coroutineScope.launch {
-        val bitmap = withContext(Dispatchers.IO) {
-            gerarBitmapCardEstilizado(contexto, midia)
-        }
-
-        val uriImagem = withContext(Dispatchers.IO) {
-            salvarBitmapEmCache(contexto, bitmap)
-        }
-
-        val textoProgresso = if (midia.tipo.equals("Filme", ignoreCase = true)) {
-            if (midia.status == "Concluído") "já assisti" else "quero assistir"
-        } else {
-            if (midia.status == "Concluído") "concluí tudo" else "estou na T${midia.temporadaAtual} • Ep ${midia.episodioAtual}"
-        }
-
-        val mensagemTexto = """
-            🍿 Olha o meu progresso no CineList!
-            🎬 *${midia.titulo}* (${midia.tipo})
-            📊 Status: ${midia.status} ($textoProgresso)
-            ⭐ Avaliação: ${"★".repeat(midia.nota.coerceAtLeast(0))}
-            
-            Gerenciado pelo app CineList! 🔥
-        """.trimIndent()
-
-        val intentCompartilhar = Intent().apply {
-            action = Intent.ACTION_SEND
-            if (uriImagem != null) {
-                type = "image/png"
-                clipData = ClipData.newRawUri("card", uriImagem)
-                putExtra(Intent.EXTRA_STREAM, uriImagem)
-                putExtra(Intent.EXTRA_TEXT, mensagemTexto)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            } else {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, mensagemTexto)
-            }
-        }
-
-        val chooserIntent = Intent.createChooser(intentCompartilhar, "Compartilhar card via:").apply {
-            if (uriImagem != null) {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-        }
-
-        contexto.startActivity(chooserIntent)
-    }
-}
-
-private suspend fun gerarBitmapCardEstilizado(contexto: Context, midia: Midia): Bitmap {
-    val largura = 1080
-    val altura = 1600
-    val bitmap = Bitmap.createBitmap(largura, altura, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-
-    val paintFundo = Paint().apply {
-        isAntiAlias = true
-        shader = android.graphics.LinearGradient(
-            0f, 0f, 0f, altura.toFloat(),
-            intArrayOf(
-                android.graphics.Color.parseColor("#1C1E24"),
-                android.graphics.Color.parseColor("#121214"),
-                android.graphics.Color.parseColor("#090A0B")
-            ),
-            null,
-            android.graphics.Shader.TileMode.CLAMP
-        )
-    }
-    canvas.drawRect(0f, 0f, largura.toFloat(), altura.toFloat(), paintFundo)
-
-    val paintHeader = Paint().apply {
-        color = android.graphics.Color.parseColor("#FFD700")
-        textSize = 54f
-        isFakeBoldText = true
-        isAntiAlias = true
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    canvas.drawText("🍿 CineList", 70f, 130f, paintHeader)
-
-    val paintSubheader = Paint().apply {
-        color = android.graphics.Color.parseColor("#A0A5B5")
-        textSize = 32f
-        isAntiAlias = true
-    }
-    canvas.drawText("Meu Diário de Cinema & Séries", 70f, 185f, paintSubheader)
-
-    var bitmapPoster: Bitmap? = null
-    if (midia.imagemCapa.isNotBlank()) {
-        try {
-            val requisicao = ImageRequest.Builder(contexto)
-                .data(midia.imagemCapa)
-                .allowHardware(false)
-                .build()
-            val resultado = coil.ImageLoader(contexto).execute(requisicao)
-            if (resultado is SuccessResult) {
-                bitmapPoster = resultado.drawable.toBitmap()
-            }
-        } catch (_: Exception) {}
-    }
-
-    val rectPoster = RectF(70f, 240f, largura - 70f, 1080f)
-    val paintPosterBg = Paint().apply {
-        color = android.graphics.Color.parseColor("#262933")
-        isAntiAlias = true
-    }
-    canvas.drawRoundRect(rectPoster, 36f, 36f, paintPosterBg)
-
-    if (bitmapPoster != null) {
-        val path = android.graphics.Path().apply {
-            addRoundRect(rectPoster, 36f, 36f, android.graphics.Path.Direction.CW)
-        }
-        canvas.save()
-        canvas.clipPath(path)
-        val srcRect = Rect(0, 0, bitmapPoster.width, bitmapPoster.height)
-        canvas.drawBitmap(bitmapPoster, srcRect, rectPoster, Paint(Paint.FILTER_BITMAP_FLAG))
-        canvas.restore()
-    } else {
-        val paintTextoSemCapa = Paint().apply {
-            color = android.graphics.Color.GRAY
-            textSize = 42f
-            textAlign = Paint.Align.CENTER
-            isAntiAlias = true
-        }
-        canvas.drawText("SEM CAPA", rectPoster.centerX(), rectPoster.centerY(), paintTextoSemCapa)
-    }
-
-    val paintTitulo = Paint().apply {
-        color = android.graphics.Color.WHITE
-        textSize = 58f
-        isFakeBoldText = true
-        isAntiAlias = true
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-    }
-    val tituloTruncado = if (midia.titulo.length > 28) midia.titulo.take(28) + "..." else midia.titulo
-    canvas.drawText(tituloTruncado, 70f, 1165f, paintTitulo)
-
-    val paintGenero = Paint().apply {
-        color = android.graphics.Color.parseColor("#9E9E9E")
-        textSize = 34f
-        isAntiAlias = true
-    }
-    canvas.drawText("${midia.tipo} • ${midia.genero}", 70f, 1220f, paintGenero)
-
-    val textoBadge = when {
-        midia.tipo.equals("Filme", ignoreCase = true) -> midia.status
-        midia.status == "Concluído" -> "Concluído (Tudo Assistido)"
-        else -> "${midia.status} • T${midia.temporadaAtual} Ep ${midia.episodioAtual}"
-    }
-
-    val paintBadgeBg = Paint().apply {
-        color = when (midia.status) {
-            "Assistindo" -> android.graphics.Color.parseColor("#00BFFF")
-            "Concluído" -> android.graphics.Color.parseColor("#32CD32")
-            else -> android.graphics.Color.parseColor("#FFD700")
-        }
-        isAntiAlias = true
-    }
-    val rectBadge = RectF(70f, 1260f, 70f + (textoBadge.length * 24f) + 40f, 1335f)
-    canvas.drawRoundRect(rectBadge, 20f, 20f, paintBadgeBg)
-
-    val paintBadgeTexto = Paint().apply {
-        color = android.graphics.Color.BLACK
-        textSize = 32f
-        isFakeBoldText = true
-        isAntiAlias = true
-    }
-    canvas.drawText(textoBadge, 90f, 1310f, paintBadgeTexto)
-
-    val paintEstrelas = Paint().apply {
-        color = android.graphics.Color.parseColor("#FFD700")
-        textSize = 56f
-        isAntiAlias = true
-    }
-    val estrelas = if (midia.nota > 0) "★".repeat(midia.nota) + "☆".repeat(5 - midia.nota) else "Sem avaliação"
-    canvas.drawText(estrelas, 70f, 1420f, paintEstrelas)
-
-    val paintRodape = Paint().apply {
-        color = android.graphics.Color.parseColor("#606575")
-        textSize = 28f
-        isAntiAlias = true
-    }
-    canvas.drawText("Compartilhado pelo app CineList • Organizando histórias", 70f, 1515f, paintRodape)
-
-    return bitmap
-}
-
-private fun salvarBitmapEmCache(contexto: Context, bitmap: Bitmap): Uri? {
-    return try {
-        val pastaImagens = File(contexto.cacheDir, "shared_images").apply { mkdirs() }
-        val arquivo = File(pastaImagens, "cinelist_card_${System.currentTimeMillis()}.png")
-        val stream = FileOutputStream(arquivo)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        stream.flush()
-        stream.close()
-
-        FileProvider.getUriForFile(
-            contexto,
-            "${contexto.packageName}.provider",
-            arquivo
-        )
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 }

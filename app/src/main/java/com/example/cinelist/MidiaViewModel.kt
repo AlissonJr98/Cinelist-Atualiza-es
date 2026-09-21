@@ -8,14 +8,29 @@ import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class CineWrappedData(
+    val totalTitulosConcluidos: Int,
+    val horasTotaisAssistidas: Int,
+    val generoFavorito: String,
+    val plataformaMaisUtilizada: String,
+    val totalEpisodiosMaratonados: Int,
+    val mediaNotasAtribuidas: String,
+    val maiorNotaDada: Int,
+    val filmeOuSerieDestaque: String,
+    val frasePersonalizada: String
+)
 
 @HiltViewModel
 class MidiaViewModel @Inject constructor(
@@ -29,11 +44,9 @@ class MidiaViewModel @Inject constructor(
     val midiasPessoais: Flow<List<Midia>> = repository.midiasPessoais
     val gruposSalvos: Flow<List<GrupoEntity>> = repository.gruposSalvos
 
-    // Estado do ID do grupo/sala ativo no ViewModel
     private val _casalIdAtivo = MutableStateFlow("")
     val casalIdAtivo: StateFlow<String> = _casalIdAtivo.asStateFlow()
 
-    // Fluxo de mídias dinâmico baseado no grupo ativo selecionado
     @OptIn(ExperimentalCoroutinesApi::class)
     val midiasGrupoAtivo: Flow<List<Midia>> = _casalIdAtivo.flatMapLatest { grupoId ->
         if (grupoId.isBlank()) {
@@ -43,19 +56,194 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val membrosGrupoAtivo: Flow<List<MembroGrupo>> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            repository.observarMembrosDoGrupo(grupoId).map { lista ->
+                lista.sortedWith(
+                    compareByDescending<MembroGrupo> { it.estaRealmenteOnline }
+                        .thenByDescending { it.vistoPorUltimo }
+                        .thenBy { it.nome.lowercase() }
+                )
+            }
+        }
+    }
+
+    private val _filmesEmCartaz = MutableStateFlow<List<TmdbFilme>>(emptyList())
+    val filmesEmCartaz: StateFlow<List<TmdbFilme>> = _filmesEmCartaz
+
+    fun carregarFilmesEmCartaz() {
+        viewModelScope.launch {
+            try {
+                val resposta = RetrofitClient.apiService.obterFilmesEmCartaz()
+                _filmesEmCartaz.value = resposta.resultados
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun iniciarAssistirMidiaAgora(midia: Midia) {
+        val grupo = _casalIdAtivo.value
+        if (grupo.isNotBlank()) {
+            viewModelScope.launch {
+                val epTexto = if (midia.tipo.equals("Filme", ignoreCase = true)) "" else "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}"
+                repository.definirAssistindoAgora(grupo, midia.titulo, epTexto)
+            }
+        }
+    }
+
+    fun pararAssistirAgora() {
+        val grupo = _casalIdAtivo.value
+        if (grupo.isNotBlank()) {
+            viewModelScope.launch {
+                repository.limparAssistindoAgora(grupo)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pararAssistirAgora()
+    }
+
+    fun avaliarMidiaNaSala(midia: Midia, nota: Int, comentario: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                repository.salvarAvaliacaoMembro(grupoId, midia, nota, comentario)
+            }
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val matchesDoGrupo: Flow<List<MatchMidia>> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            repository.observarMatchesDoGrupo(grupoId)
+        }
+    }
+
+    private val _popularesTmdbMatch = MutableStateFlow<List<Midia>>(emptyList())
+    val popularesTmdbMatch: StateFlow<List<Midia>> = _popularesTmdbMatch.asStateFlow()
+
+    private var paginaTmdbAtual = 1
+    private var carregandoPopulares = false
+
+    fun carregarMaisPopularesMatch() {
+        if (carregandoPopulares) return
+        carregandoPopulares = true
+        viewModelScope.launch {
+            val novos = repository.buscarPopularesParaMatch(paginaTmdbAtual)
+            if (novos.isNotEmpty()) {
+                _popularesTmdbMatch.value = _popularesTmdbMatch.value + novos
+                paginaTmdbAtual++
+            }
+            carregandoPopulares = false
+        }
+    }
+
+    fun votarMatch(midia: Midia, curtiu: Boolean) {
+        val grupo = _casalIdAtivo.value
+        if (grupo.isNotBlank()) {
+            viewModelScope.launch {
+                repository.votarNoMatch(grupo, midia, curtiu)
+            }
+        }
+    }
+
+    fun salvarMidiaMatchNaSala(match: MatchMidia) {
+        val grupo = _casalIdAtivo.value
+        if (grupo.isNotBlank()) {
+            viewModelScope.launch {
+                val existentes = repository.buscarMidiasPorGrupo(grupo).firstOrNull() ?: emptyList()
+                val jaExiste = existentes.any {
+                    (it.idTmdb != 0 && it.idTmdb == match.idTmdb) ||
+                            it.titulo.trim().equals(match.titulo.trim(), ignoreCase = true)
+                }
+
+                if (!jaExiste) {
+                    val novaMidia = Midia(
+                        idTmdb = match.idTmdb,
+                        titulo = match.titulo,
+                        tipo = match.tipo,
+                        status = "Quero Assistir",
+                        nota = 0,
+                        temporadaAtual = 1,
+                        episodioAtual = 1,
+                        minutoParado = 0,
+                        jaEncerrou = false,
+                        sinopse = match.sinopse,
+                        imagemCapa = match.imagemCapa,
+                        genero = match.genero,
+                        plataforma = if (match.tipo.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original",
+                        favorito = false,
+                        listaCustomizada = "Geral",
+                        isCasal = true,
+                        casalId = grupo,
+                        adicionadoPor = "Modo Match ❤️"
+                    )
+                    repository.inserir(novaMidia)
+                }
+            }
+        }
+    }
+
+    fun resetarRodadaMatch() {
+        val grupo = _casalIdAtivo.value
+        if (grupo.isNotBlank()) {
+            viewModelScope.launch {
+                repository.reiniciarRodadaMatch(grupo)
+            }
+        }
+        paginaTmdbAtual = 1
+        _popularesTmdbMatch.value = emptyList()
+        carregarMaisPopularesMatch()
+    }
+
+    fun atualizarStatusPresenca(online: Boolean) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                repository.atualizarPresencaNoGrupo(grupoId, online)
+            }
+        }
+    }
+
+    val historicoPessoal: Flow<List<Midia>> = repository.midiasPessoais.map { lista ->
+        lista.filter { (!it.isCasal || it.casalId.isBlank()) && (it.status.equals("Concluído", ignoreCase = true) || it.status.equals("Concluido", ignoreCase = true)) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val historicoGrupoAtivo: Flow<List<Midia>> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            repository.buscarMidiasPorGrupo(grupoId).map { lista ->
+                lista.filter { it.isCasal && it.casalId == grupoId && (it.status.equals("Concluído", ignoreCase = true) || it.status.equals("Concluido", ignoreCase = true)) }
+            }
+        }
+    }
+
     init {
         carregarGrupoAtivoInicial()
         verificarAtualizacaoSilenciosa()
         iniciarSincronizacaoSilenciosaNuvem()
+        carregarMaisPopularesMatch()
+        carregarFilmesEmCartaz()
     }
 
-    private fun carregarGrupoAtivoInicial() {
+    fun carregarGrupoAtivoInicial() {
         viewModelScope.launch {
             val grupoAtivo = repository.obterGrupoAtivoLocal()
             if (grupoAtivo != null) {
                 _casalIdAtivo.value = grupoAtivo.grupoId
                 if (grupoAtivo.grupoId.isNotBlank()) {
                     observarGrupoFirestore(grupoAtivo.grupoId)
+                    repository.atualizarPresencaNoGrupo(grupoAtivo.grupoId, true)
                 }
             }
         }
@@ -63,10 +251,16 @@ class MidiaViewModel @Inject constructor(
 
     fun selecionarGrupoAtivo(grupoId: String) {
         viewModelScope.launch {
+            val grupoAnterior = _casalIdAtivo.value
+            if (grupoAnterior.isNotBlank() && grupoAnterior != grupoId) {
+                repository.atualizarPresencaNoGrupo(grupoAnterior, false)
+            }
+
             repository.ativarGrupoLocal(grupoId)
             _casalIdAtivo.value = grupoId
             if (grupoId.isNotBlank()) {
                 observarGrupoFirestore(grupoId)
+                repository.atualizarPresencaNoGrupo(grupoId, true)
             }
         }
     }
@@ -100,7 +294,7 @@ class MidiaViewModel @Inject constructor(
     fun excluirGrupoSalvo(grupo: GrupoEntity) {
         viewModelScope.launch {
             if (_casalIdAtivo.value == grupo.grupoId) {
-                selecionarGrupoAtivo("") // Volta para o perfil pessoal se apagar o ativo
+                selecionarGrupoAtivo("")
             }
             repository.deletarGrupoLocal(grupo)
         }
@@ -109,16 +303,17 @@ class MidiaViewModel @Inject constructor(
     private fun observarGrupoFirestore(grupoId: String) {
         viewModelScope.launch {
             repository.observarMidiasDoGrupoFirestore(grupoId).collect {
-                // Sincronizado automaticamente via repository
             }
         }
     }
 
     val todasNotificacoes: Flow<List<NotificacaoEntity>> = notificacaoRepository.todasNotificacoes
     val quantidadeNaoLidas: Flow<Int> = notificacaoRepository.quantidadeNaoLidas
-
-    // --- MÓDULO SOCIAL / AMIGOS ---
     val amigosConectados: Flow<List<AmigoPerfil>> = socialRepository.observarAmigos()
+
+    val solicitacoesRecebidas: Flow<List<SolicitacaoAmizadeRecebida>> = socialRepository.observarSolicitacoesRecebidas()
+    val solicitacoesPendentesEnviadas: Flow<List<String>> = socialRepository.observarUidsStatusPendente()
+    val usuariosBloqueados: Flow<List<AmigoPerfil>> = socialRepository.observarUsuariosBloqueados()
 
     private val _resultadosBuscaAmigos = MutableStateFlow<List<AmigoPerfil>>(emptyList())
     val resultadosBuscaAmigos: StateFlow<List<AmigoPerfil>> = _resultadosBuscaAmigos
@@ -127,20 +322,78 @@ class MidiaViewModel @Inject constructor(
     val listaAmigoSelecionado: StateFlow<List<Midia>> = _listaAmigoSelecionado
 
     fun atualizarMeuPerfilPublico(nome: String, bio: String) {
-        viewModelScope.launch {
-            socialRepository.atualizarPerfilPublico(nome, bio)
-        }
+        viewModelScope.launch { socialRepository.atualizarPerfilPublico(nome, bio) }
     }
+
+    private var jobBuscaUsuarios: Job? = null
 
     fun pesquisarUsuarios(termo: String) {
-        viewModelScope.launch {
-            _resultadosBuscaAmigos.value = socialRepository.buscarUsuarios(termo)
+        jobBuscaUsuarios?.cancel()
+        val termoLimpo = termo.trim()
+        if (termoLimpo.isEmpty()) {
+            _resultadosBuscaAmigos.value = emptyList()
+            return
+        }
+        jobBuscaUsuarios = viewModelScope.launch {
+            _resultadosBuscaAmigos.value = socialRepository.buscarUsuarios(termoLimpo)
         }
     }
 
-    fun adicionarAmigo(amigoUid: String, onResultado: (Boolean) -> Unit) {
+    fun enviarSolicitacaoAmigo(amigoUid: String, onResultado: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            val sucesso = socialRepository.adicionarAmigo(amigoUid)
+            val resultado = socialRepository.enviarSolicitacaoAmizade(amigoUid)
+            resultado.onSuccess {
+                onResultado(true, null)
+            }.onFailure { erro ->
+                onResultado(false, erro.message)
+            }
+        }
+    }
+
+    fun cancelarSolicitacaoAmigo(amigoUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.cancelarSolicitacaoEnviada(amigoUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun atualizarPresencaGlobal(online: Boolean) {
+        viewModelScope.launch {
+            socialRepository.atualizarPresencaGlobal(online)
+        }
+    }
+
+    fun aceitarSolicitacaoAmizade(remetenteUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.aceitarSolicitacao(remetenteUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun recusarSolicitacaoAmizade(remetenteUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.recusarSolicitacao(remetenteUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun removerAmigo(amigoUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.removerAmigo(amigoUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun bloquearUsuario(alvoUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.bloquearUsuario(alvoUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun desbloquearUsuario(alvoUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.desbloquearUsuario(alvoUid)
             onResultado(sucesso)
         }
     }
@@ -148,6 +401,39 @@ class MidiaViewModel @Inject constructor(
     fun carregarListaDoAmigo(amigoUid: String) {
         viewModelScope.launch {
             _listaAmigoSelecionado.value = socialRepository.buscarListaAmigo(amigoUid)
+        }
+    }
+
+    fun enviarMensagemAmigo(amigoUid: String, texto: String) {
+        viewModelScope.launch {
+            socialRepository.enviarMensagemChat(amigoUid, texto)
+        }
+    }
+
+    fun observarMensagensAmigo(amigoUid: String): Flow<List<MensagemChat>> {
+        return socialRepository.observarMensagensChat(amigoUid)
+    }
+
+    fun calcularMidiasEmComum(minhasMidias: List<Midia>, midiasAmigo: List<Midia>): List<Midia> {
+        return minhasMidias.filter { minhaMidia ->
+            midiasAmigo.any { midiaAmigoItem ->
+                val tipo1 = minhaMidia.tipo.trim().lowercase()
+                val tipo2 = midiaAmigoItem.tipo.trim().lowercase()
+
+                val mesmoTipo = tipo1 == tipo2 ||
+                        ((tipo1 in listOf("série", "anime", "novela", "dorama")) &&
+                                (tipo2 in listOf("série", "anime", "novela", "dorama")))
+
+                if (!mesmoTipo) return@any false
+
+                if (minhaMidia.idTmdb != 0 && midiaAmigoItem.idTmdb != 0) {
+                    minhaMidia.idTmdb == midiaAmigoItem.idTmdb
+                } else {
+                    val titulo1 = minhaMidia.titulo.trim().lowercase()
+                    val titulo2 = midiaAmigoItem.titulo.trim().lowercase()
+                    titulo1.isNotBlank() && titulo1 == titulo2
+                }
+            }
         }
     }
 
@@ -173,7 +459,20 @@ class MidiaViewModel @Inject constructor(
     fun iniciarSincronizacaoSilenciosaNuvem() {
         viewModelScope.launch {
             repository.sincronizacaoAutomaticaSilenciosa()
+            carregarGrupoAtivoInicial()
         }
+    }
+
+    fun forcarSincronizacaoManual() {
+        viewModelScope.launch {
+            repository.forcarSincronizacaoManual()
+            carregarGrupoAtivoInicial()
+        }
+    }
+
+    fun limparEstadoSincronizacao() {
+        repository.limparEstadoSincronizacao()
+        _casalIdAtivo.value = ""
     }
 
     fun verificarAtualizacaoSilenciosa() {
@@ -182,35 +481,7 @@ class MidiaViewModel @Inject constructor(
             if (update != null) {
                 _updatePendente.value = update
                 UpdateManager.exibirNotificacaoAtualizacao(context, update)
-                salvarNotificacaoInterna(update)
             }
-        }
-    }
-
-    private suspend fun salvarNotificacaoInterna(update: InfoAtualizacao) {
-        val jaRegistrada = notificacaoRepository.contarNotificacaoRecente(
-            idRef = update.versaoCode,
-            tipo = "ATUALIZACAO",
-            desde = 0L
-        ) > 0
-
-        if (!jaRegistrada) {
-            val corpo = if (update.notasDaVersao.isNotBlank()) {
-                "Novidades da versão ${update.versaoNome}:\n${update.notasDaVersao}"
-            } else {
-                "Uma nova versão (${update.versaoNome}) com melhorias e correções está disponível para instalação."
-            }
-
-            val novaNotificacao = NotificacaoEntity(
-                tipo = "ATUALIZACAO",
-                titulo = "Nova Versão v${update.versaoNome} Disponível",
-                mensagem = corpo,
-                dataCriacao = System.currentTimeMillis(),
-                lida = false,
-                idReferencia = update.versaoCode
-            )
-
-            notificacaoRepository.inserir(novaNotificacao)
         }
     }
 
@@ -241,19 +512,9 @@ class MidiaViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val resultadosBuscaPaginadaApi: Flow<PagingData<TmdbFilme>> = combine(
-        _queryPaginada,
-        _tipoPaginado,
-        _provedorSelecionadoId,
-        _generoSelecionadoId,
-        _ordenacaoSelecionada
+        _queryPaginada, _tipoPaginado, _provedorSelecionadoId, _generoSelecionadoId, _ordenacaoSelecionada
     ) { query, tipo, provedor, genero, ordenacao ->
-        repository.buscarNoTmdbPaginado(
-            query = query,
-            tipo = tipo,
-            provedorId = provedor,
-            generoId = genero,
-            sortBy = ordenacao
-        )
+        repository.buscarNoTmdbPaginado(query, tipo, provedor, genero, ordenacao)
     }.flatMapLatest { flow -> flow }.cachedIn(viewModelScope)
 
     fun atualizarQueryEFiltrarPaginado(novaQuery: String, novoTipo: String) {
@@ -269,13 +530,8 @@ class MidiaViewModel @Inject constructor(
         _generoSelecionadoId.value = if (_generoSelecionadoId.value == generoId) null else generoId
     }
 
-    fun selecionarTipo(tipo: String) {
-        _tipoPaginado.value = tipo
-    }
-
-    fun selecionarOrdenacao(novaOrdenacao: String) {
-        _ordenacaoSelecionada.value = novaOrdenacao
-    }
+    fun selecionarTipo(tipo: String) { _tipoPaginado.value = tipo }
+    fun selecionarOrdenacao(ordenacao: String) { _ordenacaoSelecionada.value = ordenacao }
 
     fun limparBuscaApi() {
         _resultadosBuscaApi.value = emptyList()
@@ -286,107 +542,73 @@ class MidiaViewModel @Inject constructor(
         _ordenacaoSelecionada.value = "popularity.desc"
     }
 
-    fun inserir(midia: Midia) {
-        viewModelScope.launch { repository.inserir(midia) }
-    }
+    fun inserir(midia: Midia) { viewModelScope.launch { repository.inserir(midia) } }
+    fun atualizar(midia: Midia) { viewModelScope.launch { repository.atualizar(midia) } }
 
-    fun atualizar(midia: Midia) {
-        viewModelScope.launch { repository.atualizar(midia) }
-    }
-
-    fun deletar(midia: Midia) {
-        viewModelScope.launch { repository.deletar(midia) }
-    }
-
-    fun alternarFavorito(midia: Midia) {
+    fun concluirMidia(midia: Midia) {
         viewModelScope.launch {
-            val midiaAtualizada = midia.copy(favorito = !midia.favorito)
-            repository.atualizar(midiaAtualizada)
+            val midiaConcluida = midia.copy(status = "Concluído", jaEncerrou = true)
+            repository.atualizar(midiaConcluida)
+            if (midia.isCasal && midia.casalId.isNotBlank()) {
+                repository.limparAssistindoAgora(midia.casalId)
+            }
         }
     }
 
-    fun moverParaListaCustomizada(midia: Midia, novaLista: String) {
-        viewModelScope.launch {
-            val midiaAtualizada = midia.copy(listaCustomizada = novaLista)
-            repository.atualizar(midiaAtualizada)
-        }
-    }
+    fun deletar(midia: Midia) { viewModelScope.launch { repository.deletar(midia) } }
+    fun alternarFavorito(midia: Midia) { viewModelScope.launch { repository.atualizar(midia.copy(favorito = !midia.favorito)) } }
+    fun moverParaListaCustomizada(midia: Midia, novaLista: String) { viewModelScope.launch { repository.atualizar(midia.copy(listaCustomizada = novaLista)) } }
 
     fun buscarFilmeNoTmdb(nome: String, tipo: String) {
-        if (nome.isBlank()) {
-            limparBuscaApi()
-            return
-        }
+        if (nome.isBlank()) { limparBuscaApi(); return }
         viewModelScope.launch {
             _carregandoApi.value = true
-            try {
-                _resultadosBuscaApi.value = repository.buscarNoTmdb(nome, tipo)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                limparBuscaApi()
-            } finally {
-                _carregandoApi.value = false
-            }
+            try { _resultadosBuscaApi.value = repository.buscarNoTmdb(nome, tipo) }
+            catch (e: Exception) { e.printStackTrace(); limparBuscaApi() }
+            finally { _carregandoApi.value = false }
         }
     }
 
     private val _detalhesEstendidosApi = MutableStateFlow<TmdbDetalhesEstendidos?>(null)
     val detalhesEstendidosApi: StateFlow<TmdbDetalhesEstendidos?> = _detalhesEstendidosApi
-
     private val _provedoresStreaming = MutableStateFlow<List<ItemProvedor>>(emptyList())
     val provedoresStreaming: StateFlow<List<ItemProvedor>> = _provedoresStreaming
-
     private val _elencoMidia = MutableStateFlow<List<TmdbAtor>>(emptyList())
     val elencoMidia: StateFlow<List<TmdbAtor>> = _elencoMidia
-
     private val _chaveTrailerYoutube = MutableStateFlow<String?>(null)
     val chaveTrailerYoutube: StateFlow<String?> = _chaveTrailerYoutube
-
     private val _recomendacoesMidia = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val recomendacoesMidia: StateFlow<List<TmdbFilme>> = _recomendacoesMidia
-
     private val _episodiosTemporada = MutableStateFlow<List<TmdbEpisodioItem>>(emptyList())
     val episodiosTemporada: StateFlow<List<TmdbEpisodioItem>> = _episodiosTemporada
-
     private val _carregandoEpisodios = MutableStateFlow(false)
     val carregandoEpisodios: StateFlow<Boolean> = _carregandoEpisodios
-
     private val _galeriaImagens = MutableStateFlow<List<TmdbImagemItem>>(emptyList())
     val galeriaImagens: StateFlow<List<TmdbImagemItem>> = _galeriaImagens
 
     private fun verificarSeEhSerie(tipo: String): Boolean {
-        return tipo.equals("Série", ignoreCase = true) ||
-                tipo.equals("Anime", ignoreCase = true) ||
-                tipo.equals("Novela", ignoreCase = true) ||
-                tipo.equals("Dorama", ignoreCase = true) ||
-                tipo.equals("tv", ignoreCase = true)
+        return tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true) ||
+                tipo.equals("Novela", ignoreCase = true) || tipo.equals("Dorama", ignoreCase = true) || tipo.equals("tv", ignoreCase = true)
     }
 
     fun buscarEpisodiosTemporada(idTmdb: Int, numeroTemporada: Int) {
         if (idTmdb == 0) return
         viewModelScope.launch {
             _carregandoEpisodios.value = true
-            _episodiosTemporada.value = emptyList()
             try {
                 val resultado = RetrofitClient.apiService.obterEpisodiosTemporada(idTmdb, numeroTemporada)
                 _episodiosTemporada.value = resultado.episodios
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _episodiosTemporada.value = emptyList()
-            } finally {
-                _carregandoEpisodios.value = false
-            }
+            } catch (e: Exception) { e.printStackTrace(); _episodiosTemporada.value = emptyList() }
+            finally { _carregandoEpisodios.value = false }
         }
     }
 
     fun buscarDetalhesEstendidos(idTmdb: Int, tipo: String) {
         if (idTmdb == 0) return
-
         viewModelScope.launch {
             limparDetalhesEstendidos()
             try {
                 val ehSerieOuAnime = verificarSeEhSerie(tipo)
-
                 var detalhes: TmdbDetalhesEstendidos? = null
                 var creditos: TmdbCreditosResposta? = null
                 var videosResposta: TmdbVideosResposta? = null
@@ -425,29 +647,17 @@ class MidiaViewModel @Inject constructor(
                             imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
                             ehRealmenteSerie = false
                         }
-                    } catch (e2: Exception) {
-                        e2.printStackTrace()
-                    }
+                    } catch (e2: Exception) { e2.printStackTrace() }
                 }
 
                 _detalhesEstendidosApi.value = detalhes
                 _elencoMidia.value = creditos?.elenco ?: emptyList()
-
-                val trailer = videosResposta?.videos?.firstOrNull {
-                    it.sitePlataforma.equals("YouTube", ignoreCase = true) &&
-                            (it.tipoVideo.equals("Trailer", ignoreCase = true) || it.tipoVideo.equals("Teaser", ignoreCase = true))
-                }
+                val trailer = videosResposta?.videos?.firstOrNull { it.sitePlataforma.equals("YouTube", ignoreCase = true) && (it.tipoVideo.equals("Trailer", ignoreCase = true) || it.tipoVideo.equals("Teaser", ignoreCase = true)) }
                 _chaveTrailerYoutube.value = trailer?.chaveYoutube
                 _recomendacoesMidia.value = recomendacoesResposta?.recomendacoes ?: emptyList()
-
-                val todasImagens = (imagensResposta?.backdrops ?: emptyList()) + (imagensResposta?.posters ?: emptyList())
-                _galeriaImagens.value = todasImagens.distinctBy { it.caminhoArquivo }
-
+                _galeriaImagens.value = ((imagensResposta?.backdrops ?: emptyList()) + (imagensResposta?.posters ?: emptyList())).distinctBy { it.caminhoArquivo }
                 buscarOndeAssistir(idTmdb, if (ehRealmenteSerie) "Série" else "Filme")
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 
@@ -456,17 +666,9 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val ehSerieOuAnime = verificarSeEhSerie(tipo)
-                val resposta = if (ehSerieOuAnime) {
-                    RetrofitClient.apiService.obterProvedoresSerieOuAnime(idSerie = idTmdb)
-                } else {
-                    RetrofitClient.apiService.obterProvedoresFilme(idFilme = idTmdb)
-                }
-                val providersBr = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
-                _provedoresStreaming.value = providersBr
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _provedoresStreaming.value = emptyList()
-            }
+                val resposta = if (ehSerieOuAnime) RetrofitClient.apiService.obterProvedoresSerieOuAnime(idSerie = idTmdb) else RetrofitClient.apiService.obterProvedoresFilme(idFilme = idTmdb)
+                _provedoresStreaming.value = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
+            } catch (e: Exception) { e.printStackTrace(); _provedoresStreaming.value = emptyList() }
         }
     }
 
@@ -481,48 +683,53 @@ class MidiaViewModel @Inject constructor(
     }
 
     fun importarMidiasEmLote(novasMidias: List<Midia>) {
-        viewModelScope.launch {
-            novasMidias.forEach { midia ->
-                repository.inserir(midia.copy(id = 0))
-            }
+        viewModelScope.launch { novasMidias.forEach { repository.inserir(it.copy(id = 0)) } }
+    }
+
+    fun incrementarEpisodioRapido(midia: Midia) { viewModelScope.launch { repository.incrementarEpisodio(midia.id) } }
+    fun definirProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) { viewModelScope.launch { repository.atualizarProgressoEpisodio(idMidia, temporada, episodio) } }
+    fun sincronizarNuvemManual(onResultado: (Int) -> Unit) { viewModelScope.launch { onResultado(repository.restaurarDoFirestore()) } }
+    fun fazerBackupCompletoNuvem(onResultado: (Boolean) -> Unit) { viewModelScope.launch { onResultado(repository.backupCompletoParaFirestore()) } }
+    fun limparTodaALista() { viewModelScope.launch { repository.limparTodaALista() } }
+    fun gerarNovoCodigoGrupo(): String = repository.gerarCodigoAleatorio()
+
+    fun calcularDadosWrapped(midias: List<Midia>): CineWrappedData {
+        val concluidos = midias.filter { it.status.equals("Concluído", ignoreCase = true) || it.status.equals("Concluido", ignoreCase = true) }
+        val totalFilmes = concluidos.count { it.tipo.equals("Filme", ignoreCase = true) }
+        val totalEpisodios = concluidos.filter { !it.tipo.equals("Filme", ignoreCase = true) }.sumOf { if (it.episodioAtual > 0) it.episodioAtual - 1 else 0 }
+
+        val minutosTotais = (totalFilmes * 115) + (totalEpisodios * 45)
+        val horas = minutosTotais / 60
+
+        val generoTop = midias.filter { it.genero.isNotBlank() && it.genero != "Geral" }
+            .groupingBy { it.genero }.eachCount().maxByOrNull { it.value }?.key ?: "Geral"
+
+        val plataformaTop = midias.filter { it.plataforma.isNotBlank() && it.plataforma != "Não Informado" }
+            .groupingBy { it.plataforma }.eachCount().maxByOrNull { it.value }?.key ?: "Diversas"
+
+        val midiasComNota = midias.filter { it.nota > 0 }
+        val mediaNotas = midiasComNota.map { it.nota }.average()
+        val mediaFormatada = if (!mediaNotas.isNaN()) String.format(java.util.Locale.US, "%.1f", mediaNotas) else "0.0"
+        val maiorNota = midiasComNota.maxOfOrNull { it.nota } ?: 0
+
+        val destaque = concluidos.maxByOrNull { it.nota }?.titulo ?: midias.firstOrNull()?.titulo ?: "Nenhum título ainda"
+
+        val frase = when {
+            horas > 100 -> "Você é uma verdadeira lenda das maratonas! 🍿🔥"
+            horas > 50 -> "Sua lista está recheada de ótimas histórias! 🎬"
+            else -> "Sua jornada cinéfila está apenas começando! ✨"
         }
+
+        return CineWrappedData(
+            totalTitulosConcluidos = concluidos.size,
+            horasTotaisAssistidas = horas,
+            generoFavorito = generoTop,
+            plataformaMaisUtilizada = plataformaTop,
+            totalEpisodiosMaratonados = totalEpisodios,
+            mediaNotasAtribuidas = mediaFormatada,
+            maiorNotaDada = maiorNota,
+            filmeOuSerieDestaque = destaque,
+            frasePersonalizada = frase
+        )
     }
-
-    fun incrementarEpisodioRapido(midia: Midia) {
-        viewModelScope.launch {
-            repository.incrementarEpisodio(midia.id)
-        }
-    }
-
-    fun definirProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
-        viewModelScope.launch {
-            repository.atualizarProgressoEpisodio(idMidia, temporada, episodio)
-        }
-    }
-
-    fun sincronizarNuvemManual(onResultado: (Int) -> Unit) {
-        viewModelScope.launch {
-            val totalRestaurado = repository.restaurarDoFirestore()
-            onResultado(totalRestaurado)
-        }
-    }
-
-    fun fazerBackupCompletoNuvem(onResultado: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val sucesso = repository.backupCompletoParaFirestore()
-            onResultado(sucesso)
-        }
-    }
-
-    fun limparTodaALista() {
-        viewModelScope.launch {
-            repository.limparTodaALista()
-        }
-    }
-
-    fun gerarNovoCodigoGrupo(): String {
-        return repository.gerarCodigoAleatorio()
-    }
-
-
 }

@@ -27,6 +27,13 @@ interface TmdbApiService {
         @Query("language") idioma: String = "pt-BR"
     ): TmdbResposta
 
+    @GET("movie/now_playing")
+    suspend fun obterFilmesEmCartaz(
+        @Query("page") pagina: Int = 1,
+        @Query("region") regiao: String = "BR",
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbResposta
+
     @GET("discover/movie")
     suspend fun descobrirFilmes(
         @Query("page") pagina: Int = 1,

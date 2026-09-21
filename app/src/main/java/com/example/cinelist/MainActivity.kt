@@ -4,6 +4,8 @@ package com.example.cinelist
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,9 +27,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Casino
@@ -39,15 +43,17 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -56,16 +62,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -164,11 +172,31 @@ class MainActivity : ComponentActivity() {
 
             val launcherPermissaoNotificacao = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
-            ) { _ -> }
+            ) { concedida ->
+                if (concedida) {
+                    sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                    configurarLembretes(contexto, true)
+                }
+            }
 
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    launcherPermissaoNotificacao.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    val jaTemPermissao = ContextCompat.checkSelfPermission(
+                        contexto,
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                    if (jaTemPermissao) {
+                        if (!sharedPreferences.getBoolean("notificacoes", false)) {
+                            sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                        }
+                        configurarLembretes(contexto, true)
+                    } else {
+                        launcherPermissaoNotificacao.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                } else {
+                    sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                    configurarLembretes(contexto, true)
                 }
             }
 
@@ -393,16 +421,97 @@ val tiposDisponiveis = listOf("Todos", "Filme", "Série", "Anime", "Novela", "Do
 @Composable
 fun ConfiguracaoNavegacao() {
     val navController = rememberNavController()
+    val contexto = LocalContext.current
     val usuarioLogado = remember { FirebaseAuth.getInstance().currentUser != null }
-    val rotaInicial = if (usuarioLogado) "home" else "login"
+
+    // Inicia na rota da splash em vídeo MP4
+    val rotaInicial = "splash"
 
     val viewModel: MidiaViewModel = hiltViewModel()
 
+    val casalIdAtivoGlobal by viewModel.casalIdAtivo.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.socialRepository.atualizarTokenFcm()
+    }
+
+    LaunchedEffect(Unit) {
+        var primeiraExecucao = true
+        var quantidadeAnterior = 0
+        viewModel.solicitacoesRecebidas.collect { lista ->
+            if (primeiraExecucao) {
+                quantidadeAnterior = lista.size
+                primeiraExecucao = false
+            } else {
+                if (lista.size > quantidadeAnterior) {
+                    val novaSolicitacao = lista.firstOrNull()
+                    if (novaSolicitacao != null) {
+                        NotificacaoHelper.dispararNotificacaoSolicitacaoAmizade(
+                            context = contexto,
+                            remetenteNome = novaSolicitacao.nome
+                        )
+                    }
+                }
+                quantidadeAnterior = lista.size
+            }
+        }
+    }
+
+    LaunchedEffect(casalIdAtivoGlobal) {
+        while (true) {
+            viewModel.atualizarPresencaGlobal(true)
+            if (casalIdAtivoGlobal.isNotBlank()) {
+                viewModel.atualizarStatusPresenca(true)
+            }
+            delay(20_000L)
+        }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.atualizarPresencaGlobal(true)
+        if (casalIdAtivoGlobal.isNotBlank()) {
+            viewModel.atualizarStatusPresenca(true)
+        }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        viewModel.atualizarPresencaGlobal(false)
+        if (casalIdAtivoGlobal.isNotBlank()) {
+            viewModel.atualizarStatusPresenca(false)
+        }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.atualizarPresencaGlobal(false)
+        if (casalIdAtivoGlobal.isNotBlank()) {
+            viewModel.atualizarStatusPresenca(false)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.atualizarPresencaGlobal(false)
+            viewModel.atualizarStatusPresenca(false)
+        }
+    }
+
     NavHost(navController = navController, startDestination = rotaInicial) {
+
+        // Rota da Splash em Vídeo MP4
+        composable("splash") {
+            TelaSplashMp4(
+                onSplashConcluida = {
+                    val destinoFinal = if (usuarioLogado) "home" else "login"
+                    navController.navigate(destinoFinal) {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable("login") {
             TelaLogin(
                 onLoginSucesso = {
-                    viewModel.iniciarSincronizacaoSilenciosaNuvem()
                     navController.navigate("home") { popUpTo("login") { inclusive = true } }
                 },
                 onNavegarParaCadastro = { navController.navigate("cadastro") }
@@ -412,7 +521,6 @@ fun ConfiguracaoNavegacao() {
         composable("cadastro") {
             TelaCadastro(
                 onCadastroSucesso = {
-                    viewModel.iniciarSincronizacaoSilenciosaNuvem()
                     navController.navigate("home") { popUpTo("login") { inclusive = true } }
                 },
                 onVoltarParaLogin = { navController.popBackStack() }
@@ -463,7 +571,22 @@ fun ConfiguracaoNavegacao() {
                     )
                     viewModel.inserir(novaMidia)
                 },
-                onPerfilClique = { navController.navigate("perfil") }
+                onPerfilClique = { navController.navigate("perfil") },
+                onAbrirMatch = { navController.navigate("match") }
+            )
+        }
+
+        composable("match") {
+            val midiasGrupoAtivo by viewModel.midiasGrupoAtivo.collectAsState(initial = emptyList())
+
+            TelaModoMatch(
+                listaDeMidiasDaSala = midiasGrupoAtivo,
+                viewModel = viewModel,
+                onVoltar = { navController.popBackStack() },
+                onAbrirDetalhesMidia = { midia ->
+                    val idNavegacao = if (midia.idTmdb != 0) midia.idTmdb else midia.id
+                    navController.navigate("detalhes/$idNavegacao/${midia.tipo}")
+                }
             )
         }
 
@@ -483,12 +606,22 @@ fun ConfiguracaoNavegacao() {
         }
 
         composable("perfil") {
-            val listaDeMidiasReal by viewModel.todasAsMidias.collectAsState(initial = emptyList())
+            val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+            val midiasGrupoAtivo by viewModel.midiasGrupoAtivo.collectAsState(initial = emptyList())
+            val midiasPessoais by viewModel.midiasPessoais.collectAsState(initial = emptyList())
+
+            val listaDeMidiasReal = if (casalIdAtivo.isNotBlank()) midiasGrupoAtivo else midiasPessoais
+
             TelaPerfil(
                 listaDeMidias = listaDeMidiasReal,
                 viewModel = viewModel,
                 onVoltar = { navController.popBackStack() },
-                onLogout = { navController.navigate("home") { popUpTo("home") { inclusive = true } } },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onMidiaClique = { midia ->
                     val idNavegacao = if (midia.idTmdb != 0) midia.idTmdb else midia.id
                     navController.navigate("detalhes/$idNavegacao/${midia.tipo}")
@@ -500,7 +633,7 @@ fun ConfiguracaoNavegacao() {
         }
 
         composable("calendario") {
-            val listaDeMidiasReal by viewModel.todasAsMidias.collectAsState(initial = emptyList())
+            val listaDeMidiasReal by viewModel.todasAsMidias.collectAsState(emptyList())
             TelaCalendario(
                 listaDeMidias = listaDeMidiasReal,
                 onVoltar = { navController.popBackStack() },
@@ -527,8 +660,10 @@ fun TelaPrincipal(
     onAdicionarClique: (idTmdb: Int, titulo: String, tipo: String, status: String, nota: Int, sinopse: String, capa: String, genero: String, plataforma: String) -> Unit,
     onItemClique: (Midia) -> Unit,
     onTmdbItemClique: (TmdbFilme, String) -> Unit,
-    onPerfilClique: () -> Unit
+    onPerfilClique: () -> Unit,
+    onAbrirMatch: () -> Unit
 ) {
+    // ... (restante do código da TelaPrincipal e diálogos mantém-se idêntico)
     val contextoLocal = LocalContext.current
     val historicoManager = remember { HistoricoBuscaManager(contextoLocal) }
     var historicoBuscas by remember { mutableStateOf(historicoManager.obterHistorico()) }
@@ -541,12 +676,19 @@ fun TelaPrincipal(
 
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
     var midiaParaExcluir by remember { mutableStateOf<Midia?>(null) }
+    var midiaParaConcluir by remember { mutableStateOf<Midia?>(null) }
     var colecaoParaExcluir by remember { mutableStateOf<String?>(null) }
     var mostrarDialogoGerenciarSalas by remember { mutableStateOf(false) }
 
     var modoListaMinhaLista by rememberSaveable { mutableStateOf(false) }
     var modoListaDescobrir by rememberSaveable { mutableStateOf(false) }
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
+
+    val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
+    val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+    val membroAssistindo = remember(membrosSala, meuUid) {
+        membrosSala.firstOrNull { it.uid != meuUid && it.estaAssistindoAlgo }
+    }
 
     LaunchedEffect(pagerState.currentPage) {
         textoPesquisa = ""
@@ -589,6 +731,43 @@ fun TelaPrincipal(
             },
             dismissButton = {
                 TextButton(onClick = { midiaParaExcluir = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (midiaParaConcluir != null) {
+        val midiaAlvo = midiaParaConcluir!!
+        val estaConcluido = midiaAlvo.status.equals("Concluído", ignoreCase = true) || midiaAlvo.status.equals("Concluido", ignoreCase = true)
+        val acaoTexto = if (estaConcluido) "Reabrir" else "Concluir"
+
+        AlertDialog(
+            onDismissRequest = { midiaParaConcluir = null },
+            title = { Text("$acaoTexto Mídia", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    if (estaConcluido) {
+                        "Deseja reabrir \"${midiaAlvo.titulo}\" e voltar para o status Assistindo?"
+                    } else {
+                        "Deseja realmente marcar \"${midiaAlvo.titulo}\" como Concluído?"
+                    }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val novoStatus = if (estaConcluido) "Assistindo" else "Concluído"
+                        viewModel.atualizar(midiaAlvo.copy(status = novoStatus))
+                        midiaParaConcluir = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
+                ) {
+                    Text(acaoTexto, color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { midiaParaConcluir = null }) {
                     Text("Cancelar")
                 }
             }
@@ -1177,6 +1356,18 @@ fun TelaPrincipal(
                     }
                 },
                 actions = {
+                    if (isModoCompartilhado) {
+                        Button(
+                            onClick = onAbrirMatch,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3366)),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+
                     IconButton(onClick = { mostrarDialogoGerenciarSalas = true }) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
@@ -1236,7 +1427,60 @@ fun TelaPrincipal(
                 )
             }
 
-            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            if (isModoCompartilhado && membroAssistindo != null && pagerState.currentPage == 0) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF38BDF8).copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF22C55E)))
+                                Text(
+                                    text = "${membroAssistindo.nome} está assistindo agora:",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF94A3B8),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${membroAssistindo.assistindoAgoraTitulo} ${membroAssistindo.assistindoAgoraEpisodio}".trim(),
+                                fontSize = 14.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TextField(
                         value = textoPesquisa,
@@ -1360,11 +1604,11 @@ fun TelaPrincipal(
                         }
 
                         val bateStatus = when (filtroStatusMinhaLista) {
-                            "Ativos" -> midia.status != "Concluído"
+                            "Ativos" -> !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
                             "Favoritos" -> midia.favorito
-                            "Quero Assistir" -> midia.status == "Quero Assistir"
-                            "Assistindo" -> midia.status == "Assistindo"
-                            "Concluído" -> midia.status == "Concluído"
+                            "Quero Assistir" -> midia.status.equals("Quero Assistir", ignoreCase = true)
+                            "Assistindo" -> midia.status.equals("Assistindo", ignoreCase = true)
+                            "Concluído" -> midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)
                             else -> true
                         }
 
@@ -1373,12 +1617,12 @@ fun TelaPrincipal(
                         when (ordenacaoMinhaLista) {
                             "Favoritos Primeiro" -> lista.sortedWith(
                                 compareByDescending<Midia> { it.favorito }
-                                    .thenByDescending { it.status == "Assistindo" }
+                                    .thenByDescending { it.status.equals("Assistindo", ignoreCase = true) }
                             )
                             "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
                             "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
                             "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
-                            else -> lista.sortedByDescending { it.status == "Assistindo" }
+                            else -> lista.sortedByDescending { it.status.equals("Assistindo", ignoreCase = true) }
                         }
                     }
 
@@ -1389,7 +1633,7 @@ fun TelaPrincipal(
                         onRefresh = {
                             coroutineScope.launch {
                                 isRefreshing = true
-                                viewModel.iniciarSincronizacaoSilenciosaNuvem()
+                                viewModel.forcarSincronizacaoManual()
                                 delay(800)
                                 isRefreshing = false
                             }
@@ -1495,8 +1739,7 @@ fun TelaPrincipal(
                                                     midiaParaExcluir = mi
                                                 },
                                                 onAlternarStatusConcluido = {
-                                                    val novoStatus = if (mi.status == "Concluído") "Assistindo" else "Concluído"
-                                                    viewModel.atualizar(mi.copy(status = novoStatus))
+                                                    midiaParaConcluir = mi
                                                 },
                                                 onAlternarFavorito = {
                                                     viewModel.alternarFavorito(mi)
@@ -1520,8 +1763,7 @@ fun TelaPrincipal(
                                                     midiaParaExcluir = mi
                                                 },
                                                 onAlternarStatusConcluido = {
-                                                    val novoStatus = if (mi.status == "Concluído") "Assistindo" else "Concluído"
-                                                    viewModel.atualizar(mi.copy(status = novoStatus))
+                                                    midiaParaConcluir = mi
                                                 },
                                                 onAlternarFavorito = {
                                                     viewModel.alternarFavorito(mi)
@@ -1808,6 +2050,7 @@ fun TelaPrincipal(
     }
 }
 
+
 @Composable
 fun DialogoGerenciarSalasCompartilhadas(
     viewModel: MidiaViewModel,
@@ -1821,7 +2064,7 @@ fun DialogoGerenciarSalasCompartilhadas(
     var codigoGrupoInput by remember { mutableStateOf("") }
     var senhaGrupoInput by remember { mutableStateOf("") }
     var tipoGrupoSelecionado by remember { mutableStateOf("Casal") }
-    var abaModoCriarEntrar by remember { mutableStateOf(0) } // 0 = Salvas, 1 = Criar, 2 = Entrar
+    var abaModoCriarEntrar by remember { mutableStateOf(0) }
     var mensagemErro by remember { mutableStateOf<String?>(null) }
     var carregando by remember { mutableStateOf(false) }
 
@@ -1872,6 +2115,34 @@ fun DialogoGerenciarSalasCompartilhadas(
                             Text("Minha Lista Pessoal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text("Seus filmes e séries privados", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                         }
+                    }
+
+                    if (casalIdAtivo.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedButton(
+                            onClick = {
+                                compartilharCodigoSalaWhatsApp(
+                                    context = contexto,
+                                    codigoSala = casalIdAtivo,
+                                    nomeSala = "Sala Compartilhada",
+                                    senhaSala = ""
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF25D366)
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Convidar via WhatsApp 💚", fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
                     if (gruposSalvos.isEmpty()) {

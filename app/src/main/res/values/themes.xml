@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema sem Fullscreen para manter relógio, bateria e status bar visíveis -->
+    <!-- Tema padrão e único para o aplicativo, sem conflitos de splash estática -->
     <style name="Theme.CineList" parent="android:Theme.Material.NoActionBar">
-        <!-- Mantém a abertura inicial em preto puro sem esconder o sistema -->
-        <item name="android:windowBackground">#000000</item>
-        <item name="android:statusBarColor">#000000</item>
+        <item name="android:windowBackground">#070B12</item>
+        <item name="android:statusBarColor">#070B12</item>
+        <item name="android:navigationBarColor">#070B12</item>
         <item name="android:windowFullscreen">false</item>
     </style>
 </resources>
