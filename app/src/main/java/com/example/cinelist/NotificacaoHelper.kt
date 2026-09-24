@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -64,7 +65,6 @@ object NotificacaoHelper {
     fun dispararNotificacaoSolicitacaoAmizade(context: Context, remetenteNome: String, idRef: Int = 9999) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Canal dedicado de alta prioridade com vibração e som
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 CANAL_SOLICITACOES_ID,
@@ -106,6 +106,16 @@ object NotificacaoHelper {
             NotificationManagerCompat.from(context).notify(idRef, notificacao)
         } catch (e: SecurityException) {
             e.printStackTrace()
+        }
+    }
+
+    fun dispararNotificacaoExpulsao(context: Context) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Toast.makeText(
+                context,
+                "⚠️ Você foi removido da sala pelo Administrador.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 }

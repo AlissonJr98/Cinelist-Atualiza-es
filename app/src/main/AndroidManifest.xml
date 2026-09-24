@@ -7,6 +7,18 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- PERMISSÃO DE VISIBILIDADE PARA ABRIR APPS DE STREAMING (PONTO 6) -->
+    <queries>
+        <package android:name="com.netflix.mediaclient" />
+        <package android:name="com.amazon.avod.thirdpartyclient" />
+        <package android:name="com.disney.disneyplus" />
+        <package android:name="com.wbd.stream" />
+        <package android:name="com.crunchyroll.crunchyroid" />
+        <package android:name="com.globo.globotv" />
+        <package android:name="com.apple.atv.android.appletv" />
+        <package android:name="com.cbs.app" />
+    </queries>
+
     <application
         android:name=".CineListApplication"
         android:allowBackup="true"

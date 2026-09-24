@@ -8,7 +8,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 
-
 class AvaliacoesConverters {
     private val gson = Gson()
 
@@ -54,12 +53,13 @@ data class Midia(
     var isCasal: Boolean = false,
     var casalId: String = "",
     var adicionadoPor: String = "",
+    // NOVOS CAMPOS PARA O PONTO 5
+    var dataConclusao: Long = 0L,
+    var concluidoPor: String = "",
     var avaliacoesGrupo: Map<String, AvaliacaoMembro> = emptyMap()
 ) {
     // Construtor vazio explícito exigido pelo Firestore
-    constructor() : this(
-        0, "", 0, "", "Filme", "Quero Assistir", 0, 1, 1, 0, false, "", "", "Não Informado", 0, "Outros", false, "Geral", false, "", "", emptyMap()
-    )
+    constructor() : this(id = 0)
 
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -84,6 +84,8 @@ data class Midia(
             "isCasal" to isCasal,
             "casalId" to casalId,
             "adicionadoPor" to adicionadoPor,
+            "dataConclusao" to dataConclusao,
+            "concluidoPor" to concluidoPor,
             "avaliacoesGrupo" to avaliacoesGrupo.mapValues { it.value.toMap() }
         )
     }

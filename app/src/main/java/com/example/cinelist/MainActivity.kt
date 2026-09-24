@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -32,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Casino
@@ -424,7 +426,6 @@ fun ConfiguracaoNavegacao() {
     val contexto = LocalContext.current
     val usuarioLogado = remember { FirebaseAuth.getInstance().currentUser != null }
 
-    // Inicia na rota da splash em vídeo MP4
     val rotaInicial = "splash"
 
     val viewModel: MidiaViewModel = hiltViewModel()
@@ -497,7 +498,6 @@ fun ConfiguracaoNavegacao() {
 
     NavHost(navController = navController, startDestination = rotaInicial) {
 
-        // Rota da Splash em Vídeo MP4
         composable("splash") {
             TelaSplashMp4(
                 onSplashConcluida = {
@@ -663,7 +663,6 @@ fun TelaPrincipal(
     onPerfilClique: () -> Unit,
     onAbrirMatch: () -> Unit
 ) {
-    // ... (restante do código da TelaPrincipal e diálogos mantém-se idêntico)
     val contextoLocal = LocalContext.current
     val historicoManager = remember { HistoricoBuscaManager(contextoLocal) }
     var historicoBuscas by remember { mutableStateOf(historicoManager.obterHistorico()) }
@@ -674,9 +673,14 @@ fun TelaPrincipal(
         pageCount = { 2 }
     )
 
+    val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+    val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
+    var menuSalasExpandido by remember { mutableStateOf(false) }
+
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
     var midiaParaExcluir by remember { mutableStateOf<Midia?>(null) }
     var midiaParaConcluir by remember { mutableStateOf<Midia?>(null) }
+    var midiaParaRecusar by remember { mutableStateOf<Midia?>(null) }
     var colecaoParaExcluir by remember { mutableStateOf<String?>(null) }
     var mostrarDialogoGerenciarSalas by remember { mutableStateOf(false) }
 
@@ -709,6 +713,36 @@ fun TelaPrincipal(
             onSelecionarMidia = { midiaSorteada ->
                 mostrarDialogoSorteio = false
                 onItemClique(midiaSorteada)
+            }
+        )
+    }
+
+    if (midiaParaRecusar != null) {
+        val midiaAlvo = midiaParaRecusar!!
+        AlertDialog(
+            onDismissRequest = { midiaParaRecusar = null },
+            title = { Text("Recusar Sugestão ❌", fontWeight = FontWeight.Bold) },
+            text = { Text("Não quer assistir \"${midiaAlvo.titulo}\" com o seu parceiro(a). Deseja adicioná-lo apenas à sua Lista Pessoal?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.processarMidiaRecusadaPeloParceiro(midiaAlvo, true)
+                        midiaParaRecusar = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Sim, minha lista", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.processarMidiaRecusadaPeloParceiro(midiaAlvo, false)
+                        midiaParaRecusar = null
+                    }
+                ) {
+                    Text("Não, descartar", color = Color(0xFFFF4C4C))
+                }
             }
         )
     }
@@ -757,8 +791,11 @@ fun TelaPrincipal(
             confirmButton = {
                 Button(
                     onClick = {
-                        val novoStatus = if (estaConcluido) "Assistindo" else "Concluído"
-                        viewModel.atualizar(midiaAlvo.copy(status = novoStatus))
+                        if (estaConcluido) {
+                            viewModel.atualizar(midiaAlvo.copy(status = "Assistindo", dataConclusao = 0L, concluidoPor = ""))
+                        } else {
+                            viewModel.concluirMidia(midiaAlvo)
+                        }
                         midiaParaConcluir = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
@@ -1343,16 +1380,83 @@ fun TelaPrincipal(
         )
     }
 
+    val nomeListaAtiva = if (casalIdAtivo.isBlank()) {
+        "Minha Lista Pessoal"
+    } else {
+        gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { menuSalasExpandido = true }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
-                        Text(if (isModoCompartilhado) "CineList (Grupo ❤️)" else "CineList", fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "CineList",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Trocar de Lista",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = nomeListaAtiva,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuSalasExpandido,
+                        onDismissRequest = { menuSalasExpandido = false },
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("👤 Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) },
+                            onClick = {
+                                viewModel.selecionarGrupoAtivo("")
+                                menuSalasExpandido = false
+                            }
+                        )
+
+                        if (gruposSalvos.isNotEmpty()) {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                            gruposSalvos.forEach { grupo ->
+                                val isAtivo = casalIdAtivo == grupo.grupoId
+                                DropdownMenuItem(
+                                    text = {
+                                        val nomeExibicao = grupo.nomeGrupo.ifBlank { "Sala Compartilhada" }
+                                        Text("🍿 $nomeExibicao", fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal)
+                                    },
+                                    onClick = {
+                                        viewModel.selecionarGrupoAtivo(grupo.grupoId)
+                                        menuSalasExpandido = false
+                                    }
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                        DropdownMenuItem(
+                            text = { Text("⚙️ Gerenciar Salas / Criar Nova") },
+                            onClick = {
+                                menuSalasExpandido = false
+                                mostrarDialogoGerenciarSalas = true
+                            }
+                        )
                     }
                 },
                 actions = {
@@ -1366,14 +1470,6 @@ fun TelaPrincipal(
                         ) {
                             Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
-                    }
-
-                    IconButton(onClick = { mostrarDialogoGerenciarSalas = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Gerenciar Salas Compartilhadas",
-                            tint = if (isModoCompartilhado) Color(0xFFFF4C4C) else MaterialTheme.colorScheme.primary
-                        )
                     }
 
                     IconButton(onClick = { mostrarDialogoSorteio = true }) {
@@ -1735,16 +1831,15 @@ fun TelaPrincipal(
                                                 midia = mi,
                                                 onClick = { onItemClique(mi) },
                                                 onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) },
-                                                onDeletar = {
-                                                    midiaParaExcluir = mi
-                                                },
-                                                onAlternarStatusConcluido = {
-                                                    midiaParaConcluir = mi
-                                                },
-                                                onAlternarFavorito = {
-                                                    viewModel.alternarFavorito(mi)
-                                                },
-                                                modoListaHorizontal = true
+                                                onDeletar = { midiaParaExcluir = mi },
+                                                onAlternarStatusConcluido = { midiaParaConcluir = mi },
+                                                onAlternarFavorito = { viewModel.alternarFavorito(mi) },
+                                                modoListaHorizontal = true,
+                                                onAceitarPendente = { viewModel.aceitarMidiaPendente(mi) },
+                                                onRecusarPendente = { viewModel.recusarMidiaPendente(mi) },
+                                                onProcessarRecusado = { querListaPessoal ->
+                                                    viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal)
+                                                }
                                             )
                                         }
                                     }
@@ -1759,16 +1854,15 @@ fun TelaPrincipal(
                                                 midia = mi,
                                                 onClick = { onItemClique(mi) },
                                                 onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) },
-                                                onDeletar = {
-                                                    midiaParaExcluir = mi
-                                                },
-                                                onAlternarStatusConcluido = {
-                                                    midiaParaConcluir = mi
-                                                },
-                                                onAlternarFavorito = {
-                                                    viewModel.alternarFavorito(mi)
-                                                },
-                                                modoListaHorizontal = false
+                                                onDeletar = { midiaParaExcluir = mi },
+                                                onAlternarStatusConcluido = { midiaParaConcluir = mi },
+                                                onAlternarFavorito = { viewModel.alternarFavorito(mi) },
+                                                modoListaHorizontal = false,
+                                                onAceitarPendente = { viewModel.aceitarMidiaPendente(mi) },
+                                                onRecusarPendente = { viewModel.recusarMidiaPendente(mi) },
+                                                onProcessarRecusado = { querListaPessoal ->
+                                                    viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal)
+                                                }
                                             )
                                         }
                                     }
@@ -2050,6 +2144,26 @@ fun TelaPrincipal(
     }
 }
 
+fun compartilharCodigoSalaWhatsApp(context: Context, codigoSala: String, nomeSala: String, senhaSala: String) {
+    val senhaTexto = if (senhaSala.isNotBlank()) " e senha: *$senhaSala*" else ""
+    val mensagem = "🍿 Olá! Entra na minha sala compartilhada no *CineList* para vermos filmes juntos!\n\n" +
+            "📍 Sala: *$nomeSala*\n" +
+            "🔑 Código: `$codigoSala`$senhaTexto\n\n" +
+            "Baixe o app e insira o código para se conectar!"
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, mensagem)
+        setPackage("com.whatsapp")
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        val intentFallback = Intent(Intent.ACTION_VIEW, Uri.parse("https://api.whatsapp.com/send?text=${Uri.encode(mensagem)}"))
+        context.startActivity(intentFallback)
+    }
+}
 
 @Composable
 fun DialogoGerenciarSalasCompartilhadas(
@@ -2059,14 +2173,18 @@ fun DialogoGerenciarSalasCompartilhadas(
     val contexto = LocalContext.current
     val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+    val isAdministrador by viewModel.isAdministradorSala.collectAsState()
 
     var nomeGrupoInput by remember { mutableStateOf("") }
     var codigoGrupoInput by remember { mutableStateOf("") }
     var senhaGrupoInput by remember { mutableStateOf("") }
+    var novaSenhaInput by remember { mutableStateOf("") }
     var tipoGrupoSelecionado by remember { mutableStateOf("Casal") }
     var abaModoCriarEntrar by remember { mutableStateOf(0) }
     var mensagemErro by remember { mutableStateOf<String?>(null) }
     var carregando by remember { mutableStateOf(false) }
+
+    val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
 
     AlertDialog(
         onDismissRequest = onDispensar,
@@ -2075,7 +2193,7 @@ fun DialogoGerenciarSalasCompartilhadas(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 420.dp)
+                    .heightIn(max = 450.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -2142,6 +2260,74 @@ fun DialogoGerenciarSalasCompartilhadas(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Convidar via WhatsApp 💚", fontWeight = FontWeight.Bold)
                         }
+
+                        // PAINEL DE ADMINISTRADOR DA SALA ATIVA
+                        if (isAdministrador) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("👑 Painel de Administrador", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+
+                                    // Alterar Senha
+                                    OutlinedTextField(
+                                        value = novaSenhaInput,
+                                        onValueChange = { novaSenhaInput = it },
+                                        label = { Text("Nova Senha da Sala") },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Button(
+                                        onClick = {
+                                            if (novaSenhaInput.isNotBlank()) {
+                                                viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaInput) { sucesso ->
+                                                    if (sucesso) {
+                                                        Toast.makeText(contexto, "Senha atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                                                        novaSenhaInput = ""
+                                                    } else {
+                                                        Toast.makeText(contexto, "Erro ao atualizar senha.", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                    ) {
+                                        Text("Salvar Nova Senha", fontSize = 12.sp)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("Membros na Sala (${membrosSala.size}):", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+
+                                    membrosSala.forEach { membro ->
+                                        val meuUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                                        val ehMim = membro.uid == meuUid
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(membro.nome + if (ehMim) " (Você)" else "", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                                            if (!ehMim) {
+                                                TextButton(
+                                                    onClick = {
+                                                        viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
+                                                            if (sucesso) {
+                                                                Toast.makeText(contexto, "${membro.nome} foi removido da sala.", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
+                                                    }
+                                                ) {
+                                                    Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
 
@@ -2188,10 +2374,14 @@ fun DialogoGerenciarSalasCompartilhadas(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // CAMPO COM PREFIXO CINE- AUTOMÁTICO
                     OutlinedTextField(
                         value = codigoGrupoInput,
-                        onValueChange = { codigoGrupoInput = it.uppercase() },
-                        label = { Text("Código da Sala") },
+                        onValueChange = { digitos ->
+                            codigoGrupoInput = digitos.filter { it.isDigit() }.take(4)
+                        },
+                        label = { Text("Código Numérico") },
+                        prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -2206,7 +2396,10 @@ fun DialogoGerenciarSalasCompartilhadas(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
-                            onClick = { codigoGrupoInput = viewModel.gerarNovoCodigoGrupo() },
+                            onClick = {
+                                val aleatorio = (1000..9999).random().toString()
+                                codigoGrupoInput = aleatorio
+                            },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Gerar Código", fontSize = 12.sp)
@@ -2214,10 +2407,11 @@ fun DialogoGerenciarSalasCompartilhadas(
                         if (codigoGrupoInput.isNotBlank()) {
                             OutlinedButton(
                                 onClick = {
+                                    val codigoCompleto = "CINE-$codigoGrupoInput"
                                     val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newPlainText("Código da Sala", codigoGrupoInput)
+                                    val clip = android.content.ClipData.newPlainText("Código da Sala", codigoCompleto)
                                     clipboard.setPrimaryClip(clip)
-                                    android.widget.Toast.makeText(contexto, "Código copiado!", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(contexto, "Código $codigoCompleto copiado!", android.widget.Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -2231,13 +2425,14 @@ fun DialogoGerenciarSalasCompartilhadas(
                             if (codigoGrupoInput.isNotBlank()) {
                                 carregando = true
                                 val nomeFinal = nomeGrupoInput.ifBlank { "Lista Compartilhada" }
-                                viewModel.criarGrupoComSenha(codigoGrupoInput, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso ->
+                                val codigoCompleto = "CINE-$codigoGrupoInput"
+                                viewModel.criarGrupoComSenha(codigoCompleto, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso ->
                                     carregando = false
                                     if (sucesso) onDispensar()
                                     else mensagemErro = "Erro ao criar grupo na nuvem."
                                 }
                             } else {
-                                mensagemErro = "Preencha o código do grupo."
+                                mensagemErro = "Preencha os números do código."
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -2251,15 +2446,19 @@ fun DialogoGerenciarSalasCompartilhadas(
                     OutlinedTextField(
                         value = nomeGrupoInput,
                         onValueChange = { nomeGrupoInput = it },
-                        label = { Text("Apelido Local da Lista (ex: Com o Amor)") },
+                        label = { Text("Apelido Local da Lista") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // CAMPO COM PREFIXO CINE- AUTOMÁTICO PARA ENTRAR
                     OutlinedTextField(
                         value = codigoGrupoInput,
-                        onValueChange = { codigoGrupoInput = it.uppercase() },
-                        label = { Text("Código da Sala Criada") },
+                        onValueChange = { digitos ->
+                            codigoGrupoInput = digitos.filter { it.isDigit() }.take(4)
+                        },
+                        label = { Text("Código Numérico") },
+                        prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -2277,13 +2476,14 @@ fun DialogoGerenciarSalasCompartilhadas(
                             if (codigoGrupoInput.isNotBlank()) {
                                 carregando = true
                                 val nomeFinal = nomeGrupoInput.ifBlank { "Lista Compartilhada" }
-                                viewModel.entrarEmGrupoExistente(codigoGrupoInput, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso, erro ->
+                                val codigoCompleto = "CINE-$codigoGrupoInput"
+                                viewModel.entrarEmGrupoExistente(codigoCompleto, nomeFinal, tipoGrupoSelecionado, senhaGrupoInput) { sucesso, erro ->
                                     carregando = false
                                     if (sucesso) onDispensar()
                                     else mensagemErro = erro
                                 }
                             } else {
-                                mensagemErro = "Digite o código da sala."
+                                mensagemErro = "Digite os números do código."
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),

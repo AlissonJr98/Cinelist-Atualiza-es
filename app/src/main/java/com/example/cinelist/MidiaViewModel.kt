@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,12 +42,17 @@ class MidiaViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
+    private val firestore = FirebaseFirestore.getInstance()
+
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
     val midiasPessoais: Flow<List<Midia>> = repository.midiasPessoais
     val gruposSalvos: Flow<List<GrupoEntity>> = repository.gruposSalvos
 
     private val _casalIdAtivo = MutableStateFlow("")
     val casalIdAtivo: StateFlow<String> = _casalIdAtivo.asStateFlow()
+
+    private val _isAdministradorSala = MutableStateFlow(false)
+    val isAdministradorSala: StateFlow<Boolean> = _isAdministradorSala.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val midiasGrupoAtivo: Flow<List<Midia>> = _casalIdAtivo.flatMapLatest { grupoId ->
@@ -73,6 +80,15 @@ class MidiaViewModel @Inject constructor(
 
     private val _filmesEmCartaz = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val filmesEmCartaz: StateFlow<List<TmdbFilme>> = _filmesEmCartaz
+
+    init {
+        carregarGrupoAtivoInicial()
+        verificarAtualizacaoSilenciosa()
+        iniciarSincronizacaoSilenciosaNuvem()
+        carregarMaisPopularesMatch()
+        carregarFilmesEmCartaz()
+        monitorarExpulsaoDaSala()
+    }
 
     fun carregarFilmesEmCartaz() {
         viewModelScope.launch {
@@ -228,14 +244,6 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
-    init {
-        carregarGrupoAtivoInicial()
-        verificarAtualizacaoSilenciosa()
-        iniciarSincronizacaoSilenciosaNuvem()
-        carregarMaisPopularesMatch()
-        carregarFilmesEmCartaz()
-    }
-
     fun carregarGrupoAtivoInicial() {
         viewModelScope.launch {
             val grupoAtivo = repository.obterGrupoAtivoLocal()
@@ -244,6 +252,7 @@ class MidiaViewModel @Inject constructor(
                 if (grupoAtivo.grupoId.isNotBlank()) {
                     observarGrupoFirestore(grupoAtivo.grupoId)
                     repository.atualizarPresencaNoGrupo(grupoAtivo.grupoId, true)
+                    verificarSeSouAdministrador(grupoAtivo.grupoId)
                 }
             }
         }
@@ -261,17 +270,47 @@ class MidiaViewModel @Inject constructor(
             if (grupoId.isNotBlank()) {
                 observarGrupoFirestore(grupoId)
                 repository.atualizarPresencaNoGrupo(grupoId, true)
+                verificarSeSouAdministrador(grupoId)
+            } else {
+                _isAdministradorSala.value = false
             }
+        }
+    }
+
+    fun verificarSeSouAdministrador(grupoId: String) {
+        val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        if (grupoId.isBlank() || uidAtual.isBlank()) {
+            _isAdministradorSala.value = false
+            return
+        }
+        viewModelScope.launch {
+            val souAdm = repository.verificarSeUsuarioEhAdmin(grupoId, uidAtual)
+            _isAdministradorSala.value = souAdm
+        }
+    }
+
+    fun excluirMembroDaSala(grupoId: String, membroUid: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = repository.removerMembroDoGrupo(grupoId, membroUid)
+            onResultado(sucesso)
+        }
+    }
+
+    fun atualizarSenhaDaSala(grupoId: String, novaSenha: String, onResultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = repository.atualizarSenhaDoGrupo(grupoId, novaSenha)
+            onResultado(sucesso)
         }
     }
 
     fun criarGrupoComSenha(grupoId: String, nomeGrupo: String, tipo: String, senha: String, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val sucesso = repository.criarNovoGrupoNaNuvem(grupoId, nomeGrupo, tipo, senha)
+            val idFormatado = if (grupoId.startsWith("CINE-", ignoreCase = true)) grupoId.trim().uppercase() else "CINE-${grupoId.trim().uppercase().removePrefix("CINE-")}"
+            val sucesso = repository.criarNovoGrupoNaNuvem(idFormatado, nomeGrupo, tipo, senha)
             if (sucesso) {
-                val idLimpo = grupoId.trim().uppercase()
-                _casalIdAtivo.value = idLimpo
-                observarGrupoFirestore(idLimpo)
+                _casalIdAtivo.value = idFormatado
+                observarGrupoFirestore(idFormatado)
+                verificarSeSouAdministrador(idFormatado)
             }
             onResultado(sucesso)
         }
@@ -279,11 +318,12 @@ class MidiaViewModel @Inject constructor(
 
     fun entrarEmGrupoExistente(grupoId: String, nomeGrupo: String, tipo: String, senhaDigitada: String, onResultado: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            val resultado = repository.verificarEEntrarNoGrupo(grupoId, nomeGrupo, tipo, senhaDigitada)
+            val idFormatado = if (grupoId.startsWith("CINE-", ignoreCase = true)) grupoId.trim().uppercase() else "CINE-${grupoId.trim().uppercase().removePrefix("CINE-")}"
+            val resultado = repository.verificarEEntrarNoGrupo(idFormatado, nomeGrupo, tipo, senhaDigitada)
             if (resultado.isSuccess) {
-                val idLimpo = grupoId.trim().uppercase()
-                _casalIdAtivo.value = idLimpo
-                observarGrupoFirestore(idLimpo)
+                _casalIdAtivo.value = idFormatado
+                observarGrupoFirestore(idFormatado)
+                verificarSeSouAdministrador(idFormatado)
                 onResultado(true, null)
             } else {
                 onResultado(false, resultado.exceptionOrNull()?.localizedMessage ?: "Erro ao entrar no grupo.")
@@ -336,6 +376,30 @@ class MidiaViewModel @Inject constructor(
         }
         jobBuscaUsuarios = viewModelScope.launch {
             _resultadosBuscaAmigos.value = socialRepository.buscarUsuarios(termoLimpo)
+        }
+    }
+
+    fun monitorarExpulsaoDaSala() {
+        viewModelScope.launch {
+            _casalIdAtivo.collect { grupoId ->
+                if (grupoId.isNotBlank()) {
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@collect
+                    firestore.collection("grupos").document(grupoId)
+                        .collection("membros").document(uid)
+                        .addSnapshotListener { snapshot, _ ->
+                            if (snapshot != null && !snapshot.exists()) {
+                                viewModelScope.launch {
+                                    val grupoLocal = repository.obterGrupoAtivoLocal()
+                                    if (grupoLocal != null) {
+                                        repository.deletarGrupoLocal(grupoLocal)
+                                    }
+                                    _casalIdAtivo.value = ""
+                                    NotificacaoHelper.dispararNotificacaoExpulsao(context)
+                                }
+                            }
+                        }
+                }
+            }
         }
     }
 
@@ -473,6 +537,7 @@ class MidiaViewModel @Inject constructor(
     fun limparEstadoSincronizacao() {
         repository.limparEstadoSincronizacao()
         _casalIdAtivo.value = ""
+        _isAdministradorSala.value = false
     }
 
     fun verificarAtualizacaoSilenciosa() {
@@ -542,13 +607,73 @@ class MidiaViewModel @Inject constructor(
         _ordenacaoSelecionada.value = "popularity.desc"
     }
 
-    fun inserir(midia: Midia) { viewModelScope.launch { repository.inserir(midia) } }
+    fun inserir(midia: Midia) {
+        viewModelScope.launch {
+            val usuarioLogado = FirebaseAuth.getInstance().currentUser
+            val uid = usuarioLogado?.uid ?: ""
+            val nomeAExibir = usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Parceiro(a)"
+            val identificadorAdicao = "${uid}_${nomeAExibir}"
+
+            val midiaProcessada = if (midia.isCasal && midia.casalId.isNotBlank()) {
+                midia.copy(
+                    status = "Pendente",
+                    adicionadoPor = identificadorAdicao
+                )
+            } else {
+                midia.copy(
+                    adicionadoPor = identificadorAdicao
+                )
+            }
+
+            repository.inserir(midiaProcessada)
+        }
+    }
+
+    fun aceitarMidiaPendente(midia: Midia) {
+        viewModelScope.launch {
+            val midiaAprovada = midia.copy(status = "Quero Assistir")
+            repository.atualizar(midiaAprovada)
+        }
+    }
+
+    fun recusarMidiaPendente(midia: Midia) {
+        viewModelScope.launch {
+            val midiaRecusada = midia.copy(status = "Recusado")
+            repository.atualizar(midiaRecusada)
+        }
+    }
+
+    fun processarMidiaRecusadaPeloParceiro(midia: Midia, moverParaListaPessoal: Boolean) {
+        viewModelScope.launch {
+            repository.deletar(midia)
+            if (moverParaListaPessoal) {
+                val midiaPessoal = midia.copy(
+                    id = 0,
+                    isCasal = false,
+                    casalId = "",
+                    status = "Quero Assistir"
+                )
+                repository.inserir(midiaPessoal)
+            }
+        }
+    }
+
     fun atualizar(midia: Midia) { viewModelScope.launch { repository.atualizar(midia) } }
 
     fun concluirMidia(midia: Midia) {
         viewModelScope.launch {
-            val midiaConcluida = midia.copy(status = "Concluído", jaEncerrou = true)
+            val usuarioLogado = FirebaseAuth.getInstance().currentUser
+            val nomeUsuario = usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Parceiro(a)"
+            val nomeAExibir = nomeUsuario.substringBefore("@")
+
+            val midiaConcluida = midia.copy(
+                status = "Concluído",
+                jaEncerrou = true,
+                dataConclusao = System.currentTimeMillis(),
+                concluidoPor = if (midia.isCasal) nomeAExibir else ""
+            )
             repository.atualizar(midiaConcluida)
+
             if (midia.isCasal && midia.casalId.isNotBlank()) {
                 repository.limparAssistindoAgora(midia.casalId)
             }

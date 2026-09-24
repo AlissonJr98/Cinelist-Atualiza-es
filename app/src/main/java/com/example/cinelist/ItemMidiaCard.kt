@@ -1,6 +1,10 @@
 package com.example.cinelist
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,14 +13,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +31,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
-import androidx.compose.runtime.remember
+import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,128 +47,152 @@ fun ItemMidiaCard(
     onAlternarFavorito: (() -> Unit)? = null,
     jaAdicionado: Boolean = false,
     onAdicionarRapido: (() -> Unit)? = null,
-    modoListaHorizontal: Boolean = false
+    modoListaHorizontal: Boolean = false,
+    onAceitarPendente: (() -> Unit)? = null,
+    onRecusarPendente: (() -> Unit)? = null,
+    onProcessarRecusado: ((Boolean) -> Unit)? = null
 ) {
-    if (modoListaHorizontal) {
-        ItemMidiaCardHorizontalComSwipe(
-            midia = midia,
-            onClick = onClick,
-            onIncrementarEpisodio = onIncrementarEpisodio,
-            onDeletar = onDeletar,
-            onAlternarStatusConcluido = onAlternarStatusConcluido,
-            onAlternarFavorito = onAlternarFavorito,
-            jaAdicionado = jaAdicionado,
-            onAdicionarRapido = onAdicionarRapido
-        )
-        return
+    // Efeito Motion de Entrada (Fade-in e Scale suave ao carregar)
+    var visivel by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        visivel = true
     }
 
-    if (onDeletar == null && onAlternarStatusConcluido == null) {
-        ConteudoItemMidiaCard(
-            midia = midia,
-            onClick = onClick,
-            onIncrementarEpisodio = onIncrementarEpisodio,
-            onAlternarFavorito = onAlternarFavorito,
-            jaAdicionado = jaAdicionado,
-            onAdicionarRapido = onAdicionarRapido
-        )
-    } else {
-        val currentOnDeletar by rememberUpdatedState(onDeletar)
-        val currentOnAlternarConcluido by rememberUpdatedState(onAlternarStatusConcluido)
+    AnimatedVisibility(
+        visible = visivel,
+        enter = fadeIn(animationSpec = tween(durationMillis = 350)) +
+                scaleIn(initialScale = 0.94f, animationSpec = tween(durationMillis = 350))
+    ) {
+        if (modoListaHorizontal) {
+            ItemMidiaCardHorizontalComSwipe(
+                midia = midia,
+                onClick = onClick,
+                onIncrementarEpisodio = onIncrementarEpisodio,
+                onDeletar = onDeletar,
+                onAlternarStatusConcluido = onAlternarStatusConcluido,
+                onAlternarFavorito = onAlternarFavorito,
+                jaAdicionado = jaAdicionado,
+                onAdicionarRapido = onAdicionarRapido,
+                onAceitarPendente = onAceitarPendente,
+                onRecusarPendente = onRecusarPendente,
+                onProcessarRecusado = onProcessarRecusado
+            )
+            return@AnimatedVisibility
+        }
 
-        val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = { valorDismiss ->
-                when (valorDismiss) {
-                    SwipeToDismissBoxValue.EndToStart -> {
-                        currentOnDeletar?.invoke()
-                        false
-                    }
-                    SwipeToDismissBoxValue.StartToEnd -> {
-                        currentOnAlternarConcluido?.invoke()
-                        false
-                    }
-                    SwipeToDismissBoxValue.Settled -> false
-                }
-            }
-        )
-
-        SwipeToDismissBox(
-            state = dismissState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            enableDismissFromStartToEnd = onAlternarStatusConcluido != null,
-            enableDismissFromEndToStart = onDeletar != null,
-            backgroundContent = {
-                val direcao = dismissState.dismissDirection
-                val corFundo by animateColorAsState(
-                    targetValue = when (direcao) {
-                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
-                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F)
-                        SwipeToDismissBoxValue.Settled -> Color.Transparent
-                    },
-                    label = "cor_swipe"
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(corFundo)
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = when (direcao) {
-                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                        else -> Alignment.CenterEnd
-                    }
-                ) {
-                    if (direcao == SwipeToDismissBoxValue.StartToEnd) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Concluir",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = if (midia.status == "Concluído") "Reabrir" else "Concluir",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "Excluir",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Excluir",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        ) {
+        if (onDeletar == null && onAlternarStatusConcluido == null) {
             ConteudoItemMidiaCard(
                 midia = midia,
                 onClick = onClick,
                 onIncrementarEpisodio = onIncrementarEpisodio,
                 onAlternarFavorito = onAlternarFavorito,
                 jaAdicionado = jaAdicionado,
-                onAdicionarRapido = onAdicionarRapido
+                onAdicionarRapido = onAdicionarRapido,
+                onAceitarPendente = onAceitarPendente,
+                onRecusarPendente = onRecusarPendente,
+                onProcessarRecusado = onProcessarRecusado
             )
+        } else {
+            val currentOnDeletar by rememberUpdatedState(onDeletar)
+            val currentOnAlternarConcluido by rememberUpdatedState(onAlternarStatusConcluido)
+
+            val dismissState = rememberSwipeToDismissBoxState(
+                confirmValueChange = { valorDismiss ->
+                    when (valorDismiss) {
+                        SwipeToDismissBoxValue.EndToStart -> {
+                            currentOnDeletar?.invoke()
+                            false
+                        }
+                        SwipeToDismissBoxValue.StartToEnd -> {
+                            currentOnAlternarConcluido?.invoke()
+                            false
+                        }
+                        SwipeToDismissBoxValue.Settled -> false
+                    }
+                }
+            )
+
+            SwipeToDismissBox(
+                state = dismissState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                enableDismissFromStartToEnd = onAlternarStatusConcluido != null && midia.status != "Pendente" && midia.status != "Recusado",
+                enableDismissFromEndToStart = onDeletar != null,
+                backgroundContent = {
+                    val direcao = dismissState.dismissDirection
+                    val corFundo by animateColorAsState(
+                        targetValue = when (direcao) {
+                            SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
+                            SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F)
+                            SwipeToDismissBoxValue.Settled -> Color.Transparent
+                        },
+                        label = "cor_swipe"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(corFundo)
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = when (direcao) {
+                            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                            else -> Alignment.CenterEnd
+                        }
+                    ) {
+                        if (direcao == SwipeToDismissBoxValue.StartToEnd) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Concluir",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = if (midia.status == "Concluído") "Reabrir" else "Concluir",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Excluir",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Excluir",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            ) {
+                ConteudoItemMidiaCard(
+                    midia = midia,
+                    onClick = onClick,
+                    onIncrementarEpisodio = onIncrementarEpisodio,
+                    onAlternarFavorito = onAlternarFavorito,
+                    jaAdicionado = jaAdicionado,
+                    onAdicionarRapido = onAdicionarRapido,
+                    onAceitarPendente = onAceitarPendente,
+                    onRecusarPendente = onRecusarPendente,
+                    onProcessarRecusado = onProcessarRecusado
+                )
+            }
         }
     }
 }
@@ -173,12 +204,26 @@ private fun ConteudoItemMidiaCard(
     onIncrementarEpisodio: (() -> Unit)? = null,
     onAlternarFavorito: (() -> Unit)? = null,
     jaAdicionado: Boolean = false,
-    onAdicionarRapido: (() -> Unit)? = null
+    onAdicionarRapido: (() -> Unit)? = null,
+    onAceitarPendente: (() -> Unit)? = null,
+    onRecusarPendente: (() -> Unit)? = null,
+    onProcessarRecusado: ((Boolean) -> Unit)? = null
 ) {
+    val ehPendente = midia.status == "Pendente"
+    val ehRecusado = midia.status == "Recusado"
+
+    val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
+    val nomeSugeridor = midia.adicionadoPor.substringAfter("_", "Alguém").substringBefore("@")
+
+    if (ehRecusado && !fuiEuQueSugeri) return
+
     val corStatus = when (midia.status) {
         "Assistindo" -> Color(0xFF00BFFF)
         "Concluído" -> Color(0xFF32CD32)
         "Descobrir" -> Color(0xFFFF9800)
+        "Pendente" -> Color(0xFFFFC107)
+        "Recusado" -> Color(0xFFFF4C4C)
         else -> Color(0xFF888888)
     }
 
@@ -251,60 +296,62 @@ private fun ConteudoItemMidiaCard(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = midia.status,
-                            color = Color.Black,
+                            text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else midia.status,
+                            color = Color.White,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                if (onAlternarFavorito != null && midia.status != "Descobrir") {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                            .clickable { onAlternarFavorito() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (midia.favorito) "Remover dos favoritos" else "Favoritar",
-                            tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-                if (onAdicionarRapido != null || jaAdicionado) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                if (!ehPendente && !ehRecusado) {
+                    if (onAlternarFavorito != null && midia.status != "Descobrir") {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(6.dp)
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .clickable { onAlternarFavorito() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (midia.favorito) "Remover dos favoritos" else "Favoritar",
+                                tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
+                                modifier = Modifier.size(18.dp)
                             )
-                            .clickable(enabled = !jaAdicionado) {
-                                onAdicionarRapido?.invoke()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (jaAdicionado) Icons.Default.Check else Icons.Default.Add,
-                            contentDescription = if (jaAdicionado) "Já Adicionado" else "Adicionar à Lista",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        }
+                    }
+
+                    if (onAdicionarRapido != null || jaAdicionado) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(6.dp)
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                )
+                                .clickable(enabled = !jaAdicionado) {
+                                    onAdicionarRapido?.invoke()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (jaAdicionado) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = if (jaAdicionado) "Já Adicionado" else "Adicionar à Lista",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
-                if (midia.status != "Concluído" && midia.status != "Descobrir") {
+                if (!ehPendente && !ehRecusado && midia.status != "Concluído" && midia.status != "Descobrir") {
                     if (!ehSerieOuAnime && midia.minutoParado > 0) {
                         Box(
                             modifier = Modifier
@@ -404,7 +451,7 @@ private fun ConteudoItemMidiaCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    if (midia.favorito) {
+                    if (midia.favorito && !ehPendente && !ehRecusado) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.Favorite,
@@ -423,13 +470,11 @@ private fun ConteudoItemMidiaCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Indicação sutil de quem adicionou no modo casal
                 if (midia.isCasal && midia.adicionadoPor.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    val nomeCurto = midia.adicionadoPor.substringBefore("@")
                     Text(
-                        text = "Adicionado por: $nomeCurto ❤️",
-                        color = Color(0xFFFF69B4),
+                        text = if (ehPendente) "Sugerido por: $nomeSugeridor ⏳" else if (ehRecusado) "Parceiro(a) recusou assistir 💔" else "Adicionado por: $nomeSugeridor ❤️",
+                        color = if (ehPendente) Color(0xFFFFC107) else if (ehRecusado) Color(0xFFFF4C4C) else Color(0xFFFF69B4),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
@@ -439,29 +484,31 @@ private fun ConteudoItemMidiaCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    if (midia.nota > 0) {
-                        repeat(midia.nota) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(12.dp)
+                if (!ehPendente && !ehRecusado) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        if (midia.nota > 0) {
+                            repeat(midia.nota) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Sem avaliação",
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontSize = 10.sp
                             )
                         }
-                    } else {
-                        Text(
-                            text = "Sem avaliação",
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontSize = 10.sp
-                        )
                     }
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "🍿 $plataformaPrincipal",
                     fontSize = 11.sp,
@@ -470,6 +517,95 @@ private fun ConteudoItemMidiaCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)) {
+                    if (midia.dataConclusao > 0L) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(12.dp))
+
+                            val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+                            val dataStr = sdf.format(Date(midia.dataConclusao))
+
+                            val textoFinal = if (midia.isCasal && midia.concluidoPor.isNotBlank()) {
+                                "Em $dataStr por ${midia.concluidoPor}"
+                            } else {
+                                "Finalizado em $dataStr"
+                            }
+
+                            Text(
+                                text = textoFinal,
+                                fontSize = 10.sp,
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                if (ehPendente) {
+                    if (!fuiEuQueSugeri) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { onRecusarPendente?.invoke() },
+                                modifier = Modifier.weight(1f).height(32.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Recusar", fontSize = 11.sp, color = Color.White)
+                            }
+                            Button(
+                                onClick = { onAceitarPendente?.invoke() },
+                                modifier = Modifier.weight(1f).height(32.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Aceitar", fontSize = 11.sp, color = Color.White)
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Aguardando aprovação do parceiro(a)...", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+
+                if (ehRecusado && fuiEuQueSugeri) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onProcessarRecusado?.invoke(false) },
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Descartar", fontSize = 11.sp, color = Color(0xFFFF4C4C))
+                        }
+                        Button(
+                            onClick = { onProcessarRecusado?.invoke(true) },
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Para Minha Lista", fontSize = 10.sp, color = Color.White)
+                        }
+                    }
+                }
             }
         }
     }
@@ -485,7 +621,10 @@ private fun ItemMidiaCardHorizontalComSwipe(
     onAlternarStatusConcluido: (() -> Unit)? = null,
     onAlternarFavorito: (() -> Unit)? = null,
     jaAdicionado: Boolean = false,
-    onAdicionarRapido: (() -> Unit)? = null
+    onAdicionarRapido: (() -> Unit)? = null,
+    onAceitarPendente: (() -> Unit)? = null,
+    onRecusarPendente: (() -> Unit)? = null,
+    onProcessarRecusado: ((Boolean) -> Unit)? = null
 ) {
     if (onDeletar == null && onAlternarStatusConcluido == null) {
         ConteudoItemMidiaCardHorizontal(
@@ -494,7 +633,10 @@ private fun ItemMidiaCardHorizontalComSwipe(
             onIncrementarEpisodio = onIncrementarEpisodio,
             onAlternarFavorito = onAlternarFavorito,
             jaAdicionado = jaAdicionado,
-            onAdicionarRapido = onAdicionarRapido
+            onAdicionarRapido = onAdicionarRapido,
+            onAceitarPendente = onAceitarPendente,
+            onRecusarPendente = onRecusarPendente,
+            onProcessarRecusado = onProcessarRecusado
         )
     } else {
         val currentOnDeletar by rememberUpdatedState(onDeletar)
@@ -521,7 +663,7 @@ private fun ItemMidiaCardHorizontalComSwipe(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(4.dp),
-            enableDismissFromStartToEnd = onAlternarStatusConcluido != null,
+            enableDismissFromStartToEnd = onAlternarStatusConcluido != null && midia.status != "Pendente" && midia.status != "Recusado",
             enableDismissFromEndToStart = onDeletar != null,
             backgroundContent = {
                 val direcao = dismissState.dismissDirection
@@ -591,7 +733,10 @@ private fun ItemMidiaCardHorizontalComSwipe(
                 onIncrementarEpisodio = onIncrementarEpisodio,
                 onAlternarFavorito = onAlternarFavorito,
                 jaAdicionado = jaAdicionado,
-                onAdicionarRapido = onAdicionarRapido
+                onAdicionarRapido = onAdicionarRapido,
+                onAceitarPendente = onAceitarPendente,
+                onRecusarPendente = onRecusarPendente,
+                onProcessarRecusado = onProcessarRecusado
             )
         }
     }
@@ -604,12 +749,26 @@ private fun ConteudoItemMidiaCardHorizontal(
     onIncrementarEpisodio: (() -> Unit)? = null,
     onAlternarFavorito: (() -> Unit)? = null,
     jaAdicionado: Boolean = false,
-    onAdicionarRapido: (() -> Unit)? = null
+    onAdicionarRapido: (() -> Unit)? = null,
+    onAceitarPendente: (() -> Unit)? = null,
+    onRecusarPendente: (() -> Unit)? = null,
+    onProcessarRecusado: ((Boolean) -> Unit)? = null
 ) {
+    val ehPendente = midia.status == "Pendente"
+    val ehRecusado = midia.status == "Recusado"
+
+    val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
+    val nomeSugeridor = midia.adicionadoPor.substringAfter("_", "Alguém").substringBefore("@")
+
+    if (ehRecusado && !fuiEuQueSugeri) return
+
     val corStatus = when (midia.status) {
         "Assistindo" -> Color(0xFF00BFFF)
         "Concluído" -> Color(0xFF32CD32)
         "Descobrir" -> Color(0xFFFF9800)
+        "Pendente" -> Color(0xFFFFC107)
+        "Recusado" -> Color(0xFFFF4C4C)
         else -> Color(0xFF888888)
     }
 
@@ -639,12 +798,12 @@ private fun ConteudoItemMidiaCardHorizontal(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(110.dp),
+                .height(if (ehPendente || ehRecusado) 140.dp else 110.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .width(75.dp)
+                    .width(85.dp)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
                 contentAlignment = Alignment.Center
@@ -665,48 +824,50 @@ private fun ConteudoItemMidiaCardHorizontal(
                     )
                 }
 
-                if (onAlternarFavorito != null && midia.status != "Descobrir") {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
-                            .clickable { onAlternarFavorito() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favoritar",
-                            tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-
-                if (onAdicionarRapido != null || jaAdicionado) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                if (!ehPendente && !ehRecusado) {
+                    if (onAlternarFavorito != null && midia.status != "Descobrir") {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .clickable { onAlternarFavorito() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favoritar",
+                                tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
+                                modifier = Modifier.size(14.dp)
                             )
-                            .clickable(enabled = !jaAdicionado) {
-                                onAdicionarRapido?.invoke()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (jaAdicionado) Icons.Default.Check else Icons.Default.Add,
-                            contentDescription = "Adicionar",
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        }
+                    }
+
+                    if (onAdicionarRapido != null || jaAdicionado) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                                )
+                                .clickable(enabled = !jaAdicionado) {
+                                    onAdicionarRapido?.invoke()
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (jaAdicionado) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = "Adicionar",
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -740,8 +901,8 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = midia.status,
-                                color = Color.Black,
+                                text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else midia.status,
+                                color = Color.White,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -758,10 +919,10 @@ private fun ConteudoItemMidiaCardHorizontal(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (midia.isCasal && midia.adicionadoPor.isNotBlank()) {
-                        val nomeCurto = midia.adicionadoPor.substringBefore("@")
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Adicionado por: $nomeCurto ❤️",
-                            color = Color(0xFFFF69B4),
+                            text = if (ehPendente) "Sugerido por: $nomeSugeridor ⏳" else if (ehRecusado) "Parceiro(a) recusou assistir 💔" else "Adicionado por: $nomeSugeridor ❤️",
+                            color = if (ehPendente) Color(0xFFFFC107) else if (ehRecusado) Color(0xFFFF4C4C) else Color(0xFFFF69B4),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
@@ -770,57 +931,137 @@ private fun ConteudoItemMidiaCardHorizontal(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        if (midia.nota > 0) {
-                            repeat(midia.nota) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFD700),
-                                    modifier = Modifier.size(12.dp)
-                                )
+                if (midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)) {
+                    if (midia.dataConclusao > 0L) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(12.dp))
+
+                            val sdf = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+                            val dataStr = sdf.format(Date(midia.dataConclusao))
+
+                            val textoFinal = if (midia.isCasal && midia.concluidoPor.isNotBlank()) {
+                                "Em $dataStr por ${midia.concluidoPor}"
+                            } else {
+                                "Finalizado em $dataStr"
                             }
-                        } else {
+
                             Text(
-                                text = "Sem avaliação",
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontSize = 10.sp
+                                text = textoFinal,
+                                fontSize = 10.sp,
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
+                }
 
-                    if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable { onIncrementarEpisodio() },
-                            color = MaterialTheme.colorScheme.primary
+                if (ehPendente) {
+                    if (!fuiEuQueSugeri) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            Button(
+                                onClick = { onRecusarPendente?.invoke() },
+                                modifier = Modifier.weight(1f).height(28.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C)),
+                                contentPadding = PaddingValues(0.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(12.dp)
-                                )
+                                Text("Recusar", fontSize = 10.sp, color = Color.White)
+                            }
+                            Button(
+                                onClick = { onAceitarPendente?.invoke() },
+                                modifier = Modifier.weight(1f).height(28.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32)),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("Aceitar", fontSize = 10.sp, color = Color.White)
+                            }
+                        }
+                    } else {
+                        Text("Aguardando aprovação...", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                    }
+                } else if (ehRecusado && fuiEuQueSugeri) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onProcessarRecusado?.invoke(false) },
+                            modifier = Modifier.weight(1f).height(28.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Descartar", fontSize = 10.sp, color = Color(0xFFFF4C4C))
+                        }
+                        Button(
+                            onClick = { onProcessarRecusado?.invoke(true) },
+                            modifier = Modifier.weight(1f).height(28.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Para Minha Lista", fontSize = 9.sp, color = Color.White)
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            if (midia.nota > 0) {
+                                repeat(midia.nota) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                            } else {
                                 Text(
-                                    text = "T${midia.temporadaAtual} Ep ${midia.episodioAtual}",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Sem avaliação",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 10.sp
                                 )
+                            }
+                        }
+
+                        if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { onIncrementarEpisodio() },
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = "T${midia.temporadaAtual} Ep ${midia.episodioAtual}",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }

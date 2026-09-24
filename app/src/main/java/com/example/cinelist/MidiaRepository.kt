@@ -86,6 +86,12 @@ class MidiaRepository @Inject constructor(
                         mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
                         SetOptions.merge()
                     ).await()
+
+                    firestore.collection("usuarios").document(uid)
+                        .collection("minhas_salas").document(grupoLimpo).set(
+                            mapOf("grupoId" to grupoLimpo, "nomeGrupo" to nomeGrupo, "tipoGrupo" to tipo),
+                            SetOptions.merge()
+                        ).await()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -104,12 +110,14 @@ class MidiaRepository @Inject constructor(
             val grupoLimpo = grupoId.trim().uppercase()
             val docRef = firestore.collection("grupos").document(grupoLimpo)
 
+            val uid = auth.currentUser?.uid ?: ""
             val dadosGrupo = mapOf(
                 "grupoId" to grupoLimpo,
                 "nomeGrupo" to nomeGrupo,
                 "tipoGrupo" to tipo,
                 "senha" to senha.trim(),
-                "criadoEm" to System.currentTimeMillis()
+                "criadoEm" to System.currentTimeMillis(),
+                "criadorUid" to uid
             )
             docRef.set(dadosGrupo).await()
 
@@ -118,12 +126,18 @@ class MidiaRepository @Inject constructor(
             midiaDao.inserirGrupo(grupo)
 
             try {
-                val uid = auth.currentUser?.uid
-                if (uid != null) {
-                    firestore.collection("usuarios").document(uid).set(
+                val uidUsuario = auth.currentUser?.uid
+                if (uidUsuario != null) {
+                    firestore.collection("usuarios").document(uidUsuario).set(
                         mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
                         SetOptions.merge()
                     ).await()
+
+                    firestore.collection("usuarios").document(uidUsuario)
+                        .collection("minhas_salas").document(grupoLimpo).set(
+                            mapOf("grupoId" to grupoLimpo, "nomeGrupo" to nomeGrupo, "tipoGrupo" to tipo),
+                            SetOptions.merge()
+                        ).await()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -142,6 +156,60 @@ class MidiaRepository @Inject constructor(
         atualizarPresencaNoGrupo(grupo.grupoId, false)
         desinscreverDoTopicoDoGrupo(grupo.grupoId)
         midiaDao.deletarGrupo(grupo)
+
+        try {
+            val uid = auth.currentUser?.uid
+            if (uid != null) {
+                firestore.collection("usuarios").document(uid)
+                    .collection("minhas_salas").document(grupo.grupoId).delete().await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun verificarSeUsuarioEhAdmin(grupoId: String, uid: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || uid.isBlank()) return@withContext false
+        try {
+            val doc = firestore.collection("grupos").document(grupoId).get().await()
+            val criadorUid = doc.getString("criadorUid") ?: doc.getString("adminUid") ?: ""
+            criadorUid == uid
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun removerMembroDoGrupo(grupoId: String, membroUid: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || membroUid.isBlank()) return@withContext false
+        try {
+            // Apaga imediatamente o documento do membro para sumir do painel do Admin instantaneamente
+            firestore.collection("grupos").document(grupoId)
+                .collection("membros").document(membroUid).delete().await()
+
+            try {
+                firestore.collection("usuarios").document(membroUid)
+                    .collection("minhas_salas").document(grupoId).delete().await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun atualizarSenhaDoGrupo(grupoId: String, novaSenha: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank()) return@withContext false
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .update("senha", novaSenha.trim()).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 
     private fun obterColecaoUsuario(): com.google.firebase.firestore.CollectionReference? {
@@ -401,7 +469,6 @@ class MidiaRepository @Inject constructor(
                 "vistoPorUltimo" to System.currentTimeMillis()
             )
 
-            // Se estiver ficando offline, limpa também o que estava assistindo
             if (!online) {
                 dados["assistindoAgoraTitulo"] = ""
                 dados["assistindoAgoraEpisodio"] = ""
@@ -733,16 +800,38 @@ class MidiaRepository @Inject constructor(
             val uid = auth.currentUser?.uid ?: return@withContext
             val gruposLocais = midiaDao.buscarTodosOsGrupos().firstOrNull() ?: emptyList()
 
-            if (gruposLocais.isEmpty()) {
+            val snapshotSalas = firestore.collection("usuarios").document(uid).collection("minhas_salas").get().await()
+
+            snapshotSalas.documents.forEach { doc ->
+                val grupoId = doc.getString("grupoId") ?: ""
+                val nomeGrupo = doc.getString("nomeGrupo") ?: "Sala Compartilhada"
+                val tipo = doc.getString("tipoGrupo") ?: "Casal"
+
+                if (grupoId.isNotBlank()) {
+                    val jaExisteLocalmente = gruposLocais.any { it.grupoId == grupoId }
+                    if (!jaExisteLocalmente) {
+                        val grupo = GrupoEntity(grupoId = grupoId, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = false)
+                        midiaDao.inserirGrupo(grupo)
+                    }
+                }
+            }
+
+            if (snapshotSalas.isEmpty) {
                 val docUsuario = firestore.collection("usuarios").document(uid).get().await()
                 val ultimoGrupo = docUsuario.getString("ultimoGrupoAtivo") ?: ""
                 val nomeUltimoGrupo = docUsuario.getString("ultimoNomeGrupo") ?: "Lista Compartilhada"
 
-                if (ultimoGrupo.isNotBlank()) {
+                if (ultimoGrupo.isNotBlank() && gruposLocais.none { it.grupoId == ultimoGrupo }) {
                     val grupo = GrupoEntity(grupoId = ultimoGrupo, nomeGrupo = nomeUltimoGrupo, tipoGrupo = "Casal", ativo = true)
                     midiaDao.inserirGrupo(grupo)
+
+                    firestore.collection("usuarios").document(uid).collection("minhas_salas").document(ultimoGrupo).set(
+                        mapOf("grupoId" to ultimoGrupo, "nomeGrupo" to nomeUltimoGrupo, "tipoGrupo" to "Casal"),
+                        SetOptions.merge()
+                    )
                 }
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
         }

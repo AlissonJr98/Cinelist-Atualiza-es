@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
@@ -51,6 +53,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -104,7 +107,9 @@ fun TelaPerfil(
 
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
     val modoGrupoAtivo = casalIdAtivo.isNotBlank()
+    val isAdministrador by viewModel.isAdministradorSala.collectAsState()
 
+    var novaSenhaSalaInput by remember { mutableStateOf("") }
     var exibindoWrapped by remember { mutableStateOf(false) }
 
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
@@ -133,6 +138,9 @@ fun TelaPerfil(
 
     var mostrarConfirmacaoSair by remember { mutableStateOf(false) }
     var mostrarConfirmacaoReset by remember { mutableStateOf(false) }
+
+    var midiaParaExcluirHistorico by remember { mutableStateOf<Midia?>(null) }
+    var midiaParaReabrirHistorico by remember { mutableStateOf<Midia?>(null) }
 
     if (mostrarConfirmacaoSair) {
         AlertDialog(
@@ -182,6 +190,58 @@ fun TelaPerfil(
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    if (midiaParaExcluirHistorico != null) {
+        val midia = midiaParaExcluirHistorico!!
+        AlertDialog(
+            onDismissRequest = { midiaParaExcluirHistorico = null },
+            title = { Text("Excluir do Histórico", fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente apagar \"${midia.titulo}\" permanentemente do seu histórico e da sua lista?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deletar(midia)
+                        midiaParaExcluirHistorico = null
+                        Toast.makeText(contexto, "Removido do histórico.", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                ) {
+                    Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { midiaParaExcluirHistorico = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (midiaParaReabrirHistorico != null) {
+        val midia = midiaParaReabrirHistorico!!
+        AlertDialog(
+            onDismissRequest = { midiaParaReabrirHistorico = null },
+            title = { Text("Reabrir Mídia", fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja reabrir \"${midia.titulo}\"? O título voltará para a lista como 'Assistindo' e a data de conclusão será apagada.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.atualizar(midia.copy(status = "Assistindo", dataConclusao = 0L, concluidoPor = ""))
+                        midiaParaReabrirHistorico = null
+                        Toast.makeText(contexto, "Mídia reaberta com sucesso!", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("Reabrir", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { midiaParaReabrirHistorico = null }) {
+                    Text("Cancelar")
+                }
+            }
         )
     }
 
@@ -831,12 +891,100 @@ fun TelaPerfil(
                                         Icon(imageVector = Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                         Column {
                                             Text("Modo Sala Conectado", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                            Text("Toque em um membro para ver as mídias dele", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                                            Text(if (isAdministrador) "👑 Você é o Administrador" else "👤 Membro da Sala", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
                                         }
                                     }
 
                                     TextButton(onClick = { viewModel.selecionarGrupoAtivo("") }) {
                                         Text("Ir p/ Particular", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+
+                            // PAINEL COMPLETO DE ADMINISTRADOR NA SALA
+                            if (isAdministrador) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text(
+                                            text = "👑 Painel de Administração da Sala",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+
+                                        OutlinedTextField(
+                                            value = novaSenhaSalaInput,
+                                            onValueChange = { novaSenhaSalaInput = it },
+                                            label = { Text("Alterar Senha da Sala") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+
+                                        Button(
+                                            onClick = {
+                                                if (novaSenhaSalaInput.isNotBlank()) {
+                                                    viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaSalaInput) { sucesso ->
+                                                        if (sucesso) {
+                                                            Toast.makeText(contexto, "Senha da sala atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                                                            novaSenhaSalaInput = ""
+                                                        } else {
+                                                            Toast.makeText(contexto, "Erro ao atualizar senha.", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Text("Salvar Nova Senha", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Membros Conectados (${membrosOrdenados.size}):",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+
+                                        membrosOrdenados.forEach { membro ->
+                                            val meuUid = usuarioAtual?.uid ?: ""
+                                            val ehMim = membro.uid == meuUid
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = membro.nome + if (ehMim) " (Você - Admin)" else "",
+                                                    fontSize = 13.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    fontWeight = if (ehMim) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                                if (!ehMim) {
+                                                    TextButton(
+                                                        onClick = {
+                                                            viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
+                                                                if (sucesso) {
+                                                                    Toast.makeText(contexto, "${membro.nome} foi removido da sala.", Toast.LENGTH_SHORT).show()
+                                                                } else {
+                                                                    Toast.makeText(contexto, "Erro ao remover membro.", Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            }
+                                                        }
+                                                    ) {
+                                                        Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1737,7 +1885,7 @@ fun TelaPerfil(
 
                 4 -> {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)
+                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
                         Text(
                             text = if (modoGrupoAtivo) "Concluídos na Sala (${listaHistoricoConcluido.size})" else "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
@@ -1752,21 +1900,165 @@ fun TelaPerfil(
                                 Text(
                                     text = if (modoGrupoAtivo) "Nenhum item marcado como Concluído nesta sala." else "Nenhum item marcado como Concluído na sua lista particular.",
                                     color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 14.sp
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            LazyColumn(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxSize()
                             ) {
-                                items(listaHistoricoConcluido, key = { it.id }) { itemConcluido ->
-                                    ItemMidiaCard(
-                                        midia = itemConcluido,
-                                        onClick = { onMidiaClique?.invoke(itemConcluido) }
+                                items(listaHistoricoConcluido.sortedByDescending { it.dataConclusao }, key = { it.id }) { itemConcluido ->
+                                    val dataFormatada = remember(itemConcluido.dataConclusao) {
+                                        if (itemConcluido.dataConclusao > 0L) {
+                                            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(itemConcluido.dataConclusao))
+                                        } else ""
+                                    }
+
+                                    val currentItem by rememberUpdatedState(itemConcluido)
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = { valorDismiss ->
+                                            when (valorDismiss) {
+                                                SwipeToDismissBoxValue.EndToStart -> {
+                                                    midiaParaExcluirHistorico = currentItem
+                                                    false
+                                                }
+                                                SwipeToDismissBoxValue.StartToEnd -> {
+                                                    midiaParaReabrirHistorico = currentItem
+                                                    false
+                                                }
+                                                SwipeToDismissBoxValue.Settled -> false
+                                            }
+                                        }
                                     )
+
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true,
+                                        backgroundContent = {
+                                            val direcao = dismissState.dismissDirection
+                                            val corFundo by animateColorAsState(
+                                                targetValue = when (direcao) {
+                                                    SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
+                                                    SwipeToDismissBoxValue.EndToStart -> Color(0xFFFF4C4C)
+                                                    SwipeToDismissBoxValue.Settled -> Color.Transparent
+                                                },
+                                                label = "cor_swipe_historico"
+                                            )
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(corFundo)
+                                                    .padding(horizontal = 16.dp),
+                                                contentAlignment = when (direcao) {
+                                                    SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                                    else -> Alignment.CenterEnd
+                                                }
+                                            ) {
+                                                if (direcao == SwipeToDismissBoxValue.StartToEnd) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reabrir", tint = Color.White)
+                                                        Text("Reabrir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                    }
+                                                } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onMidiaClique?.invoke(itemConcluido) },
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(45.dp)
+                                                        .height(65.dp)
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(MaterialTheme.colorScheme.background)
+                                                ) {
+                                                    if (itemConcluido.imagemCapa.isNotBlank()) {
+                                                        AsyncImage(
+                                                            model = itemConcluido.imagemCapa,
+                                                            contentDescription = null,
+                                                            contentScale = ContentScale.Crop,
+                                                            modifier = Modifier.fillMaxSize()
+                                                        )
+                                                    }
+                                                }
+
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = itemConcluido.titulo,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+
+                                                    Spacer(modifier = Modifier.height(2.dp))
+
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Text(text = itemConcluido.tipo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+
+                                                        if (itemConcluido.nota > 0) {
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(10.dp))
+                                                                Text(text = " ${itemConcluido.nota}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                                                            }
+                                                        }
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(12.dp))
+
+                                                        val textoConclusao = buildString {
+                                                            if (dataFormatada.isNotBlank()) append("Concluído em $dataFormatada") else append("Concluído")
+                                                            if (modoGrupoAtivo && itemConcluido.concluidoPor.isNotBlank()) append(" por ${itemConcluido.concluidoPor}")
+                                                        }
+
+                                                        Text(
+                                                            text = textoConclusao,
+                                                            fontSize = 10.sp,
+                                                            color = Color(0xFF4CAF50),
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3291,26 +3583,4 @@ fun DialogoUsuariosBloqueados(
         },
         containerColor = MaterialTheme.colorScheme.surface
     )
-}
-
-// Função utilitária para partilhar o código da sala via WhatsApp
-fun compartilharCodigoSalaWhatsApp(context: Context, codigoSala: String, nomeSala: String, senhaSala: String) {
-    val senhaTexto = if (senhaSala.isNotBlank()) " e senha: *$senhaSala*" else ""
-    val mensagem = "🍿 Olá! Entra na minha sala compartilhada no *CineList* para vermos filmes juntos!\n\n" +
-            "📍 Sala: *$nomeSala*\n" +
-            "🔑 Código: `$codigoSala`$senhaTexto\n\n" +
-            "Baixe o app e insira o código para se conectar!"
-
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, mensagem)
-        setPackage("com.whatsapp")
-    }
-
-    try {
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        val intentFallback = Intent(Intent.ACTION_VIEW, Uri.parse("https://api.whatsapp.com/send?text=${Uri.encode(mensagem)}"))
-        context.startActivity(intentFallback)
-    }
 }
