@@ -618,6 +618,13 @@ fun TelaPerfil(
     var infoNovaVersao by remember { mutableStateOf<InfoAtualizacao?>(null) }
     var mostrarDialogoAtualizacao by remember { mutableStateOf(false) }
 
+    if (mostrarDialogoAtualizacao && infoNovaVersao != null) {
+        DialogoNovidadesAtualizacao(
+            info = infoNovaVersao!!,
+            onDispensar = { mostrarDialogoAtualizacao = false }
+        )
+    }
+
     val urlJsonAtualizacao = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
 
     var receberNotificacoes by remember {
@@ -924,7 +931,7 @@ fun TelaPerfil(
                             verificandoAtualizacao = true
                             escopoCorrotina.launch {
                                 val info = withContext(Dispatchers.IO) {
-                                    UpdateManager.checarAtualizacao(urlJsonAtualizacao)
+                                    UpdateManager.checarAtualizacao()
                                 }
                                 verificandoAtualizacao = false
 
@@ -932,10 +939,8 @@ fun TelaPerfil(
                                 if (info != null && info.versaoCode > versaoAtual) {
                                     infoNovaVersao = info
                                     mostrarDialogoAtualizacao = true
-                                } else if (info != null) {
-                                    Toast.makeText(contexto, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(contexto, "Não foi possível verificar atualizações no momento.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(contexto, "Você já possui a versão mais recente!", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
