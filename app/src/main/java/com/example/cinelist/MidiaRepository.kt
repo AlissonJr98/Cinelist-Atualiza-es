@@ -302,12 +302,18 @@ class MidiaRepository @Inject constructor(
         midiaDao.incrementarEpisodio(idMidia)
         val midiaAtualizada = midiaDao.buscarPorId(idMidia)
         midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
+
+        // Atualiza o widget instantaneamente
+        CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
     suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
         midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
         val midiaAtualizada = midiaDao.buscarPorId(idMidia)
         midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
+
+        // Atualiza o widget instantaneamente ao modificar o progresso no app
+        CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
     private suspend fun sincronizarItemIndividualFirestore(midia: Midia) = withContext(Dispatchers.IO) {

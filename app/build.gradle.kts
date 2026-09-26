@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 40
-        versionName = "2.0.1"
+        versionCode = 41
+        versionName = "2.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -83,6 +83,8 @@ dependencies {
 
     // Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    implementation("androidx.glance:glance-appwidget:1.1.0")
 
     // Google Play Services Auth
     implementation("com.google.android.gms:play-services-auth:21.2.0")

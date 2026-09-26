@@ -53,10 +53,12 @@ data class Midia(
     var isCasal: Boolean = false,
     var casalId: String = "",
     var adicionadoPor: String = "",
-    // NOVOS CAMPOS PARA O PONTO 5
     var dataConclusao: Long = 0L,
     var concluidoPor: String = "",
-    var avaliacoesGrupo: Map<String, AvaliacaoMembro> = emptyMap()
+    var avaliacoesGrupo: Map<String, AvaliacaoMembro> = emptyMap(),
+
+    // NOVO CAMPO: Guarda a data da estreia (Formato TMDB: "yyyy-MM-dd")
+    var dataLancamento: String = ""
 ) {
     // Construtor vazio explícito exigido pelo Firestore
     constructor() : this(id = 0)
@@ -86,7 +88,8 @@ data class Midia(
             "adicionadoPor" to adicionadoPor,
             "dataConclusao" to dataConclusao,
             "concluidoPor" to concluidoPor,
-            "avaliacoesGrupo" to avaliacoesGrupo.mapValues { it.value.toMap() }
+            "avaliacoesGrupo" to avaliacoesGrupo.mapValues { it.value.toMap() },
+            "dataLancamento" to dataLancamento // Adicionado ao Firebase
         )
     }
 }

@@ -22,8 +22,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -46,14 +46,20 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LocalMovies
+import androidx.compose.material.icons.filled.Mood
+import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -63,6 +69,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -116,6 +123,7 @@ fun TelaPerfil(
     val amigosConectados by viewModel.amigosConectados.collectAsState(initial = emptyList())
     val solicitacoesRecebidas by viewModel.solicitacoesRecebidas.collectAsState(initial = emptyList())
 
+    var mostrarBottomSheetConfiguracoes by remember { mutableStateOf(false) }
     var mostrarDialogoBloqueados by remember { mutableStateOf(false) }
 
     if (mostrarDialogoBloqueados) {
@@ -138,7 +146,6 @@ fun TelaPerfil(
 
     var mostrarConfirmacaoSair by remember { mutableStateOf(false) }
     var mostrarConfirmacaoReset by remember { mutableStateOf(false) }
-
     var midiaParaExcluirHistorico by remember { mutableStateOf<Midia?>(null) }
     var midiaParaReabrirHistorico by remember { mutableStateOf<Midia?>(null) }
 
@@ -542,13 +549,7 @@ fun TelaPerfil(
         }
     }
 
-    val titulosAbas = listOf(
-        if (modoGrupoAtivo) "Sala" else "Perfil",
-        "Amigos",
-        "Notificações",
-        "Estatísticas",
-        "Histórico"
-    )
+    val titulosAbas = listOf("Visão Geral", "Amigos & Sala", "Notificações", "Estatísticas", "Histórico")
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { titulosAbas.size })
     var abaSelecionada by remember { mutableIntStateOf(0) }
 
@@ -779,6 +780,227 @@ fun TelaPerfil(
             .toMap()
     }
 
+    if (mostrarBottomSheetConfiguracoes) {
+        ModalBottomSheet(
+            onDismissRequest = { mostrarBottomSheetConfiguracoes = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Configurações do Sistema",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(onClick = { mostrarBottomSheetConfiguracoes = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Fechar", tint = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Column {
+                    Text(text = "Informações da Conta", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "Provedor: ${usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                    Text(text = "ID: ${usuarioAtual?.uid?.take(12)}...", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Gênero Favorito", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    Box {
+                        Text(
+                            text = generoFavorito,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .clickable { menuGeneroExpandido = true }
+                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                        DropdownMenu(expanded = menuGeneroExpandido, onDismissRequest = { menuGeneroExpandido = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                            listaGeneros.forEach { item ->
+                                DropdownMenuItem(
+                                    text = { Text(item, color = MaterialTheme.colorScheme.onSurface) },
+                                    onClick = {
+                                        generoFavorito = item
+                                        sharedPreferences.edit().putString("genero", generoFavorito).apply()
+                                        menuGeneroExpandido = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Lembretes e Notificações", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                        Text(text = "Avisos de novos itens e lembretes", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                    }
+                    Switch(
+                        checked = receberNotificacoes,
+                        onCheckedChange = { valor ->
+                            if (valor) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    val jaTemPermissao = ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                                    if (jaTemPermissao) {
+                                        receberNotificacoes = true
+                                        sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                                        configurarLembretes(contexto, true)
+                                    } else {
+                                        permissaoNotificacaoLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                } else {
+                                    receberNotificacoes = true
+                                    sharedPreferences.edit().putBoolean("notificacoes", true).apply()
+                                    configurarLembretes(contexto, true)
+                                }
+                            } else {
+                                receberNotificacoes = false
+                                sharedPreferences.edit().putBoolean("notificacoes", false).apply()
+                                configurarLembretes(contexto, false)
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.background
+                        )
+                    )
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    var modoEscuro by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
+                    Text(text = "Tema Escuro", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    Switch(
+                        checked = modoEscuro,
+                        onCheckedChange = { valor ->
+                            modoEscuro = valor
+                            sharedPreferences.edit().putBoolean("modo_escuro", valor).apply()
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.background
+                        )
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mostrarBottomSheetConfiguracoes = false
+                            mostrarDialogoBloqueados = true
+                        }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(imageVector = Icons.Default.Block, contentDescription = null, tint = Color(0xFFFF4C4C), modifier = Modifier.size(18.dp))
+                        Text(text = "Gerenciar Contas Bloqueadas", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                    }
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = 180f })
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !verificandoAtualizacao) {
+                            verificandoAtualizacao = true
+                            escopoCorrotina.launch {
+                                val info = withContext(Dispatchers.IO) {
+                                    UpdateManager.checarAtualizacao(urlJsonAtualizacao)
+                                }
+                                verificandoAtualizacao = false
+
+                                val versaoAtual = BuildConfig.VERSION_CODE
+                                if (info != null && info.versaoCode > versaoAtual) {
+                                    infoNovaVersao = info
+                                    mostrarDialogoAtualizacao = true
+                                } else if (info != null) {
+                                    Toast.makeText(contexto, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(contexto, "Não foi possível verificar atualizações no momento.", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Verificar Atualização", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = "Instalada: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    }
+                    if (verificandoAtualizacao) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = "Atualizar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(text = "Backup e Sincronização", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Exportar JSON", fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = { importarLauncher.launch(arrayOf("application/json")) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Importar JSON", fontSize = 12.sp)
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { mostrarConfirmacaoReset = true; mostrarBottomSheetConfiguracoes = false }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Limpar Todos os Dados Locais", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF4C4C))
+                    }
+                    Text(
+                        text = "Deseja excluir permanentemente sua conta?",
+                        color = Color(0xFFFF4C4C),
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { mostrarConfirmacaoExclusao = true; mostrarBottomSheetConfiguracoes = false }
+                            .padding(vertical = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Button(
+                    onClick = { mostrarConfirmacaoSair = true; mostrarBottomSheetConfiguracoes = false },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                ) {
+                    Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             Column {
@@ -786,7 +1008,7 @@ fun TelaPerfil(
                     title = {
                         Column {
                             Text(
-                                text = if (modoGrupoAtivo) "Sala Compartilhada" else "Meu Perfil CineList",
+                                text = if (modoGrupoAtivo) "Sala Compartilhada" else "Meu Perfil",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
@@ -806,8 +1028,8 @@ fun TelaPerfil(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { onCalendarioClique?.invoke() }) {
-                            Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = "Calendário", tint = MaterialTheme.colorScheme.primary)
+                        IconButton(onClick = { mostrarBottomSheetConfiguracoes = true }) {
+                            Icon(imageVector = Icons.Default.Settings, contentDescription = "Configurações", tint = MaterialTheme.colorScheme.primary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -868,679 +1090,273 @@ fun TelaPerfil(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(horizontal = 24.dp, vertical = 12.dp)
-                            .verticalScroll(rememberScrollState()),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        if (modoGrupoAtivo) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                        Column {
-                                            Text("Modo Sala Conectado", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                            Text(if (isAdministrador) "👑 Você é o Administrador" else "👤 Membro da Sala", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
-                                        }
-                                    }
-
-                                    TextButton(onClick = { viewModel.selecionarGrupoAtivo("") }) {
-                                        Text("Ir p/ Particular", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-
-                            // PAINEL COMPLETO DE ADMINISTRADOR NA SALA
-                            if (isAdministrador) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "👑 Painel de Administração da Sala",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-
-                                        OutlinedTextField(
-                                            value = novaSenhaSalaInput,
-                                            onValueChange = { novaSenhaSalaInput = it },
-                                            label = { Text("Alterar Senha da Sala") },
-                                            singleLine = true,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-
-                                        Button(
-                                            onClick = {
-                                                if (novaSenhaSalaInput.isNotBlank()) {
-                                                    viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaSalaInput) { sucesso ->
-                                                        if (sucesso) {
-                                                            Toast.makeText(contexto, "Senha da sala atualizada com sucesso!", Toast.LENGTH_SHORT).show()
-                                                            novaSenhaSalaInput = ""
-                                                        } else {
-                                                            Toast.makeText(contexto, "Erro ao atualizar senha.", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                        ) {
-                                            Text("Salvar Nova Senha", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                        }
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "Membros Conectados (${membrosOrdenados.size}):",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-
-                                        membrosOrdenados.forEach { membro ->
-                                            val meuUid = usuarioAtual?.uid ?: ""
-                                            val ehMim = membro.uid == meuUid
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = membro.nome + if (ehMim) " (Você - Admin)" else "",
-                                                    fontSize = 13.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    fontWeight = if (ehMim) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                                if (!ehMim) {
-                                                    TextButton(
-                                                        onClick = {
-                                                            viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
-                                                                if (sucesso) {
-                                                                    Toast.makeText(contexto, "${membro.nome} foi removido da sala.", Toast.LENGTH_SHORT).show()
-                                                                } else {
-                                                                    Toast.makeText(contexto, "Erro ao remover membro.", Toast.LENGTH_SHORT).show()
-                                                                }
-                                                            }
-                                                        }
-                                                    ) {
-                                                        Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!modoGrupoAtivo) {
-                            val fotoGoogleUrl = usuarioAtual?.photoUrl?.toString() ?: ""
-                            val imagemParaExibir = if (fotoPerfilUriString.isNotEmpty()) {
-                                fotoPerfilUriString
-                            } else {
-                                fotoGoogleUrl
-                            }
-
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(230.dp)
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(86.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                    .clickable { seletorGaleriaLauncher.launch("image/*") },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (imagemParaExibir.isNotEmpty()) {
-                                    AsyncImage(
-                                        model = imagemParaExibir,
-                                        contentDescription = "Foto de perfil",
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Text(text = nomeExibicao.take(1).uppercase(), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-
-                            Text(text = "Toque para alterar a foto", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 4.dp))
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            if (modoEdicaoNome) {
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(
-                                        value = novoNome,
-                                        onValueChange = { novoNome = it },
-                                        label = { Text("Alterar Nome") },
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                                    .fillMaxWidth()
+                                    .height(130.dp)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                                MaterialTheme.colorScheme.background
+                                            )
                                         )
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    if (carregandoNome) {
-                                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            )
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomCenter),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                val fotoGoogleUrl = usuarioAtual?.photoUrl?.toString() ?: ""
+                                val imagemParaExibir = if (fotoPerfilUriString.isNotEmpty()) fotoPerfilUriString else fotoGoogleUrl
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
+                                        .clickable { seletorGaleriaLauncher.launch("image/*") },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (imagemParaExibir.isNotEmpty()) {
+                                        AsyncImage(
+                                            model = imagemParaExibir,
+                                            contentDescription = "Foto de perfil",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
                                     } else {
+                                        Text(text = nomeExibicao.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                if (modoEdicaoNome) {
+                                    Row(modifier = Modifier.fillMaxWidth(0.8f), verticalAlignment = Alignment.CenterVertically) {
+                                        OutlinedTextField(
+                                            value = novoNome,
+                                            onValueChange = { novoNome = it },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true
+                                        )
                                         IconButton(onClick = {
                                             if (novoNome.isNotBlank()) {
-                                                carregandoNome = true
                                                 val atualizacao = userProfileChangeRequest { displayName = novoNome.trim() }
                                                 usuarioAtual?.updateProfile(atualizacao)?.addOnCompleteListener { t ->
-                                                    carregandoNome = false
                                                     if (t.isSuccessful) { nomeExibicao = novoNome.trim(); modoEdicaoNome = false }
                                                 }
                                             }
                                         }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = Color.Green) }
                                     }
-                                }
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                                    Text(text = nomeExibicao, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    IconButton(onClick = { modoEdicaoNome = true; novoNome = nomeExibicao }) {
-                                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar nome", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                } else {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                        Text(text = nomeExibicao, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        IconButton(onClick = { modoEdicaoNome = true; novoNome = nomeExibicao }, modifier = Modifier.size(24.dp)) {
+                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
+                                        }
                                     }
                                 }
-                            }
 
-                            Text(text = emailUsuario, fontSize = 14.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 12.dp))
-
-                            if (modoEdicaoBio) {
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(
-                                        value = novaBio,
-                                        onValueChange = { novaBio = it },
-                                        label = { Text("Escreva algo sobre você...") },
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 2,
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
-                                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    IconButton(onClick = {
-                                        biografia = novaBio.trim()
-                                        sharedPreferences.edit().putString("bio", biografia).apply()
-                                        modoEdicaoBio = false
-                                        viewModel.atualizarMeuPerfilPublico(nomeExibicao, biografia)
-                                    }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = Color.Green) }
-                                }
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                                    Text(text = if (biografia.isEmpty()) "Adicione uma biografia..." else "\"$biografia\"", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }) {
-                                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
-                                    }
-                                }
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(86.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Group,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(44.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = "Sala $casalIdAtivo", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                            Text(text = "Toque em um membro para ver o que ele adicionou", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 12.dp))
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { onCalendarioClique?.invoke() },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Text(text = "Calendário de Lançamentos", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { exibindoWrapped = true },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1DB954))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.weight(1f)
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (modoGrupoAtivo) {
+                                        if (isAdministrador) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    } else {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    },
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                                 ) {
-                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
-                                    Column {
-                                        Text("✨ Retrospectiva CineList", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                        Text("Veja suas horas de maratona e favoritos", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)
-                                    }
-                                }
-                                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Button(
-                            onClick = { mostrarDialogoGerenciarSalas = true },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                                Text(text = "Gerenciar Salas Compartilhadas", color = MaterialTheme.colorScheme.onSecondaryContainer, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (modoGrupoAtivo) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
-                                        text = "Membros da Sala (${membrosOrdenados.size})",
+                                        text = if (modoGrupoAtivo) {
+                                            if (isAdministrador) "👑 Administrador da Sala" else "👤 Membro da Sala"
+                                        } else "🎬 Lista Pessoal",
+                                        color = if (modoGrupoAtivo && isAdministrador) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.primary
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                     )
-                                    Text(
-                                        text = "Toque no avatar para ver as mídias sugeridas pelo membro",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                }
 
-                                    if (membrosOrdenados.isEmpty()) {
-                                        Text("Conectando aos membros da sala...", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                                if (!modoGrupoAtivo) {
+                                    if (modoEdicaoBio) {
+                                        Row(modifier = Modifier.fillMaxWidth(0.8f), verticalAlignment = Alignment.CenterVertically) {
+                                            OutlinedTextField(value = novaBio, onValueChange = { novaBio = it }, modifier = Modifier.weight(1f), singleLine = true)
+                                            IconButton(onClick = {
+                                                biografia = novaBio.trim()
+                                                sharedPreferences.edit().putString("bio", biografia).apply()
+                                                modoEdicaoBio = false
+                                                viewModel.atualizarMeuPerfilPublico(nomeExibicao, biografia)
+                                            }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = Color.Green) }
+                                        }
                                     } else {
-                                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                            membrosOrdenados.forEach { membro ->
-                                                val souEu = membro.uid == (usuarioAtual?.uid ?: "")
-                                                ItemMembroPresenca(
-                                                    membro = membro,
-                                                    souEu = souEu,
-                                                    onMembroClique = {
-                                                        membroSelecionadoParaVer = membro
-                                                    }
-                                                )
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)) {
+                                            Text(text = if (biografia.isEmpty()) "Adicione uma biografia..." else "\"$biografia\"", fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }, modifier = Modifier.size(20.dp)) {
+                                                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
                                             }
                                         }
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
 
-                        SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
+                        Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
-                        Text(
-                            text = if (modoGrupoAtivo) "Resumo da Sala" else "Resumo da Lista Particular",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
-                        )
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ItemEstatistica(titulo = "Total", valor = totalMidias.toString(), modifier = Modifier.weight(1f))
-                            ItemEstatistica(titulo = "Filmes", valor = totalFilmes.toString(), modifier = Modifier.weight(1f))
-                            ItemEstatistica(titulo = "Séries/Outros", valor = totalSeriesAnimes.toString(), modifier = Modifier.weight(1f))
-                        }
+                            SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            PremiumBannerCard(
+                                titulo = "Retrospectiva CineList",
+                                subtitulo = "Sua jornada cinéfila em destaque",
+                                icone = Icons.Default.WorkspacePremium,
+                                gradient = Brush.horizontalGradient(listOf(Color(0xFF1DB954), Color(0xFF0F7A33))),
+                                onClick = { exibindoWrapped = true }
+                            )
 
-                        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text(text = "Preferências do CineList", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Spacer(modifier = Modifier.height(12.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                PremiumBannerCardSmall(
+                                    titulo = "Lançamentos",
+                                    icone = Icons.Default.CalendarMonth,
+                                    gradient = Brush.horizontalGradient(listOf(Color(0xFF3B82F6), Color(0xFF1D4ED8))),
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onCalendarioClique?.invoke() }
+                                )
 
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text(text = "Gênero Favorito", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                    Box {
-                                        Text(
-                                            text = generoFavorito,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            modifier = Modifier
-                                                .clickable { menuGeneroExpandido = true }
-                                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
-                                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                        DropdownMenu(expanded = menuGeneroExpandido, onDismissRequest = { menuGeneroExpandido = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                                            listaGeneros.forEach { item ->
-                                                DropdownMenuItem(
-                                                    text = { Text(item, color = MaterialTheme.colorScheme.onSurface) },
-                                                    onClick = {
-                                                        generoFavorito = item
-                                                        sharedPreferences.edit().putString("genero", generoFavorito).apply()
-                                                        menuGeneroExpandido = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = "Lembretes e Notificações", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                        Text(text = "Avisos de novos itens e lembretes", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
-                                    }
-                                    Switch(
-                                        checked = receberNotificacoes,
-                                        onCheckedChange = { valor ->
-                                            if (valor) {
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                    val jaTemPermissao = ContextCompat.checkSelfPermission(
-                                                        contexto,
-                                                        Manifest.permission.POST_NOTIFICATIONS
-                                                    ) == PackageManager.PERMISSION_GRANTED
-
-                                                    if (jaTemPermissao) {
-                                                        receberNotificacoes = true
-                                                        sharedPreferences.edit().putBoolean("notificacoes", true).apply()
-                                                        configurarLembretes(contexto, true)
-                                                    } else {
-                                                        permissaoNotificacaoLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                                    }
-                                                } else {
-                                                    receberNotificacoes = true
-                                                    sharedPreferences.edit().putBoolean("notificacoes", true).apply()
-                                                    configurarLembretes(contexto, true)
-                                                }
-                                            } else {
-                                                receberNotificacoes = false
-                                                sharedPreferences.edit().putBoolean("notificacoes", false).apply()
-                                                configurarLembretes(contexto, false)
-                                            }
-                                        },
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                            checkedTrackColor = MaterialTheme.colorScheme.background
-                                        )
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { mostrarDialogoBloqueados = true }
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Block,
-                                            contentDescription = null,
-                                            tint = Color(0xFFFF4C4C),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Text(
-                                            text = "Gerenciar Contas Bloqueadas",
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 14.sp
-                                        )
-                                    }
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = 180f }
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    var modoEscuro by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
-
-                                    Text(text = "Tema Escuro do Aplicativo", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                    Switch(
-                                        checked = modoEscuro,
-                                        onCheckedChange = { valor ->
-                                            modoEscuro = valor
-                                            sharedPreferences.edit().putBoolean("modo_escuro", valor).apply()
-                                        },
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                            checkedTrackColor = MaterialTheme.colorScheme.background
-                                        )
-                                    )
-                                }
-
-                                TextButton(onClick = { mostrarConfirmacaoReset = true }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF4C4C))) {
-                                    Text("Limpar Todos os Dados da Lista", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                }
+                                PremiumBannerCardSmall(
+                                    titulo = "Gerir Salas",
+                                    icone = Icons.Default.Group,
+                                    gradient = Brush.horizontalGradient(listOf(Color(0xFFF59E0B), Color(0xFFB45309))),
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { mostrarDialogoGerenciarSalas = true }
+                                )
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "Atualizações do Aplicativo",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Text(
-                                    text = "Verifique e instale as versões mais recentes do Cinelist",
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 12.sp
-                                )
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = !verificandoAtualizacao) {
-                                            verificandoAtualizacao = true
-                                            escopoCorrotina.launch {
-                                                val info = withContext(Dispatchers.IO) {
-                                                    UpdateManager.checarAtualizacao(urlJsonAtualizacao)
-                                                }
-                                                verificandoAtualizacao = false
-
-                                                val versaoAtual = BuildConfig.VERSION_CODE
-                                                if (info != null && info.versaoCode > versaoAtual) {
-                                                    infoNovaVersao = info
-                                                    mostrarDialogoAtualizacao = true
-                                                } else if (info != null) {
-                                                    Toast.makeText(contexto, "Você já está na versão mais recente!", Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(contexto, "Não foi possível verificar atualizações no momento.", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        }
-                                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = "Verificar Atualização",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Instalada: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.secondary
-                                        )
-                                    }
-
-                                    if (verificandoAtualizacao) {
-                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.SystemUpdate,
-                                            contentDescription = "Atualizar",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text(
-                                    text = "Backup e Sincronização",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp
-                                )
-                                Text(
-                                    text = "Exporte as mídias da lista ativa para JSON ou restaure dados salvos.",
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 12.sp
-                                )
-
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(
-                                        onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("Exportar (JSON)", fontSize = 12.sp)
-                                    }
-
-                                    Button(
-                                        onClick = { importarLauncher.launch(arrayOf("application/json")) },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                    ) {
-                                        Text("Importar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text(text = "Informações da Conta", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(text = "Provedor de Login: ${usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(text = "ID do Usuário: ${usuarioAtual?.uid?.take(12)}...", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
-
-                                Spacer(modifier = Modifier.height(6.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f), thickness = 0.5.dp)
+                            if (modoGrupoAtivo && isAdministrador) {
                                 Spacer(modifier = Modifier.height(4.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f)),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(text = "👑 Controle de Administrador", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFFFD700))
 
-                                Text(
-                                    text = "Deseja excluir permanentemente sua conta?",
-                                    color = Color(0xFFFF4C4C),
-                                    fontSize = 12.sp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { mostrarConfirmacaoExclusao = true }
-                                        .padding(vertical = 4.dp),
-                                    textAlign = TextAlign.Start
-                                )
+                                        OutlinedTextField(
+                                            value = novaSenhaSalaInput,
+                                            onValueChange = { novaSenhaSalaInput = it },
+                                            label = { Text("Atualizar Senha da Sala", color = MaterialTheme.colorScheme.secondary) },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFFD700))
+                                        )
+                                        Button(
+                                            onClick = {
+                                                if (novaSenhaSalaInput.isNotBlank()) {
+                                                    viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaSalaInput) { sucesso ->
+                                                        if (sucesso) {
+                                                            Toast.makeText(contexto, "Senha atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                                                            novaSenhaSalaInput = ""
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                                        ) {
+                                            Text("Salvar Nova Senha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                        }
+
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text("Membros Conectados (${membrosOrdenados.size}):", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+
+                                        membrosOrdenados.forEach { membro ->
+                                            val ehMim = membro.uid == (usuarioAtual?.uid ?: "")
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(text = membro.nome + if (ehMim) " (Você)" else "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = if (ehMim) FontWeight.Bold else FontWeight.Normal)
+                                                if (!ehMim) {
+                                                    TextButton(onClick = {
+                                                        viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
+                                                            if (sucesso) Toast.makeText(contexto, "${membro.nome} foi removido.", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }) { Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Button(
-                            onClick = { mostrarConfirmacaoSair = true },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
-                        ) {
-                            Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
 
                 1 -> {
-                    AbaAmigosPerfil(
-                        viewModel = viewModel,
-                        paddingValues = paddingValues,
-                        onAmigoClique = { amigo ->
-                            viewModel.carregarListaDoAmigo(amigo.uid)
-                            amigoSelecionadoParaVer = amigo
-                        },
-                        onGerenciarBloqueados = {
-                            mostrarDialogoBloqueados = true
+                    if (modoGrupoAtivo) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(paddingValues)
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(text = "Cinéfilos na Sala (${membrosOrdenados.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                            Text(text = "Toque no avatar para inspecionar os títulos adicionados pelo membro.", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            membrosOrdenados.forEach { membro ->
+                                val souEu = membro.uid == (usuarioAtual?.uid ?: "")
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Box(modifier = Modifier.padding(12.dp)) {
+                                        ItemMembroPresenca(
+                                            membro = membro,
+                                            souEu = souEu,
+                                            onMembroClique = { membroSelecionadoParaVer = membro }
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    )
+                    } else {
+                        AbaAmigosPerfil(
+                            viewModel = viewModel,
+                            paddingValues = paddingValues,
+                            onAmigoClique = { amigo ->
+                                viewModel.carregarListaDoAmigo(amigo.uid)
+                                amigoSelecionadoParaVer = amigo
+                            },
+                            onGerenciarBloqueados = { mostrarDialogoBloqueados = true }
+                        )
+                    }
                 }
 
                 2 -> {
@@ -1671,7 +1487,7 @@ fun TelaPerfil(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -1679,162 +1495,64 @@ fun TelaPerfil(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = if (modoGrupoAtivo) "Métricas da Sala $casalIdAtivo" else "Sua Jornada Cinéfila",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = if (modoGrupoAtivo) "Estatísticas calculadas exclusivamente a partir das mídias deste grupo." else "Métricas consolidadas a partir do seu histórico particular de maratonas.",
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.secondary
-                                        )
+                                    Column {
+                                        Text(text = if (modoGrupoAtivo) "Progresso da Sala" else "🎯 Meta de Filmes Anual", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(text = "$totalConcluidosGeral de ${if (modoGrupoAtivo) totalMidias else metaAnualDefinida} concluídos", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                                    }
+                                    if (!modoGrupoAtivo) {
+                                        IconButton(onClick = { modoEdicaoMeta = !modoEdicaoMeta }) {
+                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Ajustar Meta", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                        }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(14.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Taxa de Conclusão",
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = "$totalConcluidosGeral de $totalMidias ($taxaConclusaoPercentual%)",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                if (!modoGrupoAtivo && modoEdicaoMeta) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        listOf(25, 50, 75, 100).forEach { metaOpcao ->
+                                            FilterChip(
+                                                selected = (metaAnualDefinida == metaOpcao),
+                                                onClick = {
+                                                    metaAnualDefinida = metaOpcao
+                                                    sharedPreferences.edit().putInt("meta_anual_filmes", metaOpcao).apply()
+                                                    modoEdicaoMeta = false
+                                                },
+                                                label = { Text("$metaOpcao", fontSize = 11.sp) }
+                                            )
+                                        }
+                                    }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
+                                val progressoMeta = if (modoGrupoAtivo) {
+                                    if (totalMidias > 0) totalConcluidosGeral.toFloat() / totalMidias.toFloat() else 0f
+                                } else {
+                                    if (metaAnualDefinida > 0) (totalConcluidosGeral.toFloat() / metaAnualDefinida.toFloat()).coerceIn(0f, 1f) else 0f
+                                }
 
                                 LinearProgressIndicator(
-                                    progress = { if (totalMidias > 0) totalConcluidosGeral.toFloat() / totalMidias.toFloat() else 0f },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(8.dp)
-                                        .clip(RoundedCornerShape(4.dp)),
-                                    color = MaterialTheme.colorScheme.primary,
+                                    progress = { progressoMeta },
+                                    modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                                    color = if (modoGrupoAtivo) MaterialTheme.colorScheme.primary else Color(0xFFFFD700),
                                     trackColor = MaterialTheme.colorScheme.background
                                 )
                             }
                         }
 
-                        if (!modoGrupoAtivo) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = "🎯 Meta de Títulos Concluídos",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = "$totalConcluidosGeral de $metaAnualDefinida títulos concluídos",
-                                                fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.secondary
-                                            )
-                                        }
-
-                                        IconButton(onClick = { modoEdicaoMeta = !modoEdicaoMeta }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Edit,
-                                                contentDescription = "Ajustar Meta",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-
-                                    if (modoEdicaoMeta) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            listOf(25, 50, 75, 100).forEach { metaOpcao ->
-                                                FilterChip(
-                                                    selected = (metaAnualDefinida == metaOpcao),
-                                                    onClick = {
-                                                        metaAnualDefinida = metaOpcao
-                                                        sharedPreferences.edit().putInt("meta_anual_filmes", metaOpcao).apply()
-                                                        modoEdicaoMeta = false
-                                                    },
-                                                    label = { Text("$metaOpcao", fontSize = 11.sp) }
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    val progressoMeta = if (metaAnualDefinida > 0) {
-                                        (totalConcluidosGeral.toFloat() / metaAnualDefinida.toFloat()).coerceIn(0f, 1f)
-                                    } else 0f
-
-                                    LinearProgressIndicator(
-                                        progress = { progressoMeta },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(8.dp)
-                                            .clip(RoundedCornerShape(4.dp)),
-                                        color = Color(0xFFFFD700),
-                                        trackColor = MaterialTheme.colorScheme.background
-                                    )
-                                }
-                            }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            WidgetEstatistica(titulo = "Total Assistido", valor = tempoFormatado, subtitulo = "Horas na tela", modifier = Modifier.weight(1f))
+                            WidgetEstatistica(titulo = "Média Notas", valor = "$mediaNotas ★", subtitulo = "${midiasComNota.size} avaliados", modifier = Modifier.weight(1f))
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CardEstatisticaDetalhada(titulo = "Total Geral", valor = totalMidias.toString(), subtexto = "mídias no contexto", modifier = Modifier.weight(1f))
-                            CardEstatisticaDetalhada(titulo = "Tempo Estimado", valor = tempoFormatado, subtexto = "horas assistidas", modifier = Modifier.weight(1f))
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CardEstatisticaDetalhada(titulo = "Filmes Vistos", valor = filmesConcluidos.toString(), subtexto = "de $totalFilmes na lista", modifier = Modifier.weight(1f))
-                            CardEstatisticaDetalhada(titulo = "Séries Vistas", valor = seriesConcluidas.toString(), subtexto = "de $totalSeriesAnimes na lista", modifier = Modifier.weight(1f))
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            CardEstatisticaDetalhada(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtexto = "episódios maratonados", modifier = Modifier.weight(1f))
-                            CardEstatisticaDetalhada(titulo = "Média Avaliações", valor = "$mediaNotas ★", subtexto = "${midiasComNota.size} títulos avaliados", modifier = Modifier.weight(1f))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            WidgetEstatistica(titulo = "Filmes", valor = filmesConcluidos.toString(), subtitulo = "De $totalFilmes na lista", modifier = Modifier.weight(1f))
+                            WidgetEstatistica(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtitulo = "De $seriesConcluidas séries", modifier = Modifier.weight(1f))
                         }
 
                         if (midiasComNota.isNotEmpty()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
+                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Distribuição de Avaliações",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Text(text = "Distribuição de Avaliações", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     GraficoDistribuicaoNotas(dados = distribuicaoNotas, totalAvaliados = midiasComNota.size)
                                 }
@@ -1842,18 +1560,9 @@ fun TelaPerfil(
                         }
 
                         if (estatisticasGenero.isNotEmpty()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
+                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Gêneros Predominantes",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Text(text = "Gêneros Predominantes", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     ListaGenerosMaisAssistidos(dados = estatisticasGenero)
                                 }
@@ -1861,25 +1570,14 @@ fun TelaPerfil(
                         }
 
                         if (estatisticasPlataforma.isNotEmpty()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
+                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
                                 Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Onde Vocês Mais Assistem",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Text(text = "Plataformas Mais Usadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     ListaPlataformasMaisUtilizadas(dados = estatisticasPlataforma)
                                 }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
@@ -2069,6 +1767,97 @@ fun TelaPerfil(
     }
 }
 
+
+@Composable
+fun PremiumBannerCard(
+    titulo: String,
+    subtitulo: String,
+    icone: ImageVector,
+    gradient: Brush,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().height(80.dp).clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(gradient)) {
+            Icon(
+                imageVector = icone,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.15f),
+                modifier = Modifier.align(Alignment.CenterEnd).size(100.dp).offset(x = 20.dp, y = 10.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(text = titulo, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(text = subtitulo, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                }
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumBannerCardSmall(
+    titulo: String,
+    icone: ImageVector,
+    gradient: Brush,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier.height(70.dp).clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(gradient)) {
+            Icon(
+                imageVector = icone,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.15f),
+                modifier = Modifier.align(Alignment.BottomEnd).size(60.dp).offset(x = 10.dp, y = 10.dp)
+            )
+            Column(
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(text = titulo, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun WidgetEstatistica(
+    titulo: String,
+    valor: String,
+    subtitulo: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.height(100.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(14.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = valor, fontSize = 22.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = subtitulo, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
 @Composable
 fun AbaAmigosPerfil(
     viewModel: MidiaViewModel,
@@ -2128,10 +1917,10 @@ fun AbaAmigosPerfil(
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -2139,78 +1928,20 @@ fun AbaAmigosPerfil(
                     ) {
                         Text(
                             text = "🔍 Encontrar Cinéfilos",
-                            fontSize = 15.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                onClick = onGerenciarBloqueados,
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (usuariosBloqueados.isNotEmpty()) {
-                                    Color(0xFFFF4C4C).copy(alpha = 0.15f)
-                                } else {
-                                    MaterialTheme.colorScheme.surface
-                                },
-                                border = BorderStroke(
-                                    width = 1.dp,
-                                    color = if (usuariosBloqueados.isNotEmpty()) {
-                                        Color(0xFFFF4C4C).copy(alpha = 0.6f)
-                                    } else {
-                                        MaterialTheme.colorScheme.outlineVariant
-                                    }
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Block,
-                                        contentDescription = "Bloqueados",
-                                        tint = if (usuariosBloqueados.isNotEmpty()) Color(0xFFFF4C4C) else MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Text(
-                                        text = "Bloqueados",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (usuariosBloqueados.isNotEmpty()) Color(0xFFFF4C4C) else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    if (usuariosBloqueados.isNotEmpty()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(18.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFFFF4C4C)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = usuariosBloqueados.size.toString(),
-                                                fontSize = 10.sp,
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (buscando) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        if (buscando) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = termoBusca,
                         onValueChange = { termoBusca = it },
@@ -2227,24 +1958,22 @@ fun AbaAmigosPerfil(
                                 }
                             }
                         },
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (solicitacoesRecebidas.isNotEmpty()) {
                     item {
                         Text(
                             text = "Pedidos de Conexão (${solicitacoesRecebidas.size})",
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -2253,13 +1982,13 @@ fun AbaAmigosPerfil(
                     items(solicitacoesRecebidas, key = { "solicitacao_${it.remetenteUid}" }) { sol ->
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(10.dp),
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -2270,7 +1999,7 @@ fun AbaAmigosPerfil(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(44.dp)
                                             .clip(CircleShape)
                                             .background(MaterialTheme.colorScheme.primaryContainer),
                                         contentAlignment = Alignment.Center
@@ -2282,8 +2011,8 @@ fun AbaAmigosPerfil(
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(sol.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text("Quer adicionar você aos amigos", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(sol.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("Quer adicionar você", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
 
@@ -2297,7 +2026,7 @@ fun AbaAmigosPerfil(
                                             }
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text("Aceitar", fontSize = 12.sp, color = Color.White)
@@ -2311,7 +2040,7 @@ fun AbaAmigosPerfil(
                                                 }
                                             }
                                         },
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Text("Recusar", fontSize = 12.sp, color = Color(0xFFFF5252))
@@ -2332,7 +2061,7 @@ fun AbaAmigosPerfil(
                     item {
                         Text(
                             text = "Resultados da busca:",
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -2342,7 +2071,7 @@ fun AbaAmigosPerfil(
                         item {
                             Text(
                                 text = "Nenhum usuário encontrado com esse nome.",
-                                fontSize = 12.sp,
+                                fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
@@ -2355,13 +2084,13 @@ fun AbaAmigosPerfil(
 
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(10.dp),
+                                    .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -2372,7 +2101,7 @@ fun AbaAmigosPerfil(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(44.dp)
                                             .clip(CircleShape)
                                             .background(MaterialTheme.colorScheme.primary)
                                     ) {
@@ -2385,8 +2114,8 @@ fun AbaAmigosPerfil(
                                         }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(if (usuario.bio.isNotBlank()) usuario.bio else usuario.email, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(if (usuario.bio.isNotBlank()) usuario.bio else usuario.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
 
@@ -2407,13 +2136,13 @@ fun AbaAmigosPerfil(
                                         },
                                         enabled = !processandoAcao,
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252)),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                     ) {
                                         if (processandoAcao) {
-                                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color(0xFFFF5252))
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFFF5252))
                                         } else {
-                                            Icon(imageVector = Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            Icon(imageVector = Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text("Cancelar", fontSize = 12.sp)
                                         }
@@ -2435,13 +2164,13 @@ fun AbaAmigosPerfil(
                                         },
                                         enabled = !processandoAcao,
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
                                         if (processandoAcao) {
-                                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color.White)
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
                                         } else {
-                                            Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text("Adicionar", fontSize = 12.sp)
                                         }
@@ -2500,17 +2229,17 @@ fun AbaAmigosPerfil(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.BottomEnd) {
+                                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.BottomEnd) {
                                         if (amigo.fotoUrl.isNotBlank()) {
                                             AsyncImage(model = amigo.fotoUrl, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
                                         } else {
                                             Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                                                Text(amigo.nome.take(1).uppercase(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                                Text(amigo.nome.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                             }
                                         }
                                         Box(
                                             modifier = Modifier
-                                                .size(12.dp)
+                                                .size(14.dp)
                                                 .clip(CircleShape)
                                                 .background(if (estaOnline) Color(0xFF4CAF50) else Color.Gray)
                                                 .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
@@ -2521,7 +2250,7 @@ fun AbaAmigosPerfil(
                                         Text(amigo.nome, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                         Text(
                                             text = amigo.obterTextoVistoPorUltimo(),
-                                            fontSize = 12.sp,
+                                            fontSize = 13.sp,
                                             color = if (estaOnline) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
                                             fontWeight = if (estaOnline) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -2896,7 +2625,8 @@ fun TelaWrapped(
                 4 -> PaginaFinalWrapped(
                     dadosWrapped = dadosWrapped,
                     onCompartilhar = {
-                        Toast.makeText(contexto, "Resumo pronto para inspirar sua sala! 🚀", Toast.LENGTH_SHORT).show()
+                        // AQUI ESTÁ A MÁGICA CHAMANDO O INSTAGRAM!
+                        InstagramShareHelper.compartilharWrappedNoInstagram(contexto, dadosWrapped)
                     }
                 )
             }
@@ -2935,7 +2665,6 @@ fun TelaWrapped(
         }
     }
 }
-
 @Composable
 fun PaginaCapaWrapped(frase: String) {
     Box(

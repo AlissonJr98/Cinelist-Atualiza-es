@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#090A0B"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    android:gravity="center_vertical">
+
+    <!-- Poster / Capa da Série -->
+    <ImageView
+        android:id="@+id/widget_poster"
+        android:layout_width="65dp"
+        android:layout_height="95dp"
+        android:scaleType="centerCrop"
+        android:background="#1E293B"
+        android:contentDescription="Capa" />
+
+    <!-- Informações e Ações à Direita -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="10dp"
+        android:gravity="center_vertical">
+
+        <!-- Cabeçalho com Logo e Botão de Trocar de Série -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🍿 CineList"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <!-- Botão discreto para alternar entre as séries em andamento -->
+            <TextView
+                android:id="@+id/widget_btn_trocar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔄 Outra"
+                android:textColor="#00BFFF"
+                android:textSize="10sp"
+                android:padding="2dp" />
+        </LinearLayout>
+
+        <!-- Título da Série -->
+        <TextView
+            android:id="@+id/widget_titulo_serie"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Carregando..."
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_marginTop="2dp" />
+
+        <!-- Temporada e Episódio -->
+        <TextView
+            android:id="@+id/widget_subtitulo_ep"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-- / --"
+            android:textColor="#00BFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginTop="1dp"
+            android:maxLines="1" />
+
+        <!-- Botão +1 Episódio -->
+        <Button
+            android:id="@+id/widget_btn_mais_um"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:layout_marginTop="6dp"
+            android:text="+1 Ep"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:backgroundTint="#00BFFF"
+            android:textColor="#090A0B"
+            android:insetTop="0dp"
+            android:insetBottom="0dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
