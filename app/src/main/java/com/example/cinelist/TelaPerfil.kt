@@ -963,6 +963,16 @@ fun TelaPerfil(
 
                 Column(verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
                     Text(text = "Backup e Sincronização", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                    // Fix #9 — mostra quando o backup automático (silencioso, semanal) rodou pela última vez
+                    val ultimoBackupMillis = sharedPreferences.getLong("ultimo_backup_automatico", 0L)
+                    val textoUltimoBackup = if (ultimoBackupMillis > 0L) {
+                        "Último backup automático: ${SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(ultimoBackupMillis))}"
+                    } else {
+                        "Backup automático ainda não foi executado"
+                    }
+                    Text(text = textoUltimoBackup, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
                         OutlinedButton(
                             onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },

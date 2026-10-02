@@ -111,6 +111,23 @@ fun agendarChecagemAtualizacaoSegundoPlano(context: Context) {
     )
 }
 
+// Fix #9 — backup automático e silencioso da lista pessoal para o Firestore, uma vez por semana
+fun agendarBackupAutomaticoSemanal(context: Context) {
+    val restricoes = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
+    val requisicao = PeriodicWorkRequestBuilder<BackupWorker>(7, TimeUnit.DAYS)
+        .setConstraints(restricoes)
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "CineListBackupAutomatico",
+        ExistingPeriodicWorkPolicy.KEEP,
+        requisicao
+    )
+}
+
 class HistoricoBuscaManager(context: Context) {
     private val prefs = context.getSharedPreferences("CineListBuscaPrefs", Context.MODE_PRIVATE)
 
@@ -142,6 +159,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         agendarChecagemAtualizacaoSegundoPlano(this)
+        agendarBackupAutomaticoSemanal(this)
 
         setContent {
             val contexto = LocalContext.current
@@ -508,9 +526,32 @@ fun ConfiguracaoNavegacao() {
         composable("splash") {
             TelaSplashMp4(
                 onSplashConcluida = {
-                    val destinoFinal = if (usuarioLogado) "home" else "login"
+                    // Fix #6 — onboarding aparece uma única vez, antes de login/home,
+                    // controlado pelo mesmo SharedPreferences "ConfiguracoesPerfil" já usado no app
+                    val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+                    val onboardingConcluido = prefsOnboarding.getBoolean("onboarding_concluido", false)
+
+                    val destinoFinal = when {
+                        !onboardingConcluido -> "onboarding"
+                        usuarioLogado -> "home"
+                        else -> "login"
+                    }
                     navController.navigate(destinoFinal) {
                         popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("onboarding") {
+            TelaOnboarding(
+                onConcluir = {
+                    val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+                    prefsOnboarding.edit().putBoolean("onboarding_concluido", true).apply()
+
+                    val destino = if (usuarioLogado) "home" else "login"
+                    navController.navigate(destino) {
+                        popUpTo("onboarding") { inclusive = true }
                     }
                 }
             )
@@ -1728,53 +1769,65 @@ fun TelaPrincipal(
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 if (pagina == 0) {
-                    val listaFiltrada = listaDeMidias.filter { midia ->
-                        val termoBusca = textoPesquisa.trim()
-                        val bateTexto = termoBusca.isBlank() ||
-                                midia.titulo.contains(termoBusca, ignoreCase = true) ||
-                                midia.genero.contains(termoBusca, ignoreCase = true) ||
-                                midia.plataforma.contains(termoBusca, ignoreCase = true)
+                    // Fix #8 — evita recalcular filtro+ordenação em toda recomposição da tela;
+                    // só reprocessa quando algum dos filtros ou a lista de origem realmente mudam
+                    val listaFiltrada = remember(
+                        listaDeMidias,
+                        textoPesquisa,
+                        categoriaSelecionada,
+                        colecaoSelecionada,
+                        filtroPlataforma,
+                        filtroStatusMinhaLista,
+                        ordenacaoMinhaLista
+                    ) {
+                        listaDeMidias.filter { midia ->
+                            val termoBusca = textoPesquisa.trim()
+                            val bateTexto = termoBusca.isBlank() ||
+                                    midia.titulo.contains(termoBusca, ignoreCase = true) ||
+                                    midia.genero.contains(termoBusca, ignoreCase = true) ||
+                                    midia.plataforma.contains(termoBusca, ignoreCase = true)
 
-                        val bateCategoria = if (categoriaSelecionada == "Todos") true else {
-                            val tipoMapeado = when (categoriaSelecionada) {
-                                "Filmes" -> "Filme"
-                                "Séries" -> "Série"
-                                "Animes" -> "Anime"
-                                "Novelas" -> "Novela"
-                                "Doramas" -> "Dorama"
-                                else -> ""
+                            val bateCategoria = if (categoriaSelecionada == "Todos") true else {
+                                val tipoMapeado = when (categoriaSelecionada) {
+                                    "Filmes" -> "Filme"
+                                    "Séries" -> "Série"
+                                    "Animes" -> "Anime"
+                                    "Novelas" -> "Novela"
+                                    "Doramas" -> "Dorama"
+                                    else -> ""
+                                }
+                                midia.tipo.equals(tipoMapeado, ignoreCase = true)
                             }
-                            midia.tipo.equals(tipoMapeado, ignoreCase = true)
-                        }
 
-                        val bateColecao = if (colecaoSelecionada == "Geral") true else {
-                            midia.listaCustomizada.equals(colecaoSelecionada, ignoreCase = true)
-                        }
+                            val bateColecao = if (colecaoSelecionada == "Geral") true else {
+                                midia.listaCustomizada.equals(colecaoSelecionada, ignoreCase = true)
+                            }
 
-                        val batePlataforma = if (filtroPlataforma == "Todas") true else {
-                            midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
-                        }
+                            val batePlataforma = if (filtroPlataforma == "Todas") true else {
+                                midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
+                            }
 
-                        val bateStatus = when (filtroStatusMinhaLista) {
-                            "Ativos" -> !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
-                            "Favoritos" -> midia.favorito
-                            "Quero Assistir" -> midia.status.equals("Quero Assistir", ignoreCase = true)
-                            "Assistindo" -> midia.status.equals("Assistindo", ignoreCase = true)
-                            "Concluído" -> midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)
-                            else -> true
-                        }
+                            val bateStatus = when (filtroStatusMinhaLista) {
+                                "Ativos" -> !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
+                                "Favoritos" -> midia.favorito
+                                "Quero Assistir" -> midia.status.equals("Quero Assistir", ignoreCase = true)
+                                "Assistindo" -> midia.status.equals("Assistindo", ignoreCase = true)
+                                "Concluído" -> midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)
+                                else -> true
+                            }
 
-                        bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
-                    }.let { lista ->
-                        when (ordenacaoMinhaLista) {
-                            "Favoritos Primeiro" -> lista.sortedWith(
-                                compareByDescending<Midia> { it.favorito }
-                                    .thenByDescending { it.status.equals("Assistindo", ignoreCase = true) }
-                            )
-                            "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
-                            "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
-                            "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
-                            else -> lista.sortedByDescending { it.status.equals("Assistindo", ignoreCase = true) }
+                            bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
+                        }.let { lista ->
+                            when (ordenacaoMinhaLista) {
+                                "Favoritos Primeiro" -> lista.sortedWith(
+                                    compareByDescending<Midia> { it.favorito }
+                                        .thenByDescending { it.status.equals("Assistindo", ignoreCase = true) }
+                                )
+                                "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
+                                "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
+                                "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
+                                else -> lista.sortedByDescending { it.status.equals("Assistindo", ignoreCase = true) }
+                            }
                         }
                     }
 
@@ -2012,194 +2065,266 @@ fun TelaPrincipal(
                             }
                         }
 
-                        if (modoListaDescobrir) {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                                contentPadding = PaddingValues(bottom = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(
-                                    count = resultadosPaginadosApi.itemCount,
-                                    key = { index ->
-                                        val item = resultadosPaginadosApi.peek(index)
-                                        if (item != null) {
-                                            "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
-                                        } else {
-                                            index
-                                        }
-                                    },
-                                    contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
-                                ) { index ->
-                                    val item = resultadosPaginadosApi[index]
-                                    if (item != null) {
-                                        val tipoReal = when {
-                                            tipoPaginado != "Todos" -> tipoPaginado
-                                            item.mediaType.equals("tv", ignoreCase = true) -> "Série"
-                                            item.mediaType.equals("movie", ignoreCase = true) -> "Filme"
-                                            item.ehSerie -> "Série"
-                                            else -> "Filme"
-                                        }
+                        // Fix #3 e #4 — estados de carregamento inicial (shimmer) e de erro/offline
+                        // tratados separadamente do "sem resultados", em vez de tela em branco
+                        val estadoCargaInicial = resultadosPaginadosApi.loadState.refresh
 
-                                        val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
-                                            item.plataformaDetectada
-                                        } else {
-                                            if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
-                                        }
-
-                                        val midiaItem = Midia(
-                                            idTmdb = item.idTmdb,
-                                            titulo = item.titulo,
-                                            tipo = tipoReal,
-                                            status = "Descobrir",
-                                            nota = 0,
-                                            sinopse = item.sinopse,
-                                            imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                            genero = item.generoTexto,
-                                            plataforma = plataformaFinal,
-                                            favorito = false,
-                                            listaCustomizada = "Geral"
-                                        )
-
-                                        val jaNaLista = listaDeMidias.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
-
-                                        ItemMidiaCard(
-                                            midia = midiaItem,
-                                            onClick = { onTmdbItemClique(item, tipoReal) },
-                                            jaAdicionado = jaNaLista,
-                                            onAdicionarRapido = {
-                                                onAdicionarClique(
-                                                    item.idTmdb,
-                                                    item.titulo,
-                                                    tipoReal,
-                                                    "Quero Assistir",
-                                                    0,
-                                                    item.sinopse,
-                                                    if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                                    item.generoTexto,
-                                                    plataformaFinal
-                                                )
-                                            },
-                                            modoListaHorizontal = true
-                                        )
+                        when {
+                            estadoCargaInicial is LoadState.Loading && resultadosPaginadosApi.itemCount == 0 -> {
+                                if (modoListaDescobrir) {
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                        contentPadding = PaddingValues(bottom = 16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        items(6) { CardMidiaEsqueleto(modoListaHorizontal = true) }
                                     }
-                                }
-
-                                when (val appendState = resultadosPaginadosApi.loadState.append) {
-                                    is LoadState.Loading -> {
-                                        item {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                                            }
-                                        }
+                                } else {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(2),
+                                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                        contentPadding = PaddingValues(bottom = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        items(6) { CardMidiaEsqueleto(modoListaHorizontal = false) }
                                     }
-                                    is LoadState.Error -> {
-                                        item {
-                                            Text(
-                                                text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
-                                                color = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.padding(16.dp)
-                                            )
-                                        }
-                                    }
-                                    else -> Unit
                                 }
                             }
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                                contentPadding = PaddingValues(bottom = 16.dp)
-                            ) {
-                                items(
-                                    count = resultadosPaginadosApi.itemCount,
-                                    key = { index ->
-                                        val item = resultadosPaginadosApi.peek(index)
-                                        if (item != null) {
-                                            "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
-                                        } else {
-                                            index
-                                        }
-                                    },
-                                    contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
-                                ) { index ->
-                                    val item = resultadosPaginadosApi[index]
-                                    if (item != null) {
-                                        val tipoReal = when {
-                                            tipoPaginado != "Todos" -> tipoPaginado
-                                            item.mediaType.equals("tv", ignoreCase = true) -> "Série"
-                                            item.mediaType.equals("movie", ignoreCase = true) -> "Filme"
-                                            item.ehSerie -> "Série"
-                                            else -> "Filme"
-                                        }
 
-                                        val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
-                                            item.plataformaDetectada
-                                        } else {
-                                            if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
-                                        }
-
-                                        val midiaItem = Midia(
-                                            idTmdb = item.idTmdb,
-                                            titulo = item.titulo,
-                                            tipo = tipoReal,
-                                            status = "Descobrir",
-                                            nota = 0,
-                                            sinopse = item.sinopse,
-                                            imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                            genero = item.generoTexto,
-                                            plataforma = plataformaFinal,
-                                            favorito = false,
-                                            listaCustomizada = "Geral"
+                            estadoCargaInicial is LoadState.Error && resultadosPaginadosApi.itemCount == 0 -> {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.SearchOff,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(48.dp)
                                         )
-
-                                        val jaNaLista = listaDeMidias.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
-
-                                        ItemMidiaCard(
-                                            midia = midiaItem,
-                                            onClick = { onTmdbItemClique(item, tipoReal) },
-                                            jaAdicionado = jaNaLista,
-                                            onAdicionarRapido = {
-                                                onAdicionarClique(
-                                                    item.idTmdb,
-                                                    item.titulo,
-                                                    tipoReal,
-                                                    "Quero Assistir",
-                                                    0,
-                                                    item.sinopse,
-                                                    if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                                    item.generoTexto,
-                                                    plataformaFinal
-                                                )
-                                            },
-                                            modoListaHorizontal = false
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "Não foi possível carregar.\nVerifique sua conexão com a internet.",
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            fontSize = 13.sp
                                         )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Button(
+                                            onClick = { resultadosPaginadosApi.retry() },
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Text("Tentar novamente", fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
+                            }
 
-                                when (val appendState = resultadosPaginadosApi.loadState.append) {
-                                    is LoadState.Loading -> {
-                                        item(span = { GridItemSpan(maxLineSpan) }) {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                                            }
-                                        }
+                            resultadosPaginadosApi.itemCount == 0 -> {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.SearchOff,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(text = "Nenhum resultado encontrado.", color = MaterialTheme.colorScheme.secondary)
                                     }
-                                    is LoadState.Error -> {
-                                        item(span = { GridItemSpan(maxLineSpan) }) {
-                                            Text(
-                                                text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
-                                                color = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.padding(16.dp)
+                                }
+                            }
+
+                            modoListaDescobrir -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                    contentPadding = PaddingValues(bottom = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(
+                                        count = resultadosPaginadosApi.itemCount,
+                                        key = { index ->
+                                            val item = resultadosPaginadosApi.peek(index)
+                                            if (item != null) {
+                                                "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
+                                            } else {
+                                                index
+                                            }
+                                        },
+                                        contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
+                                    ) { index ->
+                                        val item = resultadosPaginadosApi[index]
+                                        if (item != null) {
+                                            val tipoReal = when {
+                                                tipoPaginado != "Todos" -> tipoPaginado
+                                                item.mediaType.equals("tv", ignoreCase = true) -> "Série"
+                                                item.mediaType.equals("movie", ignoreCase = true) -> "Filme"
+                                                item.ehSerie -> "Série"
+                                                else -> "Filme"
+                                            }
+
+                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
+                                                item.plataformaDetectada
+                                            } else {
+                                                if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
+                                            }
+
+                                            val midiaItem = Midia(
+                                                idTmdb = item.idTmdb,
+                                                titulo = item.titulo,
+                                                tipo = tipoReal,
+                                                status = "Descobrir",
+                                                nota = 0,
+                                                sinopse = item.sinopse,
+                                                imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                                genero = item.generoTexto,
+                                                plataforma = plataformaFinal,
+                                                favorito = false,
+                                                listaCustomizada = "Geral"
+                                            )
+
+                                            val jaNaLista = listaDeMidias.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
+
+                                            ItemMidiaCard(
+                                                midia = midiaItem,
+                                                onClick = { onTmdbItemClique(item, tipoReal) },
+                                                jaAdicionado = jaNaLista,
+                                                onAdicionarRapido = {
+                                                    onAdicionarClique(
+                                                        item.idTmdb,
+                                                        item.titulo,
+                                                        tipoReal,
+                                                        "Quero Assistir",
+                                                        0,
+                                                        item.sinopse,
+                                                        if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                                        item.generoTexto,
+                                                        plataformaFinal
+                                                    )
+                                                },
+                                                modoListaHorizontal = true
                                             )
                                         }
                                     }
-                                    else -> Unit
+
+                                    when (val appendState = resultadosPaginadosApi.loadState.append) {
+                                        is LoadState.Loading -> {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                                }
+                                            }
+                                        }
+                                        is LoadState.Error -> {
+                                            item {
+                                                Text(
+                                                    text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.padding(16.dp)
+                                                )
+                                            }
+                                        }
+                                        else -> Unit
+                                    }
+                                }
+                            }
+
+                            else -> {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(2),
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                    contentPadding = PaddingValues(bottom = 16.dp)
+                                ) {
+                                    items(
+                                        count = resultadosPaginadosApi.itemCount,
+                                        key = { index ->
+                                            val item = resultadosPaginadosApi.peek(index)
+                                            if (item != null) {
+                                                "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
+                                            } else {
+                                                index
+                                            }
+                                        },
+                                        contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
+                                    ) { index ->
+                                        val item = resultadosPaginadosApi[index]
+                                        if (item != null) {
+                                            val tipoReal = when {
+                                                tipoPaginado != "Todos" -> tipoPaginado
+                                                item.mediaType.equals("tv", ignoreCase = true) -> "Série"
+                                                item.mediaType.equals("movie", ignoreCase = true) -> "Filme"
+                                                item.ehSerie -> "Série"
+                                                else -> "Filme"
+                                            }
+
+                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
+                                                item.plataformaDetectada
+                                            } else {
+                                                if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
+                                            }
+
+                                            val midiaItem = Midia(
+                                                idTmdb = item.idTmdb,
+                                                titulo = item.titulo,
+                                                tipo = tipoReal,
+                                                status = "Descobrir",
+                                                nota = 0,
+                                                sinopse = item.sinopse,
+                                                imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                                genero = item.generoTexto,
+                                                plataforma = plataformaFinal,
+                                                favorito = false,
+                                                listaCustomizada = "Geral"
+                                            )
+
+                                            val jaNaLista = listaDeMidias.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
+
+                                            ItemMidiaCard(
+                                                midia = midiaItem,
+                                                onClick = { onTmdbItemClique(item, tipoReal) },
+                                                jaAdicionado = jaNaLista,
+                                                onAdicionarRapido = {
+                                                    onAdicionarClique(
+                                                        item.idTmdb,
+                                                        item.titulo,
+                                                        tipoReal,
+                                                        "Quero Assistir",
+                                                        0,
+                                                        item.sinopse,
+                                                        if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                                        item.generoTexto,
+                                                        plataformaFinal
+                                                    )
+                                                },
+                                                modoListaHorizontal = false
+                                            )
+                                        }
+                                    }
+
+                                    when (val appendState = resultadosPaginadosApi.loadState.append) {
+                                        is LoadState.Loading -> {
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                                                }
+                                            }
+                                        }
+                                        is LoadState.Error -> {
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                Text(
+                                                    text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.padding(16.dp)
+                                                )
+                                            }
+                                        }
+                                        else -> Unit
+                                    }
                                 }
                             }
                         }
