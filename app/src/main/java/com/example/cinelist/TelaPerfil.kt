@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
@@ -91,6 +92,28 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+// ============================================================
+// DESIGN TOKENS — cores e espaçamento centralizados (Fix #1 e #5)
+// ============================================================
+object CineListTokens {
+    // Cores semânticas (antes espalhadas como Color(0xFF...) em dezenas de lugares)
+    val CorSucesso = Color(0xFF4CAF50)
+    val CorErro = Color(0xFFFF4C4C)
+    val CorPremium = Color(0xFFFFD700)
+    val CorOnline = Color(0xFF38BDF8)
+    val CorConcluidoEscuro = Color(0xFF2E7D32)
+    val CorMatch = Color(0xFFFF3366)
+    val CorWhatsapp = Color(0xFF25D366)
+
+    // Escala de espaçamento (4, 8, 12, 16, 24, 32)
+    val EspacoXXS = 4.dp
+    val EspacoXS = 8.dp
+    val EspacoS = 12.dp
+    val EspacoM = 16.dp
+    val EspacoL = 24.dp
+    val EspacoXL = 32.dp
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -163,7 +186,7 @@ fun TelaPerfil(
                         onLogout()
                     }
                 ) {
-                    Text("Sair", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                    Text("Sair", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -178,7 +201,7 @@ fun TelaPerfil(
     if (mostrarConfirmacaoReset) {
         AlertDialog(
             onDismissRequest = { mostrarConfirmacaoReset = false },
-            title = { Text("⚠️ Limpar Toda a Lista", fontWeight = FontWeight.Bold, color = Color(0xFFFF4C4C)) },
+            title = { Text("⚠️ Limpar Toda a Lista", fontWeight = FontWeight.Bold, color = CineListTokens.CorErro) },
             text = { Text("Tem certeza absoluta? Todos os títulos da sua lista ativa serão apagados permanentemente.") },
             confirmButton = {
                 TextButton(
@@ -188,7 +211,7 @@ fun TelaPerfil(
                         Toast.makeText(contexto, "Todos os dados da lista foram apagados.", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("Apagar Tudo", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                    Text("Apagar Tudo", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -213,7 +236,7 @@ fun TelaPerfil(
                         midiaParaExcluirHistorico = null
                         Toast.makeText(contexto, "Removido do histórico.", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
                 ) {
                     Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -239,7 +262,7 @@ fun TelaPerfil(
                         midiaParaReabrirHistorico = null
                         Toast.makeText(contexto, "Mídia reaberta com sucesso!", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorConcluidoEscuro)
                 ) {
                     Text("Reabrir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -355,7 +378,7 @@ fun TelaPerfil(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.88f)
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -364,36 +387,14 @@ fun TelaPerfil(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                     ) {
-                        Box(modifier = Modifier.size(52.dp)) {
-                            if (membro.fotoUrl.isNotBlank()) {
-                                AsyncImage(
-                                    model = membro.fotoUrl,
-                                    contentDescription = membro.nome,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = membro.nome.take(1).uppercase(),
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                        }
+                        AvatarComIniciais(
+                            fotoUrl = membro.fotoUrl,
+                            nome = membro.nome,
+                            tamanho = 52.dp,
+                            corBorda = MaterialTheme.colorScheme.primary
+                        )
 
                         Column {
                             Text(
@@ -403,12 +404,12 @@ fun TelaPerfil(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             if (membro.estaAssistindoAlgo) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(13.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXXS)) {
+                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = CineListTokens.CorOnline, modifier = Modifier.size(13.dp))
                                     Text(
                                         text = "Assistindo: ${membro.assistindoAgoraTitulo}",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF38BDF8),
+                                        color = CineListTokens.CorOnline,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -418,7 +419,7 @@ fun TelaPerfil(
                                 Text(
                                     text = membro.obterTextoVistoPorUltimo(),
                                     fontSize = 12.sp,
-                                    color = if (membro.estaRealmenteOnline) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                                    color = if (membro.estaRealmenteOnline) CineListTokens.CorSucesso else MaterialTheme.colorScheme.secondary,
                                     fontWeight = if (membro.estaRealmenteOnline) FontWeight.Bold else FontWeight.Normal
                                 )
                             }
@@ -430,9 +431,9 @@ fun TelaPerfil(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
 
                 Text(
                     text = "Mídias de ${membro.nome} (${midiasExibidasModal.size})",
@@ -441,7 +442,7 @@ fun TelaPerfil(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
 
                 Row(
                     modifier = Modifier
@@ -501,7 +502,7 @@ fun TelaPerfil(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
                 if (midiasExibidasModal.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -519,8 +520,8 @@ fun TelaPerfil(
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(midiasExibidasModal, key = { it.id }) { midiaMembro ->
@@ -577,7 +578,7 @@ fun TelaPerfil(
                         Toast.makeText(contexto, "Notificação excluída.", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("Excluir", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                    Text("Excluir", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -602,7 +603,7 @@ fun TelaPerfil(
                         Toast.makeText(contexto, "Histórico de notificações limpo.", Toast.LENGTH_SHORT).show()
                     }
                 ) {
-                    Text("Limpar Tudo", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                    Text("Limpar Tudo", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -796,10 +797,10 @@ fun TelaPerfil(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp)
+                    .padding(horizontal = CineListTokens.EspacoL)
+                    .padding(bottom = CineListTokens.EspacoXL)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -821,7 +822,7 @@ fun TelaPerfil(
 
                 Column {
                     Text(text = "Informações da Conta", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                     Text(text = "Provedor: ${usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"}", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                     Text(text = "ID: ${usuarioAtual?.uid?.take(12)}...", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
                 }
@@ -837,7 +838,7 @@ fun TelaPerfil(
                             modifier = Modifier
                                 .clickable { menuGeneroExpandido = true }
                                 .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .padding(horizontal = CineListTokens.EspacoS, vertical = 6.dp)
                         )
                         DropdownMenu(expanded = menuGeneroExpandido, onDismissRequest = { menuGeneroExpandido = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                             listaGeneros.forEach { item ->
@@ -913,15 +914,15 @@ fun TelaPerfil(
                             mostrarBottomSheetConfiguracoes = false
                             mostrarDialogoBloqueados = true
                         }
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = CineListTokens.EspacoXXS),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(imageVector = Icons.Default.Block, contentDescription = null, tint = Color(0xFFFF4C4C), modifier = Modifier.size(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                        Icon(imageVector = Icons.Default.Block, contentDescription = null, tint = CineListTokens.CorErro, modifier = Modifier.size(18.dp))
                         Text(text = "Gerenciar Contas Bloqueadas", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                     }
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = 180f })
+                    Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                 }
 
                 Row(
@@ -960,9 +961,9 @@ fun TelaPerfil(
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
                     Text(text = "Backup e Sincronização", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
                         OutlinedButton(
                             onClick = { exportarLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
                             modifier = Modifier.weight(1f)
@@ -979,28 +980,38 @@ fun TelaPerfil(
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { mostrarConfirmacaoReset = true; mostrarBottomSheetConfiguracoes = false }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Limpar Todos os Dados Locais", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF4C4C))
+                // Fix #7 — ações destrutivas com mais respiro e hierarquia visual clara
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Column(verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                    OutlinedButton(
+                        onClick = { mostrarConfirmacaoReset = true; mostrarBottomSheetConfiguracoes = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CineListTokens.CorErro),
+                        border = BorderStroke(1.dp, CineListTokens.CorErro.copy(alpha = 0.4f))
+                    ) {
+                        Text("Limpar Todos os Dados Locais", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
+
+                    Button(
+                        onClick = { mostrarConfirmacaoSair = true; mostrarBottomSheetConfiguracoes = false },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
+                    ) {
+                        Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+
                     Text(
-                        text = "Deseja excluir permanentemente sua conta?",
-                        color = Color(0xFFFF4C4C),
-                        fontSize = 12.sp,
+                        text = "Excluir permanentemente minha conta",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontSize = 11.sp,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(top = CineListTokens.EspacoXXS)
                             .clickable { mostrarConfirmacaoExclusao = true; mostrarBottomSheetConfiguracoes = false }
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = CineListTokens.EspacoXXS),
                         textAlign = TextAlign.Center
                     )
-                }
-
-                Button(
-                    onClick = { mostrarConfirmacaoSair = true; mostrarBottomSheetConfiguracoes = false },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
-                ) {
-                    Text(text = "SAIR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
             }
         }
@@ -1097,20 +1108,22 @@ fun TelaPerfil(
                             .padding(paddingValues)
                             .verticalScroll(rememberScrollState())
                     ) {
+                        // Fix #8 — header mais alto e com gradiente em 3 paradas para transição suave
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(230.dp)
+                                .height(260.dp)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(130.dp)
+                                    .height(170.dp)
                                     .background(
                                         Brush.verticalGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                                MaterialTheme.colorScheme.background
+                                            colorStops = arrayOf(
+                                                0.0f to MaterialTheme.colorScheme.primary.copy(alpha = 0.65f),
+                                                0.6f to MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                                1.0f to MaterialTheme.colorScheme.background
                                             )
                                         )
                                     )
@@ -1146,7 +1159,7 @@ fun TelaPerfil(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
 
                                 if (modoEdicaoNome) {
                                     Row(modifier = Modifier.fillMaxWidth(0.8f), verticalAlignment = Alignment.CenterVertically) {
@@ -1163,12 +1176,12 @@ fun TelaPerfil(
                                                     if (t.isSuccessful) { nomeExibicao = novoNome.trim(); modoEdicaoNome = false }
                                                 }
                                             }
-                                        }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = Color.Green) }
+                                        }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = CineListTokens.CorSucesso) }
                                     }
                                 } else {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                                         Text(text = nomeExibicao, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Spacer(modifier = Modifier.width(CineListTokens.EspacoXXS))
                                         IconButton(onClick = { modoEdicaoNome = true; novoNome = nomeExibicao }, modifier = Modifier.size(24.dp)) {
                                             Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
                                         }
@@ -1178,20 +1191,20 @@ fun TelaPerfil(
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
                                     color = if (modoGrupoAtivo) {
-                                        if (isAdministrador) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        if (isAdministrador) CineListTokens.CorPremium.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                                     } else {
                                         MaterialTheme.colorScheme.secondaryContainer
                                     },
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                    modifier = Modifier.padding(top = CineListTokens.EspacoXXS, bottom = CineListTokens.EspacoXS)
                                 ) {
                                     Text(
                                         text = if (modoGrupoAtivo) {
                                             if (isAdministrador) "👑 Administrador da Sala" else "👤 Membro da Sala"
                                         } else "🎬 Lista Pessoal",
-                                        color = if (modoGrupoAtivo && isAdministrador) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface,
+                                        color = if (modoGrupoAtivo && isAdministrador) CineListTokens.CorPremium else MaterialTheme.colorScheme.onSurface,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = CineListTokens.EspacoS, vertical = CineListTokens.EspacoXXS)
                                     )
                                 }
 
@@ -1204,12 +1217,12 @@ fun TelaPerfil(
                                                 sharedPreferences.edit().putString("bio", biografia).apply()
                                                 modoEdicaoBio = false
                                                 viewModel.atualizarMeuPerfilPublico(nomeExibicao, biografia)
-                                            }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = Color.Green) }
+                                            }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar Bio", tint = CineListTokens.CorSucesso) }
                                         }
                                     } else {
-                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(horizontal = CineListTokens.EspacoXL)) {
                                             Text(text = if (biografia.isEmpty()) "Adicione uma biografia..." else "\"$biografia\"", fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Spacer(modifier = Modifier.width(CineListTokens.EspacoXXS))
                                             IconButton(onClick = { modoEdicaoBio = true; novaBio = biografia }, modifier = Modifier.size(20.dp)) {
                                                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar Bio", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(14.dp))
                                             }
@@ -1219,9 +1232,9 @@ fun TelaPerfil(
                             }
                         }
 
-                        Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Column(modifier = Modifier.padding(horizontal = CineListTokens.EspacoM), verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
                             SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
 
@@ -1233,7 +1246,7 @@ fun TelaPerfil(
                                 onClick = { exibindoWrapped = true }
                             )
 
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
                                 PremiumBannerCardSmall(
                                     titulo = "Lançamentos",
                                     icone = Icons.Default.CalendarMonth,
@@ -1252,18 +1265,18 @@ fun TelaPerfil(
                             }
 
                             if (modoGrupoAtivo && isAdministrador) {
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, CineListTokens.CorPremium.copy(alpha = 0.5f)),
                                     shape = RoundedCornerShape(16.dp)
                                 ) {
                                     Column(
-                                        modifier = Modifier.padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        modifier = Modifier.padding(CineListTokens.EspacoM),
+                                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                                     ) {
-                                        Text(text = "👑 Controle de Administrador", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFFFD700))
+                                        Text(text = "👑 Controle de Administrador", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CineListTokens.CorPremium)
 
                                         OutlinedTextField(
                                             value = novaSenhaSalaInput,
@@ -1271,7 +1284,7 @@ fun TelaPerfil(
                                             label = { Text("Atualizar Senha da Sala", color = MaterialTheme.colorScheme.secondary) },
                                             singleLine = true,
                                             modifier = Modifier.fillMaxWidth(),
-                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFFD700))
+                                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = CineListTokens.CorPremium)
                                         )
                                         Button(
                                             onClick = {
@@ -1285,7 +1298,7 @@ fun TelaPerfil(
                                                 }
                                             },
                                             modifier = Modifier.fillMaxWidth(),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                                            colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorPremium)
                                         ) {
                                             Text("Salvar Nova Senha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                                         }
@@ -1306,7 +1319,7 @@ fun TelaPerfil(
                                                         viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
                                                             if (sucesso) Toast.makeText(contexto, "${membro.nome} foi removido.", Toast.LENGTH_SHORT).show()
                                                         }
-                                                    }) { Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                                    }) { Text("Remover", color = CineListTokens.CorErro, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                                                 }
                                             }
                                         }
@@ -1314,7 +1327,7 @@ fun TelaPerfil(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(CineListTokens.EspacoM))
                         }
                     }
                 }
@@ -1325,14 +1338,14 @@ fun TelaPerfil(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(paddingValues)
-                                .padding(16.dp)
+                                .padding(CineListTokens.EspacoM)
                                 .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                         ) {
                             Text(text = "Cinéfilos na Sala (${membrosOrdenados.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
                             Text(text = "Toque no avatar para inspecionar os títulos adicionados pelo membro.", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
                             membrosOrdenados.forEach { membro ->
                                 val souEu = membro.uid == (usuarioAtual?.uid ?: "")
@@ -1341,7 +1354,7 @@ fun TelaPerfil(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Box(modifier = Modifier.padding(12.dp)) {
+                                    Box(modifier = Modifier.padding(CineListTokens.EspacoS)) {
                                         ItemMembroPresenca(
                                             membro = membro,
                                             souEu = souEu,
@@ -1369,7 +1382,7 @@ fun TelaPerfil(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(16.dp)
+                            .padding(CineListTokens.EspacoM)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1383,7 +1396,7 @@ fun TelaPerfil(
                                 color = MaterialTheme.colorScheme.primary
                             )
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXXS)) {
                                 if (listaNotificacoes.any { !it.lida }) {
                                     TextButton(onClick = { viewModel.marcarTodasNotificacoesComoLidas() }) {
                                         Text("Marcar lidas", fontSize = 12.sp)
@@ -1403,7 +1416,7 @@ fun TelaPerfil(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
                         if (solicitacoesRecebidas.isNotEmpty()) {
                             Card(
@@ -1418,7 +1431,7 @@ fun TelaPerfil(
                                 Row(
                                     modifier = Modifier.padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.PersonAdd,
@@ -1441,7 +1454,7 @@ fun TelaPerfil(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                         }
 
                         if (listaNotificacoes.isEmpty() && solicitacoesRecebidas.isEmpty()) {
@@ -1453,7 +1466,7 @@ fun TelaPerfil(
                                         tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
                                         modifier = Modifier.size(48.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
                                     Text(
                                         text = "Nenhuma notificação registrada ainda.",
                                         color = MaterialTheme.colorScheme.secondary,
@@ -1462,7 +1475,7 @@ fun TelaPerfil(
                                 }
                             }
                         } else {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
                                 items(listaNotificacoes, key = { it.id }) { notificacao ->
                                     ItemNotificacao(
                                         notificacao = notificacao,
@@ -1485,16 +1498,16 @@ fun TelaPerfil(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                            .padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)
                     ) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1512,8 +1525,8 @@ fun TelaPerfil(
                                 }
 
                                 if (!modoGrupoAtivo && modoEdicaoMeta) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS), verticalAlignment = Alignment.CenterVertically) {
                                         listOf(25, 50, 75, 100).forEach { metaOpcao ->
                                             FilterChip(
                                                 selected = (metaAnualDefinida == metaOpcao),
@@ -1528,7 +1541,7 @@ fun TelaPerfil(
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                                 val progressoMeta = if (modoGrupoAtivo) {
                                     if (totalMidias > 0) totalConcluidosGeral.toFloat() / totalMidias.toFloat() else 0f
                                 } else {
@@ -1538,27 +1551,27 @@ fun TelaPerfil(
                                 LinearProgressIndicator(
                                     progress = { progressoMeta },
                                     modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
-                                    color = if (modoGrupoAtivo) MaterialTheme.colorScheme.primary else Color(0xFFFFD700),
-                                    trackColor = MaterialTheme.colorScheme.background
+                                    color = if (modoGrupoAtivo) MaterialTheme.colorScheme.primary else CineListTokens.CorPremium,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                             }
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            WidgetEstatistica(titulo = "Total Assistido", valor = tempoFormatado, subtitulo = "Horas na tela", modifier = Modifier.weight(1f))
-                            WidgetEstatistica(titulo = "Média Notas", valor = "$mediaNotas ★", subtitulo = "${midiasComNota.size} avaliados", modifier = Modifier.weight(1f))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
+                            CardEstatistica(titulo = "Total Assistido", valor = tempoFormatado, subtitulo = "Horas na tela", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Média Notas", valor = "$mediaNotas ★", subtitulo = "${midiasComNota.size} avaliados", modifier = Modifier.weight(1f))
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            WidgetEstatistica(titulo = "Filmes", valor = filmesConcluidos.toString(), subtitulo = "De $totalFilmes na lista", modifier = Modifier.weight(1f))
-                            WidgetEstatistica(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtitulo = "De $seriesConcluidas séries", modifier = Modifier.weight(1f))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
+                            CardEstatistica(titulo = "Filmes", valor = filmesConcluidos.toString(), subtitulo = "De $totalFilmes na lista", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtitulo = "De $seriesConcluidas séries", modifier = Modifier.weight(1f))
                         }
 
                         if (midiasComNota.isNotEmpty()) {
                             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
                                     Text(text = "Distribuição de Avaliações", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                                     GraficoDistribuicaoNotas(dados = distribuicaoNotas, totalAvaliados = midiasComNota.size)
                                 }
                             }
@@ -1566,9 +1579,9 @@ fun TelaPerfil(
 
                         if (estatisticasGenero.isNotEmpty()) {
                             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
                                     Text(text = "Gêneros Predominantes", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                                     ListaGenerosMaisAssistidos(dados = estatisticasGenero)
                                 }
                             }
@@ -1576,9 +1589,9 @@ fun TelaPerfil(
 
                         if (estatisticasPlataforma.isNotEmpty()) {
                             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
-                                Column(modifier = Modifier.padding(16.dp)) {
+                                Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
                                     Text(text = "Plataformas Mais Usadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                                     ListaPlataformasMaisUtilizadas(dados = estatisticasPlataforma)
                                 }
                             }
@@ -1588,14 +1601,14 @@ fun TelaPerfil(
 
                 4 -> {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp, vertical = 12.dp)
+                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
                     ) {
                         Text(
                             text = if (modoGrupoAtivo) "Concluídos na Sala (${listaHistoricoConcluido.size})" else "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            modifier = Modifier.padding(bottom = CineListTokens.EspacoS)
                         )
 
                         if (listaHistoricoConcluido.isEmpty()) {
@@ -1609,7 +1622,7 @@ fun TelaPerfil(
                             }
                         } else {
                             LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 items(listaHistoricoConcluido.sortedByDescending { it.dataConclusao }, key = { it.id }) { itemConcluido ->
@@ -1644,8 +1657,8 @@ fun TelaPerfil(
                                             val direcao = dismissState.dismissDirection
                                             val corFundo by animateColorAsState(
                                                 targetValue = when (direcao) {
-                                                    SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
-                                                    SwipeToDismissBoxValue.EndToStart -> Color(0xFFFF4C4C)
+                                                    SwipeToDismissBoxValue.StartToEnd -> CineListTokens.CorConcluidoEscuro
+                                                    SwipeToDismissBoxValue.EndToStart -> CineListTokens.CorErro
                                                     SwipeToDismissBoxValue.Settled -> Color.Transparent
                                                 },
                                                 label = "cor_swipe_historico"
@@ -1656,7 +1669,7 @@ fun TelaPerfil(
                                                     .fillMaxSize()
                                                     .clip(RoundedCornerShape(10.dp))
                                                     .background(corFundo)
-                                                    .padding(horizontal = 16.dp),
+                                                    .padding(horizontal = CineListTokens.EspacoM),
                                                 contentAlignment = when (direcao) {
                                                     SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
                                                     else -> Alignment.CenterEnd
@@ -1665,7 +1678,7 @@ fun TelaPerfil(
                                                 if (direcao == SwipeToDismissBoxValue.StartToEnd) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXXS)
                                                     ) {
                                                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reabrir", tint = Color.White)
                                                         Text("Reabrir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -1673,7 +1686,7 @@ fun TelaPerfil(
                                                 } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXXS)
                                                     ) {
                                                         Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
@@ -1692,9 +1705,9 @@ fun TelaPerfil(
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(10.dp),
+                                                    .padding(CineListTokens.EspacoS),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                                             ) {
                                                 Box(
                                                     modifier = Modifier
@@ -1732,19 +1745,19 @@ fun TelaPerfil(
 
                                                         if (itemConcluido.nota > 0) {
                                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(10.dp))
-                                                                Text(text = " ${itemConcluido.nota}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                                                                Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = CineListTokens.CorPremium, modifier = Modifier.size(10.dp))
+                                                                Text(text = " ${itemConcluido.nota}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = CineListTokens.CorPremium)
                                                             }
                                                         }
                                                     }
 
-                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                     ) {
-                                                        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(12.dp))
+                                                        Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = CineListTokens.CorSucesso, modifier = Modifier.size(12.dp))
 
                                                         val textoConclusao = buildString {
                                                             if (dataFormatada.isNotBlank()) append("Concluído em $dataFormatada") else append("Concluído")
@@ -1754,7 +1767,7 @@ fun TelaPerfil(
                                                         Text(
                                                             text = textoConclusao,
                                                             fontSize = 10.sp,
-                                                            color = Color(0xFF4CAF50),
+                                                            color = CineListTokens.CorSucesso,
                                                             fontWeight = FontWeight.Medium
                                                         )
                                                     }
@@ -1794,7 +1807,7 @@ fun PremiumBannerCard(
                 modifier = Modifier.align(Alignment.CenterEnd).size(100.dp).offset(x = 20.dp, y = 10.dp)
             )
             Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = CineListTokens.EspacoL),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -1829,7 +1842,7 @@ fun PremiumBannerCardSmall(
                 modifier = Modifier.align(Alignment.BottomEnd).size(60.dp).offset(x = 10.dp, y = 10.dp)
             )
             Column(
-                modifier = Modifier.fillMaxSize().padding(12.dp),
+                modifier = Modifier.fillMaxSize().padding(CineListTokens.EspacoS),
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(text = titulo, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -1838,11 +1851,15 @@ fun PremiumBannerCardSmall(
     }
 }
 
+// ============================================================
+// Fix #2 — card de estatística ÚNICO reutilizado em toda a tela
+// (substitui WidgetEstatistica, ItemEstatistica e CardEstatisticaDetalhada)
+// ============================================================
 @Composable
-fun WidgetEstatistica(
+fun CardEstatistica(
     titulo: String,
     valor: String,
-    subtitulo: String,
+    subtitulo: String? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -1851,14 +1868,66 @@ fun WidgetEstatistica(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(14.dp),
+            modifier = Modifier.fillMaxSize().padding(CineListTokens.EspacoM),
             verticalArrangement = Arrangement.Center
         ) {
             Text(text = titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
             Text(text = valor, fontSize = 22.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subtitulo, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (subtitulo != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(text = subtitulo, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+// ============================================================
+// Fix #4 — avatar (foto ou iniciais) ÚNICO reutilizado em toda a tela
+// ============================================================
+@Composable
+fun AvatarComIniciais(
+    fotoUrl: String,
+    nome: String,
+    tamanho: androidx.compose.ui.unit.Dp = 48.dp,
+    corBorda: Color? = null,
+    indicadorOnline: Boolean? = null
+) {
+    Box(modifier = Modifier.size(tamanho), contentAlignment = Alignment.BottomEnd) {
+        val baseModifier = Modifier
+            .fillMaxSize()
+            .clip(CircleShape)
+            .let { m -> if (corBorda != null) m.border(2.dp, corBorda, CircleShape) else m }
+
+        if (fotoUrl.isNotBlank()) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = nome,
+                modifier = baseModifier,
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = baseModifier.background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = nome.take(1).uppercase(),
+                    fontSize = (tamanho.value * 0.4f).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        if (indicadorOnline != null) {
+            Box(
+                modifier = Modifier
+                    .size((tamanho.value * 0.26f).dp)
+                    .clip(CircleShape)
+                    .background(if (indicadorOnline) CineListTokens.CorSucesso else Color.Gray)
+                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+            )
         }
     }
 }
@@ -1918,14 +1987,14 @@ fun AbaAmigosPerfil(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(CineListTokens.EspacoM)
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1946,7 +2015,7 @@ fun AbaAmigosPerfil(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
                     OutlinedTextField(
                         value = termoBusca,
                         onValueChange = { termoBusca = it },
@@ -1968,11 +2037,11 @@ fun AbaAmigosPerfil(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(CineListTokens.EspacoM))
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
             ) {
                 if (solicitacoesRecebidas.isNotEmpty()) {
                     item {
@@ -1993,28 +2062,16 @@ fun AbaAmigosPerfil(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(CineListTokens.EspacoS),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (sol.fotoUrl.isNotBlank()) {
-                                            AsyncImage(model = sol.fotoUrl, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
-                                        } else {
-                                            Text(sol.nome.take(1).uppercase(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                        }
-                                    }
+                                    AvatarComIniciais(fotoUrl = sol.fotoUrl, nome = sol.nome, tamanho = 44.dp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(sol.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text("Quer adicionar você", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2030,7 +2087,7 @@ fun AbaAmigosPerfil(
                                                 }
                                             }
                                         },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                        colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorSucesso),
                                         shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
@@ -2048,7 +2105,7 @@ fun AbaAmigosPerfil(
                                         shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
-                                        Text("Recusar", fontSize = 12.sp, color = Color(0xFFFF5252))
+                                        Text("Recusar", fontSize = 12.sp, color = CineListTokens.CorErro)
                                     }
                                 }
                             }
@@ -2056,9 +2113,9 @@ fun AbaAmigosPerfil(
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                     }
                 }
 
@@ -2078,7 +2135,7 @@ fun AbaAmigosPerfil(
                                 text = "Nenhum usuário encontrado com esse nome.",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                                modifier = Modifier.padding(vertical = CineListTokens.EspacoXS)
                             )
                         }
                     }
@@ -2095,29 +2152,16 @@ fun AbaAmigosPerfil(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(CineListTokens.EspacoS),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primary)
-                                    ) {
-                                        if (usuario.fotoUrl.isNotBlank()) {
-                                            AsyncImage(model = usuario.fotoUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                                        } else {
-                                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                                Text(usuario.nome.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
-                                            }
-                                        }
-                                    }
+                                    AvatarComIniciais(fotoUrl = usuario.fotoUrl, nome = usuario.nome, tamanho = 44.dp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(if (usuario.bio.isNotBlank()) usuario.bio else usuario.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2140,15 +2184,15 @@ fun AbaAmigosPerfil(
                                             }
                                         },
                                         enabled = !processandoAcao,
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252)),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CineListTokens.CorErro),
                                         shape = RoundedCornerShape(10.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                                     ) {
                                         if (processandoAcao) {
-                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFFF5252))
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = CineListTokens.CorErro)
                                         } else {
                                             Icon(imageVector = Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Spacer(modifier = Modifier.width(CineListTokens.EspacoXXS))
                                             Text("Cancelar", fontSize = 12.sp)
                                         }
                                     }
@@ -2176,7 +2220,7 @@ fun AbaAmigosPerfil(
                                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
                                         } else {
                                             Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Spacer(modifier = Modifier.width(CineListTokens.EspacoXXS))
                                             Text("Adicionar", fontSize = 12.sp)
                                         }
                                     }
@@ -2186,9 +2230,9 @@ fun AbaAmigosPerfil(
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
                     }
                 }
 
@@ -2211,7 +2255,7 @@ fun AbaAmigosPerfil(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(imageVector = Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
                                 Text("Nenhum amigo adicionado ainda.\nUse a barra de pesquisa acima para encontrar cinéfilos!", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
                             }
                         }
@@ -2233,36 +2277,21 @@ fun AbaAmigosPerfil(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.BottomEnd) {
-                                        if (amigo.fotoUrl.isNotBlank()) {
-                                            AsyncImage(model = amigo.fotoUrl, contentDescription = null, modifier = Modifier.fillMaxSize().clip(CircleShape), contentScale = ContentScale.Crop)
-                                        } else {
-                                            Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                                                Text(amigo.nome.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                            }
-                                        }
-                                        Box(
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clip(CircleShape)
-                                                .background(if (estaOnline) Color(0xFF4CAF50) else Color.Gray)
-                                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                        )
-                                    }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
+                                    AvatarComIniciais(fotoUrl = amigo.fotoUrl, nome = amigo.nome, tamanho = 48.dp, indicadorOnline = estaOnline)
 
                                     Column {
                                         Text(amigo.nome, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                         Text(
                                             text = amigo.obterTextoVistoPorUltimo(),
                                             fontSize = 13.sp,
-                                            color = if (estaOnline) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                                            color = if (estaOnline) CineListTokens.CorSucesso else MaterialTheme.colorScheme.secondary,
                                             fontWeight = if (estaOnline) FontWeight.Bold else FontWeight.Normal
                                         )
                                     }
                                 }
 
-                                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.graphicsLayer { rotationZ = 180f })
+                                Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -2324,9 +2353,9 @@ fun ModalPerfilAmigo(
                     enabled = !processandoAcao
                 ) {
                     if (processandoAcao) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFFF4C4C))
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = CineListTokens.CorErro)
                     } else {
-                        Text("Remover", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                        Text("Remover", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -2345,7 +2374,7 @@ fun ModalPerfilAmigo(
     if (mostrarConfirmacaoBloquear) {
         AlertDialog(
             onDismissRequest = { if (!processandoAcao) mostrarConfirmacaoBloquear = false },
-            title = { Text("Bloquear Usuário", fontWeight = FontWeight.Bold, color = Color(0xFFFF4C4C)) },
+            title = { Text("Bloquear Usuário", fontWeight = FontWeight.Bold, color = CineListTokens.CorErro) },
             text = {
                 Text("Deseja bloquear ${amigo.nome}? A amizade e as mensagens serão desfeitas e este usuário não poderá mais encontrar o seu perfil nem enviar novas solicitações.")
             },
@@ -2367,9 +2396,9 @@ fun ModalPerfilAmigo(
                     enabled = !processandoAcao
                 ) {
                     if (processandoAcao) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFFFF4C4C))
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = CineListTokens.CorErro)
                     } else {
-                        Text("Bloquear", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold)
+                        Text("Bloquear", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -2389,7 +2418,7 @@ fun ModalPerfilAmigo(
         modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(0.9f)
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -2398,47 +2427,16 @@ fun ModalPerfilAmigo(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS),
                 modifier = Modifier.weight(1f)
             ) {
-                Box(modifier = Modifier.size(52.dp), contentAlignment = Alignment.BottomEnd) {
-                    if (amigo.fotoUrl.isNotBlank()) {
-                        AsyncImage(
-                            model = amigo.fotoUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = amigo.nome.take(1).uppercase(),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clip(CircleShape)
-                            .background(if (estaOnline) Color(0xFF4CAF50) else Color.Gray)
-                            .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                    )
-                }
+                AvatarComIniciais(fotoUrl = amigo.fotoUrl, nome = amigo.nome, tamanho = 52.dp, indicadorOnline = estaOnline)
                 Column {
                     Text(amigo.nome, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = amigo.obterTextoVistoPorUltimo(),
                         fontSize = 12.sp,
-                        color = if (estaOnline) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                        color = if (estaOnline) CineListTokens.CorSucesso else MaterialTheme.colorScheme.secondary,
                         fontWeight = if (estaOnline) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -2451,7 +2449,7 @@ fun ModalPerfilAmigo(
                     Icon(
                         imageVector = Icons.Default.Block,
                         contentDescription = "Bloquear usuário",
-                        tint = Color(0xFFFF4C4C)
+                        tint = CineListTokens.CorErro
                     )
                 }
 
@@ -2469,7 +2467,7 @@ fun ModalPerfilAmigo(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
         ScrollableTabRow(selectedTabIndex = abaAmigoSelecionada, edgePadding = 0.dp) {
             Tab(
@@ -2489,7 +2487,7 @@ fun ModalPerfilAmigo(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
         when (abaAmigoSelecionada) {
             0 -> {
@@ -2500,8 +2498,8 @@ fun ModalPerfilAmigo(
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(midiasAmigo, key = { it.id }) { midia ->
@@ -2518,8 +2516,8 @@ fun ModalPerfilAmigo(
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(midiasEmComum, key = { it.id }) { midiaComum ->
@@ -2534,7 +2532,7 @@ fun ModalPerfilAmigo(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)
                     ) {
                         items(mensagens, key = { it.id }) { msg ->
                             val souEu = msg.remetenteUid == FirebaseAuth.getInstance().currentUser?.uid
@@ -2561,7 +2559,7 @@ fun ModalPerfilAmigo(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .padding(top = CineListTokens.EspacoXS),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
@@ -2572,7 +2570,7 @@ fun ModalPerfilAmigo(
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(CineListTokens.EspacoXS))
                         IconButton(
                             onClick = {
                                 if (textoMensagem.isNotBlank()) {
@@ -2640,7 +2638,7 @@ fun TelaWrapped(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp)
+                .padding(bottom = CineListTokens.EspacoXL)
                 .graphicsLayer { translationX = offsetAnimado },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -2663,7 +2661,7 @@ fun TelaWrapped(
             onClick = onFechar,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(16.dp)
+                .padding(CineListTokens.EspacoM)
                 .background(Color(0x55000000), CircleShape)
         ) {
             Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
@@ -2676,10 +2674,10 @@ fun PaginaCapaWrapped(frase: String) {
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF1DB954), Color(0xFF191414))))
-            .padding(32.dp),
+            .padding(CineListTokens.EspacoXL),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
             Text("🍿 CineList Wrapped", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(20.dp))
             Text(text = frase, color = Color.White, fontSize = 22.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
@@ -2693,12 +2691,12 @@ fun PaginaTempoWrapped(horas: Int, total: Int) {
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF8A2BE2), Color(0xFF121212))))
-            .padding(32.dp),
+            .padding(CineListTokens.EspacoXL),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
             Text("Neste ciclo, você dedicou", color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
-            Text(text = "$horas horas", fontSize = 56.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700))
+            Text(text = "$horas horas", fontSize = 56.sp, fontWeight = FontWeight.Black, color = CineListTokens.CorPremium)
             Text(text = "assistindo a $total títulos entre filmes e séries.", fontSize = 20.sp, color = Color.White, textAlign = TextAlign.Center)
         }
     }
@@ -2710,10 +2708,10 @@ fun PaginaEpisodiosWrapped(totalEpisodios: Int) {
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFFFF5722), Color(0xFF121212))))
-            .padding(32.dp),
+            .padding(CineListTokens.EspacoXL),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
             Text("Viciante em séries!", color = Color.White.copy(alpha = 0.85f), fontSize = 18.sp)
             Text(text = "$totalEpisodios", fontSize = 64.sp, fontWeight = FontWeight.Black, color = Color.White)
             Text(text = "episódios maratonados sem parar.", fontSize = 20.sp, color = Color.White.copy(alpha = 0.9f), textAlign = TextAlign.Center)
@@ -2727,15 +2725,15 @@ fun PaginaGenerosWrapped(genero: String, plataforma: String) {
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFFE91E63), Color(0xFF121212))))
-            .padding(32.dp),
+            .padding(CineListTokens.EspacoXL),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
             Text("Seu estilo principal", color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
             Text(text = genero, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(10.dp))
             Text("Sua plataforma favorita:", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
-            Text(text = plataforma, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), textAlign = TextAlign.Center)
+            Text(text = plataforma, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = CineListTokens.CorPremium, textAlign = TextAlign.Center)
         }
     }
 }
@@ -2746,24 +2744,24 @@ fun PaginaFinalWrapped(dadosWrapped: CineWrappedData, onCompartilhar: () -> Unit
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF00BFFF), Color(0xFF090A0B))))
-            .padding(32.dp),
+            .padding(CineListTokens.EspacoXL),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Destaque da Temporada 🌟", color = Color(0xFFFFD700), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
+            Text("Destaque da Temporada 🌟", color = CineListTokens.CorPremium, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(text = dadosWrapped.filmeOuSerieDestaque, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
             Text(text = "Média de Avaliação: ${dadosWrapped.mediaNotasAtribuidas} ★", fontSize = 15.sp, color = Color.LightGray)
-            Text(text = "Sua Maior Nota: ${"★".repeat(dadosWrapped.maiorNotaDada.coerceAtLeast(0))}", fontSize = 15.sp, color = Color(0xFFFFD700))
+            Text(text = "Sua Maior Nota: ${"★".repeat(dadosWrapped.maiorNotaDada.coerceAtLeast(0))}", fontSize = 15.sp, color = CineListTokens.CorPremium)
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 onClick = onCompartilhar,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorPremium),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = Color.Black)
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(CineListTokens.EspacoXS))
                 Text("Compartilhar Resumo", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
@@ -2788,54 +2786,16 @@ fun ItemMembroPresenca(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable { onMembroClique?.invoke() }
-            .padding(vertical = 4.dp, horizontal = 2.dp),
+            .padding(vertical = CineListTokens.EspacoXXS, horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
             modifier = Modifier.weight(1f, fill = false)
         ) {
-            Box(
-                modifier = Modifier.size(36.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                if (membro.fotoUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = membro.fotoUrl,
-                        contentDescription = "Foto de ${membro.nome}",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = membro.nome.take(1).uppercase(),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(if (estaOnline) Color(0xFF4CAF50) else Color.Gray)
-                        .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                )
-            }
+            AvatarComIniciais(fotoUrl = membro.fotoUrl, nome = membro.nome, tamanho = 36.dp, indicadorOnline = estaOnline)
 
             Column(modifier = Modifier.weight(1f, fill = false)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -2870,13 +2830,13 @@ fun ItemMembroPresenca(
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
-                            tint = Color(0xFF38BDF8),
+                            tint = CineListTokens.CorOnline,
                             modifier = Modifier.size(12.dp)
                         )
                         Text(
                             text = "${membro.assistindoAgoraTitulo} ${membro.assistindoAgoraEpisodio}".trim(),
                             fontSize = 11.sp,
-                            color = Color(0xFF38BDF8),
+                            color = CineListTokens.CorOnline,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -2886,13 +2846,13 @@ fun ItemMembroPresenca(
             }
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(CineListTokens.EspacoXS))
 
         if (!membro.estaAssistindoAlgo) {
             Text(
                 text = statusTexto,
                 fontSize = 11.sp,
-                color = if (estaOnline) Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary,
+                color = if (estaOnline) CineListTokens.CorSucesso else MaterialTheme.colorScheme.secondary,
                 fontWeight = if (estaOnline) FontWeight.Bold else FontWeight.Normal
             )
         }
@@ -2910,27 +2870,6 @@ fun configurarLembretes(context: Context, ativar: Boolean) {
         )
     } else {
         workManager.cancelUniqueWork("LembretesDiariosCineList")
-    }
-}
-
-@Composable
-fun ItemEstatistica(
-    titulo: String,
-    valor: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = valor, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
-            Text(text = titulo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
-        }
     }
 }
 
@@ -2960,7 +2899,7 @@ fun ItemNotificacao(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
@@ -2994,7 +2933,7 @@ fun ItemNotificacao(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
             Text(
                 text = dataFormatada,
                 fontSize = 11.sp,
@@ -3005,34 +2944,12 @@ fun ItemNotificacao(
 }
 
 @Composable
-fun CardEstatisticaDetalhada(
-    titulo: String,
-    valor: String,
-    subtexto: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(text = titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = valor, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = subtexto, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
 fun GraficoDistribuicaoNotas(dados: Map<Int, Int>, totalAvaliados: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         dados.forEach { (nota, quantidade) ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "$nota ★", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(30.dp))
@@ -3056,7 +2973,7 @@ fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
         dados.forEach { (genero, quantidade) ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = genero, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(90.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -3080,7 +2997,7 @@ fun ListaPlataformasMaisUtilizadas(dados: Map<String, Int>) {
         dados.forEach { (plataforma, quantidade) ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = plataforma, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(90.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -3124,36 +3041,11 @@ fun DialogoUsuariosBloqueados(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp),
+                        .padding(top = CineListTokens.EspacoXXS),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (alvo.fotoUrl.isNotBlank()) {
-                            AsyncImage(
-                                model = alvo.fotoUrl,
-                                contentDescription = "Foto de ${alvo.nome}",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = alvo.nome.take(1).uppercase(),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                    AvatarComIniciais(fotoUrl = alvo.fotoUrl, nome = alvo.nome, tamanho = 46.dp, corBorda = MaterialTheme.colorScheme.primary)
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -3212,9 +3104,9 @@ fun DialogoUsuariosBloqueados(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)
             ) {
-                Icon(imageVector = Icons.Default.Block, contentDescription = null, tint = Color(0xFFFF4C4C))
+                Icon(imageVector = Icons.Default.Block, contentDescription = null, tint = CineListTokens.CorErro)
                 Text("Usuários Bloqueados", fontWeight = FontWeight.Bold)
             }
         },
@@ -3224,14 +3116,14 @@ fun DialogoUsuariosBloqueados(
                     .fillMaxWidth()
                     .heightIn(max = 350.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
             ) {
                 if (bloqueados.isEmpty()) {
                     Text(
                         text = "Você não possui usuários bloqueados no momento.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(vertical = 12.dp)
+                        modifier = Modifier.padding(vertical = CineListTokens.EspacoS)
                     )
                 } else {
                     bloqueados.forEach { usuario ->
@@ -3244,45 +3136,16 @@ fun DialogoUsuariosBloqueados(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(10.dp),
+                                    .padding(CineListTokens.EspacoS),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer)
-                                            .border(
-                                                width = 2.dp,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                shape = CircleShape
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (usuario.fotoUrl.isNotBlank()) {
-                                            AsyncImage(
-                                                model = usuario.fotoUrl,
-                                                contentDescription = "Foto de ${usuario.nome}",
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .clip(CircleShape),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                        } else {
-                                            Text(
-                                                text = usuario.nome.take(1).uppercase(),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        }
-                                    }
+                                    AvatarComIniciais(fotoUrl = usuario.fotoUrl, nome = usuario.nome, tamanho = 48.dp, corBorda = MaterialTheme.colorScheme.primary)
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

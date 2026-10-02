@@ -17,6 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -42,10 +45,14 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
@@ -678,6 +685,9 @@ fun TelaPrincipal(
     var menuSalasExpandido by remember { mutableStateOf(false) }
 
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
+    // Fix #10 (histórico de busca) — só aparece com o campo em foco, some ao perder o foco
+    val interacaoCampoBusca = remember { MutableInteractionSource() }
+    val campoBuscaFocado by interacaoCampoBusca.collectIsFocusedAsState()
     var midiaParaExcluir by remember { mutableStateOf<Midia?>(null) }
     var midiaParaConcluir by remember { mutableStateOf<Midia?>(null) }
     var midiaParaRecusar by remember { mutableStateOf<Midia?>(null) }
@@ -741,7 +751,7 @@ fun TelaPrincipal(
                         midiaParaRecusar = null
                     }
                 ) {
-                    Text("Não, descartar", color = Color(0xFFFF4C4C))
+                    Text("Não, descartar", color = CineListTokens.CorErro)
                 }
             }
         )
@@ -758,7 +768,7 @@ fun TelaPrincipal(
                         midiaParaExcluir?.let { viewModel.deletar(it) }
                         midiaParaExcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
                 ) {
                     Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -798,7 +808,7 @@ fun TelaPrincipal(
                         }
                         midiaParaConcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
+                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else CineListTokens.CorConcluidoEscuro)
                 ) {
                     Text(acaoTexto, color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -824,7 +834,7 @@ fun TelaPrincipal(
                         }
                         colecaoParaExcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
                 ) {
                     Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -928,7 +938,7 @@ fun TelaPrincipal(
                                     onClick = { colecaoParaExcluir = col },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Excluir Coleção", tint = Color(0xFFFF5252))
+                                    Icon(Icons.Default.Delete, contentDescription = "Excluir Coleção", tint = CineListTokens.CorErro)
                                 }
                             }
                         }
@@ -978,13 +988,15 @@ fun TelaPrincipal(
                                 ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
                             }
                         ) {
-                            Text("Redefinir", color = Color(0xFFFF5252))
+                            Text("Redefinir", color = CineListTokens.CorErro)
                         }
                     }
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+                // Fix #6 — paleta padronizada: "primary" para filtros excludentes (categoria/status),
+                // "secondaryContainer" para filtros informativos (coleção/ordenação/plataforma)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -993,7 +1005,7 @@ fun TelaPrincipal(
                     ) {
                         Text("Coleção Temática:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         TextButton(onClick = { mostrarDialogoGerenciarColecoes = true }) {
-                            Text("Gerenciar / Excluir", fontSize = 11.sp, color = Color(0xFFFF5252))
+                            Text("Gerenciar / Excluir", fontSize = 11.sp, color = CineListTokens.CorErro)
                         }
                     }
                     FlowRowWithSpacing(items = colecoesDisponiveis) { col ->
@@ -1063,8 +1075,8 @@ fun TelaPrincipal(
                                 onClick = { filtroPlataforma = st },
                                 label = { Text(st, fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             )
                         }
@@ -1118,7 +1130,7 @@ fun TelaPrincipal(
                                 viewModel.selecionarOrdenacao("popularity.desc")
                             }
                         ) {
-                            Text("Redefinir Tudo", color = Color(0xFFFF5252))
+                            Text("Redefinir Tudo", color = CineListTokens.CorErro)
                         }
                     }
                 }
@@ -1149,8 +1161,8 @@ fun TelaPrincipal(
                             onClick = { viewModel.selecionarOrdenacao(chaveSort) },
                             label = { Text(rotulo, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         )
                     }
@@ -1164,8 +1176,8 @@ fun TelaPrincipal(
                             onClick = { viewModel.selecionarProvedorStreaming(id) },
                             label = { Text(nome, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         )
                     }
@@ -1207,11 +1219,30 @@ fun TelaPrincipal(
                 viewModel.limparBuscaApi()
             },
             title = {
-                Text(
-                    "Adicionar Nova Mídia",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
+                // Fix #7 — cabeçalho com ícone em destaque, no mesmo padrão do DialogoNovidadesAtualizacao
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Text(
+                        "Adicionar Nova Mídia",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             text = {
@@ -1419,13 +1450,15 @@ fun TelaPrincipal(
                         )
                     }
 
+                    // Fix #8 — itens do menu com Icon + Text alinhados, sem emoji cru no meio do texto
                     DropdownMenu(
                         expanded = menuSalasExpandido,
                         onDismissRequest = { menuSalasExpandido = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("👤 Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) },
+                            text = { Text("Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) },
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                             onClick = {
                                 viewModel.selecionarGrupoAtivo("")
                                 menuSalasExpandido = false
@@ -1439,8 +1472,9 @@ fun TelaPrincipal(
                                 DropdownMenuItem(
                                     text = {
                                         val nomeExibicao = grupo.nomeGrupo.ifBlank { "Sala Compartilhada" }
-                                        Text("🍿 $nomeExibicao", fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal)
+                                        Text(nomeExibicao, fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal)
                                     },
+                                    leadingIcon = { Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                     onClick = {
                                         viewModel.selecionarGrupoAtivo(grupo.grupoId)
                                         menuSalasExpandido = false
@@ -1451,7 +1485,8 @@ fun TelaPrincipal(
 
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                         DropdownMenuItem(
-                            text = { Text("⚙️ Gerenciar Salas / Criar Nova") },
+                            text = { Text("Gerenciar Salas / Criar Nova") },
+                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
                             onClick = {
                                 menuSalasExpandido = false
                                 mostrarDialogoGerenciarSalas = true
@@ -1460,16 +1495,23 @@ fun TelaPrincipal(
                     }
                 },
                 actions = {
+                    // Fix #4 — "Match" separado visualmente do grupo de ícones de ação
                     if (isModoCompartilhado) {
                         Button(
                             onClick = onAbrirMatch,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3366)),
+                            colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorMatch),
                             shape = RoundedCornerShape(20.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.height(34.dp)
                         ) {
                             Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        VerticalDivider(
+                            modifier = Modifier.height(20.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
                     }
 
                     IconButton(onClick = { mostrarDialogoSorteio = true }) {
@@ -1488,12 +1530,13 @@ fun TelaPrincipal(
             )
         },
         floatingActionButton = {
+            // Fix #3 — ícone "+" real em vez de Text("+")
             FloatingActionButton(
                 onClick = { mostrarDialogo = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Text("+", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Icon(imageVector = Icons.Default.Add, contentDescription = "Adicionar mídia")
             }
         }
     ) { paddingValues ->
@@ -1523,13 +1566,14 @@ fun TelaPrincipal(
                 )
             }
 
+            // Fix #2 — card "assistindo agora" usando tokens do tema, não mais cores fixas de tema escuro
             if (isModoCompartilhado && membroAssistindo != null && pagerState.currentPage == 0) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Row(
@@ -1541,24 +1585,24 @@ fun TelaPrincipal(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF38BDF8).copy(alpha = 0.2f)),
+                                .background(CineListTokens.CorOnline.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
-                                tint = Color(0xFF38BDF8),
+                                tint = CineListTokens.CorOnline,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF22C55E)))
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CineListTokens.CorSucesso))
                                 Text(
                                     text = "${membroAssistindo.nome} está assistindo agora:",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF94A3B8),
+                                    color = MaterialTheme.colorScheme.secondary,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -1566,7 +1610,7 @@ fun TelaPrincipal(
                             Text(
                                 text = "${membroAssistindo.assistindoAgoraTitulo} ${membroAssistindo.assistindoAgoraEpisodio}".trim(),
                                 fontSize = 14.sp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1576,17 +1620,28 @@ fun TelaPrincipal(
                 }
             }
 
+            // Fix #10 — busca com ícone de lupa e histórico que só aparece com o campo focado
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TextField(
                         value = textoPesquisa,
                         onValueChange = { textoPesquisa = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(Modifier),
+                        interactionSource = interacaoCampoBusca,
                         placeholder = {
                             Text(
                                 if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...",
                                 color = MaterialTheme.colorScheme.secondary,
                                 fontSize = 13.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
                             )
                         },
                         trailingIcon = {
@@ -1605,10 +1660,11 @@ fun TelaPrincipal(
                             unfocusedIndicatorColor = Color.Transparent
                         ),
                         singleLine = true,
-                        shape = RoundedCornerShape(if (textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
+                        shape = RoundedCornerShape(if (campoBuscaFocado && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
                     )
 
-                    if (textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
+                    // Só mostra o histórico quando o campo está com foco — não ocupa espaço fixo na tela
+                    if (campoBuscaFocado && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -1635,7 +1691,7 @@ fun TelaPrincipal(
                                         },
                                         contentPadding = PaddingValues(0.dp)
                                     ) {
-                                        Text("Limpar histórico", fontSize = 10.sp, color = Color(0xFFFF5252))
+                                        Text("Limpar histórico", fontSize = 10.sp, color = CineListTokens.CorErro)
                                     }
                                 }
 
@@ -1782,7 +1838,7 @@ fun TelaPrincipal(
                                             Icon(
                                                 imageVector = Icons.Default.Clear,
                                                 contentDescription = "Limpar Filtros",
-                                                tint = Color(0xFFFF5252),
+                                                tint = CineListTokens.CorErro,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
@@ -1816,8 +1872,18 @@ fun TelaPrincipal(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             if (listaFiltrada.isEmpty()) {
+                                // Fix #5 — empty state com ícone, no mesmo padrão do resto do app
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(text = "Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary)
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            imageVector = Icons.Default.SearchOff,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(text = "Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary)
+                                    }
                                 }
                             } else {
                                 if (modoListaMinhaLista) {
@@ -1915,7 +1981,7 @@ fun TelaPrincipal(
                                         Icon(
                                             imageVector = Icons.Default.Clear,
                                             contentDescription = "Limpar Filtros",
-                                            tint = Color(0xFFFF5252),
+                                            tint = CineListTokens.CorErro,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -2248,7 +2314,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFF25D366)
+                                contentColor = CineListTokens.CorWhatsapp
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
@@ -2320,7 +2386,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                                         }
                                                     }
                                                 ) {
-                                                    Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp)
+                                                    Text("Remover", color = CineListTokens.CorErro, fontSize = 11.sp)
                                                 }
                                             }
                                         }
@@ -2359,7 +2425,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                         Text("Código: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                                     }
                                     IconButton(onClick = { viewModel.excluirGrupoSalvo(grupo) }) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = Color(0xFFFF5252))
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = CineListTokens.CorErro)
                                     }
                                 }
                             }
@@ -2394,7 +2460,8 @@ fun DialogoGerenciarSalasCompartilhadas(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    // Fix #9 — "Gerar Código" é a ação principal (Outlined); "Copiar" é conveniência (TextButton)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
                             onClick = {
                                 val aleatorio = (1000..9999).random().toString()
@@ -2405,7 +2472,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                             Text("Gerar Código", fontSize = 12.sp)
                         }
                         if (codigoGrupoInput.isNotBlank()) {
-                            OutlinedButton(
+                            TextButton(
                                 onClick = {
                                     val codigoCompleto = "CINE-$codigoGrupoInput"
                                     val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
