@@ -21,6 +21,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -63,6 +64,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -111,7 +113,6 @@ fun agendarChecagemAtualizacaoSegundoPlano(context: Context) {
     )
 }
 
-// Fix #9 — backup automático e silencioso da lista pessoal para o Firestore, uma vez por semana
 fun agendarBackupAutomaticoSemanal(context: Context) {
     val restricoes = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -526,8 +527,6 @@ fun ConfiguracaoNavegacao() {
         composable("splash") {
             TelaSplashMp4(
                 onSplashConcluida = {
-                    // Fix #6 — onboarding aparece uma única vez, antes de login/home,
-                    // controlado pelo mesmo SharedPreferences "ConfiguracoesPerfil" já usado no app
                     val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
                     val onboardingConcluido = prefsOnboarding.getBoolean("onboarding_concluido", false)
 
@@ -590,13 +589,6 @@ fun ConfiguracaoNavegacao() {
                 listaDeMidias = listaDeMidiasReal,
                 viewModel = viewModel,
                 isModoCompartilhado = casalIdAtivo.isNotBlank(),
-                onItemClique = { midiaClicada ->
-                    val idNavegacao = if (midiaClicada.idTmdb != 0) midiaClicada.idTmdb else midiaClicada.id
-                    navController.navigate("detalhes/$idNavegacao/${midiaClicada.tipo}")
-                },
-                onTmdbItemClique = { itemTmdb, tipo ->
-                    navController.navigate("detalhes/${itemTmdb.idTmdb}/$tipo")
-                },
                 onAdicionarClique = { idTmdb, titulo, tipo, status, nota, sinopse, capa, genero, plataforma ->
                     val novaMidia = Midia(
                         idTmdb = idTmdb,
@@ -618,6 +610,13 @@ fun ConfiguracaoNavegacao() {
                         casalId = casalIdAtivo
                     )
                     viewModel.inserir(novaMidia)
+                },
+                onItemClique = { midiaClicada ->
+                    val idNavegacao = if (midiaClicada.idTmdb != 0) midiaClicada.idTmdb else midiaClicada.id
+                    navController.navigate("detalhes/$idNavegacao/${midiaClicada.tipo}")
+                },
+                onTmdbItemClique = { itemTmdb, tipo ->
+                    navController.navigate("detalhes/${itemTmdb.idTmdb}/$tipo")
                 },
                 onPerfilClique = { navController.navigate("perfil") },
                 onAbrirMatch = { navController.navigate("match") }
@@ -721,14 +720,15 @@ fun TelaPrincipal(
         pageCount = { 2 }
     )
 
+    // NOVO: Gerenciador de foco para o teclado e caixa de pesquisa
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    var searchFocused by remember { mutableStateOf(false) }
+
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
     val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
     var menuSalasExpandido by remember { mutableStateOf(false) }
 
     var textoPesquisa by rememberSaveable { mutableStateOf("") }
-    // Fix #10 (histórico de busca) — só aparece com o campo em foco, some ao perder o foco
-    val interacaoCampoBusca = remember { MutableInteractionSource() }
-    val campoBuscaFocado by interacaoCampoBusca.collectIsFocusedAsState()
     var midiaParaExcluir by remember { mutableStateOf<Midia?>(null) }
     var midiaParaConcluir by remember { mutableStateOf<Midia?>(null) }
     var midiaParaRecusar by remember { mutableStateOf<Midia?>(null) }
@@ -736,7 +736,7 @@ fun TelaPrincipal(
     var mostrarDialogoGerenciarSalas by remember { mutableStateOf(false) }
 
     var modoListaMinhaLista by rememberSaveable { mutableStateOf(false) }
-    var modoListaDescobrir by rememberSaveable { mutableStateOf(false) }
+    var modoVisualizacaoDescobrir by rememberSaveable { mutableIntStateOf(0) }
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
 
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
@@ -748,6 +748,7 @@ fun TelaPrincipal(
     LaunchedEffect(pagerState.currentPage) {
         textoPesquisa = ""
         viewModel.limparBuscaApi()
+        focusManager.clearFocus() // Limpa o foco ao mudar de aba
     }
 
     if (mostrarDialogoGerenciarSalas) {
@@ -792,7 +793,7 @@ fun TelaPrincipal(
                         midiaParaRecusar = null
                     }
                 ) {
-                    Text("Não, descartar", color = CineListTokens.CorErro)
+                    Text("Não, descartar", color = Color(0xFFFF4C4C))
                 }
             }
         )
@@ -809,7 +810,7 @@ fun TelaPrincipal(
                         midiaParaExcluir?.let { viewModel.deletar(it) }
                         midiaParaExcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
                 ) {
                     Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -849,7 +850,7 @@ fun TelaPrincipal(
                         }
                         midiaParaConcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else CineListTokens.CorConcluidoEscuro)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
                 ) {
                     Text(acaoTexto, color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -875,7 +876,7 @@ fun TelaPrincipal(
                         }
                         colecaoParaExcluir = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
                 ) {
                     Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -902,25 +903,14 @@ fun TelaPrincipal(
     var filtroStatusMinhaLista by rememberSaveable { mutableStateOf("Ativos") }
     var ordenacaoMinhaLista by rememberSaveable { mutableStateOf("Padrão (Assistindo primeiro)") }
 
-    var mostrarDialogo by remember { mutableStateOf(false) }
     var mostrarBottomSheetFiltrosDescobrir by remember { mutableStateOf(false) }
     var mostrarBottomSheetFiltrosMinhaLista by remember { mutableStateOf(false) }
     var mostrarDialogoGerenciarColecoes by remember { mutableStateOf(false) }
-
-    var novoTitulo by remember { mutableStateOf("") }
-    var novoTipo by remember { mutableStateOf("Filme") }
-    var novoStatus by remember { mutableStateOf("Quero Assistir") }
-    var novaNota by remember { mutableIntStateOf(0) }
-    var sinopseSelecionada by remember { mutableStateOf("Nenhuma sinopse adicionada ainda.") }
-    var capaSelecionada by remember { mutableStateOf("") }
-    var generoSelecionado by remember { mutableStateOf("Geral") }
-    var idTmdbSelecionado by remember { mutableIntStateOf(0) }
 
     val provedorSelecionadoId by viewModel.provedorSelecionadoId.collectAsState()
     val generoSelecionadoId by viewModel.generoSelecionadoId.collectAsState()
     val ordenacaoSelecionada by viewModel.ordenacaoSelecionada.collectAsState()
     val tipoPaginado by viewModel.tipoPaginado.collectAsState()
-    val provedoresStreamingApi by viewModel.provedoresStreaming.collectAsState()
     val resultadosPaginadosApi = viewModel.resultadosBuscaPaginadaApi.collectAsLazyPagingItems()
 
     val quantidadeFiltrosAtivosDescobrir = remember(tipoPaginado, provedorSelecionadoId, generoSelecionadoId, ordenacaoSelecionada) {
@@ -979,7 +969,7 @@ fun TelaPrincipal(
                                     onClick = { colecaoParaExcluir = col },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Excluir Coleção", tint = CineListTokens.CorErro)
+                                    Icon(Icons.Default.Delete, contentDescription = "Excluir Coleção", tint = Color(0xFFFF5252))
                                 }
                             }
                         }
@@ -1013,124 +1003,52 @@ fun TelaPrincipal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Filtros da Minha Lista",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("Filtros da Minha Lista", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosMinhaLista > 0) {
-                        TextButton(
-                            onClick = {
-                                categoriaSelecionada = "Todos"
-                                colecaoSelecionada = "Geral"
-                                filtroPlataforma = "Todas"
-                                filtroStatusMinhaLista = "Ativos"
-                                ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
-                            }
-                        ) {
-                            Text("Redefinir", color = CineListTokens.CorErro)
-                        }
+                        TextButton(onClick = {
+                            categoriaSelecionada = "Todos"
+                            colecaoSelecionada = "Geral"
+                            filtroPlataforma = "Todas"
+                            filtroStatusMinhaLista = "Ativos"
+                            ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
+                        }) { Text("Redefinir", color = Color(0xFFFF5252)) }
                     }
                 }
-
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                // Fix #6 — paleta padronizada: "primary" para filtros excludentes (categoria/status),
-                // "secondaryContainer" para filtros informativos (coleção/ordenação/plataforma)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Coleção Temática:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                        TextButton(onClick = { mostrarDialogoGerenciarColecoes = true }) {
-                            Text("Gerenciar / Excluir", fontSize = 11.sp, color = CineListTokens.CorErro)
-                        }
-                    }
+                    Text("Coleção Temática:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = colecoesDisponiveis) { col ->
-                        FilterChip(
-                            selected = (colecaoSelecionada == col),
-                            onClick = { colecaoSelecionada = col },
-                            label = { Text(col, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+                        FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col, fontSize = 12.sp) })
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = categoriasMinhaLista) { cat ->
-                        FilterChip(
-                            selected = (categoriaSelecionada == cat),
-                            onClick = { categoriaSelecionada = cat },
-                            label = { Text(cat, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
+                        FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat, fontSize = 12.sp) })
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Exibir Status:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s ->
-                        FilterChip(
-                            selected = (filtroStatusMinhaLista == s),
-                            onClick = { filtroStatusMinhaLista = s },
-                            label = { Text(s, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
+                        FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) })
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt ->
-                        FilterChip(
-                            selected = (ordenacaoMinhaLista == opt),
-                            onClick = { ordenacaoMinhaLista = opt },
-                            label = { Text(opt, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+                        FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt, fontSize = 12.sp) })
                     }
                 }
-
                 if (streamingsFiltro.size > 1) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Plataforma:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         FlowRowWithSpacing(items = streamingsFiltro) { st ->
-                            FilterChip(
-                                selected = (filtroPlataforma == st),
-                                onClick = { filtroPlataforma = st },
-                                label = { Text(st, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            )
+                            FilterChip(selected = (filtroPlataforma == st), onClick = { filtroPlataforma = st }, label = { Text(st, fontSize = 12.sp) })
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { mostrarBottomSheetFiltrosMinhaLista = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
+                Button(onClick = { mostrarBottomSheetFiltrosMinhaLista = false }, modifier = Modifier.fillMaxWidth()) {
                     Text("Aplicar Filtros", fontWeight = FontWeight.Bold)
                 }
             }
@@ -1156,307 +1074,52 @@ fun TelaPrincipal(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Filtros de Descoberta",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("Filtros de Descoberta", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosDescobrir > 0) {
-                        TextButton(
-                            onClick = {
-                                viewModel.selecionarTipo("Todos")
-                                viewModel.selecionarProvedorStreaming(null)
-                                viewModel.selecionarGenero(null)
-                                viewModel.selecionarOrdenacao("popularity.desc")
-                            }
-                        ) {
-                            Text("Redefinir Tudo", color = CineListTokens.CorErro)
-                        }
+                        TextButton(onClick = {
+                            viewModel.selecionarTipo("Todos")
+                            viewModel.selecionarProvedorStreaming(null)
+                            viewModel.selecionarGenero(null)
+                            viewModel.selecionarOrdenacao("popularity.desc")
+                        }) { Text("Redefinir Tudo", color = Color(0xFFFF5252)) }
                     }
                 }
-
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Tipo de Conteúdo:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = tiposDisponiveis) { tipo ->
-                        FilterChip(
-                            selected = (tipoPaginado == tipo),
-                            onClick = { viewModel.selecionarTipo(tipo) },
-                            label = { Text(tipo, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        )
+                        FilterChip(selected = (tipoPaginado == tipo), onClick = { viewModel.selecionarTipo(tipo) }, label = { Text(tipo, fontSize = 12.sp) })
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = opcoesOrdenacaoDescobrir.map { it.first }) { rotulo ->
                         val chaveSort = opcoesOrdenacaoDescobrir.first { it.first == rotulo }.second
-                        FilterChip(
-                            selected = (ordenacaoSelecionada == chaveSort),
-                            onClick = { viewModel.selecionarOrdenacao(chaveSort) },
-                            label = { Text(rotulo, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+                        FilterChip(selected = (ordenacaoSelecionada == chaveSort), onClick = { viewModel.selecionarOrdenacao(chaveSort) }, label = { Text(rotulo, fontSize = 12.sp) })
                     }
                 }
-
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Plataformas de Streaming:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = provedoresDisponiveis) { (nome, id) ->
-                        FilterChip(
-                            selected = (provedorSelecionadoId == id),
-                            onClick = { viewModel.selecionarProvedorStreaming(id) },
-                            label = { Text(nome, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+                        FilterChip(selected = (provedorSelecionadoId == id), onClick = { viewModel.selecionarProvedorStreaming(id) }, label = { Text(nome, fontSize = 12.sp) })
                     }
                 }
-
                 val listaGenerosExibir = if (tipoPaginado == "Série" || tipoPaginado == "Anime") generosSeries else generosFilmes
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Gêneros:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     FlowRowWithSpacing(items = listaGenerosExibir) { (nome, id) ->
-                        FilterChip(
-                            selected = (generoSelecionadoId == id),
-                            onClick = { viewModel.selecionarGenero(id) },
-                            label = { Text(nome, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+                        FilterChip(selected = (generoSelecionadoId == id), onClick = { viewModel.selecionarGenero(id) }, label = { Text(nome, fontSize = 12.sp) })
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { mostrarBottomSheetFiltrosDescobrir = false },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
+                Button(onClick = { mostrarBottomSheetFiltrosDescobrir = false }, modifier = Modifier.fillMaxWidth()) {
                     Text("Aplicar Filtros", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 
-    if (mostrarDialogo) {
-        AlertDialog(
-            onDismissRequest = {
-                mostrarDialogo = false
-                viewModel.limparBuscaApi()
-            },
-            title = {
-                // Fix #7 — cabeçalho com ícone em destaque, no mesmo padrão do DialogoNovidadesAtualizacao
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Text(
-                        "Adicionar Nova Mídia",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            text = {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedTextField(
-                        value = novoTitulo,
-                        onValueChange = {
-                            novoTitulo = it
-                            viewModel.atualizarQueryEFiltrarPaginado(it, novoTipo)
-                        },
-                        label = { Text("Título da Mídia") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        ),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (resultadosPaginadosApi.itemCount > 0) {
-                        Text(
-                            "Sugestões da Internet:",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp
-                        )
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 140.dp)
-                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
-                                .padding(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            items(resultadosPaginadosApi.itemCount) { index ->
-                                val item = resultadosPaginadosApi[index]
-                                item?.let {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                novoTitulo = it.titulo
-                                                idTmdbSelecionado = it.idTmdb
-                                                generoSelecionado = it.generoTexto
-                                                sinopseSelecionada = it.sinopse.ifBlank { "Nenhuma sinopse disponível." }
-                                                capaSelecionada = if (!it.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${it.caminhoPoster}" else ""
-                                                viewModel.buscarOndeAssistir(it.idTmdb, novoTipo)
-                                            }
-                                            .padding(6.dp)
-                                    ) {
-                                        Text(
-                                            text = it.titulo,
-                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                                            fontSize = 13.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Text("Tipo:", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf("Filme", "Série", "Anime", "Novela", "Dorama").forEach { t ->
-                            FilterChip(
-                                selected = (novoTipo == t),
-                                onClick = {
-                                    novoTipo = t
-                                    viewModel.atualizarQueryEFiltrarPaginado(novoTitulo, t)
-                                },
-                                label = { Text(t, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                        }
-                    }
-
-                    Text("Status:", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        listOf("Quero Assistir", "Assistindo", "Concluído").forEach { s ->
-                            FilterChip(
-                                selected = (novoStatus == s),
-                                onClick = { novoStatus = s },
-                                label = { Text(text = s, fontSize = 11.sp, maxLines = 1) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                        }
-                    }
-
-                    Text("Sua Avaliação (Estrelas):", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        (1..5).forEach { estrela ->
-                            val ativa = estrela <= novaNota
-                            IconButton(onClick = { novaNota = estrela }, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Nota $estrela",
-                                    tint = if (ativa) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (novoTitulo.isNotBlank()) {
-                            val ehSerie = novoTipo.equals("Série", ignoreCase = true) || novoTipo.equals("Anime", ignoreCase = true) || novoTipo.equals("Novela", ignoreCase = true) || novoTipo.equals("Dorama", ignoreCase = true)
-                            val streamingPrincipal = provedoresStreamingApi.firstOrNull()?.nomeProvedor ?: (if (ehSerie) "TV / Original" else "Cinema")
-                            onAdicionarClique(
-                                idTmdbSelecionado,
-                                novoTitulo.trim(),
-                                novoTipo,
-                                novoStatus,
-                                novaNota,
-                                sinopseSelecionada,
-                                capaSelecionada,
-                                generoSelecionado,
-                                streamingPrincipal
-                            )
-                            novoTitulo = ""
-                            novoStatus = "Quero Assistir"
-                            novaNota = 0
-                            idTmdbSelecionado = 0
-                            sinopseSelecionada = "Nenhuma sinopse adicionada ainda."
-                            capaSelecionada = ""
-                            generoSelecionado = "Geral"
-                            mostrarDialogo = false
-                            viewModel.limparBuscaApi()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Adicionar", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    mostrarDialogo = false
-                    viewModel.limparBuscaApi()
-                }) {
-                    Text("Cancelar", color = MaterialTheme.colorScheme.secondary)
-                }
-            }
-        )
-    }
-
-    val nomeListaAtiva = if (casalIdAtivo.isBlank()) {
-        "Minha Lista Pessoal"
-    } else {
-        gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
-    }
+    val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal"
+    else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -1476,12 +1139,7 @@ fun TelaPrincipal(
                                 fontSize = 20.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Trocar de Lista",
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Trocar de Lista", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
                         }
                         Text(
                             text = nomeListaAtiva,
@@ -1491,15 +1149,13 @@ fun TelaPrincipal(
                         )
                     }
 
-                    // Fix #8 — itens do menu com Icon + Text alinhados, sem emoji cru no meio do texto
                     DropdownMenu(
                         expanded = menuSalasExpandido,
                         onDismissRequest = { menuSalasExpandido = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) },
-                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                            text = { Text("👤 Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) },
                             onClick = {
                                 viewModel.selecionarGrupoAtivo("")
                                 menuSalasExpandido = false
@@ -1513,9 +1169,8 @@ fun TelaPrincipal(
                                 DropdownMenuItem(
                                     text = {
                                         val nomeExibicao = grupo.nomeGrupo.ifBlank { "Sala Compartilhada" }
-                                        Text(nomeExibicao, fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal)
+                                        Text("🍿 $nomeExibicao", fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal)
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                     onClick = {
                                         viewModel.selecionarGrupoAtivo(grupo.grupoId)
                                         menuSalasExpandido = false
@@ -1526,8 +1181,7 @@ fun TelaPrincipal(
 
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                         DropdownMenuItem(
-                            text = { Text("Gerenciar Salas / Criar Nova") },
-                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
+                            text = { Text("⚙️ Gerenciar Salas / Criar Nova") },
                             onClick = {
                                 menuSalasExpandido = false
                                 mostrarDialogoGerenciarSalas = true
@@ -1536,31 +1190,22 @@ fun TelaPrincipal(
                     }
                 },
                 actions = {
-                    // Fix #4 — "Match" separado visualmente do grupo de ícones de ação
                     if (isModoCompartilhado) {
                         Button(
                             onClick = onAbrirMatch,
-                            colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorMatch),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3366)),
                             shape = RoundedCornerShape(20.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.height(34.dp)
                         ) {
                             Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        VerticalDivider(
-                            modifier = Modifier.height(20.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
                     }
-
                     IconButton(onClick = { mostrarDialogoSorteio = true }) {
-                        Icon(imageVector = Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary)
                     }
-
                     IconButton(onClick = onPerfilClique) {
-                        Icon(imageVector = Icons.Default.Person, contentDescription = "Perfil")
+                        Icon(Icons.Default.Person, contentDescription = "Perfil")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1569,16 +1214,6 @@ fun TelaPrincipal(
                     actionIconContentColor = MaterialTheme.colorScheme.primary
                 )
             )
-        },
-        floatingActionButton = {
-            // Fix #3 — ícone "+" real em vez de Text("+")
-            FloatingActionButton(
-                onClick = { mostrarDialogo = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Adicionar mídia")
-            }
         }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -1590,31 +1225,26 @@ fun TelaPrincipal(
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(0)
-                        }
+                        focusManager.clearFocus()
+                        coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     },
                     text = { Text("Minha Lista", fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 1,
                     onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(1)
-                        }
+                        focusManager.clearFocus()
+                        coroutineScope.launch { pagerState.animateScrollToPage(1) }
                     },
                     text = { Text("Descobrir", fontWeight = FontWeight.Bold) }
                 )
             }
 
-            // Fix #2 — card "assistindo agora" usando tokens do tema, não mais cores fixas de tema escuro
             if (isModoCompartilhado && membroAssistindo != null && pagerState.currentPage == 0) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Row(
@@ -1623,45 +1253,23 @@ fun TelaPrincipal(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(CineListTokens.CorOnline.copy(alpha = 0.2f)),
+                            modifier = Modifier.size(42.dp).clip(CircleShape).background(Color(0xFF38BDF8).copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                tint = CineListTokens.CorOnline,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(24.dp))
                         }
-
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CineListTokens.CorSucesso))
-                                Text(
-                                    text = "${membroAssistindo.nome} está assistindo agora:",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF22C55E)))
+                                Text("${membroAssistindo.nome} está assistindo agora:", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Medium)
                             }
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${membroAssistindo.assistindoAgoraTitulo} ${membroAssistindo.assistindoAgoraEpisodio}".trim(),
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Text("${membroAssistindo.assistindoAgoraTitulo} ${membroAssistindo.assistindoAgoraEpisodio}".trim(), fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
             }
 
-            // Fix #10 — busca com ícone de lupa e histórico que só aparece com o campo focado
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TextField(
@@ -1669,8 +1277,7 @@ fun TelaPrincipal(
                         onValueChange = { textoPesquisa = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(Modifier),
-                        interactionSource = interacaoCampoBusca,
+                            .onFocusChanged { state -> searchFocused = state.isFocused },
                         placeholder = {
                             Text(
                                 if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...",
@@ -1678,18 +1285,12 @@ fun TelaPrincipal(
                                 fontSize = 13.sp
                             )
                         },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                        },
                         trailingIcon = {
                             if (textoPesquisa.isNotBlank()) {
-                                IconButton(onClick = { textoPesquisa = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary)
-                                }
+                                IconButton(onClick = {
+                                    textoPesquisa = ""
+                                    focusManager.clearFocus()
+                                }) { Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary) }
                             }
                         },
                         colors = TextFieldDefaults.colors(
@@ -1701,11 +1302,10 @@ fun TelaPrincipal(
                             unfocusedIndicatorColor = Color.Transparent
                         ),
                         singleLine = true,
-                        shape = RoundedCornerShape(if (campoBuscaFocado && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
+                        shape = RoundedCornerShape(if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
                     )
 
-                    // Só mostra o histórico quando o campo está com foco — não ocupa espaço fixo na tela
-                    if (campoBuscaFocado && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
+                    if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -1719,43 +1319,31 @@ fun TelaPrincipal(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "Pesquisas Recentes",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Text("Pesquisas Recentes", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                     TextButton(
                                         onClick = {
                                             historicoManager.limparHistorico()
                                             historicoBuscas = emptyList()
+                                            focusManager.clearFocus()
                                         },
                                         contentPadding = PaddingValues(0.dp)
-                                    ) {
-                                        Text("Limpar histórico", fontSize = 10.sp, color = CineListTokens.CorErro)
-                                    }
+                                    ) { Text("Limpar histórico", fontSize = 10.sp, color = Color(0xFFFF5252)) }
                                 }
 
                                 historicoBuscas.forEach { termo ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { textoPesquisa = termo }
+                                            .clickable {
+                                                textoPesquisa = termo
+                                                focusManager.clearFocus()
+                                            }
                                             .padding(horizontal = 12.dp, vertical = 8.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.History,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.secondary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Text(
-                                            text = termo,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                        Text(termo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -1769,65 +1357,53 @@ fun TelaPrincipal(
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 if (pagina == 0) {
-                    // Fix #8 — evita recalcular filtro+ordenação em toda recomposição da tela;
-                    // só reprocessa quando algum dos filtros ou a lista de origem realmente mudam
-                    val listaFiltrada = remember(
-                        listaDeMidias,
-                        textoPesquisa,
-                        categoriaSelecionada,
-                        colecaoSelecionada,
-                        filtroPlataforma,
-                        filtroStatusMinhaLista,
-                        ordenacaoMinhaLista
-                    ) {
-                        listaDeMidias.filter { midia ->
-                            val termoBusca = textoPesquisa.trim()
-                            val bateTexto = termoBusca.isBlank() ||
-                                    midia.titulo.contains(termoBusca, ignoreCase = true) ||
-                                    midia.genero.contains(termoBusca, ignoreCase = true) ||
-                                    midia.plataforma.contains(termoBusca, ignoreCase = true)
+                    val listaFiltrada = listaDeMidias.filter { midia ->
+                        val termoBusca = textoPesquisa.trim()
+                        val bateTexto = termoBusca.isBlank() ||
+                                midia.titulo.contains(termoBusca, ignoreCase = true) ||
+                                midia.genero.contains(termoBusca, ignoreCase = true) ||
+                                midia.plataforma.contains(termoBusca, ignoreCase = true)
 
-                            val bateCategoria = if (categoriaSelecionada == "Todos") true else {
-                                val tipoMapeado = when (categoriaSelecionada) {
-                                    "Filmes" -> "Filme"
-                                    "Séries" -> "Série"
-                                    "Animes" -> "Anime"
-                                    "Novelas" -> "Novela"
-                                    "Doramas" -> "Dorama"
-                                    else -> ""
-                                }
-                                midia.tipo.equals(tipoMapeado, ignoreCase = true)
+                        val bateCategoria = if (categoriaSelecionada == "Todos") true else {
+                            val tipoMapeado = when (categoriaSelecionada) {
+                                "Filmes" -> "Filme"
+                                "Séries" -> "Série"
+                                "Animes" -> "Anime"
+                                "Novelas" -> "Novela"
+                                "Doramas" -> "Dorama"
+                                else -> ""
                             }
+                            midia.tipo.equals(tipoMapeado, ignoreCase = true)
+                        }
 
-                            val bateColecao = if (colecaoSelecionada == "Geral") true else {
-                                midia.listaCustomizada.equals(colecaoSelecionada, ignoreCase = true)
-                            }
+                        val bateColecao = if (colecaoSelecionada == "Geral") true else {
+                            midia.listaCustomizada.equals(colecaoSelecionada, ignoreCase = true)
+                        }
 
-                            val batePlataforma = if (filtroPlataforma == "Todas") true else {
-                                midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
-                            }
+                        val batePlataforma = if (filtroPlataforma == "Todas") true else {
+                            midia.plataforma.contains(filtroPlataforma, ignoreCase = true)
+                        }
 
-                            val bateStatus = when (filtroStatusMinhaLista) {
-                                "Ativos" -> !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
-                                "Favoritos" -> midia.favorito
-                                "Quero Assistir" -> midia.status.equals("Quero Assistir", ignoreCase = true)
-                                "Assistindo" -> midia.status.equals("Assistindo", ignoreCase = true)
-                                "Concluído" -> midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)
-                                else -> true
-                            }
+                        val bateStatus = when (filtroStatusMinhaLista) {
+                            "Ativos" -> !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
+                            "Favoritos" -> midia.favorito
+                            "Quero Assistir" -> midia.status.equals("Quero Assistir", ignoreCase = true)
+                            "Assistindo" -> midia.status.equals("Assistindo", ignoreCase = true)
+                            "Concluído" -> midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)
+                            else -> true
+                        }
 
-                            bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
-                        }.let { lista ->
-                            when (ordenacaoMinhaLista) {
-                                "Favoritos Primeiro" -> lista.sortedWith(
-                                    compareByDescending<Midia> { it.favorito }
-                                        .thenByDescending { it.status.equals("Assistindo", ignoreCase = true) }
-                                )
-                                "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
-                                "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
-                                "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
-                                else -> lista.sortedByDescending { it.status.equals("Assistindo", ignoreCase = true) }
-                            }
+                        bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
+                    }.let { lista ->
+                        when (ordenacaoMinhaLista) {
+                            "Favoritos Primeiro" -> lista.sortedWith(
+                                compareByDescending<Midia> { it.favorito }
+                                    .thenByDescending { it.status.equals("Assistindo", ignoreCase = true) }
+                            )
+                            "Melhor Avaliados" -> lista.sortedByDescending { it.nota }
+                            "Ordem Alfabética (A-Z)" -> lista.sortedBy { it.titulo.lowercase() }
+                            "Adicionados Recentemente" -> lista.sortedByDescending { it.id }
+                            else -> lista.sortedByDescending { it.status.equals("Assistindo", ignoreCase = true) }
                         }
                     }
 
@@ -1838,6 +1414,7 @@ fun TelaPrincipal(
                         onRefresh = {
                             coroutineScope.launch {
                                 isRefreshing = true
+                                focusManager.clearFocus()
                                 viewModel.forcarSincronizacaoManual()
                                 delay(800)
                                 isRefreshing = false
@@ -1847,39 +1424,25 @@ fun TelaPrincipal(
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "${listaFiltrada.size} título(s) exibido(s)",
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Text("${listaFiltrada.size} título(s) exibido(s)", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
 
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(
-                                        onClick = { modoListaMinhaLista = !modoListaMinhaLista },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (modoListaMinhaLista) Icons.Default.GridView else Icons.Default.ViewList,
-                                            contentDescription = "Alternar Visualização",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                    IconButton(onClick = { modoListaMinhaLista = !modoListaMinhaLista }, modifier = Modifier.size(32.dp)) {
+                                        Icon(if (modoListaMinhaLista) Icons.Default.GridView else Icons.Default.ViewList, "Alternar Visualização", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                     }
 
                                     if (quantidadeFiltrosAtivosMinhaLista > 0 || textoPesquisa.isNotBlank()) {
                                         IconButton(
                                             onClick = {
                                                 textoPesquisa = ""
+                                                focusManager.clearFocus()
                                                 categoriaSelecionada = "Todos"
                                                 colecaoSelecionada = "Geral"
                                                 filtroPlataforma = "Todas"
@@ -1887,37 +1450,17 @@ fun TelaPrincipal(
                                                 ordenacaoMinhaLista = "Padrão (Assistindo primeiro)"
                                             },
                                             modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = "Limpar Filtros",
-                                                tint = CineListTokens.CorErro,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
+                                        ) { Icon(Icons.Default.Clear, "Limpar Filtros", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) }
                                     }
 
                                     AssistChip(
-                                        onClick = { mostrarBottomSheetFiltrosMinhaLista = true },
-                                        label = {
-                                            Text(
-                                                text = if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                        onClick = {
+                                            focusManager.clearFocus()
+                                            mostrarBottomSheetFiltrosMinhaLista = true
                                         },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.FilterList,
-                                                contentDescription = "Filtros",
-                                                tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        },
-                                        colors = AssistChipDefaults.assistChipColors(
-                                            containerColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                            labelColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                                        )
+                                        label = { Text(if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                        leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) },
+                                        colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
                                     )
                                 }
                             }
@@ -1925,18 +1468,8 @@ fun TelaPrincipal(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             if (listaFiltrada.isEmpty()) {
-                                // Fix #5 — empty state com ícone, no mesmo padrão do resto do app
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = Icons.Default.SearchOff,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(48.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(text = "Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary)
-                                    }
+                                    Text("Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary)
                                 }
                             } else {
                                 if (modoListaMinhaLista) {
@@ -1948,7 +1481,10 @@ fun TelaPrincipal(
                                         items(listaFiltrada, key = { it.id }) { mi ->
                                             ItemMidiaCard(
                                                 midia = mi,
-                                                onClick = { onItemClique(mi) },
+                                                onClick = {
+                                                    focusManager.clearFocus()
+                                                    onItemClique(mi)
+                                                },
                                                 onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) },
                                                 onDeletar = { midiaParaExcluir = mi },
                                                 onAlternarStatusConcluido = { midiaParaConcluir = mi },
@@ -1956,9 +1492,7 @@ fun TelaPrincipal(
                                                 modoListaHorizontal = true,
                                                 onAceitarPendente = { viewModel.aceitarMidiaPendente(mi) },
                                                 onRecusarPendente = { viewModel.recusarMidiaPendente(mi) },
-                                                onProcessarRecusado = { querListaPessoal ->
-                                                    viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal)
-                                                }
+                                                onProcessarRecusado = { querListaPessoal -> viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal) }
                                             )
                                         }
                                     }
@@ -1971,7 +1505,10 @@ fun TelaPrincipal(
                                         items(listaFiltrada, key = { it.id }) { mi ->
                                             ItemMidiaCard(
                                                 midia = mi,
-                                                onClick = { onItemClique(mi) },
+                                                onClick = {
+                                                    focusManager.clearFocus()
+                                                    onItemClique(mi)
+                                                },
                                                 onIncrementarEpisodio = { viewModel.incrementarEpisodioRapido(mi) },
                                                 onDeletar = { midiaParaExcluir = mi },
                                                 onAlternarStatusConcluido = { midiaParaConcluir = mi },
@@ -1979,9 +1516,7 @@ fun TelaPrincipal(
                                                 modoListaHorizontal = false,
                                                 onAceitarPendente = { viewModel.aceitarMidiaPendente(mi) },
                                                 onRecusarPendente = { viewModel.recusarMidiaPendente(mi) },
-                                                onProcessarRecusado = { querListaPessoal ->
-                                                    viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal)
-                                                }
+                                                onProcessarRecusado = { querListaPessoal -> viewModel.processarMidiaRecusadaPeloParceiro(mi, querListaPessoal) }
                                             )
                                         }
                                     }
@@ -1991,10 +1526,16 @@ fun TelaPrincipal(
                     }
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
+
+                        // Se o utilizador pesquisar ou usar um filtro, forçamos a saída do Modo Netflix para o Modo Grid
+                        LaunchedEffect(textoPesquisa, quantidadeFiltrosAtivosDescobrir) {
+                            if ((textoPesquisa.isNotBlank() || quantidadeFiltrosAtivosDescobrir > 0) && modoVisualizacaoDescobrir == 0) {
+                                modoVisualizacaoDescobrir = 1
+                            }
+                        }
+
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -2010,15 +1551,18 @@ fun TelaPrincipal(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 IconButton(
-                                    onClick = { modoListaDescobrir = !modoListaDescobrir },
+                                    onClick = {
+                                        // Cicla entre os 3 modos: Netflix -> Grid -> Lista
+                                        modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3
+                                    },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = if (modoListaDescobrir) Icons.Default.GridView else Icons.Default.ViewList,
-                                        contentDescription = "Alternar Visualização",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    val iconView = when (modoVisualizacaoDescobrir) {
+                                        0 -> Icons.Default.AutoAwesome // Netflix
+                                        1 -> Icons.Default.GridView // Grid
+                                        else -> Icons.Default.ViewList // Lista
+                                    }
+                                    Icon(iconView, "Alternar Visualização", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 }
 
                                 if (quantidadeFiltrosAtivosDescobrir > 0) {
@@ -2030,111 +1574,96 @@ fun TelaPrincipal(
                                             viewModel.selecionarOrdenacao("popularity.desc")
                                         },
                                         modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Clear,
-                                            contentDescription = "Limpar Filtros",
-                                            tint = CineListTokens.CorErro,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
+                                    ) { Icon(Icons.Default.Clear, "Limpar Filtros", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) }
                                 }
 
                                 AssistChip(
-                                    onClick = { mostrarBottomSheetFiltrosDescobrir = true },
-                                    label = {
-                                        Text(
-                                            text = if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                    onClick = {
+                                        focusManager.clearFocus()
+                                        mostrarBottomSheetFiltrosDescobrir = true
                                     },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.FilterList,
-                                            contentDescription = "Filtros",
-                                            tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                                        labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                                    )
+                                    label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                                    leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) },
+                                    colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
                                 )
                             }
                         }
 
-                        // Fix #3 e #4 — estados de carregamento inicial (shimmer) e de erro/offline
-                        // tratados separadamente do "sem resultados", em vez de tela em branco
-                        val estadoCargaInicial = resultadosPaginadosApi.loadState.refresh
+                        val mostrarLayoutNetflix = modoVisualizacaoDescobrir == 0 && textoPesquisa.isBlank() && quantidadeFiltrosAtivosDescobrir == 0
+                        val modoListaDescobrir = modoVisualizacaoDescobrir == 2
 
-                        when {
-                            estadoCargaInicial is LoadState.Loading && resultadosPaginadosApi.itemCount == 0 -> {
-                                if (modoListaDescobrir) {
-                                    LazyColumn(
-                                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                                        contentPadding = PaddingValues(bottom = 16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(6) { CardMidiaEsqueleto(modoListaHorizontal = true) }
-                                    }
-                                } else {
-                                    LazyVerticalGrid(
-                                        columns = GridCells.Fixed(2),
-                                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                                        contentPadding = PaddingValues(bottom = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(6) { CardMidiaEsqueleto(modoListaHorizontal = false) }
-                                    }
-                                }
-                            }
+                        if (mostrarLayoutNetflix) {
+                            val carrosselPopulares by viewModel.carrosselPopulares.collectAsState()
+                            val carrosselSeriesAlta by viewModel.carrosselSeriesAlta.collectAsState()
+                            val carrosselComedias by viewModel.carrosselComedias.collectAsState()
+                            val carrosselAcao by viewModel.carrosselAcao.collectAsState()
+                            val carregandoCarrosseis by viewModel.carregandoCarrosseis.collectAsState()
 
-                            estadoCargaInicial is LoadState.Error && resultadosPaginadosApi.itemCount == 0 -> {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = Icons.Default.SearchOff,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(48.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Não foi possível carregar.\nVerifique sua conexão com a internet.",
-                                            color = MaterialTheme.colorScheme.secondary,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                            fontSize = 13.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Button(
-                                            onClick = { resultadosPaginadosApi.retry() },
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                        ) {
-                                            Text("Tentar novamente", fontWeight = FontWeight.Bold)
+                            if (carregandoCarrosseis && carrosselPopulares.isEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(3) {
+                                        Column {
+                                            Box(modifier = Modifier.padding(16.dp).width(150.dp).height(20.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)))
+                                            LazyRow(
+                                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                items(3) {
+                                                    Box(modifier = Modifier.width(140.dp)) { ItemMidiaCardSkeleton() }
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
-
-                            resultadosPaginadosApi.itemCount == 0 -> {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = Icons.Default.SearchOff,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(48.dp)
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(bottom = 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                                ) {
+                                    item {
+                                        CarrosselSessao(
+                                            titulo = "🎬 Filmes Populares",
+                                            listaTmdb = carrosselPopulares,
+                                            listaDeMidiasLocal = listaDeMidias,
+                                            onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) },
+                                            onAdicionarClique = onAdicionarClique
                                         )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(text = "Nenhum resultado encontrado.", color = MaterialTheme.colorScheme.secondary)
+                                    }
+                                    item {
+                                        CarrosselSessao(
+                                            titulo = "🔥 Séries em Alta",
+                                            listaTmdb = carrosselSeriesAlta,
+                                            listaDeMidiasLocal = listaDeMidias,
+                                            onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) },
+                                            onAdicionarClique = onAdicionarClique
+                                        )
+                                    }
+                                    item {
+                                        CarrosselSessao(
+                                            titulo = "😂 Top Comédias",
+                                            listaTmdb = carrosselComedias,
+                                            listaDeMidiasLocal = listaDeMidias,
+                                            onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) },
+                                            onAdicionarClique = onAdicionarClique
+                                        )
+                                    }
+                                    item {
+                                        CarrosselSessao(
+                                            titulo = "💥 Adrenalina Pura",
+                                            listaTmdb = carrosselAcao,
+                                            listaDeMidiasLocal = listaDeMidias,
+                                            onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) },
+                                            onAdicionarClique = onAdicionarClique
+                                        )
                                     }
                                 }
                             }
-
-                            modoListaDescobrir -> {
+                        } else {
+                            if (modoListaDescobrir) {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
                                     contentPadding = PaddingValues(bottom = 16.dp),
@@ -2144,11 +1673,7 @@ fun TelaPrincipal(
                                         count = resultadosPaginadosApi.itemCount,
                                         key = { index ->
                                             val item = resultadosPaginadosApi.peek(index)
-                                            if (item != null) {
-                                                "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
-                                            } else {
-                                                index
-                                            }
+                                            if (item != null) "${item.mediaType ?: "midia"}_${item.idTmdb}_$index" else index
                                         },
                                         contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
                                     ) { index ->
@@ -2162,11 +1687,8 @@ fun TelaPrincipal(
                                                 else -> "Filme"
                                             }
 
-                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
-                                                item.plataformaDetectada
-                                            } else {
-                                                if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
-                                            }
+                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) item.plataformaDetectada
+                                            else if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
 
                                             val midiaItem = Midia(
                                                 idTmdb = item.idTmdb,
@@ -2186,19 +1708,16 @@ fun TelaPrincipal(
 
                                             ItemMidiaCard(
                                                 midia = midiaItem,
-                                                onClick = { onTmdbItemClique(item, tipoReal) },
+                                                onClick = {
+                                                    focusManager.clearFocus()
+                                                    onTmdbItemClique(item, tipoReal)
+                                                },
                                                 jaAdicionado = jaNaLista,
                                                 onAdicionarRapido = {
                                                     onAdicionarClique(
-                                                        item.idTmdb,
-                                                        item.titulo,
-                                                        tipoReal,
-                                                        "Quero Assistir",
-                                                        0,
-                                                        item.sinopse,
+                                                        item.idTmdb, item.titulo, tipoReal, "Quero Assistir", 0, item.sinopse,
                                                         if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                                        item.generoTexto,
-                                                        plataformaFinal
+                                                        item.generoTexto, plataformaFinal
                                                     )
                                                 },
                                                 modoListaHorizontal = true
@@ -2209,29 +1728,20 @@ fun TelaPrincipal(
                                     when (val appendState = resultadosPaginadosApi.loadState.append) {
                                         is LoadState.Loading -> {
                                             item {
-                                                Box(
-                                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
+                                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                                                     CircularProgressIndicator(modifier = Modifier.size(28.dp))
                                                 }
                                             }
                                         }
                                         is LoadState.Error -> {
                                             item {
-                                                Text(
-                                                    text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
-                                                    color = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.padding(16.dp)
-                                                )
+                                                Text("Erro ao carregar mais itens: ${appendState.error.localizedMessage}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
                                             }
                                         }
                                         else -> Unit
                                     }
                                 }
-                            }
-
-                            else -> {
+                            } else {
                                 LazyVerticalGrid(
                                     columns = GridCells.Fixed(2),
                                     modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
@@ -2241,11 +1751,7 @@ fun TelaPrincipal(
                                         count = resultadosPaginadosApi.itemCount,
                                         key = { index ->
                                             val item = resultadosPaginadosApi.peek(index)
-                                            if (item != null) {
-                                                "${item.mediaType ?: "midia"}_${item.idTmdb}_$index"
-                                            } else {
-                                                index
-                                            }
+                                            if (item != null) "${item.mediaType ?: "midia"}_${item.idTmdb}_$index" else index
                                         },
                                         contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }
                                     ) { index ->
@@ -2259,11 +1765,8 @@ fun TelaPrincipal(
                                                 else -> "Filme"
                                             }
 
-                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) {
-                                                item.plataformaDetectada
-                                            } else {
-                                                if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
-                                            }
+                                            val plataformaFinal = if (item.plataformaDetectada.isNotBlank()) item.plataformaDetectada
+                                            else if (tipoReal.equals("Filme", ignoreCase = true)) "Cinema" else "TV / Original"
 
                                             val midiaItem = Midia(
                                                 idTmdb = item.idTmdb,
@@ -2283,19 +1786,16 @@ fun TelaPrincipal(
 
                                             ItemMidiaCard(
                                                 midia = midiaItem,
-                                                onClick = { onTmdbItemClique(item, tipoReal) },
+                                                onClick = {
+                                                    focusManager.clearFocus()
+                                                    onTmdbItemClique(item, tipoReal)
+                                                },
                                                 jaAdicionado = jaNaLista,
                                                 onAdicionarRapido = {
                                                     onAdicionarClique(
-                                                        item.idTmdb,
-                                                        item.titulo,
-                                                        tipoReal,
-                                                        "Quero Assistir",
-                                                        0,
-                                                        item.sinopse,
+                                                        item.idTmdb, item.titulo, tipoReal, "Quero Assistir", 0, item.sinopse,
                                                         if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
-                                                        item.generoTexto,
-                                                        plataformaFinal
+                                                        item.generoTexto, plataformaFinal
                                                     )
                                                 },
                                                 modoListaHorizontal = false
@@ -2306,21 +1806,14 @@ fun TelaPrincipal(
                                     when (val appendState = resultadosPaginadosApi.loadState.append) {
                                         is LoadState.Loading -> {
                                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                                Box(
-                                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
+                                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                                                     CircularProgressIndicator(modifier = Modifier.size(28.dp))
                                                 }
                                             }
                                         }
                                         is LoadState.Error -> {
                                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                                Text(
-                                                    text = "Erro ao carregar mais itens: ${appendState.error.localizedMessage}",
-                                                    color = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.padding(16.dp)
-                                                )
+                                                Text("Erro ao carregar mais itens: ${appendState.error.localizedMessage}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
                                             }
                                         }
                                         else -> Unit
@@ -2329,6 +1822,69 @@ fun TelaPrincipal(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CarrosselSessao(
+    titulo: String,
+    listaTmdb: List<TmdbFilme>,
+    listaDeMidiasLocal: List<Midia>,
+    onTmdbItemClique: (TmdbFilme, String) -> Unit,
+    onAdicionarClique: (Int, String, String, String, Int, String, String, String, String) -> Unit
+) {
+    if (listaTmdb.isEmpty()) return
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = titulo,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(listaTmdb, key = { it.idTmdb }) { item ->
+                val tipoReal = if (item.mediaType.equals("tv", ignoreCase = true) || item.ehSerie) "Série" else "Filme"
+                val plataformaFinal = item.plataformaDetectada.ifBlank { if (tipoReal == "Série") "TV / Original" else "Cinema" }
+
+                val midiaItem = Midia(
+                    idTmdb = item.idTmdb,
+                    titulo = item.titulo,
+                    tipo = tipoReal,
+                    status = "Descobrir",
+                    nota = 0,
+                    sinopse = item.sinopse,
+                    imagemCapa = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                    genero = item.generoTexto,
+                    plataforma = plataformaFinal,
+                    favorito = false,
+                    listaCustomizada = "Geral"
+                )
+
+                val jaNaLista = listaDeMidiasLocal.any { it.idTmdb != 0 && it.idTmdb == item.idTmdb }
+
+                Box(modifier = Modifier.width(140.dp)) {
+                    ItemMidiaCard(
+                        midia = midiaItem,
+                        onClick = { onTmdbItemClique(item, tipoReal) },
+                        jaAdicionado = jaNaLista,
+                        onAdicionarRapido = {
+                            onAdicionarClique(
+                                item.idTmdb, item.titulo, tipoReal, "Quero Assistir", 0, item.sinopse,
+                                if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else "",
+                                item.generoTexto, plataformaFinal
+                            )
+                        },
+                        modoListaHorizontal = false
+                    )
                 }
             }
         }
@@ -2371,7 +1927,7 @@ fun DialogoGerenciarSalasCompartilhadas(
     var senhaGrupoInput by remember { mutableStateOf("") }
     var novaSenhaInput by remember { mutableStateOf("") }
     var tipoGrupoSelecionado by remember { mutableStateOf("Casal") }
-    var abaModoCriarEntrar by remember { mutableStateOf(0) }
+    var abaModoCriarEntrar by remember { mutableIntStateOf(0) }
     var mensagemErro by remember { mutableStateOf<String?>(null) }
     var carregando by remember { mutableStateOf(false) }
 
@@ -2439,7 +1995,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = CineListTokens.CorWhatsapp
+                                contentColor = Color(0xFF25D366)
                             ),
                             shape = RoundedCornerShape(10.dp)
                         ) {
@@ -2511,7 +2067,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                                         }
                                                     }
                                                 ) {
-                                                    Text("Remover", color = CineListTokens.CorErro, fontSize = 11.sp)
+                                                    Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp)
                                                 }
                                             }
                                         }
@@ -2550,7 +2106,7 @@ fun DialogoGerenciarSalasCompartilhadas(
                                         Text("Código: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                                     }
                                     IconButton(onClick = { viewModel.excluirGrupoSalvo(grupo) }) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = CineListTokens.CorErro)
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = Color(0xFFFF4C4C))
                                     }
                                 }
                             }
@@ -2696,6 +2252,7 @@ fun DialogoGerenciarSalasCompartilhadas(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun <T> FlowRowWithSpacing(
     items: List<T>,

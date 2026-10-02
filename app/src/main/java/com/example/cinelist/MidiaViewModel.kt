@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.async
 
 data class CineWrappedData(
     val totalTitulosConcluidos: Int,
@@ -81,13 +82,65 @@ class MidiaViewModel @Inject constructor(
     private val _filmesEmCartaz = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val filmesEmCartaz: StateFlow<List<TmdbFilme>> = _filmesEmCartaz
 
+    // 🍿 ESTADOS PARA OS CARROSSÉIS DO DESCOBRIR (Estilo Netflix)
+    private val _carrosselPopulares = MutableStateFlow<List<TmdbFilme>>(emptyList())
+    val carrosselPopulares: StateFlow<List<TmdbFilme>> = _carrosselPopulares
+
+    private val _carrosselSeriesAlta = MutableStateFlow<List<TmdbFilme>>(emptyList())
+    val carrosselSeriesAlta: StateFlow<List<TmdbFilme>> = _carrosselSeriesAlta
+
+    private val _carrosselComedias = MutableStateFlow<List<TmdbFilme>>(emptyList())
+    val carrosselComedias: StateFlow<List<TmdbFilme>> = _carrosselComedias
+
+    private val _carrosselAcao = MutableStateFlow<List<TmdbFilme>>(emptyList())
+    val carrosselAcao: StateFlow<List<TmdbFilme>> = _carrosselAcao
+
+    private val _carregandoCarrosseis = MutableStateFlow(false)
+    val carregandoCarrosseis: StateFlow<Boolean> = _carregandoCarrosseis
+
     init {
         carregarGrupoAtivoInicial()
         verificarAtualizacaoSilenciosa()
         iniciarSincronizacaoSilenciosaNuvem()
         carregarMaisPopularesMatch()
         carregarFilmesEmCartaz()
+        carregarCarrosseisDescobrir() // Carrega as linhas estilo Netflix
         monitorarExpulsaoDaSala()
+    }
+
+    fun carregarCarrosseisDescobrir() {
+        if (_carrosselPopulares.value.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _carregandoCarrosseis.value = true
+            try {
+                // Usamos coroutineScope e async para baixar 3 páginas de uma vez (60 filmes/séries por linha) de forma ultra-rápida
+                kotlinx.coroutines.coroutineScope {
+                    val pop1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = null) }
+                    val pop2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = null) }
+                    val pop3 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 3, sortBy = "popularity.desc", provedores = null, generos = null) }
+
+                    val ser1 = async { RetrofitClient.apiService.descobrirSeries(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = null) }
+                    val ser2 = async { RetrofitClient.apiService.descobrirSeries(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = null) }
+                    val ser3 = async { RetrofitClient.apiService.descobrirSeries(pagina = 3, sortBy = "popularity.desc", provedores = null, generos = null) }
+
+                    val com1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = "35") }
+                    val com2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = "35") }
+
+                    val acao1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = "28") }
+                    val acao2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = "28") }
+
+                    _carrosselPopulares.value = (pop1.await().resultados + pop2.await().resultados + pop3.await().resultados).map { it.copy(mediaType = "movie") }
+                    _carrosselSeriesAlta.value = (ser1.await().resultados + ser2.await().resultados + ser3.await().resultados).map { it.copy(mediaType = "tv") }
+                    _carrosselComedias.value = (com1.await().resultados + com2.await().resultados).map { it.copy(mediaType = "movie") }
+                    _carrosselAcao.value = (acao1.await().resultados + acao2.await().resultados).map { it.copy(mediaType = "movie") }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _carregandoCarrosseis.value = false
+            }
+        }
     }
 
     fun carregarFilmesEmCartaz() {

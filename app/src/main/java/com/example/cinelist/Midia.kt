@@ -56,9 +56,10 @@ data class Midia(
     var dataConclusao: Long = 0L,
     var concluidoPor: String = "",
     var avaliacoesGrupo: Map<String, AvaliacaoMembro> = emptyMap(),
+    var dataLancamento: String = "",
 
-    // NOVO CAMPO: Guarda a data da estreia (Formato TMDB: "yyyy-MM-dd")
-    var dataLancamento: String = ""
+    // NOVO CAMPO: Timestamp essencial para sincronização bidirecional
+    var atualizadoEm: Long = System.currentTimeMillis()
 ) {
     // Construtor vazio explícito exigido pelo Firestore
     constructor() : this(id = 0)
@@ -89,7 +90,8 @@ data class Midia(
             "dataConclusao" to dataConclusao,
             "concluidoPor" to concluidoPor,
             "avaliacoesGrupo" to avaliacoesGrupo.mapValues { it.value.toMap() },
-            "dataLancamento" to dataLancamento // Adicionado ao Firebase
+            "dataLancamento" to dataLancamento,
+            "atualizadoEm" to atualizadoEm
         )
     }
 }

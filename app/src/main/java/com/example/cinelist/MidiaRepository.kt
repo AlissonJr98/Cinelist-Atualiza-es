@@ -183,7 +183,6 @@ class MidiaRepository @Inject constructor(
     suspend fun removerMembroDoGrupo(grupoId: String, membroUid: String): Boolean = withContext(Dispatchers.IO) {
         if (grupoId.isBlank() || membroUid.isBlank()) return@withContext false
         try {
-            // Apaga imediatamente o documento do membro para sumir do painel do Admin instantaneamente
             firestore.collection("grupos").document(grupoId)
                 .collection("membros").document(membroUid).delete().await()
 
@@ -269,9 +268,11 @@ class MidiaRepository @Inject constructor(
 
         val autorFinal = if (midia.isCasal && midia.adicionadoPor.isBlank()) nomeReal else midia.adicionadoPor
 
+        // 🚀 Regista o timestamp da inserção local
         val midiaTratada = midia.copy(
             plataforma = plataformaNormalizada,
-            adicionadoPor = autorFinal
+            adicionadoPor = autorFinal,
+            atualizadoEm = System.currentTimeMillis()
         )
 
         val midiaExistente = midiasLocais.find {
@@ -294,25 +295,29 @@ class MidiaRepository @Inject constructor(
     }
 
     suspend fun atualizar(midia: Midia) {
-        midiaDao.atualizarMidia(midia)
-        sincronizarItemIndividualFirestore(midia)
+        // 🚀 Atualiza o timestamp ao modificar localmente (para ganhar a resolução de conflito contra a nuvem)
+        val midiaMaisRecente = midia.copy(atualizadoEm = System.currentTimeMillis())
+        midiaDao.atualizarMidia(midiaMaisRecente)
+        sincronizarItemIndividualFirestore(midiaMaisRecente)
     }
 
     suspend fun incrementarEpisodio(idMidia: Int) {
         midiaDao.incrementarEpisodio(idMidia)
-        val midiaAtualizada = midiaDao.buscarPorId(idMidia)
-        midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
-
-        // Atualiza o widget instantaneamente
+        val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
+        if (midiaAtualizada != null) {
+            midiaDao.atualizarMidia(midiaAtualizada)
+            sincronizarItemIndividualFirestore(midiaAtualizada)
+        }
         CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
     suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
         midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
-        val midiaAtualizada = midiaDao.buscarPorId(idMidia)
-        midiaAtualizada?.let { sincronizarItemIndividualFirestore(it) }
-
-        // Atualiza o widget instantaneamente ao modificar o progresso no app
+        val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
+        if (midiaAtualizada != null) {
+            midiaDao.atualizarMidia(midiaAtualizada)
+            sincronizarItemIndividualFirestore(midiaAtualizada)
+        }
         CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
@@ -394,11 +399,28 @@ class MidiaRepository @Inject constructor(
                                     it.titulo.trim().equals(nuvem.titulo.trim(), ignoreCase = true)
                         }
 
+                        // 🚀 Sincronização Inteligente (Timestamp)
                         if (existente != null) {
-                            val midiaAtualizada = nuvem.copy(id = existente.id, isCasal = true, casalId = grupoId)
-                            midiaDao.atualizarMidia(midiaAtualizada)
-                            val idx = locais.indexOfFirst { it.id == existente.id }
-                            if (idx != -1) locais[idx] = midiaAtualizada
+                            if (nuvem.atualizadoEm > existente.atualizadoEm) {
+                                val midiaAtualizada = nuvem.copy(id = existente.id, isCasal = true, casalId = grupoId)
+                                midiaDao.atualizarMidia(midiaAtualizada)
+                                val idx = locais.indexOfFirst { it.id == existente.id }
+                                if (idx != -1) locais[idx] = midiaAtualizada
+
+                                // 🚀 Dispara notificação se o amigo acabou de concluir!
+                                val foiEuQuemConcluiu = midiaAtualizada.concluidoPor.equals(nomeUsuarioLogado, ignoreCase = true)
+                                if (midiaAtualizada.status == "Concluído" && existente.status != "Concluído" && !foiEuQuemConcluiu && midiaAtualizada.concluidoPor.isNotBlank()) {
+                                    NotificacaoHelper.dispararNotificacaoConclusaoAmigo(
+                                        context = context,
+                                        amigoNome = midiaAtualizada.concluidoPor,
+                                        tituloMidia = midiaAtualizada.titulo,
+                                        idRef = midiaAtualizada.idTmdb.takeIf { it != 0 } ?: midiaAtualizada.id
+                                    )
+                                }
+                            } else if (existente.atualizadoEm > nuvem.atualizadoEm) {
+                                // Dados locais estão mais frescos (estávamos offline), envia para nuvem
+                                sincronizarItemIndividualFirestore(existente)
+                            }
                         } else {
                             val newId = midiaDao.inserirMidia(nuvem.copy(id = 0, isCasal = true, casalId = grupoId))
                             val inserida = nuvem.copy(id = newId.toInt(), isCasal = true, casalId = grupoId)
@@ -412,10 +434,17 @@ class MidiaRepository @Inject constructor(
                                 ) > 0
 
                                 if (!jaNotificado) {
+                                    // 🚀 CORREÇÃO 1: Limpa o nome do autor, removendo o UID e o sublinhado
+                                    val nomeLimpo = if (nuvem.adicionadoPor.contains("_")) {
+                                        nuvem.adicionadoPor.substringAfter("_")
+                                    } else {
+                                        nuvem.adicionadoPor
+                                    }
+
                                     val novaNotificacao = NotificacaoEntity(
                                         tipo = "NOVO_GRUPO",
                                         titulo = "Novo item na lista compartilhada",
-                                        mensagem = "${nuvem.adicionadoPor} adicionou \"${nuvem.titulo}\" para o grupo!",
+                                        mensagem = "$nomeLimpo adicionou \"${nuvem.titulo}\" para o grupo!",
                                         dataCriacao = System.currentTimeMillis(),
                                         lida = false,
                                         idReferencia = nuvem.idTmdb
@@ -427,7 +456,7 @@ class MidiaRepository @Inject constructor(
                                         NotificacaoHelper.dispararNotificacaoGrupo(
                                             context = context,
                                             titulo = "Novo item na sala compartilhada",
-                                            autor = nuvem.adicionadoPor,
+                                            autor = nomeLimpo, // Passa o nome limpo para o NotificacaoHelper
                                             midiaTitulo = nuvem.titulo,
                                             idRef = idNotificacao
                                         )
@@ -437,13 +466,14 @@ class MidiaRepository @Inject constructor(
                         }
                     }
 
+                    // Se apagaram do Firebase noutro telemóvel, apaga localmente
                     locais.forEach { local ->
                         val aindaExisteNaNuvem = midiasNuvem.any { nuvem ->
                             (local.idTmdb != 0 && local.idTmdb == nuvem.idTmdb) ||
                                     (local.uuid.isNotBlank() && local.uuid == nuvem.uuid) ||
                                     local.titulo.trim().equals(nuvem.titulo.trim(), ignoreCase = true)
                         }
-                        if (!aindaExisteNaNuvem) {
+                        if (!aindaExisteNaNuvem && local.idTmdb != 0) { // Verifica só para itens sincronizados, ignora pendentes locais offline
                             midiaDao.deletarMidia(local)
                         }
                     }
@@ -594,7 +624,7 @@ class MidiaRepository @Inject constructor(
 
             val mapaAtualizado = midia.avaliacoesGrupo.toMutableMap()
             mapaAtualizado[uid] = avaliacao
-            midiaDao.atualizarMidia(midia.copy(avaliacoesGrupo = mapaAtualizado))
+            midiaDao.atualizarMidia(midia.copy(avaliacoesGrupo = mapaAtualizado, atualizadoEm = System.currentTimeMillis()))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -785,8 +815,13 @@ class MidiaRepository @Inject constructor(
                                 (it.titulo.trim().equals(itemTratado.titulo.trim(), ignoreCase = true) && it.tipo.equals(itemTratado.tipo, ignoreCase = true))
                     }
 
+                    // 🚀 Sincronização Inteligente Pessoal (Timestamp)
                     if (midiaExistente != null) {
-                        midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                        if (itemTratado.atualizadoEm > midiaExistente.atualizadoEm) {
+                            midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                        } else if (midiaExistente.atualizadoEm > itemTratado.atualizadoEm) {
+                            sincronizarItemIndividualFirestore(midiaExistente)
+                        }
                     } else {
                         val newId = midiaDao.inserirMidia(itemTratado.copy(id = 0))
                         midiasLocais.add(itemTratado.copy(id = newId.toInt()))
@@ -868,7 +903,9 @@ class MidiaRepository @Inject constructor(
                 }
 
                 if (midiaExistente != null) {
-                    midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                    if (itemTratado.atualizadoEm > midiaExistente.atualizadoEm) {
+                        midiaDao.atualizarMidia(itemTratado.copy(id = midiaExistente.id))
+                    }
                 } else {
                     val newId = midiaDao.inserirMidia(itemTratado.copy(id = 0))
                     midiasLocais.add(itemTratado.copy(id = newId.toInt()))
