@@ -5,8 +5,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,6 +69,7 @@ fun ItemMidiaCard(
                 scaleIn(initialScale = 0.94f, animationSpec = tween(durationMillis = 350))
     ) {
         if (modoListaHorizontal) {
+            // Na Lista Vertical, o Swipe-to-Dismiss funciona perfeitamente!
             ItemMidiaCardHorizontalComSwipe(
                 midia = midia,
                 onClick = onClick,
@@ -79,14 +83,15 @@ fun ItemMidiaCard(
                 onRecusarPendente = onRecusarPendente,
                 onProcessarRecusado = onProcessarRecusado
             )
-            return@AnimatedVisibility
-        }
-
-        if (onDeletar == null && onAlternarStatusConcluido == null) {
+        } else {
+            // 🚀 CORREÇÃO DO CONFLITO: Na Grelha e Carrossel não usamos Swipe!
+            // Em vez disso, usamos a ação de "Toque Longo" (Segurar o dedo).
             ConteudoItemMidiaCard(
                 midia = midia,
                 onClick = onClick,
                 onIncrementarEpisodio = onIncrementarEpisodio,
+                onDeletar = onDeletar,
+                onAlternarStatusConcluido = onAlternarStatusConcluido,
                 onAlternarFavorito = onAlternarFavorito,
                 jaAdicionado = jaAdicionado,
                 onAdicionarRapido = onAdicionarRapido,
@@ -94,116 +99,18 @@ fun ItemMidiaCard(
                 onRecusarPendente = onRecusarPendente,
                 onProcessarRecusado = onProcessarRecusado
             )
-        } else {
-            val currentOnDeletar by rememberUpdatedState(onDeletar)
-            val currentOnAlternarConcluido by rememberUpdatedState(onAlternarStatusConcluido)
-
-            val dismissState = rememberSwipeToDismissBoxState(
-                confirmValueChange = { valorDismiss ->
-                    when (valorDismiss) {
-                        SwipeToDismissBoxValue.EndToStart -> {
-                            currentOnDeletar?.invoke()
-                            false
-                        }
-                        SwipeToDismissBoxValue.StartToEnd -> {
-                            currentOnAlternarConcluido?.invoke()
-                            false
-                        }
-                        SwipeToDismissBoxValue.Settled -> false
-                    }
-                }
-            )
-
-            SwipeToDismissBox(
-                state = dismissState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-                enableDismissFromStartToEnd = onAlternarStatusConcluido != null && midia.status != "Pendente" && midia.status != "Recusado",
-                enableDismissFromEndToStart = onDeletar != null,
-                backgroundContent = {
-                    val direcao = dismissState.dismissDirection
-                    val corFundo by animateColorAsState(
-                        targetValue = when (direcao) {
-                            SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2E7D32)
-                            SwipeToDismissBoxValue.EndToStart -> Color(0xFFD32F2F)
-                            SwipeToDismissBoxValue.Settled -> Color.Transparent
-                        },
-                        label = "cor_swipe"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(corFundo)
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = when (direcao) {
-                            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                            else -> Alignment.CenterEnd
-                        }
-                    ) {
-                        if (direcao == SwipeToDismissBoxValue.StartToEnd) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Concluir",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Text(
-                                    text = if (midia.status == "Concluído") "Reabrir" else "Concluir",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        } else if (direcao == SwipeToDismissBoxValue.EndToStart) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Excluir",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Excluir",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            ) {
-                ConteudoItemMidiaCard(
-                    midia = midia,
-                    onClick = onClick,
-                    onIncrementarEpisodio = onIncrementarEpisodio,
-                    onAlternarFavorito = onAlternarFavorito,
-                    jaAdicionado = jaAdicionado,
-                    onAdicionarRapido = onAdicionarRapido,
-                    onAceitarPendente = onAceitarPendente,
-                    onRecusarPendente = onRecusarPendente,
-                    onProcessarRecusado = onProcessarRecusado
-                )
-            }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ConteudoItemMidiaCard(
     midia: Midia,
     onClick: () -> Unit,
     onIncrementarEpisodio: (() -> Unit)? = null,
+    onDeletar: (() -> Unit)? = null,
+    onAlternarStatusConcluido: (() -> Unit)? = null,
     onAlternarFavorito: (() -> Unit)? = null,
     jaAdicionado: Boolean = false,
     onAdicionarRapido: (() -> Unit)? = null,
@@ -213,6 +120,7 @@ private fun ConteudoItemMidiaCard(
 ) {
     val ehPendente = midia.status == "Pendente"
     val ehRecusado = midia.status == "Recusado"
+    val statusEnum = midia.obterStatusEnum()
 
     val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
@@ -220,13 +128,11 @@ private fun ConteudoItemMidiaCard(
 
     if (ehRecusado && !fuiEuQueSugeri) return
 
-    val corStatus = when (midia.status) {
-        "Assistindo" -> Color(0xFF00BFFF)
-        "Concluído" -> Color(0xFF32CD32)
-        "Descobrir" -> Color(0xFFFF9800)
-        "Pendente" -> Color(0xFFFFC107)
-        "Recusado" -> Color(0xFFFF4C4C)
-        else -> Color(0xFF888888)
+    val corStatus = when (statusEnum) {
+        StatusMidia.ASSISTINDO -> Color(0xFF00BFFF)
+        StatusMidia.CONCLUIDO -> Color(0xFF32CD32)
+        StatusMidia.DESCOBRIR -> Color(0xFFFF9800)
+        else -> if (ehPendente) Color(0xFFFFC107) else if (ehRecusado) Color(0xFFFF4C4C) else Color(0xFF888888)
     }
 
     val ehSerieOuAnime = midia.tipo.equals("Série", ignoreCase = true) ||
@@ -245,21 +151,29 @@ private fun ConteudoItemMidiaCard(
 
     val colecaoExibicao = if (midia.listaCustomizada.isBlank()) "Geral" else midia.listaCustomizada
 
-    // 🎨 Variáveis para o Dynamic Colors (Palette)
     val contexto = LocalContext.current
     var corCapa by remember { mutableStateOf(Color.Transparent) }
     val corFundoAnimada by animateColorAsState(targetValue = corCapa, animationSpec = tween(800), label = "corPaletteAnimada")
 
+    // 🚀 Estado para mostrar o Menu de Opções no Toque Longo
+    var mostrarOpcoes by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .combinedClickable(
+                onClick = { onClick() },
+                onLongClick = {
+                    if (onDeletar != null || onAlternarStatusConcluido != null) {
+                        mostrarOpcoes = true
+                    }
+                }
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Fundo Gradiente Animado extraído da Capa
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -271,6 +185,41 @@ private fun ConteudoItemMidiaCard(
                         )
                     )
             )
+
+            // 🚀 MENU ELEGANTE NO TOPO DO CARTÃO (Para concluir/excluir via Toque Longo)
+            DropdownMenu(
+                expanded = mostrarOpcoes,
+                onDismissRequest = { mostrarOpcoes = false },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                if (onAlternarStatusConcluido != null && !ehPendente && !ehRecusado) {
+                    val isConcluido = statusEnum == StatusMidia.CONCLUIDO
+                    DropdownMenuItem(
+                        text = { Text(if (isConcluido) "Reabrir Título" else "Marcar como Concluído", fontWeight = FontWeight.Bold) },
+                        onClick = {
+                            mostrarOpcoes = false
+                            onAlternarStatusConcluido.invoke()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (isConcluido) Icons.Default.PlayArrow else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = if (isConcluido) Color(0xFFFFD700) else Color(0xFF4CAF50)
+                            )
+                        }
+                    )
+                }
+                if (onDeletar != null) {
+                    DropdownMenuItem(
+                        text = { Text("Excluir Mídia", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold) },
+                        onClick = {
+                            mostrarOpcoes = false
+                            onDeletar.invoke()
+                        },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF4C4C)) }
+                    )
+                }
+            }
 
             Column {
                 Box(
@@ -285,7 +234,7 @@ private fun ConteudoItemMidiaCard(
                             model = ImageRequest.Builder(contexto)
                                 .data(midia.imagemCapa)
                                 .crossfade(true)
-                                .allowHardware(false) // Fundamental para a Palette extrair a cor
+                                .allowHardware(false)
                                 .build(),
                             contentDescription = "Capa de ${midia.titulo}",
                             modifier = Modifier.fillMaxSize(),
@@ -295,25 +244,11 @@ private fun ConteudoItemMidiaCard(
                                 val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                                 bitmap?.let { bmp ->
                                     androidx.palette.graphics.Palette.from(bmp).generate { palette ->
-                                        // Usa a cor vibrante (mais bonita) ou cai de volta para dominante
                                         val swatch = palette?.vibrantSwatch ?: palette?.dominantSwatch ?: palette?.mutedSwatch
                                         swatch?.rgb?.let { colorInt ->
                                             corCapa = Color(colorInt)
                                         }
                                     }
-                                }
-                            },
-                            error = {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "SEM IMAGEM",
-                                        color = MaterialTheme.colorScheme.secondary,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
                                 }
                             }
                         )
@@ -326,7 +261,7 @@ private fun ConteudoItemMidiaCard(
                         )
                     }
 
-                    if (midia.status != "Descobrir") {
+                    if (statusEnum != StatusMidia.DESCOBRIR) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
@@ -335,7 +270,7 @@ private fun ConteudoItemMidiaCard(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else midia.status,
+                                text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else statusEnum.valor,
                                 color = Color.White,
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold
@@ -344,7 +279,7 @@ private fun ConteudoItemMidiaCard(
                     }
 
                     if (!ehPendente && !ehRecusado) {
-                        if (onAlternarFavorito != null && midia.status != "Descobrir") {
+                        if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
@@ -390,7 +325,7 @@ private fun ConteudoItemMidiaCard(
                         }
                     }
 
-                    if (!ehPendente && !ehRecusado && midia.status != "Concluído" && midia.status != "Descobrir") {
+                    if (!ehPendente && !ehRecusado && statusEnum != StatusMidia.CONCLUIDO && statusEnum != StatusMidia.DESCOBRIR) {
                         if (!ehSerieOuAnime && midia.minutoParado > 0) {
                             Box(
                                 modifier = Modifier
@@ -407,7 +342,7 @@ private fun ConteudoItemMidiaCard(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                        } else if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
+                        } else if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -512,7 +447,7 @@ private fun ConteudoItemMidiaCard(
                     if (midia.isCasal && midia.adicionadoPor.isNotBlank()) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (ehPendente) "Sugerido por: $nomeSugeridor ⏳" else if (ehRecusado) "Parceiro(a) recusou assistir 💔" else "Adicionado por: $nomeSugeridor ❤️",
+                            text = if (ehPendente) "Sugerido por: $nomeSugeridor ⏳" else if (ehRecusado) "Parceiro(a) recusou 💔" else "Adicionado por: $nomeSugeridor ❤️",
                             color = if (ehPendente) Color(0xFFFFC107) else if (ehRecusado) Color(0xFFFF4C4C) else Color(0xFFFF69B4),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
@@ -557,7 +492,7 @@ private fun ConteudoItemMidiaCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    if (midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)) {
+                    if (statusEnum == StatusMidia.CONCLUIDO) {
                         if (midia.dataConclusao > 0L) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(
@@ -698,6 +633,8 @@ private fun ItemMidiaCardHorizontalComSwipe(
             }
         )
 
+        val statusEnum = midia.obterStatusEnum()
+
         SwipeToDismissBox(
             state = dismissState,
             modifier = Modifier
@@ -739,7 +676,7 @@ private fun ItemMidiaCardHorizontalComSwipe(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = if (midia.status == "Concluído") "Reabrir" else "Concluir",
+                                text = if (statusEnum == StatusMidia.CONCLUIDO) "Reabrir" else "Concluir",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -797,19 +734,19 @@ private fun ConteudoItemMidiaCardHorizontal(
     val ehPendente = midia.status == "Pendente"
     val ehRecusado = midia.status == "Recusado"
 
+    val statusEnum = midia.obterStatusEnum()
+
     val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
     val nomeSugeridor = midia.adicionadoPor.substringAfter("_", "Alguém").substringBefore("@")
 
     if (ehRecusado && !fuiEuQueSugeri) return
 
-    val corStatus = when (midia.status) {
-        "Assistindo" -> Color(0xFF00BFFF)
-        "Concluído" -> Color(0xFF32CD32)
-        "Descobrir" -> Color(0xFFFF9800)
-        "Pendente" -> Color(0xFFFFC107)
-        "Recusado" -> Color(0xFFFF4C4C)
-        else -> Color(0xFF888888)
+    val corStatus = when (statusEnum) {
+        StatusMidia.ASSISTINDO -> Color(0xFF00BFFF)
+        StatusMidia.CONCLUIDO -> Color(0xFF32CD32)
+        StatusMidia.DESCOBRIR -> Color(0xFFFF9800)
+        else -> if (ehPendente) Color(0xFFFFC107) else if (ehRecusado) Color(0xFFFF4C4C) else Color(0xFF888888)
     }
 
     val ehSerieOuAnime = midia.tipo.equals("Série", ignoreCase = true) ||
@@ -828,7 +765,6 @@ private fun ConteudoItemMidiaCardHorizontal(
 
     val colecaoExibicao = if (midia.listaCustomizada.isBlank()) "Geral" else midia.listaCustomizada
 
-    // 🎨 Variáveis para o Dynamic Colors (Palette) - Versão Horizontal
     val contexto = LocalContext.current
     var corCapa by remember { mutableStateOf(Color.Transparent) }
     val corFundoAnimada by animateColorAsState(targetValue = corCapa, animationSpec = tween(800), label = "corPaletteHorizontal")
@@ -842,7 +778,6 @@ private fun ConteudoItemMidiaCardHorizontal(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Fundo Gradiente Animado (Horizontal) extraído da Capa
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -873,7 +808,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                             model = ImageRequest.Builder(contexto)
                                 .data(midia.imagemCapa)
                                 .crossfade(true)
-                                .allowHardware(false) // Fundamental para a Palette
+                                .allowHardware(false)
                                 .build(),
                             contentDescription = "Capa de ${midia.titulo}",
                             modifier = Modifier.fillMaxSize(),
@@ -901,7 +836,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                     }
 
                     if (!ehPendente && !ehRecusado) {
-                        if (onAlternarFavorito != null && midia.status != "Descobrir") {
+                        if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
@@ -970,14 +905,14 @@ private fun ConteudoItemMidiaCardHorizontal(
                             modifier = Modifier.weight(1f)
                         )
 
-                        if (midia.status != "Descobrir") {
+                        if (statusEnum != StatusMidia.DESCOBRIR) {
                             Box(
                                 modifier = Modifier
                                     .background(corStatus, RoundedCornerShape(4.dp))
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else midia.status,
+                                    text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else statusEnum.valor,
                                     color = Color.White,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
@@ -1007,7 +942,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                         }
                     }
 
-                    if (midia.status.equals("Concluído", ignoreCase = true) || midia.status.equals("Concluido", ignoreCase = true)) {
+                    if (statusEnum == StatusMidia.CONCLUIDO) {
                         if (midia.dataConclusao > 0L) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(
@@ -1113,7 +1048,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 }
                             }
 
-                            if (ehSerieOuAnime && onIncrementarEpisodio != null && midia.status == "Assistindo") {
+                            if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
                                 Surface(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))

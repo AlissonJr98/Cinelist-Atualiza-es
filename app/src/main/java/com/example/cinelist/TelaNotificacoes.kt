@@ -3,7 +3,7 @@ package com.example.cinelist
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -140,7 +140,7 @@ fun TelaNotificacoes(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(items = notificacoes, key = { it.id }) { notif ->
+                itemsIndexed(notificacoes, key = { index, notif -> "${notif.id}_$index" }) { _, notif ->
                     ItemNotificacaoCard(
                         notificacao = notif,
                         onMarcarLida = { viewModel.marcarNotificacaoComoLida(notif.id) },

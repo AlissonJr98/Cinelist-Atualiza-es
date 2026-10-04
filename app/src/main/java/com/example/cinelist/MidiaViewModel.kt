@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.async
+import java.util.UUID
 
 data class CineWrappedData(
     val totalTitulosConcluidos: Int,
@@ -44,6 +46,7 @@ class MidiaViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val firestore = FirebaseFirestore.getInstance()
+    private val prefsMute = context.getSharedPreferences("CineListMutePrefs", Context.MODE_PRIVATE)
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
     val midiasPessoais: Flow<List<Midia>> = repository.midiasPessoais
@@ -54,6 +57,9 @@ class MidiaViewModel @Inject constructor(
 
     private val _isAdministradorSala = MutableStateFlow(false)
     val isAdministradorSala: StateFlow<Boolean> = _isAdministradorSala.asStateFlow()
+
+    private val _salaMutada = MutableStateFlow(false)
+    val salaMutada: StateFlow<Boolean> = _salaMutada.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val midiasGrupoAtivo: Flow<List<Midia>> = _casalIdAtivo.flatMapLatest { grupoId ->
@@ -79,10 +85,72 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val mensagensGrupoAtivo: Flow<List<MensagemGrupo>> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        } else {
+            socialRepository.observarMensagensGrupo(grupoId)
+        }
+    }
+
+    fun enviarMensagemParaSala(texto: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.enviarMensagemGrupo(grupoId, texto)
+            }
+        }
+    }
+
+    fun editarMensagemSala(mensagemId: String, novoTexto: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.editarMensagemGrupo(grupoId, mensagemId, novoTexto)
+            }
+        }
+    }
+
+    fun deletarMensagemSala(mensagemId: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.deletarMensagemGrupo(grupoId, mensagemId)
+            }
+        }
+    }
+
+    private fun carregarConfiguracaoMute(grupoId: String) {
+        if (grupoId.isBlank()) return
+        val mutado = prefsMute.getBoolean("mute_$grupoId", false)
+        _salaMutada.value = mutado
+
+        if (!mutado) {
+            FirebaseMessaging.getInstance().subscribeToTopic("grupo_$grupoId")
+        } else {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("grupo_$grupoId")
+        }
+    }
+
+    fun alternarMuteSala() {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            val novoEstado = !_salaMutada.value
+            prefsMute.edit().putBoolean("mute_$grupoId", novoEstado).apply()
+            _salaMutada.value = novoEstado
+
+            if (novoEstado) {
+                FirebaseMessaging.getInstance().unsubscribeFromTopic("grupo_$grupoId")
+            } else {
+                FirebaseMessaging.getInstance().subscribeToTopic("grupo_$grupoId")
+            }
+        }
+    }
+
     private val _filmesEmCartaz = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val filmesEmCartaz: StateFlow<List<TmdbFilme>> = _filmesEmCartaz
 
-    // 🍿 ESTADOS PARA OS CARROSSÉIS DO DESCOBRIR (Estilo Netflix)
     private val _carrosselPopulares = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val carrosselPopulares: StateFlow<List<TmdbFilme>> = _carrosselPopulares
 
@@ -104,7 +172,7 @@ class MidiaViewModel @Inject constructor(
         iniciarSincronizacaoSilenciosaNuvem()
         carregarMaisPopularesMatch()
         carregarFilmesEmCartaz()
-        carregarCarrosseisDescobrir() // Carrega as linhas estilo Netflix
+        carregarCarrosseisDescobrir()
         monitorarExpulsaoDaSala()
     }
 
@@ -114,7 +182,6 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch {
             _carregandoCarrosseis.value = true
             try {
-                // Usamos coroutineScope e async para baixar 3 páginas de uma vez (60 filmes/séries por linha) de forma ultra-rápida
                 kotlinx.coroutines.coroutineScope {
                     val pop1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = null) }
                     val pop2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = null) }
@@ -253,7 +320,8 @@ class MidiaViewModel @Inject constructor(
                         listaCustomizada = "Geral",
                         isCasal = true,
                         casalId = grupo,
-                        adicionadoPor = "Modo Match ❤️"
+                        adicionadoPor = "Modo Match ❤",
+                        statusSugestao = "APROVADO"
                     )
                     repository.inserir(novaMidia)
                 }
@@ -306,6 +374,7 @@ class MidiaViewModel @Inject constructor(
                     observarGrupoFirestore(grupoAtivo.grupoId)
                     repository.atualizarPresencaNoGrupo(grupoAtivo.grupoId, true)
                     verificarSeSouAdministrador(grupoAtivo.grupoId)
+                    carregarConfiguracaoMute(grupoAtivo.grupoId)
                 }
             }
         }
@@ -316,6 +385,7 @@ class MidiaViewModel @Inject constructor(
             val grupoAnterior = _casalIdAtivo.value
             if (grupoAnterior.isNotBlank() && grupoAnterior != grupoId) {
                 repository.atualizarPresencaNoGrupo(grupoAnterior, false)
+                FirebaseMessaging.getInstance().unsubscribeFromTopic("grupo_$grupoAnterior")
             }
 
             repository.ativarGrupoLocal(grupoId)
@@ -324,8 +394,10 @@ class MidiaViewModel @Inject constructor(
                 observarGrupoFirestore(grupoId)
                 repository.atualizarPresencaNoGrupo(grupoId, true)
                 verificarSeSouAdministrador(grupoId)
+                carregarConfiguracaoMute(grupoId)
             } else {
                 _isAdministradorSala.value = false
+                _salaMutada.value = false
             }
         }
     }
@@ -364,6 +436,7 @@ class MidiaViewModel @Inject constructor(
                 _casalIdAtivo.value = idFormatado
                 observarGrupoFirestore(idFormatado)
                 verificarSeSouAdministrador(idFormatado)
+                carregarConfiguracaoMute(idFormatado)
             }
             onResultado(sucesso)
         }
@@ -377,6 +450,7 @@ class MidiaViewModel @Inject constructor(
                 _casalIdAtivo.value = idFormatado
                 observarGrupoFirestore(idFormatado)
                 verificarSeSouAdministrador(idFormatado)
+                carregarConfiguracaoMute(idFormatado)
                 onResultado(true, null)
             } else {
                 onResultado(false, resultado.exceptionOrNull()?.localizedMessage ?: "Erro ao entrar no grupo.")
@@ -395,8 +469,7 @@ class MidiaViewModel @Inject constructor(
 
     private fun observarGrupoFirestore(grupoId: String) {
         viewModelScope.launch {
-            repository.observarMidiasDoGrupoFirestore(grupoId).collect {
-            }
+            repository.observarMidiasDoGrupoFirestore(grupoId).collect {}
         }
     }
 
@@ -414,8 +487,9 @@ class MidiaViewModel @Inject constructor(
     private val _listaAmigoSelecionado = MutableStateFlow<List<Midia>>(emptyList())
     val listaAmigoSelecionado: StateFlow<List<Midia>> = _listaAmigoSelecionado
 
-    fun atualizarMeuPerfilPublico(nome: String, bio: String) {
-        viewModelScope.launch { socialRepository.atualizarPerfilPublico(nome, bio) }
+    // 🚀 LIGAÇÃO À NUVEM PARA AS NOVAS REDES SOCIAIS
+    fun atualizarMeuPerfilPublico(nome: String, bio: String, instagram: String = "", twitter: String = "", letterboxd: String = "") {
+        viewModelScope.launch { socialRepository.atualizarPerfilPublico(nome, bio, instagram, twitter, letterboxd) }
     }
 
     private var jobBuscaUsuarios: Job? = null
@@ -591,6 +665,7 @@ class MidiaViewModel @Inject constructor(
         repository.limparEstadoSincronizacao()
         _casalIdAtivo.value = ""
         _isAdministradorSala.value = false
+        _salaMutada.value = false
     }
 
     fun verificarAtualizacaoSilenciosa() {
@@ -669,12 +744,13 @@ class MidiaViewModel @Inject constructor(
 
             val midiaProcessada = if (midia.isCasal && midia.casalId.isNotBlank()) {
                 midia.copy(
-                    status = "Pendente",
-                    adicionadoPor = identificadorAdicao
+                    adicionadoPor = identificadorAdicao,
+                    statusSugestao = "PENDENTE"
                 )
             } else {
                 midia.copy(
-                    adicionadoPor = identificadorAdicao
+                    adicionadoPor = identificadorAdicao,
+                    statusSugestao = "APROVADO"
                 )
             }
 
@@ -682,16 +758,29 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
-    fun aceitarMidiaPendente(midia: Midia) {
+    fun aceitarMidiaPendente(midia: Midia, totalMembrosNaSala: Int) {
         viewModelScope.launch {
-            val midiaAprovada = midia.copy(status = "Quero Assistir")
-            repository.atualizar(midiaAprovada)
+            val meuUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+
+            val listaAprovados = midia.uidsAprovados.split(",").filter { it.isNotBlank() }.toMutableSet()
+            listaAprovados.add(meuUid)
+
+            val novoUidsAprovados = listaAprovados.joinToString(",")
+            val totalDeAprovacoesAtuais = listaAprovados.size + 1
+
+            if (totalDeAprovacoesAtuais >= totalMembrosNaSala) {
+                val midiaAprovada = midia.copy(statusSugestao = "APROVADO", uidsAprovados = novoUidsAprovados)
+                repository.atualizar(midiaAprovada)
+            } else {
+                val midiaAtualizada = midia.copy(uidsAprovados = novoUidsAprovados)
+                repository.atualizar(midiaAtualizada)
+            }
         }
     }
 
     fun recusarMidiaPendente(midia: Midia) {
         viewModelScope.launch {
-            val midiaRecusada = midia.copy(status = "Recusado")
+            val midiaRecusada = midia.copy(statusSugestao = "RECUSADO")
             repository.atualizar(midiaRecusada)
         }
     }
@@ -702,12 +791,38 @@ class MidiaViewModel @Inject constructor(
             if (moverParaListaPessoal) {
                 val midiaPessoal = midia.copy(
                     id = 0,
+                    uuid = UUID.randomUUID().toString(),
                     isCasal = false,
                     casalId = "",
-                    status = "Quero Assistir"
+                    statusSugestao = "APROVADO"
                 )
                 repository.inserir(midiaPessoal)
             }
+        }
+    }
+
+    fun forcarAprovacaoAdmin(midia: Midia) {
+        viewModelScope.launch {
+            val midiaAprovada = midia.copy(statusSugestao = "APROVADO")
+            repository.atualizar(midiaAprovada)
+        }
+    }
+
+    fun retirarSugestaoPendente(midia: Midia) {
+        viewModelScope.launch {
+            repository.deletar(midia)
+            val meuUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+            val midiaPessoal = midia.copy(
+                id = 0,
+                uuid = java.util.UUID.randomUUID().toString(),
+                isCasal = false,
+                casalId = "",
+                statusSugestao = "APROVADO",
+                status = StatusMidia.QUERO_ASSISTIR.valor
+            )
+            firestore.collection("usuarios").document(meuUid)
+                .collection("midias").document()
+                .set(midiaPessoal)
         }
     }
 
@@ -730,6 +845,13 @@ class MidiaViewModel @Inject constructor(
             if (midia.isCasal && midia.casalId.isNotBlank()) {
                 repository.limparAssistindoAgora(midia.casalId)
             }
+        }
+    }
+
+    fun enviarAnexoAmigo(amigoUid: String, uri: android.net.Uri, onConcluido: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val sucesso = socialRepository.enviarAnexoChat(amigoUid, uri)
+            onConcluido(sucesso)
         }
     }
 
@@ -909,5 +1031,46 @@ class MidiaViewModel @Inject constructor(
             filmeOuSerieDestaque = destaque,
             frasePersonalizada = frase
         )
+    }
+
+    private val _comentariosPublicosAtivos = MutableStateFlow<List<ComentarioSocial>>(emptyList())
+    val comentariosPublicosAtivos = _comentariosPublicosAtivos.asStateFlow()
+
+    fun carregarComentariosMidia(tmdbId: Int) {
+        viewModelScope.launch {
+            socialRepository.observarComentariosMidia(tmdbId).collect { lista ->
+                _comentariosPublicosAtivos.value = lista
+            }
+        }
+    }
+
+    fun enviarComentarioPublico(tmdbId: Int, texto: String) {
+        viewModelScope.launch {
+            socialRepository.adicionarComentarioPublico(tmdbId, texto)
+        }
+    }
+
+    fun curtirComentarioPublico(tmdbId: Int, comentarioId: String, curtiu: Boolean) {
+        viewModelScope.launch {
+            socialRepository.curtirComentario(tmdbId, comentarioId, curtiu)
+        }
+    }
+
+    fun responderComentarioPublico(tmdbId: Int, comentarioId: String, resposta: String) {
+        viewModelScope.launch {
+            socialRepository.adicionarRespostaComentario(tmdbId, comentarioId, resposta)
+        }
+    }
+
+    fun deletarComentarioPublico(tmdbId: Int, comentarioId: String) {
+        viewModelScope.launch {
+            socialRepository.deletarComentarioPublico(tmdbId, comentarioId)
+        }
+    }
+
+    fun editarComentarioPublico(tmdbId: Int, comentarioId: String, novoTexto: String) {
+        viewModelScope.launch {
+            socialRepository.editarComentarioPublico(tmdbId, comentarioId, novoTexto)
+        }
     }
 }

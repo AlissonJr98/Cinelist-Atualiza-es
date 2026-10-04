@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -79,7 +80,7 @@ fun DialogoAmigos(
                         }
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(listaAmigoSelecionado, key = { it.id }) { midia ->
+                            itemsIndexed(listaAmigoSelecionado, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_$index" }) { _, midia ->
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
                                     modifier = Modifier.fillMaxWidth()

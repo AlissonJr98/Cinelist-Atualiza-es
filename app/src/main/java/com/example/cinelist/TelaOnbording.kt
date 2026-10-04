@@ -1,42 +1,23 @@
 package com.example.cinelist
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.LocalMovies
-import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,156 +27,200 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-private data class PaginaOnboarding(
-    val icone: ImageVector,
-    val titulo: String,
-    val descricao: String,
-    val gradiente: Brush
-)
-
-private val paginasOnboarding = listOf(
-    PaginaOnboarding(
-        icone = Icons.Default.LocalMovies,
-        titulo = "Organize tudo em um só lugar",
-        descricao = "Monte sua lista de filmes, séries, animes, novelas e doramas com status, nota e progresso de episódios.",
-        gradiente = Brush.verticalGradient(listOf(Color(0xFF1DB954), Color(0xFF121212)))
-    ),
-    PaginaOnboarding(
-        icone = Icons.Default.Group,
-        titulo = "Listas compartilhadas",
-        descricao = "Crie uma sala com seu parceiro(a) ou amigos e monte uma lista em conjunto, vendo quem está assistindo o quê em tempo real.",
-        gradiente = Brush.verticalGradient(listOf(Color(0xFF3B82F6), Color(0xFF121212)))
-    ),
-    PaginaOnboarding(
-        icone = Icons.Default.Casino,
-        titulo = "Modo Match e sorteio",
-        descricao = "Sem ideia do que assistir? Jogue o Modo Match com a sala ou use o sorteio para decidir por você.",
-        gradiente = Brush.verticalGradient(listOf(Color(0xFFFF3366), Color(0xFF121212)))
-    ),
-    PaginaOnboarding(
-        icone = Icons.Default.WorkspacePremium,
-        titulo = "Sua retrospectiva CineList",
-        descricao = "Acompanhe horas assistidas, gêneros favoritos e veja o resumo da sua jornada cinéfila no Wrapped, direto no seu Perfil.",
-        gradiente = Brush.verticalGradient(listOf(Color(0xFFFFD700), Color(0xFF121212)))
-    )
-)
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TelaOnboarding(onConcluir: () -> Unit) {
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { paginasOnboarding.size })
-    val escopo = rememberCoroutineScope()
-    val ultimaPagina by remember {
-        derivedStateOf { pagerState.currentPage == paginasOnboarding.lastIndex }
-    }
+fun TelaOnboarding(
+    onConcluir: () -> Unit
+) {
+    val paginas = listOf(
+        PaginaOnboarding(
+            titulo = "Bem-vindo ao CineList",
+            descricao = "O seu companheiro definitivo para organizar, descobrir e partilhar a paixão pelo cinema e pelas séries.",
+            icone = Icons.Default.LocalMovies,
+            corFundo = Color(0xFF1E1E1E), // Escuro Padrão
+            corDestaque = CineListTokens.CorPremium
+        ),
+        PaginaOnboarding(
+            titulo = "Salas Compartilhadas ❤️",
+            descricao = "Crie uma sala com o seu parceiro(a) ou amigos. Sincronize o que estão a assistir, deem notas juntos e receba avisos em tempo real!",
+            icone = Icons.Default.Group,
+            corFundo = Color(0xFF2E1A1A), // Tom avermelhado
+            corDestaque = CineListTokens.CorMatch
+        ),
+        PaginaOnboarding(
+            titulo = "Comunidade e Fóruns 💬",
+            descricao = "Deixe a sua opinião pública sobre um título. Dê 'Likes', responda aos seus amigos e debata sobre os últimos episódios.",
+            icone = Icons.Default.Forum,
+            corFundo = Color(0xFF1A2630), // Tom azulado
+            corDestaque = CineListTokens.CorOnline
+        ),
+        PaginaOnboarding(
+            titulo = "O seu Ano no Cinema 🌟",
+            descricao = "Acompanhe dezenas de estatísticas, horas investidas e plataformas mais usadas, e gere o seu 'CineList Wrapped' a qualquer momento!",
+            icone = Icons.Default.WorkspacePremium,
+            corFundo = Color(0xFF2E2A1A), // Tom dourado/Premium
+            corDestaque = CineListTokens.CorPremium
+        )
+    )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { pagina ->
-            val dados = paginasOnboarding[pagina]
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(dados.gradiente)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.15f)
+    val pagerState = rememberPagerState(pageCount = { paginas.size })
+    val escopoCorrotina = rememberCoroutineScope()
+
+    // 🚀 Anima a cor de fundo de forma suave ao mudar de página
+    val corBackgroundAnimada by animateColorAsState(
+        targetValue = paginas[pagerState.currentPage].corFundo,
+        animationSpec = tween(durationMillis = 600),
+        label = "corFundoAnimada"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        corBackgroundAnimada,
+                        Color(0xFF121212)
+                    )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            // Botão "Pular" no topo (Se não for a última página)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                if (pagerState.currentPage < paginas.size - 1) {
+                    TextButton(onClick = onConcluir) {
+                        Text("Pular", color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(48.dp)) // Ocupa espaço para não saltar
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // CARROSSEL DE CONTEÚDO
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { pagina ->
+                val conteudo = paginas[pagina]
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Círculo com o Ícone
+                    Box(
+                        modifier = Modifier
+                            .size(140.dp)
+                            .clip(CircleShape)
+                            .background(conteudo.corDestaque.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = dados.icone,
+                            imageVector = conteudo.icone,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(24.dp)
-                                .size(48.dp)
+                            tint = conteudo.corDestaque,
+                            modifier = Modifier.size(70.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(40.dp))
 
                     Text(
-                        text = dados.titulo,
+                        text = conteudo.titulo,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = dados.descricao,
-                        color = Color.White.copy(alpha = 0.85f),
+                        text = conteudo.descricao,
                         fontSize = 15.sp,
+                        color = Color.LightGray,
                         textAlign = TextAlign.Center,
-                        lineHeight = 21.sp
+                        lineHeight = 22.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
             }
-        }
 
-        // "Pular" — some sozinho na última página, já que ali o botão principal já conclui o fluxo
-        if (!ultimaPagina) {
-            TextButton(
-                onClick = onConcluir,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+            Spacer(modifier = Modifier.weight(1f))
+
+            // INDICADORES DE PÁGINA (As "bolinhas")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Pular", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold)
-            }
-        }
+                repeat(paginas.size) { indice ->
+                    val selecionado = pagerState.currentPage == indice
+                    val larguraAnimada by animateDpAsState(targetValue = if (selecionado) 24.dp else 8.dp)
+                    val corAnimada by animateColorAsState(targetValue = if (selecionado) paginas[pagerState.currentPage].corDestaque else Color.DarkGray)
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                paginasOnboarding.indices.forEach { indice ->
-                    val ativo = indice == pagerState.currentPage
                     Box(
                         modifier = Modifier
                             .height(8.dp)
-                            .width(if (ativo) 24.dp else 8.dp)
-                            .background(
-                                color = if (ativo) Color.White else Color.White.copy(alpha = 0.4f),
-                                shape = RoundedCornerShape(4.dp)
-                            )
+                            .width(larguraAnimada)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(corAnimada)
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // BOTÃO PRINCIPAL (Avançar ou Concluir)
+            Button(
+                onClick = {
+                    if (pagerState.currentPage < paginas.size - 1) {
+                        escopoCorrotina.launch {
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    } else {
+                        onConcluir()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = paginas[pagerState.currentPage].corDestaque
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = if (pagerState.currentPage < paginas.size - 1) "Próximo" else "Começar Agora",
+                    color = Color.Black,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                if (pagerState.currentPage < paginas.size - 1) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.Black)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            if (ultimaPagina) {
-                Button(
-                    onClick = onConcluir,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                ) {
-                    Text("Começar", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            } else {
-                OutlinedButton(
-                    onClick = {
-                        escopo.launch {
-                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
-                ) {
-                    Text("Próximo", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            }
         }
     }
 }
+
+// Classe de dados para armazenar o conteúdo de cada página
+data class PaginaOnboarding(
+    val titulo: String,
+    val descricao: String,
+    val icone: ImageVector,
+    val corFundo: Color,
+    val corDestaque: Color
+)

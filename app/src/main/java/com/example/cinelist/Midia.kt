@@ -8,6 +8,25 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 
+// 🚀 NOVO ENUM: Centraliza e padroniza todos os status da aplicação
+enum class StatusMidia(val valor: String) {
+    QUERO_ASSISTIR("Quero Assistir"),
+    ASSISTINDO("Assistindo"),
+    CONCLUIDO("Concluído"),
+    DESCOBRIR("Descobrir");
+
+    companion object {
+        fun fromString(texto: String?): StatusMidia {
+            return when (texto?.trim()?.lowercase()) {
+                "assistindo" -> ASSISTINDO
+                "concluído", "concluido" -> CONCLUIDO
+                "descobrir" -> DESCOBRIR
+                else -> QUERO_ASSISTIR
+            }
+        }
+    }
+}
+
 class AvaliacoesConverters {
     private val gson = Gson()
 
@@ -37,7 +56,7 @@ data class Midia(
     var idTmdb: Int = 0,
     var titulo: String = "",
     var tipo: String = "Filme",
-    var status: String = "Quero Assistir",
+    var status: String = StatusMidia.QUERO_ASSISTIR.valor,
     var nota: Int = 0,
     var temporadaAtual: Int = 1,
     var episodioAtual: Int = 1,
@@ -57,12 +76,16 @@ data class Midia(
     var concluidoPor: String = "",
     var avaliacoesGrupo: Map<String, AvaliacaoMembro> = emptyMap(),
     var dataLancamento: String = "",
+    var atualizadoEm: Long = System.currentTimeMillis(),
+    var comentarioPessoal: String = "",
+    var statusSugestao: String = "APROVADO",
 
-    // NOVO CAMPO: Timestamp essencial para sincronização bidirecional
-    var atualizadoEm: Long = System.currentTimeMillis()
+    // 🚀 NOVO CAMPO: Guarda os UIDs separados por vírgula de quem já aceitou
+    var uidsAprovados: String = ""
 ) {
-    // Construtor vazio explícito exigido pelo Firestore
     constructor() : this(id = 0)
+
+    fun obterStatusEnum(): StatusMidia = StatusMidia.fromString(status)
 
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -71,7 +94,7 @@ data class Midia(
             "idTmdb" to idTmdb,
             "titulo" to titulo,
             "tipo" to tipo,
-            "status" to status,
+            "status" to obterStatusEnum().valor,
             "nota" to nota,
             "temporadaAtual" to temporadaAtual,
             "episodioAtual" to episodioAtual,
@@ -91,7 +114,10 @@ data class Midia(
             "concluidoPor" to concluidoPor,
             "avaliacoesGrupo" to avaliacoesGrupo.mapValues { it.value.toMap() },
             "dataLancamento" to dataLancamento,
-            "atualizadoEm" to atualizadoEm
+            "atualizadoEm" to atualizadoEm,
+            "comentarioPessoal" to comentarioPessoal,
+            "statusSugestao" to statusSugestao,
+            "uidsAprovados" to uidsAprovados // 🚀 Guarda na nuvem
         )
     }
 }

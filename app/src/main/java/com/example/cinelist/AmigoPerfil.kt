@@ -11,7 +11,11 @@ data class AmigoPerfil(
     val bio: String = "",
     val email: String = "",
     val online: Boolean = false,
-    val vistoPorUltimo: Long = 0L
+    val vistoPorUltimo: Long = 0L,
+    // 🚀 NOVOS CAMPOS: Redes Sociais
+    val instagram: String = "",
+    val twitter: String = "",
+    val letterboxd: String = ""
 ) {
     // Mesma tolerância de 45 segundos da sala compartilhada: se o app fechar ou cair a net, vira offline
     val estaRealmenteOnline: Boolean

@@ -12,14 +12,51 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.UUID
 import javax.inject.Inject
+import com.google.firebase.storage.FirebaseStorage
+import android.net.Uri
 import javax.inject.Singleton
 
 data class MensagemChat(
     val id: String = "",
     val remetenteUid: String = "",
     val texto: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val tipoMensagem: String = "TEXTO", // "TEXTO", "IMAGEM", "STICKER"
+    val mediaUrl: String = ""
+)
+
+data class MensagemGrupo(
+    val id: String = "",
+    val autorUid: String = "",
+    val autorNome: String = "",
+    val autorFotoUrl: String = "",
+    val texto: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val editada: Boolean = false,
+    val tipoMensagem: String = "TEXTO", // "TEXTO", "IMAGEM", "STICKER"
+    val mediaUrl: String = ""
+)
+
+data class RespostaSocial(
+    val id: String = "",
+    val autorUid: String = "",
+    val autorNome: String = "",
+    val autorFoto: String = "",
+    val texto: String = "",
     val timestamp: Long = System.currentTimeMillis()
+)
+
+data class ComentarioSocial(
+    val id: String = "",
+    val autorUid: String = "",
+    val autorNome: String = "",
+    val autorFoto: String = "",
+    val texto: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val curtidasUids: List<String> = emptyList(),
+    val respostas: List<RespostaSocial> = emptyList()
 )
 
 @Singleton
@@ -27,7 +64,207 @@ class SocialRepository @Inject constructor() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
+    fun observarMensagensGrupo(grupoId: String): Flow<List<MensagemGrupo>> = callbackFlow {
+        if (grupoId.isBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("grupos").document(grupoId)
+            .collection("chat_mensagens")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snap, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val mensagens = snap?.documents?.mapNotNull { it.toObject(MensagemGrupo::class.java) } ?: emptyList()
+                trySend(mensagens)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun enviarAnexoChat(amigoUid: String, uri: android.net.Uri): Boolean = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext false
+        val chatId = obterIdChat(meuUid, amigoUid)
+
+        try {
+            val ref = storage.reference.child("chats_anexos/$chatId/${UUID.randomUUID()}.jpg")
+            ref.putFile(uri).await()
+            val downloadUrl = ref.downloadUrl.await().toString()
+
+            enviarMensagemChat(
+                amigoUid = amigoUid,
+                texto = "",
+                tipoMensagem = "IMAGEM",
+                mediaUrl = downloadUrl
+            )
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun enviarMensagemGrupo(grupoId: String, texto: String, tipoMensagem: String = "TEXTO", mediaUrl: String = "") = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (grupoId.isBlank() || (texto.isBlank() && mediaUrl.isBlank())) return@withContext
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: "Usuário"
+            val foto = docUsuario.getString("fotoUrl") ?: ""
+
+            val ref = firestore.collection("grupos").document(grupoId)
+                .collection("chat_mensagens").document()
+
+            val mensagem = MensagemGrupo(
+                id = ref.id,
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFotoUrl = foto,
+                texto = texto.trim(),
+                tipoMensagem = tipoMensagem,
+                mediaUrl = mediaUrl
+            )
+
+            ref.set(mensagem).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun editarMensagemGrupo(grupoId: String, mensagemId: String, novoTexto: String) = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("chat_mensagens").document(mensagemId)
+                .update("texto", novoTexto.trim(), "editada", true).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deletarMensagemGrupo(grupoId: String, mensagemId: String) = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("chat_mensagens").document(mensagemId)
+                .delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun observarComentariosMidia(tmdbId: Int): Flow<List<ComentarioSocial>> = callbackFlow {
+        if (tmdbId == 0) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("comentarios_globais").document(tmdbId.toString())
+            .collection("comentarios").orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val lista = snap?.documents?.mapNotNull { it.toObject(ComentarioSocial::class.java) } ?: emptyList()
+                trySend(lista)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun adicionarComentarioPublico(tmdbId: Int, texto: String) = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (tmdbId == 0 || texto.isBlank()) return@withContext
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: "Usuário"
+            val foto = docUsuario.getString("fotoUrl") ?: ""
+
+            val ref = firestore.collection("comentarios_globais").document(tmdbId.toString())
+                .collection("comentarios").document()
+
+            val comentario = ComentarioSocial(
+                id = ref.id,
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFoto = foto,
+                texto = texto.trim()
+            )
+            ref.set(comentario).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun curtirComentario(tmdbId: Int, comentarioId: String, curtiu: Boolean) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        try {
+            val ref = firestore.collection("comentarios_globais").document(tmdbId.toString())
+                .collection("comentarios").document(comentarioId)
+
+            if (curtiu) {
+                ref.update("curtidasUids", com.google.firebase.firestore.FieldValue.arrayUnion(uid)).await()
+            } else {
+                ref.update("curtidasUids", com.google.firebase.firestore.FieldValue.arrayRemove(uid)).await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun adicionarRespostaComentario(tmdbId: Int, comentarioId: String, texto: String) = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (texto.isBlank()) return@withContext
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: "Usuário"
+            val foto = docUsuario.getString("fotoUrl") ?: ""
+
+            val resposta = RespostaSocial(
+                id = UUID.randomUUID().toString(),
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFoto = foto,
+                texto = texto.trim()
+            )
+
+            val ref = firestore.collection("comentarios_globais").document(tmdbId.toString())
+                .collection("comentarios").document(comentarioId)
+
+            ref.update("respostas", com.google.firebase.firestore.FieldValue.arrayUnion(resposta)).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deletarComentarioPublico(tmdbId: Int, comentarioId: String) = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("comentarios_globais").document(tmdbId.toString())
+                .collection("comentarios").document(comentarioId)
+                .delete().await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun editarComentarioPublico(tmdbId: Int, comentarioId: String, novoTexto: String) = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("comentarios_globais").document(tmdbId.toString())
+                .collection("comentarios").document(comentarioId)
+                .update("texto", novoTexto.trim()).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA
     suspend fun buscarUsuarios(termo: String): List<AmigoPerfil> = withContext(Dispatchers.IO) {
         val termoLimpo = termo.trim().lowercase()
         if (termoLimpo.isEmpty()) return@withContext emptyList()
@@ -57,7 +294,10 @@ class SocialRepository @Inject constructor() {
                         bio = doc.getString("bio") ?: "",
                         email = doc.getString("email") ?: "",
                         online = doc.getBoolean("online") ?: false,
-                        vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L
+                        vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
+                        instagram = doc.getString("instagram") ?: "",
+                        twitter = doc.getString("twitter") ?: "",
+                        letterboxd = doc.getString("letterboxd") ?: ""
                     )
                 }
             }
@@ -262,6 +502,7 @@ class SocialRepository @Inject constructor() {
         awaitClose { listener.remove() }
     }
 
+    // 🚀 LÊ AS NOVAS REDES SOCIAIS DOS AMIGOS
     fun observarAmigos(): Flow<List<AmigoPerfil>> = callbackFlow {
         val meuUid = auth.currentUser?.uid
         if (meuUid == null) {
@@ -307,7 +548,10 @@ class SocialRepository @Inject constructor() {
                                 bio = doc.getString("bio") ?: "",
                                 email = doc.getString("email") ?: "",
                                 online = doc.getBoolean("online") ?: false,
-                                vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L
+                                vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
+                                instagram = doc.getString("instagram") ?: "",
+                                twitter = doc.getString("twitter") ?: "",
+                                letterboxd = doc.getString("letterboxd") ?: ""
                             )
                         } ?: emptyList()
 
@@ -374,28 +618,51 @@ class SocialRepository @Inject constructor() {
         awaitClose { listener.remove() }
     }
 
-    suspend fun enviarMensagemChat(amigoUid: String, texto: String) = withContext(Dispatchers.IO) {
+    suspend fun enviarMensagemChat(amigoUid: String, texto: String, tipoMensagem: String = "TEXTO", mediaUrl: String = "") = withContext(Dispatchers.IO) {
         val meuUid = auth.currentUser?.uid ?: return@withContext
-        if (texto.isBlank()) return@withContext
+        if (texto.isBlank() && mediaUrl.isBlank()) return@withContext
         val chatId = obterIdChat(meuUid, amigoUid)
 
         val msg = MensagemChat(
             id = firestore.collection("chats").document(chatId).collection("mensagens").document().id,
             remetenteUid = meuUid,
             texto = texto.trim(),
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            tipoMensagem = tipoMensagem,
+            mediaUrl = mediaUrl
         )
 
         firestore.collection("chats").document(chatId).collection("mensagens").document(msg.id).set(msg).await()
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(meuUid).get().await()
+            val meuNome = docUsuario.getString("nome") ?: "Usuário"
+            val notificacaoChat = mapOf(
+                "remetenteUid" to meuUid,
+                "remetenteNome" to meuNome,
+                "textoRecente" to texto.trim(),
+                "timestamp" to System.currentTimeMillis(),
+                "naoLida" to true
+            )
+            firestore.collection("usuarios").document(amigoUid)
+                .collection("notificacoes_chat").document(meuUid)
+                .set(notificacaoChat, SetOptions.merge()).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    suspend fun atualizarPerfilPublico(nome: String, bio: String) = withContext(Dispatchers.IO) {
+    // 🚀 GRAVA AS NOVAS REDES SOCIAIS NA NUVEM
+    suspend fun atualizarPerfilPublico(nome: String, bio: String, instagram: String = "", twitter: String = "", letterboxd: String = "") = withContext(Dispatchers.IO) {
         val user = auth.currentUser ?: return@withContext
         try {
             val dados = mapOf(
                 "nome" to nome,
                 "nomeBusca" to nome.trim().lowercase(),
                 "bio" to bio,
+                "instagram" to instagram,
+                "twitter" to twitter,
+                "letterboxd" to letterboxd,
                 "fotoUrl" to (user.photoUrl?.toString() ?: ""),
                 "email" to (user.email ?: ""),
                 "atualizadoEm" to System.currentTimeMillis()
@@ -482,6 +749,7 @@ class SocialRepository @Inject constructor() {
         }
     }
 
+    // 🚀 LÊ AS REDES SOCIAIS NA LISTA DE BLOQUEADOS TAMBÉM
     fun observarUsuariosBloqueados(): Flow<List<AmigoPerfil>> = callbackFlow {
         val meuUid = auth.currentUser?.uid
         if (meuUid == null) {
@@ -525,7 +793,10 @@ class SocialRepository @Inject constructor() {
                                 nome = doc.getString("nome") ?: "Usuário",
                                 fotoUrl = doc.getString("fotoUrl") ?: "",
                                 bio = doc.getString("bio") ?: "",
-                                email = doc.getString("email") ?: ""
+                                email = doc.getString("email") ?: "",
+                                instagram = doc.getString("instagram") ?: "",
+                                twitter = doc.getString("twitter") ?: "",
+                                letterboxd = doc.getString("letterboxd") ?: ""
                             )
                         } ?: emptyList()
 

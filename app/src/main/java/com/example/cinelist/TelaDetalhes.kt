@@ -23,6 +23,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +42,9 @@ import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -83,9 +88,16 @@ fun TelaDetalhes(
 ) {
     val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
     val isModoCasal = casalIdAtivo.isNotBlank()
+    val uidLogado = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
 
     val listaAtualBanco by (if (isModoCasal) viewModel.midiasGrupoAtivo else viewModel.midiasPessoais).collectAsState(initial = emptyList())
     val todasAsMidiasbyBanco by viewModel.todasAsMidias.collectAsState(initial = emptyList())
+
+    // 🚀 LÓGICA DE NOME DINÂMICO DA SALA
+    val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
+    val nomeSalaAtiva = remember(gruposSalvos, casalIdAtivo) {
+        gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
+    }
 
     val midiaSalva = remember(listaAtualBanco, todasAsMidiasbyBanco, id, isModoCasal) {
         listaAtualBanco.find { it.idTmdb == id } ?: listaAtualBanco.find { it.id == id }
@@ -115,12 +127,12 @@ fun TelaDetalhes(
     val carregandoEpisodios by viewModel.carregandoEpisodios.collectAsState()
     val galeriaImagens by viewModel.galeriaImagens.collectAsState()
 
-    // O Skeleton aparece se for busca da API e ainda não tivermos os detalhes estendidos
+    val comentariosPublicos by viewModel.comentariosPublicosAtivos.collectAsState(initial = emptyList())
+
     val isLoadingSkeleton = remember(detalhesApi, midiaSalva, idRealBuscaApi) {
         midiaSalva == null && detalhesApi == null && idRealBuscaApi > 0
     }
 
-    // Animação Motion de entrada para o conteúdo dos detalhes
     var conteudoVisivel by remember { mutableStateOf(false) }
     LaunchedEffect(isLoadingSkeleton) {
         if (!isLoadingSkeleton) {
@@ -183,10 +195,12 @@ fun TelaDetalhes(
     var sinopse by remember { mutableStateOf("") }
     var temporadaAtual by remember { mutableIntStateOf(1) }
     var episodioAtual by remember { mutableIntStateOf(1) }
-    var status by remember { mutableStateOf("Quero Assistir") }
     var listaCustomizada by remember { mutableStateOf("Geral") }
     var abaTemporadaVisualizada by remember { mutableIntStateOf(1) }
     var ehFavorito by remember { mutableStateOf(false) }
+    var comentarioPessoalInput by remember { mutableStateOf("") }
+
+    var statusAtual by remember { mutableStateOf(StatusMidia.QUERO_ASSISTIR) }
 
     val colecoesExistentes = remember(listaAtualBanco) {
         listOf("Geral") + listaAtualBanco.map { it.listaCustomizada }.filter { it.isNotBlank() && it != "Geral" }.distinct().sorted()
@@ -223,10 +237,11 @@ fun TelaDetalhes(
             sinopse = midiaSalva.sinopse
             temporadaAtual = midiaSalva.temporadaAtual
             episodioAtual = midiaSalva.episodioAtual
-            status = midiaSalva.status
+            statusAtual = midiaSalva.obterStatusEnum()
             listaCustomizada = midiaSalva.listaCustomizada.ifBlank { "Geral" }
             abaTemporadaVisualizada = midiaSalva.temporadaAtual
             ehFavorito = midiaSalva.favorito
+            comentarioPessoalInput = midiaSalva.comentarioPessoal
         }
     }
 
@@ -237,6 +252,7 @@ fun TelaDetalhes(
         if (idRealBuscaApi > 0) {
             viewModel.buscarDetalhesEstendidos(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
             viewModel.buscarOndeAssistir(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
+            viewModel.carregarComentariosMidia(idRealBuscaApi)
         }
     }
 
@@ -301,28 +317,28 @@ fun TelaDetalhes(
                         if (proximaTemporadaExiste) {
                             temporadaAtual = temporadaConcluidaAlvo + 1
                             episodioAtual = 1
-                            status = "Assistindo"
+                            statusAtual = StatusMidia.ASSISTINDO
                             Toast.makeText(contexto, "Avançando para a Temporada $temporadaAtual! 🚀", Toast.LENGTH_SHORT).show()
                         } else {
-                            status = "Concluído"
+                            statusAtual = StatusMidia.CONCLUIDO
                             if (isModoCasal) viewModel.pararAssistirAgora()
                             Toast.makeText(contexto, "Série marcada como Concluída! 🎉", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(if (proximaTemporadaExiste) "Avançar Temporada" else "Marcar Concluída", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(if (proximaTemporadaExiste) "Avançar Temporada" else "Marcar Concluída", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = {
                         mostrarDialogFimTemporada = false
-                        status = "Concluído"
+                        statusAtual = StatusMidia.CONCLUIDO
                         if (isModoCasal) viewModel.pararAssistirAgora()
                     }
                 ) {
-                    Text("Marcar Concluída", color = Color.White)
+                    Text("Marcar Concluída", color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         )
@@ -391,10 +407,17 @@ fun TelaDetalhes(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isModoCasal) "Detalhes (Casal ❤️)" else "Detalhes da Mídia", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = if (isModoCasal) "Detalhes • $nomeSalaAtiva" else "Detalhes da Mídia",
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
@@ -407,7 +430,7 @@ fun TelaDetalhes(
                             Icon(
                                 imageVector = if (ehFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = if (ehFavorito) "Remover dos favoritos" else "Favoritar",
-                                tint = if (ehFavorito) Color(0xFFFF3366) else Color.White
+                                tint = if (ehFavorito) Color(0xFFFF3366) else MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -417,13 +440,13 @@ fun TelaDetalhes(
                                 coroutineScope = coroutineScope,
                                 midia = midiaReal.copy(
                                     nota = nota,
-                                    status = status,
+                                    status = statusAtual.valor,
                                     temporadaAtual = temporadaAtual,
                                     episodioAtual = episodioAtual
                                 )
                             )
                         }) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card", tint = Color(0xFFFFD700))
+                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card", tint = MaterialTheme.colorScheme.primary)
                         }
 
                         IconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
@@ -432,12 +455,12 @@ fun TelaDetalhes(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E1E1E),
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        containerColor = Color(0xFF121212)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -445,16 +468,14 @@ fun TelaDetalhes(
                 .padding(paddingValues)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(corSuaveAnimada.copy(alpha = 0.4f), Color(0xFF121212)),
+                        colors = listOf(corSuaveAnimada.copy(alpha = 0.4f), MaterialTheme.colorScheme.background),
                         endY = 1200f
                     )
                 )
         ) {
             if (isLoadingSkeleton) {
-                // SKELETON LOAD ENQUANTO CARREGA OS DETALHES
                 TelaDetalhesSkeleton()
             } else {
-                // CONTEÚDO REAL COM MOTION DE ENTRADA
                 AnimatedVisibility(
                     visible = conteudoVisivel,
                     enter = fadeIn(animationSpec = tween(durationMillis = 400)) +
@@ -484,7 +505,7 @@ fun TelaDetalhes(
                                     .fillMaxSize()
                                     .background(
                                         Brush.verticalGradient(
-                                            colors = listOf(Color.Transparent, Color(0xAA121212), Color(0xFF121212)),
+                                            colors = listOf(Color.Transparent, Color(0xAA121212), MaterialTheme.colorScheme.background),
                                             startY = 100f
                                         )
                                     )
@@ -496,10 +517,10 @@ fun TelaDetalhes(
                                     .height(220.dp)
                                     .align(Alignment.Center),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                             ) {
-                                Box(modifier = Modifier.fillMaxSize().background(Color(0xFF2A2A2A)), contentAlignment = Alignment.Center) {
+                                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
                                     val urlPosterExibicao = when {
                                         midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
                                         !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
@@ -526,8 +547,8 @@ fun TelaDetalhes(
 
                             val tituloDinamico = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "Título Indisponível"
 
-                            Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(text = "$tipoRealUtilizado • ${midiaSalva?.genero ?: detalhesApi?.generoTexto ?: "Geral"}", fontSize = 15.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
+                            Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = "$tipoRealUtilizado • ${midiaSalva?.genero ?: detalhesApi?.generoTexto ?: "Geral"}", fontSize = 15.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
 
                             if (detalhesApi != null && !detalhesApi?.fraseEfeito.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -535,7 +556,7 @@ fun TelaDetalhes(
                                     text = "\"${detalhesApi?.fraseEfeito}\"",
                                     fontSize = 14.sp,
                                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                    color = Color.LightGray.copy(alpha = 0.8f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                                     fontWeight = FontWeight.Normal
                                 )
                             }
@@ -562,7 +583,7 @@ fun TelaDetalhes(
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -574,16 +595,16 @@ fun TelaDetalhes(
                                     val notaPublico = if (detalhesApi != null) String.format("%.1f ★", detalhesApi?.notaCritica) else "..."
 
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Lançamento", color = Color.Gray, fontSize = 11.sp)
-                                        Text(ano, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Lançamento", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text(ano, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Duração Real", color = Color.Gray, fontSize = 11.sp)
-                                        Text(duracao, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Duração Real", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text(duracao, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Média Crítica", color = Color.Gray, fontSize = 11.sp)
-                                        Text(notaPublico, color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("Média Crítica", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text(notaPublico, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -625,7 +646,7 @@ fun TelaDetalhes(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     text = "Disponível por Assinatura em:",
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -648,7 +669,7 @@ fun TelaDetalhes(
                                                 modifier = Modifier
                                                     .size(52.dp)
                                                     .clip(RoundedCornerShape(10.dp))
-                                                    .background(Color(0xFF1E1E1E)),
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 AsyncImage(
@@ -677,7 +698,7 @@ fun TelaDetalhes(
                                             Text(
                                                 text = nomeExibicao,
                                                 fontSize = 10.sp,
-                                                color = Color.LightGray,
+                                                color = MaterialTheme.colorScheme.secondary,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.width(60.dp),
@@ -692,7 +713,7 @@ fun TelaDetalhes(
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
                                     text = "Galeria de Fotos & Cenas:",
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -713,7 +734,7 @@ fun TelaDetalhes(
                                                     imagemModalExpandida = imagemItem.urlOriginal
                                                 },
                                             shape = RoundedCornerShape(8.dp),
-                                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                                         ) {
                                             AsyncImage(
                                                 model = imagemItem.urlMiniatura,
@@ -730,7 +751,7 @@ fun TelaDetalhes(
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
                                     text = "Elenco Principal:",
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -751,7 +772,7 @@ fun TelaDetalhes(
                                                 modifier = Modifier
                                                     .size(64.dp)
                                                     .clip(CircleShape)
-                                                    .background(Color(0xFF2A2A2A)),
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 if (ator.urlFotoPerfil.isNotBlank()) {
@@ -764,7 +785,7 @@ fun TelaDetalhes(
                                                 } else {
                                                     Text(
                                                         text = ator.nomeReal.take(2).uppercase(),
-                                                        color = Color.Gray,
+                                                        color = MaterialTheme.colorScheme.secondary,
                                                         fontSize = 14.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
@@ -776,7 +797,7 @@ fun TelaDetalhes(
                                             Text(
                                                 text = ator.nomeReal,
                                                 fontSize = 11.sp,
-                                                color = Color.White,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 fontWeight = FontWeight.Bold,
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
@@ -787,7 +808,7 @@ fun TelaDetalhes(
                                             Text(
                                                 text = ator.nomePersonagem,
                                                 fontSize = 10.sp,
-                                                color = Color.Gray,
+                                                color = MaterialTheme.colorScheme.secondary,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 textAlign = TextAlign.Center,
@@ -800,16 +821,16 @@ fun TelaDetalhes(
 
                             if (ehSerieOuAnime) {
                                 Spacer(modifier = Modifier.height(20.dp))
-                                Text(text = "Guia de Episódios:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Guia de Episódios:", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(text = "Selecione a Temporada:", color = Color.Gray, fontSize = 12.sp)
+                                        Text(text = "Selecione a Temporada:", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
                                         Spacer(modifier = Modifier.height(4.dp))
 
                                         val totalTempDisponiveis = detalhesApi?.totalTemporadas ?: maxOf(temporadaAtual + 1, 1)
@@ -826,10 +847,10 @@ fun TelaDetalhes(
                                                     onClick = { abaTemporadaVisualizada = temp },
                                                     label = { Text("Temporada $temp", fontSize = 12.sp) },
                                                     colors = FilterChipDefaults.filterChipColors(
-                                                        selectedContainerColor = Color(0xFFFFD700),
-                                                        selectedLabelColor = Color.Black,
-                                                        containerColor = Color(0xFF2A2A2A),
-                                                        labelColor = Color.LightGray
+                                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                        labelColor = MaterialTheme.colorScheme.secondary
                                                     )
                                                 )
                                             }
@@ -844,7 +865,7 @@ fun TelaDetalhes(
                                                     .height(80.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                CircularProgressIndicator(color = Color(0xFFFFD700), modifier = Modifier.size(24.dp))
+                                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                             }
                                         } else if (episodiosTmdb.isNotEmpty()) {
                                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -859,7 +880,9 @@ fun TelaDetalhes(
                                                             .clickable {
                                                                 temporadaAtual = abaTemporadaVisualizada
                                                                 episodioAtual = epItem.numeroEpisodio
-                                                                if (status == "Quero Assistir") status = "Assistindo"
+                                                                if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
+                                                                    statusAtual = StatusMidia.ASSISTINDO
+                                                                }
 
                                                                 val ultimoEpisodioDaLista = episodiosTmdb.maxOfOrNull { it.numeroEpisodio } ?: epItem.numeroEpisodio
                                                                 if (epItem.numeroEpisodio >= ultimoEpisodioDaLista) {
@@ -870,7 +893,7 @@ fun TelaDetalhes(
                                                             },
                                                         shape = RoundedCornerShape(8.dp),
                                                         colors = CardDefaults.cardColors(
-                                                            containerColor = if (ehOAtual) Color(0xFF2E2E1A) else Color(0xFF252525)
+                                                            containerColor = if (ehOAtual) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant
                                                         )
                                                     ) {
                                                         Row(
@@ -897,7 +920,7 @@ fun TelaDetalhes(
                                                                     text = "Ep. ${epItem.numeroEpisodio} • ${epItem.nome.ifBlank { "Sem Título" }}",
                                                                     fontSize = 13.sp,
                                                                     fontWeight = FontWeight.Bold,
-                                                                    color = if (ehOAtual) Color(0xFFFFD700) else Color.White,
+                                                                    color = if (ehOAtual) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                                                     maxLines = 1,
                                                                     overflow = TextOverflow.Ellipsis
                                                                 )
@@ -905,7 +928,7 @@ fun TelaDetalhes(
                                                                     Text(
                                                                         text = epItem.sinopse,
                                                                         fontSize = 11.sp,
-                                                                        color = Color.LightGray,
+                                                                        color = MaterialTheme.colorScheme.secondary,
                                                                         maxLines = 2,
                                                                         overflow = TextOverflow.Ellipsis
                                                                     )
@@ -919,9 +942,9 @@ fun TelaDetalhes(
                                                                     .size(28.dp)
                                                                     .clip(CircleShape)
                                                                     .background(
-                                                                        if (ehOAtual) Color(0xFFFFD700)
+                                                                        if (ehOAtual) MaterialTheme.colorScheme.primary
                                                                         else if (jaAssistido) Color(0x664CAF50)
-                                                                        else Color(0xFF333333)
+                                                                        else MaterialTheme.colorScheme.surface
                                                                     ),
                                                                 contentAlignment = Alignment.Center
                                                             ) {
@@ -929,7 +952,7 @@ fun TelaDetalhes(
                                                                     Icon(
                                                                         imageVector = Icons.Default.Check,
                                                                         contentDescription = "Assistido",
-                                                                        tint = if (ehOAtual) Color.Black else Color.White,
+                                                                        tint = if (ehOAtual) MaterialTheme.colorScheme.onPrimary else Color.White,
                                                                         modifier = Modifier.size(16.dp)
                                                                     )
                                                                 }
@@ -941,7 +964,7 @@ fun TelaDetalhes(
                                         } else {
                                             Text(
                                                 text = "Nenhum detalhe extra de episódios encontrado para esta temporada.",
-                                                color = Color.Gray,
+                                                color = MaterialTheme.colorScheme.secondary,
                                                 fontSize = 12.sp,
                                                 modifier = Modifier.padding(vertical = 8.dp)
                                             )
@@ -963,38 +986,55 @@ fun TelaDetalhes(
                             if (midiaSalva != null) {
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                Text(text = "Sua Nota Geral:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Sua Nota Geral:", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.padding(top = 4.dp)) {
                                     repeat(5) { index ->
                                         val estrelaAtiva = index < nota
                                         Icon(
                                             imageVector = Icons.Default.Star,
                                             contentDescription = null,
-                                            tint = if (estrelaAtiva) Color(0xFFFFD700) else Color.DarkGray,
+                                            tint = if (estrelaAtiva) MaterialTheme.colorScheme.primary else Color.DarkGray,
                                             modifier = Modifier.size(36.dp).clickable { nota = index + 1 }
                                         )
                                     }
                                 }
 
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("O que achou deste título?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = comentarioPessoalInput,
+                                    onValueChange = { comentarioPessoalInput = it },
+                                    placeholder = { Text("Escreva a sua análise ou comentário pessoal...", color = MaterialTheme.colorScheme.secondary) },
+                                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                                    maxLines = 4,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                )
+
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                Text(text = "Status Atual da Mídia:", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(text = "Status Atual da Mídia:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf("Quero Assistir", "Assistindo", "Concluído").forEach { s ->
+                                    listOf(StatusMidia.QUERO_ASSISTIR, StatusMidia.ASSISTINDO, StatusMidia.CONCLUIDO).forEach { sEnum ->
                                         FilterChip(
-                                            selected = (status == s),
+                                            selected = (statusAtual == sEnum),
                                             onClick = {
-                                                status = s
-                                                if (s.equals("Concluído", ignoreCase = true) && isModoCasal) {
+                                                statusAtual = sEnum
+                                                if (sEnum == StatusMidia.CONCLUIDO && isModoCasal) {
                                                     viewModel.pararAssistirAgora()
                                                 }
                                             },
-                                            label = { Text(s, fontSize = 12.sp) },
+                                            label = { Text(sEnum.valor, fontSize = 12.sp) },
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = Color(0xFFFFD700),
-                                                selectedLabelColor = Color.Black,
-                                                containerColor = Color(0xFF1E1E1E),
-                                                labelColor = Color.Gray
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         )
                                     }
@@ -1002,7 +1042,7 @@ fun TelaDetalhes(
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                Text(text = "Coleção Temática / Lista:", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(text = "Coleção Temática / Lista:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Row(
                                     modifier = Modifier
@@ -1016,10 +1056,10 @@ fun TelaDetalhes(
                                             onClick = { listaCustomizada = col },
                                             label = { Text(col, fontSize = 12.sp) },
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = Color(0xFFFFD700),
-                                                selectedLabelColor = Color.Black,
-                                                containerColor = Color(0xFF1E1E1E),
-                                                labelColor = Color.Gray
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         )
                                     }
@@ -1033,17 +1073,17 @@ fun TelaDetalhes(
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = Color(0xFFFFD700),
-                                        unfocusedBorderColor = Color.Gray
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
                                     )
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(text = "Sinopse / Visão Geral:", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(text = "Sinopse / Visão Geral:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
 
                             val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopse ?: "Carregando sinopse...")
@@ -1053,26 +1093,25 @@ fun TelaDetalhes(
                                 onValueChange = { if (midiaSalva != null) sinopse = it },
                                 readOnly = (midiaSalva == null),
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface)
                             )
 
+                            // 🚀 MUDANÇA NAS RECOMENDAÇÕES (AGORA COM CARROSSEL ELEGANTE E ADIÇÃO RÁPIDA)
                             if (recomendacoesAtivas.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 Text(
                                     text = "Quem assistiu a este título também gostou:",
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
+
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    recomendacoesAtivas.take(10).forEach { recomendacao ->
-                                        val urlPoster = "https://image.tmdb.org/t/p/w300${recomendacao.caminhoPoster}"
+                                    itemsIndexed(recomendacoesAtivas.take(15)) { _, recomendacao ->
                                         val tipoRecomendacao = when {
                                             recomendacao.mediaType.equals("tv", ignoreCase = true) -> "Série"
                                             recomendacao.mediaType.equals("movie", ignoreCase = true) -> "Filme"
@@ -1081,41 +1120,77 @@ fun TelaDetalhes(
                                             else -> "Filme"
                                         }
 
-                                        Card(
-                                            modifier = Modifier
-                                                .width(100.dp)
-                                                .height(150.dp)
-                                                .clickable {
+                                        val urlPoster = if (!recomendacao.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${recomendacao.caminhoPoster}" else ""
+                                        val plataformaFinalRec = if (tipoRecomendacao == "Série") "TV / Original" else "Cinema"
+
+                                        // Criação provisória de uma "Midia" para renderizar no ItemMidiaCard
+                                        val midiaRecCard = Midia(
+                                            idTmdb = recomendacao.idTmdb,
+                                            titulo = recomendacao.titulo,
+                                            tipo = tipoRecomendacao,
+                                            status = StatusMidia.DESCOBRIR.valor,
+                                            nota = 0,
+                                            sinopse = "",
+                                            imagemCapa = urlPoster,
+                                            genero = "Sugerido",
+                                            plataforma = plataformaFinalRec,
+                                            favorito = false,
+                                            listaCustomizada = "Geral"
+                                        )
+
+                                        val jaNaListaRec = listaAtualBanco.any { it.idTmdb != 0 && it.idTmdb == recomendacao.idTmdb }
+
+                                        Box(modifier = Modifier.width(130.dp)) {
+                                            ItemMidiaCard(
+                                                midia = midiaRecCard,
+                                                onClick = {
                                                     viewModel.limparDetalhesEstendidos()
                                                     onRecomendacaoClique(recomendacao.idTmdb, tipoRecomendacao)
                                                 },
-                                            shape = RoundedCornerShape(8.dp),
-                                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier.fillMaxSize().background(Color(0xFF2A2A2A)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                if (!recomendacao.caminhoPoster.isNullOrBlank()) {
-                                                    AsyncImage(
-                                                        model = urlPoster,
-                                                        contentDescription = recomendacao.titulo,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Crop
+                                                jaAdicionado = jaNaListaRec,
+                                                onAdicionarRapido = {
+                                                    val novaMidiaRec = Midia(
+                                                        id = 0,
+                                                        idTmdb = recomendacao.idTmdb,
+                                                        titulo = recomendacao.titulo,
+                                                        tipo = tipoRecomendacao,
+                                                        nota = 0,
+                                                        temporadaAtual = 1,
+                                                        episodioAtual = 1,
+                                                        minutoParado = 0,
+                                                        jaEncerrou = false,
+                                                        status = StatusMidia.QUERO_ASSISTIR.valor,
+                                                        sinopse = "",
+                                                        imagemCapa = urlPoster,
+                                                        genero = "Recomendação",
+                                                        plataforma = plataformaFinalRec,
+                                                        favorito = false,
+                                                        listaCustomizada = "Geral",
+                                                        isCasal = isModoCasal,
+                                                        casalId = casalIdAtivo
                                                     )
-                                                } else {
-                                                    Text(
-                                                        text = recomendacao.titulo,
-                                                        color = Color.Gray,
-                                                        fontSize = 10.sp,
-                                                        textAlign = TextAlign.Center,
-                                                        modifier = Modifier.padding(4.dp)
-                                                    )
-                                                }
-                                            }
+                                                    viewModel.inserir(novaMidiaRec)
+                                                    Toast.makeText(contexto, "Adicionado à lista!", Toast.LENGTH_SHORT).show()
+                                                },
+                                                modoListaHorizontal = false
+                                            )
                                         }
                                     }
                                 }
+                            }
+
+                            if (idRealBuscaApi > 0) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                SecaoComunidade(
+                                    tmdbId = idRealBuscaApi,
+                                    comentariosPublicos = comentariosPublicos,
+                                    uidLogado = uidLogado,
+                                    onEnviarComentario = { texto -> viewModel.enviarComentarioPublico(idRealBuscaApi, texto) },
+                                    onCurtirComentario = { idComentario, curtiu -> viewModel.curtirComentarioPublico(idRealBuscaApi, idComentario, curtiu) },
+                                    onResponderComentario = { idComentario, resposta -> viewModel.responderComentarioPublico(idRealBuscaApi, idComentario, resposta) },
+                                    onDeletarComentario = { idComentario -> viewModel.deletarComentarioPublico(idRealBuscaApi, idComentario) },
+                                    onEditarComentario = { idComentario, novoTexto -> viewModel.editarComentarioPublico(idRealBuscaApi, idComentario, novoTexto) }
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
@@ -1123,11 +1198,11 @@ fun TelaDetalhes(
                             if (midiaSalva != null && isModoCasal) {
                                 Button(
                                     onClick = {
-                                        status = "Assistindo"
+                                        statusAtual = StatusMidia.ASSISTINDO
                                         val midiaAtualizada = midiaSalva.copy(
                                             temporadaAtual = temporadaAtual,
                                             episodioAtual = episodioAtual,
-                                            status = "Assistindo",
+                                            status = StatusMidia.ASSISTINDO.valor,
                                             jaEncerrou = false
                                         )
                                         viewModel.atualizar(midiaAtualizada)
@@ -1135,15 +1210,15 @@ fun TelaDetalhes(
                                         Toast.makeText(contexto, "Transmitindo e alterando status para 'Assistindo'! 🎬", Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = Color.White)
+                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiary)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = if (ehSerieOuAnime) "ASSISTIR T$temporadaAtual • EP $episodioAtual AGORA (SALA)" else "ASSISTINDO FILME AGORA (SALA)",
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onTertiary,
                                         fontSize = 13.sp
                                     )
                                 }
@@ -1157,25 +1232,30 @@ fun TelaDetalhes(
                                             ?: provedoresStreaming.firstOrNull()?.nomeProvedor
                                             ?: midiaSalva.plataforma
 
-                                        val concluido = (status.equals("Concluído", ignoreCase = true) || status.equals("Concluido", ignoreCase = true))
-                                        val querAssistir = status.equals("Quero Assistir", ignoreCase = true)
+                                        val concluido = statusAtual == StatusMidia.CONCLUIDO
+                                        val querAssistir = statusAtual == StatusMidia.QUERO_ASSISTIR
 
                                         val midiaAtualizada = midiaSalva.copy(
                                             nota = nota,
                                             temporadaAtual = temporadaAtual,
                                             episodioAtual = episodioAtual,
                                             jaEncerrou = concluido,
-                                            status = status,
+                                            status = statusAtual.valor,
                                             sinopse = sinopse,
                                             favorito = ehFavorito,
                                             listaCustomizada = listaCustomizada.ifBlank { "Geral" },
                                             plataforma = streamingAtualizado,
                                             isCasal = isModoCasal,
-                                            casalId = casalIdAtivo
+                                            casalId = casalIdAtivo,
+                                            comentarioPessoal = comentarioPessoalInput
                                         )
                                         viewModel.atualizar(midiaAtualizada)
 
-                                        if (status.equals("Assistindo", ignoreCase = true) && isModoCasal) {
+                                        if (comentarioPessoalInput.isNotBlank()) {
+                                            viewModel.enviarComentarioPublico(idRealBuscaApi, comentarioPessoalInput)
+                                        }
+
+                                        if (statusAtual == StatusMidia.ASSISTINDO && isModoCasal) {
                                             viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
                                         } else if (concluido || querAssistir) {
                                             viewModel.pararAssistirAgora()
@@ -1184,10 +1264,10 @@ fun TelaDetalhes(
                                         onVoltar()
                                     },
                                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("SALVAR ALTERAÇÕES", color = Color.Black, fontWeight = FontWeight.Bold)
+                                    Text("SALVAR ALTERAÇÕES", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                                 }
                             } else {
                                 Button(
@@ -1210,7 +1290,7 @@ fun TelaDetalhes(
                                             episodioAtual = 1,
                                             minutoParado = 0,
                                             jaEncerrou = false,
-                                            status = "Quero Assistir",
+                                            status = StatusMidia.QUERO_ASSISTIR.valor,
                                             sinopse = sinopseParaSalvar,
                                             imagemCapa = capaParaSalvar,
                                             genero = "Geral",
@@ -1221,7 +1301,7 @@ fun TelaDetalhes(
                                             casalId = casalIdAtivo
                                         )
                                         viewModel.inserir(novaMidia)
-                                        val mensagemToast = if (isModoCasal) "Adicionado à lista do casal ❤️!" else "Adicionado à sua lista!"
+                                        val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
                                         Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
                                         onVoltar()
                                     },
@@ -1231,7 +1311,7 @@ fun TelaDetalhes(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA" else (if (isModoCasal) "ADICIONAR À LISTA DO CASAL" else "ADICIONAR À MINHA LISTA"),
+                                        text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA" else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA" else "ADICIONAR À MINHA LISTA"),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -1247,9 +1327,376 @@ fun TelaDetalhes(
     }
 }
 
-// ==========================================
-// COMPONENTE DE SKELETON LOAD PARA OS DETALHES
-// ==========================================
+// 🚀 FÓRUM / COMUNIDADE MANTIDO INTACTO
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SecaoComunidade(
+    tmdbId: Int,
+    comentariosPublicos: List<ComentarioSocial>,
+    uidLogado: String,
+    onEnviarComentario: (String) -> Unit,
+    onCurtirComentario: (String, Boolean) -> Unit,
+    onResponderComentario: (String, String) -> Unit,
+    onDeletarComentario: (String) -> Unit,
+    onEditarComentario: (String, String) -> Unit
+) {
+    var novoComentarioInput by remember { mutableStateOf("") }
+    var mostrarBottomSheet by remember { mutableStateOf(false) }
+
+    var responderAoComentarioId by remember { mutableStateOf<String?>(null) }
+    var respostaInput by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text("O que a comunidade diz:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (comentariosPublicos.isEmpty()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Text(
+                    text = "Ainda ninguém comentou sobre este título. Seja o primeiro!",
+                    color = Color.Gray,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                comentariosPublicos.take(3).forEach { comentario ->
+                    ItemComentarioSocial(
+                        comentario = comentario,
+                        uidLogado = uidLogado,
+                        responderAoComentarioId = responderAoComentarioId,
+                        respostaInput = respostaInput,
+                        onCurtir = { onCurtirComentario(comentario.id, !comentario.curtidasUids.contains(uidLogado)) },
+                        onAlternarResponder = { responderAoComentarioId = if (responderAoComentarioId == comentario.id) null else comentario.id },
+                        onRespostaChange = { respostaInput = it },
+                        onEnviarResposta = {
+                            onResponderComentario(comentario.id, respostaInput)
+                            respostaInput = ""
+                            responderAoComentarioId = null
+                        },
+                        onDeletarComentario = { onDeletarComentario(comentario.id) },
+                        onEditarComentario = { novoTexto -> onEditarComentario(comentario.id, novoTexto) }
+                    )
+                }
+
+                if (comentariosPublicos.size > 3) {
+                    TextButton(
+                        onClick = { mostrarBottomSheet = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Ver todos os ${comentariosPublicos.size} comentários", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = novoComentarioInput,
+                onValueChange = { novoComentarioInput = it },
+                placeholder = { Text("Publicar no fórum...", color = Color.Gray, fontSize = 13.sp) },
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    if (novoComentarioInput.isNotBlank()) {
+                        onEnviarComentario(novoComentarioInput)
+                        novoComentarioInput = ""
+                    }
+                },
+                modifier = Modifier.height(56.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Text("Postar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+
+    if (mostrarBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { mostrarBottomSheet = false },
+            containerColor = MaterialTheme.colorScheme.background,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp)
+            ) {
+                Text("Todos os Comentários", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxHeight(0.8f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(comentariosPublicos.size) { index ->
+                        val comentario = comentariosPublicos[index]
+                        ItemComentarioSocial(
+                            comentario = comentario,
+                            uidLogado = uidLogado,
+                            responderAoComentarioId = responderAoComentarioId,
+                            respostaInput = respostaInput,
+                            onCurtir = { onCurtirComentario(comentario.id, !comentario.curtidasUids.contains(uidLogado)) },
+                            onAlternarResponder = { responderAoComentarioId = if (responderAoComentarioId == comentario.id) null else comentario.id },
+                            onRespostaChange = { respostaInput = it },
+                            onEnviarResposta = {
+                                onResponderComentario(comentario.id, respostaInput)
+                                respostaInput = ""
+                                responderAoComentarioId = null
+                            },
+                            onDeletarComentario = { onDeletarComentario(comentario.id) },
+                            onEditarComentario = { novoTexto -> onEditarComentario(comentario.id, novoTexto) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ItemComentarioSocial(
+    comentario: ComentarioSocial,
+    uidLogado: String,
+    responderAoComentarioId: String?,
+    respostaInput: String,
+    onCurtir: () -> Unit,
+    onAlternarResponder: () -> Unit,
+    onRespostaChange: (String) -> Unit,
+    onEnviarResposta: () -> Unit,
+    onDeletarComentario: () -> Unit,
+    onEditarComentario: (String) -> Unit
+) {
+    val jaCurtiu = comentario.curtidasUids.contains(uidLogado)
+    var mostrarDialogExclusao by remember { mutableStateOf(false) }
+
+    var modoEdicao by remember { mutableStateOf(false) }
+    var textoEditado by remember { mutableStateOf(comentario.texto) }
+
+    if (mostrarDialogExclusao) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogExclusao = false },
+            title = { Text("Apagar Comentário", fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente apagar o seu comentário do fórum público?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeletarComentario()
+                        mostrarDialogExclusao = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
+                ) {
+                    Text("Apagar", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogExclusao = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (comentario.autorFoto.isNotBlank()) {
+                            AsyncImage(
+                                model = comentario.autorFoto,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text(comentario.autorNome.take(1).uppercase(), color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(comentario.autorNome, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+
+                if (comentario.autorUid == uidLogado) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { modoEdicao = !modoEdicao }, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar Comentário",
+                                tint = if (modoEdicao) MaterialTheme.colorScheme.primary else Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(onClick = { mostrarDialogExclusao = true }, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Apagar Comentário",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (modoEdicao) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = textoEditado,
+                    onValueChange = { textoEditado = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color(0xFF333333)
+                    )
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = {
+                        modoEdicao = false
+                        textoEditado = comentario.texto
+                    }) {
+                        Text("Cancelar", color = Color.Gray)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (textoEditado.isNotBlank() && textoEditado != comentario.texto) {
+                                onEditarComentario(textoEditado)
+                            }
+                            modoEdicao = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text("Salvar", color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(comentario.texto, color = Color.LightGray, fontSize = 13.sp, lineHeight = 18.sp)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { onCurtir() }.padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (jaCurtiu) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                            contentDescription = "Curtir",
+                            tint = if (jaCurtiu) MaterialTheme.colorScheme.primary else Color.Gray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("${comentario.curtidasUids.size}", color = if (jaCurtiu) MaterialTheme.colorScheme.primary else Color.Gray, fontSize = 12.sp)
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { onAlternarResponder() }.padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
+                    ) {
+                        Icon(Icons.Default.Reply, contentDescription = "Responder", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Responder", color = Color.Gray, fontSize = 12.sp)
+                    }
+                }
+
+                if (comentario.respostas.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp)
+                            .border(width = 1.dp, color = Color(0xFF333333), shape = RoundedCornerShape(8.dp))
+                            .padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        comentario.respostas.forEach { resposta ->
+                            Row(verticalAlignment = Alignment.Top) {
+                                Box(
+                                    modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (resposta.autorFoto.isNotBlank()) {
+                                        AsyncImage(
+                                            model = resposta.autorFoto,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(resposta.autorNome, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                    Text(resposta.texto, color = Color.LightGray, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                AnimatedVisibility(visible = responderAoComentarioId == comentario.id) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        OutlinedTextField(
+                            value = respostaInput,
+                            onValueChange = onRespostaChange,
+                            placeholder = { Text("Escreva a sua resposta...", fontSize = 12.sp) },
+                            modifier = Modifier.fillMaxWidth().height(60.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Button(
+                            onClick = onEnviarResposta,
+                            modifier = Modifier.align(Alignment.End),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Enviar", color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ... (O Resto do ficheiro mantém-se igual com o TelaDetalhesSkeleton e o CompartilharCard)
+
 @Composable
 fun TelaDetalhesSkeleton() {
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer_detalhes")
@@ -1269,7 +1716,6 @@ fun TelaDetalhesSkeleton() {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Banner falso no topo
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1277,7 +1723,6 @@ fun TelaDetalhesSkeleton() {
                 .background(Color.DarkGray.copy(alpha = alphaAnim)),
             contentAlignment = Alignment.Center
         ) {
-            // Poster falso central
             Box(
                 modifier = Modifier
                     .width(150.dp)
@@ -1293,7 +1738,6 @@ fun TelaDetalhesSkeleton() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Título falso
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
@@ -1301,7 +1745,6 @@ fun TelaDetalhesSkeleton() {
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color.Gray.copy(alpha = alphaAnim))
             )
-            // Subtítulo falso
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.4f)
@@ -1309,10 +1752,7 @@ fun TelaDetalhesSkeleton() {
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color.Gray.copy(alpha = alphaAnim))
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Card de métricas falso
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1320,8 +1760,6 @@ fun TelaDetalhesSkeleton() {
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.Gray.copy(alpha = alphaAnim))
             )
-
-            // Sinopse falsa
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1344,9 +1782,7 @@ fun compartilharCardEstilizado(
             val height = 1920
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
             paint.color = android.graphics.Color.parseColor("#121212")
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
 
@@ -1378,11 +1814,9 @@ fun compartilharCardEstilizado(
 
             val tituloLimitado = if (midia.titulo.length > 25) midia.titulo.take(22) + "..." else midia.titulo
             canvas.drawText(tituloLimitado, width / 2f, 1350f, paint)
-
             paint.color = android.graphics.Color.parseColor("#FFD700")
             paint.textSize = 60f
             canvas.drawText("Nota: ${midia.nota} ★", width / 2f, 1480f, paint)
-
             paint.color = android.graphics.Color.LTGRAY
             paint.textSize = 50f
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
@@ -1391,7 +1825,6 @@ fun compartilharCardEstilizado(
             if (midia.tipo.equals("Série", ignoreCase = true) || midia.tipo.equals("Anime", ignoreCase = true)) {
                 canvas.drawText("Temporada ${midia.temporadaAtual} • Ep ${midia.episodioAtual}", width / 2f, 1680f, paint)
             }
-
             paint.color = android.graphics.Color.DKGRAY
             paint.textSize = 40f
             canvas.drawText("Gerado por CineList", width / 2f, 1850f, paint)
@@ -1413,7 +1846,6 @@ fun compartilharCardEstilizado(
                 clipData = ClipData.newRawUri("", uri)
             }
             contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via"))
-
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
                 Toast.makeText(contexto, "Erro ao gerar card de compartilhamento.", Toast.LENGTH_SHORT).show()
@@ -1432,7 +1864,7 @@ fun SecaoAvaliacoesSala(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1447,7 +1879,7 @@ fun SecaoAvaliacoesSala(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(avaliacao.autorNome, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("${avaliacao.nota}/5 ★", color = Color(0xFFFFD700), fontSize = 14.sp)
+                            Text("${avaliacao.nota}/5 ★", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
                         }
                         if (avaliacao.comentario.isNotBlank()) {
                             Text(avaliacao.comentario, color = Color.LightGray, fontSize = 13.sp)
@@ -1467,7 +1899,7 @@ fun SecaoAvaliacoesSala(
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = if (estrelaAtiva) Color(0xFFFFD700) else Color.DarkGray,
+                        tint = if (estrelaAtiva) MaterialTheme.colorScheme.primary else Color.DarkGray,
                         modifier = Modifier
                             .size(32.dp)
                             .clickable { notaMembro = index + 1 }
@@ -1483,7 +1915,7 @@ fun SecaoAvaliacoesSala(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFFFFD700),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = Color.Gray
                 )
             )
@@ -1496,9 +1928,9 @@ fun SecaoAvaliacoesSala(
                     comentarioMembro = ""
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("ENVIAR AVALIAÇÃO", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text("ENVIAR AVALIAÇÃO", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }
