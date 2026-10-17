@@ -1608,11 +1608,17 @@ fun TelaPerfil(
 
                             Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
+                            XpEPatenteCard(listaDeMidias = midiasContextoAtual)
+
                             PodioFavoritosSection(listaDeMidias = midiasContextoAtual)
 
                             SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
 
                             RaioXStreamingsSection(estatisticasPlataforma = estatisticasPlataforma)
+
+                            MapaDeCalorEstatisticasSection(listaDeMidias = midiasContextoAtual)
+
+                            AnoEmNumerosDinamicoSection(listaDeMidias = midiasContextoAtual)
 
                             TierListSection(listaConcluidos = listaHistoricoConcluido)
 
@@ -3769,6 +3775,153 @@ fun TierListSection(listaConcluidos: List<Midia>) {
                     }
                 }
             }
+        }
+    }
+}
+
+fun calcularXpEPatente(listaDeMidias: List<Midia>): Triple<Int, String, Pair<Int, Int>> {
+    val totalXp = listaDeMidias.sumOf { m ->
+        var xp = 5
+        if (m.obterStatusEnum() == StatusMidia.CONCLUIDO) {
+            xp += if (m.tipo.equals("Filme", ignoreCase = true)) 100 else 200
+        }
+        if (!m.tipo.equals("Filme", ignoreCase = true)) {
+            xp += m.episodioAtual * 15
+        }
+        if (m.nota > 0) xp += 30
+        if (m.comentarioPessoal.isNotBlank()) xp += 20
+        if (m.contadorRewatch > 0) xp += m.contadorRewatch * 50
+        xp
+    }
+
+    val nivel = (totalXp / 500) + 1
+    val xpNoNivelAtual = totalXp % 500
+    val xpProximoNivel = 500
+
+    val patente = when {
+        nivel < 3 -> "Espectador de Domingo 🍿"
+        nivel < 6 -> "Cinéfilo Curioso 🎬"
+        nivel < 10 -> "Crítico Amador 📝"
+        nivel < 15 -> "Maratonista de Elite ⚡"
+        nivel < 25 -> "Mestre do Cinema 🏆"
+        else -> "Lenda de Hollywood 👑"
+    }
+
+    return Triple(nivel, patente, Pair(xpNoNivelAtual, xpProximoNivel))
+}
+
+@Composable
+fun XpEPatenteCard(listaDeMidias: List<Midia>) {
+    val (nivel, patente, xpProgresso) = remember(listaDeMidias) {
+        calcularXpEPatente(listaDeMidias)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Nível $nivel • $patente",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "${xpProgresso.first} / ${xpProgresso.second} XP",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            LinearProgressIndicator(
+                progress = { xpProgresso.first.toFloat() / xpProgresso.second.toFloat() },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surface
+            )
+        }
+    }
+}
+
+@Composable
+fun MapaDeCalorEstatisticasSection(listaDeMidias: List<Midia>) {
+    val mapaDias = remember(listaDeMidias) {
+        val cal = java.util.Calendar.getInstance()
+        listaDeMidias.map { if (it.dataConclusao > 0L) it.dataConclusao else it.atualizadoEm }
+            .filter { it > 0L }
+            .map {
+                cal.timeInMillis = it
+                cal.get(java.util.Calendar.DAY_OF_YEAR)
+            }
+            .groupingBy { it }
+            .eachCount()
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("🟩 Mapa de Calor Anual de Maratona", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+            Text("Dias em que você mais assistiu filmes e episódios:", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+
+            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                for (semana in 0 until 24) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        for (dia in 0 until 7) {
+                            val diaAno = (semana * 7 + dia) % 365 + 1
+                            val qtd = mapaDias[diaAno] ?: 0
+                            val cor = when {
+                                qtd >= 4 -> Color(0xFF00FF7F)
+                                qtd in 2..3 -> Color(0xFF38BDF8)
+                                qtd == 1 -> Color(0xFFFFD700)
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            }
+                            Box(
+                                modifier = Modifier.size(10.dp).clip(RoundedCornerShape(2.dp)).background(cor)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AnoEmNumerosDinamicoSection(listaDeMidias: List<Midia>) {
+    val concluidos = remember(listaDeMidias) {
+        listaDeMidias.filter { it.obterStatusEnum() == StatusMidia.CONCLUIDO }
+    }
+    if (concluidos.isEmpty()) return
+
+    val duracaoMedia = remember(concluidos) {
+        val comDuracao = concluidos.filter { it.duracaoTotal > 0 }
+        if (comDuracao.isNotEmpty()) comDuracao.map { it.duracaoTotal }.average().toInt() else 115
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("✨ O Seu Ano em Números Cinéfilos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• Total de Títulos Concluídos: ${concluidos.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• Duração Média Preferida: ${duracaoMedia} minutos", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• Ritmo de Maratona: Ativo e em dia!", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }

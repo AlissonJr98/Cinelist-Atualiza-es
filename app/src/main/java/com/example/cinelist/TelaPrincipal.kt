@@ -393,6 +393,7 @@ fun TelaPrincipal(
     var modoVisualizacaoMinhaLista by rememberSaveable { mutableIntStateOf(0) }
     var modoVisualizacaoDescobrir by rememberSaveable { mutableIntStateOf(0) }
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
+    var mostrarDialogoCineBot by remember { mutableStateOf(false) }
 
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
@@ -940,6 +941,17 @@ fun TelaPrincipal(
                 }
             )
         }
+
+        if (mostrarDialogoCineBot) {
+            DialogoCineBot(
+                onDispensar = { mostrarDialogoCineBot = false },
+                onAdicionarMidia = { titulo ->
+                    onAdicionarClique(0, titulo, "Filme", StatusMidia.QUERO_ASSISTIR.valor, 0, "Sugerido pelo CineBot IA 🤖", "", "Geral", "Cinema")
+                    mostrarDialogoCineBot = false
+                    mostrarSucesso("\"$titulo\" adicionado à sua lista! 🍿")
+                }
+            )
+        }
     }
 
     Scaffold(
@@ -1022,6 +1034,7 @@ fun TelaPrincipal(
                             modifier = Modifier.height(34.dp)
                         ) { Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
                     }
+                    IconButton(onClick = { mostrarDialogoCineBot = true }) { Icon(Icons.Default.AutoAwesome, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary) }
                     IconButton(onClick = { mostrarDialogoSorteio = true }) { Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary) }
                     IconButton(onClick = onPerfilClique) { Icon(Icons.Default.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.primary) }
                 },
@@ -2239,4 +2252,125 @@ fun ConteudoCardDebate(
             }
         }
     }
+}
+
+@Composable
+fun ConteudoCardCinema(
+    msg: MensagemGrupo,
+    souEu: Boolean
+) {
+    Surface(
+        color = Color(0xFFE50914).copy(alpha = 0.25f),
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("🍿", fontSize = 22.sp)
+            Text(
+                text = msg.texto,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = Color(0xFFFF5252)
+            )
+        }
+    }
+}
+
+@Composable
+fun DialogoCineBot(
+    onDispensar: () -> Unit,
+    onAdicionarMidia: (String) -> Unit
+) {
+    var pedidoText by remember { mutableStateOf("") }
+    var sugestoesBot by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+
+    AlertDialog(
+        onDismissRequest = onDispensar,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("CineBot IA Assistente 🤖", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Diga o que você quer ver (ex: 'Quero um suspense psicológico na Netflix'):",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+
+                OutlinedTextField(
+                    value = pedidoText,
+                    onValueChange = { pedidoText = it },
+                    placeholder = { Text("Ex: Comédia curta para ver comendo...", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Button(
+                    onClick = {
+                        val txt = pedidoText.lowercase()
+                        sugestoesBot = when {
+                            txt.contains("suspense") || txt.contains("psicológico") -> listOf(
+                                "Garota Exemplar" to "Filme • Suspense Psicológico",
+                                "Ilha do Medo" to "Filme • Mistério e Reviravolta"
+                            )
+                            txt.contains("comédia") || txt.contains("comer") -> listOf(
+                                "As Branquelas" to "Filme • Comédia Hilária",
+                                "Brooklyn Nine-Nine" to "Série • Comédia Curta"
+                            )
+                            txt.contains("terror") || txt.contains("assustador") -> listOf(
+                                "Invocação do Mal" to "Filme • Terror Sobrenatural",
+                                "O Oculto" to "Filme • Terror Psicológico"
+                            )
+                            else -> listOf(
+                                "O Lado Bom da Vida" to "Filme • Drama e Comédia",
+                                "Stranger Things" to "Série • Ficção e Mistério"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Sugerir 2 Opções Exatas ✨", fontWeight = FontWeight.Bold)
+                }
+
+                if (sugestoesBot.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    sugestoesBot.forEach { (titulo, desc) ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                                }
+                                Button(
+                                    onClick = { onAdicionarMidia(titulo) },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text("+ Adicionar", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDispensar) { Text("Fechar") }
+        }
+    )
 }
