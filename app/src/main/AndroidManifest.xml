@@ -32,18 +32,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CineList">
 
-        <service
-            android:name=".MeuFirebaseMessagingService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
-        <!-- Serviço Firebase Cloud Messaging -->
+        <!-- Serviço Firebase Cloud Messaging Unificado -->
         <service
             android:name=".CineFirebaseMessagingService"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

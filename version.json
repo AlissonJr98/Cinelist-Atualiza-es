@@ -2,5 +2,5 @@
   "versionCode": 52,
   "versionName": "2.0.12",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.12/CineList-v2.0.12.apk",
-  "changelog": "Correção barra de status2.0.12."
+  "changelog": "Versão 2.0.12: Correção de notificações FCM do chat e salas em segundo plano/app fechado."
 }

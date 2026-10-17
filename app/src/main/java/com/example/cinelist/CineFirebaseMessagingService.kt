@@ -1,9 +1,12 @@
 package com.example.cinelist
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -15,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.random.Random
 
 @AndroidEntryPoint
 class CineFirebaseMessagingService : FirebaseMessagingService() {
@@ -42,24 +46,47 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
+        val meuUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val autorUid = remoteMessage.data["autorUid"]
+            ?: remoteMessage.data["remetenteUid"]
+            ?: ""
+
+        // 🚀 1. Se fui eu quem enviei a mensagem, ignora para não notificar a mim mesmo
+        if (autorUid.isNotBlank() && meuUid.isNotBlank() && autorUid == meuUid) {
+            return
+        }
+
+        val grupoId = remoteMessage.data["grupoId"] ?: ""
+        // 🚀 2. Verifica se a sala específica foi silenciada pelo usuário
+        if (grupoId.isNotBlank()) {
+            val prefsMute = getSharedPreferences("CineListMutePrefs", Context.MODE_PRIVATE)
+            if (prefsMute.getBoolean("mute_$grupoId", false)) {
+                return // Ignora notificação desta sala específica
+            }
+        }
+
+        val autorNome = remoteMessage.data["autorNome"]
+            ?: remoteMessage.data["remetenteNome"]
+            ?: ""
+
         val titulo = remoteMessage.notification?.title
             ?: remoteMessage.data["titulo"]
-            ?: "CineList"
+            ?: if (autorNome.isNotBlank()) "Nova mensagem de $autorNome" else "CineList"
 
         val mensagem = remoteMessage.notification?.body
             ?: remoteMessage.data["mensagem"]
-            ?: "Você tem uma nova atualização."
+            ?: remoteMessage.data["texto"]
+            ?: "Você recebeu uma nova atualização no grupo."
 
-        val tipo = remoteMessage.data["tipo"] ?: "GERAL"
-        val autor = remoteMessage.data["remetenteNome"] ?: ""
+        val tipo = remoteMessage.data["tipo"] ?: remoteMessage.data["tipoAcao"] ?: "GERAL"
 
         if (tipo == "SOLICITACAO_AMIZADE") {
             NotificacaoHelper.dispararNotificacaoSolicitacaoAmizade(
                 context = applicationContext,
-                remetenteNome = if (autor.isNotBlank()) autor else "Um cinéfilo"
+                remetenteNome = if (autorNome.isNotBlank()) autorNome else "Um cinéfilo"
             )
         } else {
-            exibirNotificacaoPadrao(titulo, mensagem)
+            exibirNotificacaoSistema(titulo, mensagem, grupoId, tipo)
         }
 
         // Salva a notificação localmente no banco para aparecer na aba Notificações
@@ -80,18 +107,39 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun exibirNotificacaoPadrao(titulo: String, mensagem: String) {
+    private fun exibirNotificacaoSistema(titulo: String, mensagem: String, grupoId: String, tipo: String) {
         val canalId = "canal_salas_compartilhadas"
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                canalId,
+                "Salas e Chat Compartilhados",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Avisos de mensagens e atividades nas salas do CineList"
+                enableLights(true)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 300, 150, 300)
+            }
+            notificationManager.createNotificationChannel(canal)
         }
 
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("GRUPO_ID", grupoId)
+            putExtra("TIPO_ACAO", tipo)
+        }
+
+        val idNotif = Random.nextInt(1000, 999999)
         val pendingIntent = PendingIntent.getActivity(
             this,
-            System.currentTimeMillis().toInt(),
+            idNotif,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        val somPadrao = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
         val builder = NotificationCompat.Builder(this, canalId)
             .setSmallIcon(R.drawable.ic_notification)
@@ -99,10 +147,11 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
             .setContentText(mensagem)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setSound(somPadrao)
+            .setVibrate(longArrayOf(0, 300, 150, 300))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(System.currentTimeMillis().toInt(), builder.build())
+        notificationManager.notify(idNotif, builder.build())
     }
 }
