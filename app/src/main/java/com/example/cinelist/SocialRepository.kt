@@ -18,6 +18,9 @@ import com.google.firebase.storage.FirebaseStorage
 import android.net.Uri
 import javax.inject.Singleton
 
+/**
+ * Representa uma mensagem de chat entre dois usuários.
+ */
 data class MensagemChat(
     val id: String = "",
     val remetenteUid: String = "",
@@ -27,6 +30,9 @@ data class MensagemChat(
     val mediaUrl: String = ""
 )
 
+/**
+ * Representa uma mensagem de grupo/casal.
+ */
 data class MensagemGrupo(
     val id: String = "",
     val autorUid: String = "",
@@ -39,6 +45,9 @@ data class MensagemGrupo(
     val mediaUrl: String = ""
 )
 
+/**
+ * Representa uma resposta a um comentário social.
+ */
 data class RespostaSocial(
     val id: String = "",
     val autorUid: String = "",
@@ -48,17 +57,26 @@ data class RespostaSocial(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+/**
+ * Representa um comentário social em uma mídia.
+ */
 data class ComentarioSocial(
     val id: String = "",
     val autorUid: String = "",
     val autorNome: String = "",
     val autorFoto: String = "",
     val texto: String = "",
+    val contemSpoiler: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
     val curtidasUids: List<String> = emptyList(),
     val respostas: List<RespostaSocial> = emptyList()
 )
 
+/**
+ * Repositório responsável pelas funcionalidades sociais do aplicativo.
+ * 
+ * Gerencia amigos, chats, comentários e interações sociais.
+ */
 @Singleton
 class SocialRepository @Inject constructor() {
 

@@ -2,9 +2,6 @@ package com.example.cinelist
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 
 class TmdbPagingSource(
     private val apiService: TmdbApiService,
@@ -93,43 +90,51 @@ class TmdbPagingSource(
                 }
             }
 
-            // Consulta os provedores reais em paralelo para cada item da página atual
-            val listaResultado = coroutineScope {
-                listaBruta.map { filme ->
-                    async {
-                        try {
-                            val ehSerie = filme.mediaType.equals("tv", ignoreCase = true) || filme.ehSerie
-                            val resposta = if (ehSerie) {
-                                apiService.obterProvedoresSerieOuAnime(idSerie = filme.idTmdb)
-                            } else {
-                                apiService.obterProvedoresFilme(idFilme = filme.idTmdb)
-                            }
+            // ⚡ Consulta os provedores reais, mas LIMITADO e SEQUENCIAL.
+            // Buscar os 40+ itens da página em paralelo estourava o rate limit
+            // do TMDB (HTTP 429) e fazia a aba Descobrir demorar/ falhar.
+            // Prioriza os primeiros itens visíveis e trata falhas sem quebrar a página.
+            val LIMITE_BUSCA_PROVEDORES = 12
 
-                            val providerBr = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
-                            val primeiroProvedor = providerBr.firstOrNull()?.nomeProvedor
-
-                            val plataformaReal = when {
-                                !primeiroProvedor.isNullOrBlank() -> primeiroProvedor
-                                ehSerie -> "TV / Original"
-                                else -> "Cinema"
-                            }
-
-                            val tituloLower = filme.titulo.lowercase()
-                            val plataformaFinal = when {
-                                tituloLower.contains("reacher") || tituloLower.contains("the boys") || tituloLower.contains("invincible") || tituloLower.contains("rings of power") -> "Prime Video"
-                                tituloLower.contains("stranger things") || tituloLower.contains("squid game") || tituloLower.contains("wednesday") -> "Netflix"
-                                else -> plataformaReal
-                            }
-
-                            filme.apply {
-                                plataformaDetectada = plataformaFinal
-                            }
-                        } catch (e: Exception) {
-                            filme
+            val listaComProvedor = listaBruta.mapIndexed { indice, filme ->
+                if (indice >= LIMITE_BUSCA_PROVEDORES) {
+                    filme
+                } else {
+                    try {
+                        val ehSerie = filme.mediaType.equals("tv", ignoreCase = true) || filme.ehSerie
+                        val resposta = if (ehSerie) {
+                            apiService.obterProvedoresSerieOuAnime(idSerie = filme.idTmdb)
+                        } else {
+                            apiService.obterProvedoresFilme(idFilme = filme.idTmdb)
                         }
+
+                        val providerBr = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
+                        val primeiroProvedor = providerBr.firstOrNull()?.nomeProvedor
+
+                        val plataformaReal = when {
+                            !primeiroProvedor.isNullOrBlank() -> primeiroProvedor
+                            ehSerie -> "TV / Original"
+                            else -> "Cinema"
+                        }
+
+                        val tituloLower = filme.titulo.lowercase()
+                        val plataformaFinal = when {
+                            tituloLower.contains("reacher") || tituloLower.contains("the boys") ||
+                                    tituloLower.contains("invincible") || tituloLower.contains("rings of power") -> "Prime Video"
+                            tituloLower.contains("stranger things") || tituloLower.contains("squid game") ||
+                                    tituloLower.contains("wednesday") -> "Netflix"
+                            else -> plataformaReal
+                        }
+
+                        filme.copy(plataformaDetectada = plataformaFinal)
+                    } catch (e: Exception) {
+                        // Falha ao buscar provedor não deve derrubar a listagem
+                        filme
                     }
-                }.awaitAll()
-            }.distinctBy { "${it.mediaType ?: "midia"}_${it.idTmdb}" }
+                }
+            }
+
+            val listaResultado = listaComProvedor.distinctBy { "${it.mediaType ?: "midia"}_${it.idTmdb}" }
 
             val proximaChave = if (paginaAtual < totalPaginas && listaResultado.isNotEmpty()) paginaAtual + 1 else null
             val chaveAnterior = if (paginaAtual > 1) paginaAtual - 1 else null

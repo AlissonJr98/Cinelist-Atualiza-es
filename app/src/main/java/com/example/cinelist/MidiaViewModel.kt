@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -37,6 +36,15 @@ data class CineWrappedData(
     val frasePersonalizada: String
 )
 
+/**
+ * ViewModel principal do aplicativo.
+ * 
+ * Gerencia mídias, grupos, notificações, chat e funcionalidades sociais.
+ * 
+ * NOTA: Este ViewModel está sendo gradualmente dividido em ViewModels menores
+ * (GrupoViewModel, ChatViewModel, NotificacaoViewModel, MatchViewModel, PerfilViewModel)
+ * para melhor organização do código.
+ */
 @HiltViewModel
 class MidiaViewModel @Inject constructor(
     private val repository: MidiaRepository,
@@ -47,6 +55,14 @@ class MidiaViewModel @Inject constructor(
 
     private val firestore = FirebaseFirestore.getInstance()
     private val prefsMute = context.getSharedPreferences("CineListMutePrefs", Context.MODE_PRIVATE)
+
+    // Estado global de operação para feedback ao usuário
+    private val _estadoOperacao = MutableStateFlow<Resultado<Unit>?>(null)
+    val estadoOperacao: StateFlow<Resultado<Unit>?> = _estadoOperacao.asStateFlow()
+
+    fun limparEstadoOperacao() {
+        _estadoOperacao.value = null
+    }
 
     val todasAsMidias: Flow<List<Midia>> = repository.todasAsMidias
     val midiasPessoais: Flow<List<Midia>> = repository.midiasPessoais
@@ -94,11 +110,11 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
-    fun enviarMensagemParaSala(texto: String) {
+    fun enviarMensagemParaSala(texto: String, tipoMensagem: String = "TEXTO", mediaUrl: String = "") {
         val grupoId = _casalIdAtivo.value
         if (grupoId.isNotBlank()) {
             viewModelScope.launch {
-                socialRepository.enviarMensagemGrupo(grupoId, texto)
+                socialRepository.enviarMensagemGrupo(grupoId, texto, tipoMensagem, mediaUrl)
             }
         }
     }
@@ -148,6 +164,7 @@ class MidiaViewModel @Inject constructor(
         }
     }
 
+    // Carrosseis
     private val _filmesEmCartaz = MutableStateFlow<List<TmdbFilme>>(emptyList())
     val filmesEmCartaz: StateFlow<List<TmdbFilme>> = _filmesEmCartaz
 
@@ -176,34 +193,58 @@ class MidiaViewModel @Inject constructor(
         monitorarExpulsaoDaSala()
     }
 
-    fun carregarCarrosseisDescobrir() {
-        if (_carrosselPopulares.value.isNotEmpty()) return
+    /**
+     * Carrega os carrosséis da aba Descobrir.
+     *
+     * Cada secção é carregada de forma INDEPENDENTE: se uma falhar (ex.: 429 do
+     * TMDB), as restantes continuam a aparecer, em vez de a aba inteira ficar vazia.
+     */
+    fun carregarCarrosseisDescobrir(forcar: Boolean = false) {
+        if (!forcar && _carrosselPopulares.value.isNotEmpty()) return
 
         viewModelScope.launch {
             _carregandoCarrosseis.value = true
             try {
-                kotlinx.coroutines.coroutineScope {
-                    val pop1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = null) }
-                    val pop2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = null) }
-                    val pop3 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 3, sortBy = "popularity.desc", provedores = null, generos = null) }
+                // Helpers locais: agregam páginas sem falhar a secção inteira
 
-                    val ser1 = async { RetrofitClient.apiService.descobrirSeries(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = null) }
-                    val ser2 = async { RetrofitClient.apiService.descobrirSeries(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = null) }
-                    val ser3 = async { RetrofitClient.apiService.descobrirSeries(pagina = 3, sortBy = "popularity.desc", provedores = null, generos = null) }
-
-                    val com1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = "35") }
-                    val com2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = "35") }
-
-                    val acao1 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 1, sortBy = "popularity.desc", provedores = null, generos = "28") }
-                    val acao2 = async { RetrofitClient.apiService.descobrirFilmes(pagina = 2, sortBy = "popularity.desc", provedores = null, generos = "28") }
-
-                    _carrosselPopulares.value = (pop1.await().resultados + pop2.await().resultados + pop3.await().resultados).map { it.copy(mediaType = "movie") }
-                    _carrosselSeriesAlta.value = (ser1.await().resultados + ser2.await().resultados + ser3.await().resultados).map { it.copy(mediaType = "tv") }
-                    _carrosselComedias.value = (com1.await().resultados + com2.await().resultados).map { it.copy(mediaType = "movie") }
-                    _carrosselAcao.value = (acao1.await().resultados + acao2.await().resultados).map { it.copy(mediaType = "movie") }
+                suspend fun filmes(vararg paginas: Int, genero: String? = null): List<TmdbFilme> {
+                    val acumulado = mutableListOf<TmdbFilme>()
+                    for (p in paginas) {
+                        runCatching {
+                            RetrofitClient.apiService.descobrirFilmes(
+                                pagina = p, sortBy = "popularity.desc",
+                                provedores = null, generos = genero
+                            ).resultados
+                        }.onSuccess { acumulado.addAll(it) }
+                    }
+                    return acumulado.map { it.copy(mediaType = "movie") }
                 }
+
+                suspend fun series(vararg paginas: Int): List<TmdbFilme> {
+                    val acumulado = mutableListOf<TmdbFilme>()
+                    for (p in paginas) {
+                        runCatching {
+                            RetrofitClient.apiService.descobrirSeries(
+                                pagina = p, sortBy = "popularity.desc",
+                                provedores = null, generos = null
+                            ).resultados
+                        }.onSuccess { acumulado.addAll(it) }
+                    }
+                    return acumulado.map { it.copy(mediaType = "tv") }
+                }
+
+                // Populares e Séries em paralelo (as duas hero lists)
+                val popularesDeferred = async { filmes(1, 2, 3) }
+                val seriesDeferred = async { series(1, 2, 3) }
+
+                _carrosselPopulares.value = popularesDeferred.await()
+                _carrosselSeriesAlta.value = seriesDeferred.await()
+
+                // Géneros específicos depois, para não competir pelo rate limit
+                _carrosselComedias.value = filmes(1, 2, genero = "35")
+                _carrosselAcao.value = filmes(1, 2, genero = "28")
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("MidiaViewModel", "Falha ao carregar carrosséis", e)
             } finally {
                 _carregandoCarrosseis.value = false
             }
@@ -245,11 +286,11 @@ class MidiaViewModel @Inject constructor(
         pararAssistirAgora()
     }
 
-    fun avaliarMidiaNaSala(midia: Midia, nota: Int, comentario: String) {
+    fun avaliarMidiaNaSala(midia: Midia, nota: Int, comentario: String, contemSpoiler: Boolean = false) {
         val grupoId = _casalIdAtivo.value
         if (grupoId.isNotBlank()) {
             viewModelScope.launch {
-                repository.salvarAvaliacaoMembro(grupoId, midia, nota, comentario)
+                repository.salvarAvaliacaoMembro(grupoId, midia, nota, comentario, contemSpoiler)
             }
         }
     }
@@ -295,7 +336,11 @@ class MidiaViewModel @Inject constructor(
         val grupo = _casalIdAtivo.value
         if (grupo.isNotBlank()) {
             viewModelScope.launch {
-                val existentes = repository.buscarMidiasPorGrupo(grupo).firstOrNull() ?: emptyList()
+                val existentes = repository.buscarMidiasPorGrupo(grupo).let { flow ->
+                    var lista: List<Midia> = emptyList()
+                    flow.collect { lista = it; return@collect }
+                    lista
+                }
                 val jaExiste = existentes.any {
                     (it.idTmdb != 0 && it.idTmdb == match.idTmdb) ||
                             it.titulo.trim().equals(match.titulo.trim(), ignoreCase = true)
@@ -320,7 +365,7 @@ class MidiaViewModel @Inject constructor(
                         listaCustomizada = "Geral",
                         isCasal = true,
                         casalId = grupo,
-                        adicionadoPor = "Modo Match ❤",
+                        adicionadoPor = "Modo Match",
                         statusSugestao = "APROVADO"
                     )
                     repository.inserir(novaMidia)
@@ -487,7 +532,6 @@ class MidiaViewModel @Inject constructor(
     private val _listaAmigoSelecionado = MutableStateFlow<List<Midia>>(emptyList())
     val listaAmigoSelecionado: StateFlow<List<Midia>> = _listaAmigoSelecionado
 
-    // 🚀 LIGAÇÃO À NUVEM PARA AS NOVAS REDES SOCIAIS
     fun atualizarMeuPerfilPublico(nome: String, bio: String, instagram: String = "", twitter: String = "", letterboxd: String = "") {
         viewModelScope.launch { socialRepository.atualizarPerfilPublico(nome, bio, instagram, twitter, letterboxd) }
     }
@@ -737,24 +781,33 @@ class MidiaViewModel @Inject constructor(
 
     fun inserir(midia: Midia) {
         viewModelScope.launch {
-            val usuarioLogado = FirebaseAuth.getInstance().currentUser
-            val uid = usuarioLogado?.uid ?: ""
-            val nomeAExibir = usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Parceiro(a)"
-            val identificadorAdicao = "${uid}_${nomeAExibir}"
+            _estadoOperacao.value = Resultado.Carregando
+            try {
+                val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                val uid = usuarioLogado?.uid ?: ""
+                val nomeAExibir = usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Parceiro(a)"
+                val identificadorAdicao = "${uid}_${nomeAExibir}"
 
-            val midiaProcessada = if (midia.isCasal && midia.casalId.isNotBlank()) {
-                midia.copy(
-                    adicionadoPor = identificadorAdicao,
-                    statusSugestao = "PENDENTE"
-                )
-            } else {
-                midia.copy(
-                    adicionadoPor = identificadorAdicao,
-                    statusSugestao = "APROVADO"
+                val midiaProcessada = if (midia.isCasal && midia.casalId.isNotBlank()) {
+                    midia.copy(
+                        adicionadoPor = identificadorAdicao,
+                        statusSugestao = "PENDENTE"
+                    )
+                } else {
+                    midia.copy(
+                        adicionadoPor = identificadorAdicao,
+                        statusSugestao = "APROVADO"
+                    )
+                }
+
+                repository.inserir(midiaProcessada)
+                _estadoOperacao.value = Resultado.Sucesso(Unit)
+            } catch (e: Exception) {
+                _estadoOperacao.value = Resultado.Erro(
+                    mensagem = "Erro ao adicionar mídia: ${e.message}",
+                    causa = e
                 )
             }
-
-            repository.inserir(midiaProcessada)
         }
     }
 
@@ -1015,9 +1068,9 @@ class MidiaViewModel @Inject constructor(
         val destaque = concluidos.maxByOrNull { it.nota }?.titulo ?: midias.firstOrNull()?.titulo ?: "Nenhum título ainda"
 
         val frase = when {
-            horas > 100 -> "Você é uma verdadeira lenda das maratonas! 🍿🔥"
-            horas > 50 -> "Sua lista está recheada de ótimas histórias! 🎬"
-            else -> "Sua jornada cinéfila está apenas começando! ✨"
+            horas > 100 -> "Você é uma verdadeira lenda das maratonas!"
+            horas > 50 -> "Sua lista está recheada de ótimas histórias!"
+            else -> "Sua jornada cinéfila está apenas começando!"
         }
 
         return CineWrappedData(

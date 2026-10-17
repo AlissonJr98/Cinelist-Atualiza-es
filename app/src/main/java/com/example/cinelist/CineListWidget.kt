@@ -63,7 +63,7 @@ class CineListWidget : AppWidgetProvider() {
             val listaAssistindo = midias.filter {
                 it.status.equals("Assistindo", ignoreCase = true) &&
                         !it.tipo.equals("Filme", ignoreCase = true)
-            }
+            }.sortedByDescending { it.atualizadoEm }
 
             if (listaAssistindo.isNotEmpty()) {
                 val chavePref = "indice_serie_$appWidgetId"
@@ -100,7 +100,7 @@ class CineListWidget : AppWidgetProvider() {
                 val listaAssistindo = midias.filter {
                     it.status.equals("Assistindo", ignoreCase = true) &&
                             !it.tipo.equals("Filme", ignoreCase = true)
-                }
+                }.sortedByDescending { it.atualizadoEm }
 
                 val prefs = context.getSharedPreferences("CineListWidgetPrefs", Context.MODE_PRIVATE)
                 val chavePref = "indice_serie_$appWidgetId"

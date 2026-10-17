@@ -8,14 +8,28 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 
-// 🚀 NOVO ENUM: Centraliza e padroniza todos os status da aplicação
+/**
+ * Enumeração que representa os status possíveis de uma mídia.
+ */
 enum class StatusMidia(val valor: String) {
+    /** Mídia marcada para assistir */
     QUERO_ASSISTIR("Quero Assistir"),
+    
+    /** Mídia sendo assistida atualmente */
     ASSISTINDO("Assistindo"),
+    
+    /** Mídia concluída */
     CONCLUIDO("Concluído"),
+    
+    /** Mídia para descobrir */
     DESCOBRIR("Descobrir");
 
     companion object {
+        /**
+         * Converte uma string para o enum StatusMidia.
+         * @param texto Texto a ser convertido
+         * @return StatusMidia correspondente ou QUERO_ASSISTIR como padrão
+         */
         fun fromString(texto: String?): StatusMidia {
             return when (texto?.trim()?.lowercase()) {
                 "assistindo" -> ASSISTINDO
@@ -81,11 +95,54 @@ data class Midia(
     var statusSugestao: String = "APROVADO",
 
     // 🚀 NOVO CAMPO: Guarda os UIDs separados por vírgula de quem já aceitou
-    var uidsAprovados: String = ""
+    var uidsAprovados: String = "",
+
+    // 🚀 NOVOS CAMPOS PARA REWATCH, TAGS E PRIVACIDADE
+    var contadorRewatch: Int = 0,
+    var tagsPersonalizadas: String = "",
+    var ehPrivado: Boolean = false
 ) {
     constructor() : this(id = 0)
 
     fun obterStatusEnum(): StatusMidia = StatusMidia.fromString(status)
+
+    /**
+     * Verdadeiro quando o conteúdo é seriado (divide-se em episódios).
+     */
+    val ehSerieOuAnime: Boolean
+        get() = tipo.equals("Série", ignoreCase = true) ||
+                tipo.equals("Anime", ignoreCase = true) ||
+                tipo.equals("Novela", ignoreCase = true) ||
+                tipo.equals("Dorama", ignoreCase = true)
+
+    /**
+     * Verdadeiro quando o utilizador já avançou no conteúdo, ou seja,
+     * quando existe um ponto de retorno real ("onde parei").
+     *
+     * Cobre os casos em que o episódio/temporada foi alterado manualmente
+     * mesmo que o status se mantenha "Quero Assistir".
+     */
+    val temProgressoEpisodio: Boolean
+        get() = ehSerieOuAnime && (
+                temporadaAtual > 1 || episodioAtual > 1
+                )
+
+    /**
+     * Avaliação de "prioridade para mostrar primeiro".
+     *
+     * Ordem decrescente:
+     *  3. Está em Assistindo (estava a ver agora)
+     *  2. Série com progresso de episódio (sabe-se onde parou)
+     *  1. Restante conteúdo ativo
+     *  0. Concluído (já terminou, vai para o fundo)
+     */
+    val pesoPrioridade: Int
+        get() = when {
+            obterStatusEnum() == StatusMidia.ASSISTINDO -> 3
+            obterStatusEnum() == StatusMidia.CONCLUIDO -> 0
+            temProgressoEpisodio -> 2
+            else -> 1
+        }
 
     fun toMap(): Map<String, Any> {
         return mapOf(
@@ -117,7 +174,10 @@ data class Midia(
             "atualizadoEm" to atualizadoEm,
             "comentarioPessoal" to comentarioPessoal,
             "statusSugestao" to statusSugestao,
-            "uidsAprovados" to uidsAprovados // 🚀 Guarda na nuvem
+            "uidsAprovados" to uidsAprovados,
+            "contadorRewatch" to contadorRewatch,
+            "tagsPersonalizadas" to tagsPersonalizadas,
+            "ehPrivado" to ehPrivado
         )
     }
 }

@@ -6,6 +6,7 @@ data class AvaliacaoMembro(
     val autorFoto: String = "",
     val nota: Int = 0,
     val comentario: String = "",
+    val contemSpoiler: Boolean = false,
     val dataAtualizacao: Long = System.currentTimeMillis()
 ) {
     fun toMap(): Map<String, Any> = mapOf(
@@ -14,6 +15,7 @@ data class AvaliacaoMembro(
         "autorFoto" to autorFoto,
         "nota" to nota,
         "comentario" to comentario,
+        "contemSpoiler" to contemSpoiler,
         "dataAtualizacao" to dataAtualizacao
     )
 
@@ -25,6 +27,7 @@ data class AvaliacaoMembro(
                 autorFoto = map["autorFoto"] as? String ?: "",
                 nota = (map["nota"] as? Long)?.toInt() ?: (map["nota"] as? Int) ?: 0,
                 comentario = map["comentario"] as? String ?: "",
+                contemSpoiler = (map["contemSpoiler"] as? Boolean) ?: false,
                 dataAtualizacao = (map["dataAtualizacao"] as? Long) ?: System.currentTimeMillis()
             )
         }

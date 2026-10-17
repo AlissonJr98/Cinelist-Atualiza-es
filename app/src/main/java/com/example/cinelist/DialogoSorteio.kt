@@ -31,13 +31,20 @@ fun DialogoSorteio(
     onSelecionarMidia: (Midia) -> Unit
 ) {
     var filtroStatus by remember { mutableStateOf("Quero Assistir") }
+    var filtroDuracao by remember { mutableStateOf("Qualquer") }
     var midiaSorteada by remember { mutableStateOf<Midia?>(null) }
     var sortearNovamente by remember { mutableStateOf(0) }
     var animandoRoleta by remember { mutableStateOf(false) }
 
-    val listaCandidatos = remember(listaDeMidias, filtroStatus, sortearNovamente) {
+    val listaCandidatos = remember(listaDeMidias, filtroStatus, filtroDuracao, sortearNovamente) {
         listaDeMidias.filter { midia ->
-            if (filtroStatus == "Todos") true else midia.status.equals(filtroStatus, ignoreCase = true)
+            val bateStatus = if (filtroStatus == "Todos") true else midia.status.equals(filtroStatus, ignoreCase = true)
+            val bateDuracao = when (filtroDuracao) {
+                "< 90 min" -> midia.duracaoTotal in 1..90
+                "Séries" -> !midia.tipo.equals("Filme", ignoreCase = true)
+                else -> true
+            }
+            bateStatus && bateDuracao
         }
     }
 
@@ -68,7 +75,7 @@ fun DialogoSorteio(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "Deixe o CineList sortear o próximo título da sua lista!",
@@ -90,6 +97,24 @@ fun DialogoSorteio(
                                 sortearNovamente++
                             },
                             label = { Text(status, fontSize = 11.sp) },
+                            modifier = Modifier.padding(horizontal = 2.dp)
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf("Qualquer" to "Qualquer Tempo", "< 90 min" to "< 90 min ⏱️", "Séries" to "Séries / Ep 📺").forEach { (chave, rotulo) ->
+                        FilterChip(
+                            selected = (filtroDuracao == chave),
+                            onClick = {
+                                filtroDuracao = chave
+                                sortearNovamente++
+                            },
+                            label = { Text(rotulo, fontSize = 10.sp) },
                             modifier = Modifier.padding(horizontal = 2.dp)
                         )
                     }

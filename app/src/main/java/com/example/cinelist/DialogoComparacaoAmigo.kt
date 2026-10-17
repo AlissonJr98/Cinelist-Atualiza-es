@@ -81,18 +81,38 @@ fun DialogoComparacaoAmigo(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // Destaque de Títulos em Comum
+                val pctMatch = remember(minhaLista, listaDoAmigo, titulosEmComum) {
+                    if (minhaLista.isEmpty() || listaDoAmigo.isEmpty()) 50
+                    else {
+                        val baseComum = (titulosEmComum.toDouble() / minOf(minhaLista.size, listaDoAmigo.size).coerceAtLeast(1)) * 60.0
+                        val meusGeneros = minhaLista.map { it.genero }.toSet()
+                        val amigoGeneros = listaDoAmigo.map { it.genero }.toSet()
+                        val generosCompartilhados = meusGeneros.intersect(amigoGeneros).size
+                        val generoBonus = (generosCompartilhados * 10).coerceAtMost(25)
+                        minOf(99, maxOf(35, (baseComum + generoBonus + 20).toInt()))
+                    }
+                }
+
+                // Destaque de Compatibilidade e Títulos em Comum
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "Títulos em Comum na Lista", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(text = "$titulosEmComum", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Match Cinéfilo", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "🔥 $pctMatch%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Em Comum", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "🎬 $titulosEmComum", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
             }

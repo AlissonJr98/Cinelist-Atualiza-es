@@ -105,8 +105,46 @@ class LembreteWorker(
                 }
             }
 
-            // 2. LEMBRETE: títulos parados em "Quero Assistir"
+            // 2. LEMBRETE & ESTREIAS: títulos em "Quero Assistir"
             val pendentes = todasMidias.filter { it.status == "Quero Assistir" }
+            for (itemPendente in pendentes) {
+                if (itemPendente.idTmdb > 0 && itemPendente.dataLancamento.isNotBlank()) {
+                    try {
+                        val formatoData = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val dataEstreia = formatoData.parse(itemPendente.dataLancamento)
+                        if (dataEstreia != null) {
+                            val hojeMs = System.currentTimeMillis()
+                            val diffDias = TimeUnit.MILLISECONDS.toDays(hojeMs - dataEstreia.time)
+                            if (diffDias in 0..3) {
+                                val idRef = itemPendente.idTmdb * 10
+                                val jaNotificouEstreia = notificacaoDao.contarNotificacaoRecente(
+                                    idRef = idRef,
+                                    tipo = "ESTREIA",
+                                    desde = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+                                ) > 0
+
+                                if (!jaNotificouEstreia) {
+                                    val tituloEstreia = "Estreia Confirmada! 🍿"
+                                    val msgEstreia = "\"${itemPendente.titulo}\" já estreou e está disponível para assistir!"
+                                    notificacaoDao.inserir(
+                                        NotificacaoEntity(
+                                            tipo = "ESTREIA",
+                                            titulo = tituloEstreia,
+                                            mensagem = msgEstreia,
+                                            idReferencia = idRef,
+                                            dataCriacao = System.currentTimeMillis()
+                                        )
+                                    )
+                                    enviarNotificacaoSistema(CANAL_LANCAMENTOS, idRef, tituloEstreia, msgEstreia)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             if (pendentes.isNotEmpty()) {
                 val jaNotificouHoje = notificacaoDao.contarNotificacaoRecente(
                     idRef = 0,

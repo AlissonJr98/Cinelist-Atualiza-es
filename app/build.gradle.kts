@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,14 @@ plugins {
     alias(libs.plugins.googleServices)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Carrega o local.properties explicitamente (findProperty NÃO enxerga esse arquivo)
+val localProperties = Properties().apply {
+    val arquivo = rootProject.file("local.properties")
+    if (arquivo.exists()) {
+        arquivo.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -15,13 +25,19 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 48
-        versionName = "2.0.8"
+        versionCode = 49
+        versionName = "2.0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Lê o token do TMDB do local.properties (não commitar)
+        val tmdbToken = localProperties.getProperty("tmdb.token")
+            ?: System.getenv("TMDB_TOKEN")
+            ?: ""
+        buildConfigField("String", "TMDB_TOKEN", "\"$tmdbToken\"")
     }
 
     signingConfigs {

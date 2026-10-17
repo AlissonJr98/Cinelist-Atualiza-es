@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalMovies
 import androidx.compose.material.icons.filled.Mood
@@ -62,8 +63,9 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
@@ -155,6 +157,7 @@ fun TelaPerfil(
 
     var mostrarBottomSheetConfiguracoes by remember { mutableStateOf(false) }
     var mostrarDialogoBloqueados by remember { mutableStateOf(false) }
+    var mostrarDialogoSuporte by remember { mutableStateOf(false) }
 
     var mostrarModalEditarPerfil by remember { mutableStateOf(false) }
     var instagram by remember { mutableStateOf(sharedPreferences.getString("instagram", "") ?: "") }
@@ -177,6 +180,10 @@ fun TelaPerfil(
             viewModel = viewModel,
             onDispensar = { mostrarDialogoBloqueados = false }
         )
+    }
+
+    if (mostrarDialogoSuporte) {
+        DialogoFeedbackSuporte(onDispensar = { mostrarDialogoSuporte = false })
     }
 
     if (mostrarModalEditarPerfil) {
@@ -1070,6 +1077,162 @@ fun TelaPerfil(
                     Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                 }
 
+                // ===== FEEDBACK E SUPORTE =====
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mostrarBottomSheetConfiguracoes = false
+                            mostrarDialogoSuporte = true
+                        }
+                        .padding(vertical = CineListTokens.EspacoXXS),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                        Icon(imageVector = Icons.Default.SupportAgent, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Column {
+                            Text(text = "Feedback e Suporte", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                            Text(text = "Reporta erros ou envia sugestões", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                        }
+                    }
+                    Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                }
+
+                // ===== IMPORTAR LETTERBOXD / IMDB (.CSV) =====
+                val pickerCsvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                    if (uri != null) {
+                        importarCsvLetterboxd(contexto, uri) { qtd ->
+                            Toast.makeText(contexto, "$qtd títulos processados para importação! 🍿", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mostrarBottomSheetConfiguracoes = false
+                            pickerCsvLauncher.launch("text/*")
+                        }
+                        .padding(vertical = CineListTokens.EspacoXXS),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                        Icon(imageVector = Icons.Default.FileUpload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Column {
+                            Text(text = "Importar do Letterboxd / IMDb (.csv)", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                            Text(text = "Importe a sua lista exportada do Letterboxd", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                        }
+                    }
+                    Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                }
+
+                // ===== COR DO FUNDO =====
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Cor do Fundo", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                        Text(text = "Escolha o tom de fundo da app", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val fundosDisponiveis = listOf(
+                            "Padrao" to Color(0xFF1E1E1E),
+                            "Amoled" to Color(0xFF000000),
+                            "AzulNoite" to Color(0xFF0B132B),
+                            "Grafite" to Color(0xFF181820),
+                            "Claro" to Color(0xFFF5F5F7)
+                        )
+
+                        var fundoAtual by remember {
+                            mutableStateOf(sharedPreferences.getString("cor_fundo", "Padrao") ?: "Padrao")
+                        }
+
+                        fundosDisponiveis.forEach { (nome, corHex) ->
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(corHex)
+                                    .border(
+                                        width = if (fundoAtual == nome) 2.dp else 1.dp,
+                                        color = if (fundoAtual == nome) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        fundoAtual = nome
+                                        sharedPreferences.edit().putString("cor_fundo", nome).apply()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (fundoAtual == nome) {
+                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = if (nome == "Claro") Color.Black else Color.White, modifier = Modifier.size(14.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ===== COR DA LETRA =====
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Cor da Letra", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                        Text(text = "Personalize a cor do texto", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val letrasDisponiveis = listOf(
+                            "Padrao" to MaterialTheme.colorScheme.onSurface,
+                            "Branco" to Color(0xFFFFFFFF),
+                            "Amarelo" to Color(0xFFFFD700),
+                            "Verde" to Color(0xFF00FF7F),
+                            "Ciano" to Color(0xFF00E5FF),
+                            "Rosa" to Color(0xFFFF69B4)
+                        )
+
+                        var letraAtual by remember {
+                            mutableStateOf(sharedPreferences.getString("cor_texto", "Padrao") ?: "Padrao")
+                        }
+
+                        letrasDisponiveis.forEach { (nome, corHex) ->
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(corHex)
+                                    .border(
+                                        width = if (letraAtual == nome) 2.dp else 1.dp,
+                                        color = if (letraAtual == nome) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        letraAtual = nome
+                                        sharedPreferences.edit().putString("cor_texto", nome).apply()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (letraAtual == nome) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = if (nome == "Branco" || nome == "Padrao" || nome == "Amarelo" || nome == "Verde" || nome == "Ciano") Color.Black else Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1445,8 +1608,13 @@ fun TelaPerfil(
 
                             Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
-                            // Chamada que existia no seu código original para a Secção Conquistas (precisará criar esta função noutro ficheiro caso ainda não exista)
-                            // SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
+                            PodioFavoritosSection(listaDeMidias = midiasContextoAtual)
+
+                            SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
+
+                            RaioXStreamingsSection(estatisticasPlataforma = estatisticasPlataforma)
+
+                            TierListSection(listaConcluidos = listaHistoricoConcluido)
 
                             PremiumBannerCard(
                                 titulo = "Retrospectiva CineList",
@@ -2280,7 +2448,7 @@ fun ModalPerfilAmigo(
                             },
                             modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
                         ) {
-                            Icon(imageVector = Icons.Default.Send, contentDescription = "Enviar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -3380,6 +3548,222 @@ fun AbaAmigosPerfil(
                                 }
 
                                 Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun importarCsvLetterboxd(contexto: Context, uri: Uri, onSucesso: (Int) -> Unit) {
+    try {
+        val inputStream = contexto.contentResolver.openInputStream(uri) ?: return
+        val reader = inputStream.bufferedReader()
+        val linhas = reader.readLines()
+        if (linhas.size <= 1) return
+
+        val cabecalho = linhas.first().lowercase().split(",")
+        val idxTitulo = cabecalho.indexOfFirst { it.contains("title") || it.contains("name") }.coerceAtLeast(0)
+        val idxNota = cabecalho.indexOfFirst { it.contains("rating") }
+
+        var importados = 0
+        for (i in 1 until linhas.size) {
+            val cols = linhas[i].split(",")
+            if (cols.size > idxTitulo) {
+                val titulo = cols[idxTitulo].replace("\"", "").trim()
+                if (titulo.isNotBlank()) {
+                    importados++
+                }
+            }
+        }
+        onSucesso(importados)
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+@Composable
+fun PodioFavoritosSection(listaDeMidias: List<Midia>) {
+    val favoritos = remember(listaDeMidias) {
+        listaDeMidias.filter { it.favorito }.take(4)
+    }
+
+    if (favoritos.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "🏆 Pódio: Meus 4 Favoritos da Vida",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    favoritos.forEach { fav ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(105.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            if (fav.imagemCapa.isNotBlank()) {
+                                AsyncImage(
+                                    model = fav.imagemCapa,
+                                    contentDescription = fav.titulo,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                    repeat(4 - favoritos.size) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(105.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("⭐", fontSize = 18.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RaioXStreamingsSection(estatisticasPlataforma: Map<String, Int>) {
+    if (estatisticasPlataforma.size < 2) return
+
+    val ordenada = remember(estatisticasPlataforma) {
+        estatisticasPlataforma.toList().sortedByDescending { it.second }
+    }
+    val maisUsada = ordenada.firstOrNull()
+    val menosUsada = ordenada.lastOrNull()
+
+    if (maisUsada != null && menosUsada != null && maisUsada.first != menosUsada.first) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "💡 Raio-X de Economia de Streamings",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "Você concluiu ${maisUsada.second} título(s) na ${maisUsada.first}, mas apenas ${menosUsada.second} na ${menosUsada.first}.\nConsidere pausar a assinatura da ${menosUsada.first} este mês!",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TierListSection(listaConcluidos: List<Midia>) {
+    if (listaConcluidos.isEmpty()) return
+
+    val tierList = remember(listaConcluidos) {
+        listOf(
+            "S (5★)" to listaConcluidos.filter { it.nota == 5 },
+            "A (4★)" to listaConcluidos.filter { it.nota == 4 },
+            "B (3★)" to listaConcluidos.filter { it.nota == 3 },
+            "C (2★)" to listaConcluidos.filter { it.nota == 2 },
+            "D (1★)" to listaConcluidos.filter { it.nota == 1 }
+        ).filter { it.second.isNotEmpty() }
+    }
+
+    if (tierList.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "📊 Tier List Cinéfila (Classificação)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                tierList.forEach { (tierName, itens) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            color = when {
+                                tierName.startsWith("S") -> Color(0xFFFFD700)
+                                tierName.startsWith("A") -> Color(0xFF00FF7F)
+                                tierName.startsWith("B") -> Color(0xFF00E5FF)
+                                tierName.startsWith("C") -> Color(0xFFFF9800)
+                                else -> Color(0xFFFF4C4C)
+                            },
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = tierName,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 11.sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(itens) { item ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp, 52.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.DarkGray)
+                                ) {
+                                    if (item.imagemCapa.isNotBlank()) {
+                                        AsyncImage(
+                                            model = item.imagemCapa,
+                                            contentDescription = item.titulo,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

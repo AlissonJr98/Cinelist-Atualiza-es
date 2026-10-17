@@ -20,7 +20,11 @@ class MidiaRepositoryTest {
     @Before
     fun setup() {
         // Inicializamos o repositório passando o nosso DAO e NotificacaoRepository simulados
-        repository = MidiaRepository(midiaDao, notificacaoRepository)
+        repository = MidiaRepository(
+            context = mockk(relaxed = true),
+            midiaDao = midiaDao,
+            notificacaoRepository = notificacaoRepository
+        )
     }
 
     @Test

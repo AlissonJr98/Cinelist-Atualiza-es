@@ -30,7 +30,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -38,16 +40,20 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MovieFilter
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -201,6 +207,9 @@ fun TelaDetalhes(
     var comentarioPessoalInput by remember { mutableStateOf("") }
 
     var statusAtual by remember { mutableStateOf(StatusMidia.QUERO_ASSISTIR) }
+    var rewatchContador by remember { mutableIntStateOf(0) }
+    var tagsInput by remember { mutableStateOf("") }
+    var ehPrivadoState by remember { mutableStateOf(false) }
 
     val colecoesExistentes = remember(listaAtualBanco) {
         listOf("Geral") + listaAtualBanco.map { it.listaCustomizada }.filter { it.isNotBlank() && it != "Geral" }.distinct().sorted()
@@ -242,6 +251,9 @@ fun TelaDetalhes(
             abaTemporadaVisualizada = midiaSalva.temporadaAtual
             ehFavorito = midiaSalva.favorito
             comentarioPessoalInput = midiaSalva.comentarioPessoal
+            rewatchContador = midiaSalva.contadorRewatch
+            tagsInput = midiaSalva.tagsPersonalizadas
+            ehPrivadoState = midiaSalva.ehPrivado
         }
     }
 
@@ -417,7 +429,7 @@ fun TelaDetalhes(
                 },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
@@ -447,6 +459,25 @@ fun TelaDetalhes(
                             )
                         }) {
                             Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card", tint = MaterialTheme.colorScheme.primary)
+                        }
+
+                        val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+                        if (casalIdAtivo.isNotBlank()) {
+                            IconButton(onClick = {
+                                val payload = "${midiaReal.idTmdb}|||${midiaReal.titulo}|||${midiaReal.imagemCapa}|||${midiaReal.tipo}"
+                                viewModel.enviarMensagemParaSala(
+                                    texto = "Recomendo assistirmos \"${midiaReal.titulo}\"! 🍿",
+                                    tipoMensagem = "INDICAÇÃO",
+                                    mediaUrl = payload
+                                )
+                                Toast.makeText(contexto, "Indicação enviada no Chat da Sala! 🍿", Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Indicar na Sala",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
                         IconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
@@ -606,6 +637,67 @@ fun TelaDetalhes(
                                         Text("Média Crítica", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                         Text(notaPublico, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
+                                }
+                            }
+
+                            val duracaoTotalMin = detalhesApi?.duracaoMinutos ?: midiaSalva?.duracaoTotal ?: 0
+                            val horaTerminoTexto = if (duracaoTotalMin > 0) {
+                                val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoTotalMin) }
+                                val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                "Se começar agora, termina às ${sdf.format(cal.time)}"
+                            } else ""
+
+                            if (horaTerminoTexto.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "⏱️ $horaTerminoTexto",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+                            }
+
+                            // 🚀 SELO DE CENAS PÓS-CRÉDITOS
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                    Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                }
+                            }
+
+                            // 🚀 BOTÃO TRILHA SONORA (OST NO SPOTIFY)
+                            val tituloParaBuscaOst = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+                            if (tituloParaBuscaOst.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        val query = Uri.encode("$tituloParaBuscaOst Soundtrack Original OST")
+                                        val spotifyIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query")).apply {
+                                            setPackage("com.spotify.music")
+                                        }
+                                        try {
+                                            contexto.startActivity(spotifyIntent)
+                                        } catch (ex: Exception) {
+                                            val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$query"))
+                                            contexto.startActivity(intentWeb)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("🎵 Ouvir Trilha Sonora (OST no Spotify)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -977,8 +1069,8 @@ fun TelaDetalhes(
                                 Spacer(modifier = Modifier.height(20.dp))
                                 SecaoAvaliacoesSala(
                                     midia = midiaSalva,
-                                    onSalvarAvaliacao = { notaMembro, comentarioMembro ->
-                                        viewModel.avaliarMidiaNaSala(midiaSalva, notaMembro, comentarioMembro)
+                                    onSalvarAvaliacao = { notaMembro, comentarioMembro, spoiler ->
+                                        viewModel.avaliarMidiaNaSala(midiaSalva, notaMembro, comentarioMembro, spoiler)
                                     }
                                 )
                             }
@@ -1015,6 +1107,114 @@ fun TelaDetalhes(
                                         unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
                                     )
                                 )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // 🚀 TAGS E PRIVACIDADE
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = tagsInput,
+                                        onValueChange = { tagsInput = it },
+                                        placeholder = { Text("#Cinema, #Chorei, #ComOPai", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) },
+                                        label = { Text("Tags Personalizadas", fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        singleLine = true
+                                    )
+
+                                    FilterChip(
+                                        selected = ehPrivadoState,
+                                        onClick = {
+                                            ehPrivadoState = !ehPrivadoState
+                                            Toast.makeText(contexto, if (ehPrivadoState) "Título Privado 🔒 (Oculto de amigos)" else "Título Público 🔓", Toast.LENGTH_SHORT).show()
+                                        },
+                                        label = { Text(if (ehPrivadoState) "Privado 🔒" else "Público 🔓", fontSize = 11.sp) }
+                                    )
+                                }
+
+                                // 🚀 CALCULADORA DE MARATONA (Para Séries/Animes)
+                                if (ehSerieOuAnime && detalhesApi != null) {
+                                    val totalEps = (detalhesApi?.totalEpisodios ?: 1).coerceAtLeast(1)
+                                    val duracao = (detalhesApi?.duracaoMinutos ?: 20).coerceAtLeast(20)
+                                    val epsFaltam = maxOf(1, totalEps - episodioAtual)
+                                    val horasTotais = (epsFaltam * duracao) / 60
+                                    val dias2Ep = (epsFaltam + 1) / 2
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text("⏱️ Calculadora de Maratona", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                            Text(
+                                                text = "Faltam $epsFaltam episódios (~${horasTotais}h de conteúdo).\nSe assistir 2 eps por dia, você conclui em $dias2Ep dias!",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // 🚀 DETECTOR DE FRANQUIAS / COLEÇÃO
+                                if (detalhesApi?.colecaoFranquia != null) {
+                                    val franquia = detalhesApi!!.colecaoFranquia!!
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Icon(Icons.Default.Movie, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text("🎬 Franquia / Saga", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                                Text(franquia.nome, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                Text("Parte da coleção oficial no TMDB", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 🚀 CONTADOR DE REWATCH (Para Concluídos)
+                                if (statusAtual == StatusMidia.CONCLUIDO) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text("Visto ${rewatchContador + 1}x 🍿", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                                if (rewatchContador > 0) {
+                                                    Text("Reassistido $rewatchContador vez(es)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                                                }
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    rewatchContador++
+                                                    Toast.makeText(contexto, "Reassistido! (${rewatchContador + 1}x) 🍿", Toast.LENGTH_SHORT).show()
+                                                },
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text("🔄 Reassisti (+1)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                }
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -1607,7 +1807,12 @@ fun ItemComentarioSocial(
                 }
             } else {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(comentario.texto, color = Color.LightGray, fontSize = 13.sp, lineHeight = 18.sp)
+                TextoComProtecaoSpoiler(
+                    texto = comentario.texto,
+                    ehSpoiler = comentario.contemSpoiler,
+                    fontSize = 13.sp,
+                    color = Color.LightGray
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -1630,7 +1835,7 @@ fun ItemComentarioSocial(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable { onAlternarResponder() }.padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
                     ) {
-                        Icon(Icons.Default.Reply, contentDescription = "Responder", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Responder", tint = Color.Gray, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Responder", color = Color.Gray, fontSize = 12.sp)
                     }
@@ -1823,11 +2028,19 @@ fun compartilharCardEstilizado(
             canvas.drawText("Status: ${midia.status}", width / 2f, 1580f, paint)
 
             if (midia.tipo.equals("Série", ignoreCase = true) || midia.tipo.equals("Anime", ignoreCase = true)) {
-                canvas.drawText("Temporada ${midia.temporadaAtual} • Ep ${midia.episodioAtual}", width / 2f, 1680f, paint)
+                canvas.drawText("Temporada ${midia.temporadaAtual} • Ep ${midia.episodioAtual}", width / 2f, 1660f, paint)
             }
+
+            if (midia.comentarioPessoal.isNotBlank()) {
+                paint.color = android.graphics.Color.parseColor("#E0E0E0")
+                paint.textSize = 42f
+                val comCurto = if (midia.comentarioPessoal.length > 40) "“${midia.comentarioPessoal.take(37)}...”" else "“${midia.comentarioPessoal}”"
+                canvas.drawText(comCurto, width / 2f, 1740f, paint)
+            }
+
             paint.color = android.graphics.Color.DKGRAY
             paint.textSize = 40f
-            canvas.drawText("Gerado por CineList", width / 2f, 1850f, paint)
+            canvas.drawText("Gerado por CineList 🍿", width / 2f, 1850f, paint)
 
             val cachePath = File(contexto.cacheDir, "images")
             cachePath.mkdirs()
@@ -1838,14 +2051,27 @@ fun compartilharCardEstilizado(
             fileOutputStream.close()
 
             val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.provider", file)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
+
+            val instagramIntent = Intent("com.instagram.share.ADD_TO_STORY").apply {
+                setDataAndType(uri, "image/png")
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_TEXT, "Dá uma olhada no que estou acompanhando: ${midia.titulo} 🎬")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                clipData = ClipData.newRawUri("", uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                putExtra("source_application", contexto.packageName)
+                setPackage("com.instagram.android")
             }
-            contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via"))
+
+            if (instagramIntent.resolveActivity(contexto.packageManager) != null) {
+                contexto.startActivity(instagramIntent)
+            } else {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_TEXT, "Dá uma olhada no que estou acompanhando no CineList: ${midia.titulo} 🍿")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    clipData = ClipData.newRawUri("", uri)
+                }
+                contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via"))
+            }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
                 Toast.makeText(contexto, "Erro ao gerar card de compartilhamento.", Toast.LENGTH_SHORT).show()
@@ -1855,12 +2081,60 @@ fun compartilharCardEstilizado(
 }
 
 @Composable
+fun TextoComProtecaoSpoiler(
+    texto: String,
+    ehSpoiler: Boolean,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 13.sp,
+    color: Color = Color.LightGray
+) {
+    var revelado by remember { mutableStateOf(!ehSpoiler) }
+
+    if (ehSpoiler && !revelado) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { revelado = true },
+            color = Color(0xFF332211)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Spoiler",
+                    tint = Color(0xFFFF9800),
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "⚠️ Contém Spoiler — Toque para revelar",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFF9800)
+                )
+            }
+        }
+    } else {
+        Text(
+            text = texto,
+            fontSize = fontSize,
+            color = color,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
 fun SecaoAvaliacoesSala(
     midia: Midia,
-    onSalvarAvaliacao: (Int, String) -> Unit
+    onSalvarAvaliacao: (Int, String, Boolean) -> Unit
 ) {
     var notaMembro by remember { mutableIntStateOf(5) }
     var comentarioMembro by remember { mutableStateOf("") }
+    var contemSpoiler by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1882,7 +2156,12 @@ fun SecaoAvaliacoesSala(
                             Text("${avaliacao.nota}/5 ★", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
                         }
                         if (avaliacao.comentario.isNotBlank()) {
-                            Text(avaliacao.comentario, color = Color.LightGray, fontSize = 13.sp)
+                            TextoComProtecaoSpoiler(
+                                texto = avaliacao.comentario,
+                                ehSpoiler = avaliacao.contemSpoiler,
+                                fontSize = 13.sp,
+                                color = Color.LightGray
+                            )
                         }
                     }
                 }
@@ -1920,12 +2199,27 @@ fun SecaoAvaliacoesSala(
                 )
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { contemSpoiler = !contemSpoiler }
+            ) {
+                Checkbox(
+                    checked = contemSpoiler,
+                    onCheckedChange = { contemSpoiler = it },
+                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFFF9800))
+                )
+                Text("Contém Spoiler ⚠️", fontSize = 13.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = {
-                    onSalvarAvaliacao(notaMembro, comentarioMembro)
+                    onSalvarAvaliacao(notaMembro, comentarioMembro, contemSpoiler)
                     comentarioMembro = ""
+                    contemSpoiler = false
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

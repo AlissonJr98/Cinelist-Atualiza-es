@@ -23,6 +23,12 @@ import javax.inject.Singleton
 import kotlin.random.Random
 import com.google.firebase.messaging.FirebaseMessaging
 
+/**
+ * Repositório responsável pelo gerenciamento de mídias.
+ * 
+ * Gerencia o CRUD de mídias locais (Room) e a sincronização
+ * com o Firebase Firestore para backup e compartilhamento em grupo.
+ */
 @Singleton
 class MidiaRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -599,7 +605,8 @@ class MidiaRepository @Inject constructor(
         grupoId: String,
         midia: Midia,
         nota: Int,
-        comentario: String
+        comentario: String,
+        contemSpoiler: Boolean = false
     ) = withContext(Dispatchers.IO) {
         val uid = auth.currentUser?.uid ?: return@withContext
         if (grupoId.isBlank()) return@withContext
@@ -613,6 +620,7 @@ class MidiaRepository @Inject constructor(
                 autorFoto = foto,
                 nota = nota,
                 comentario = comentario.trim(),
+                contemSpoiler = contemSpoiler,
                 dataAtualizacao = System.currentTimeMillis()
             )
 

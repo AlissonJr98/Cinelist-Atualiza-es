@@ -111,6 +111,8 @@ class MainActivity : ComponentActivity() {
 
             var modoEscuroAtivo by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
             var corTemaSelecionada by remember { mutableStateOf(sharedPreferences.getString("cor_tema", "CineList") ?: "CineList") }
+            var corFundoSelecionada by remember { mutableStateOf(sharedPreferences.getString("cor_fundo", "Padrao") ?: "Padrao") }
+            var corTextoSelecionada by remember { mutableStateOf(sharedPreferences.getString("cor_texto", "Padrao") ?: "Padrao") }
 
             DisposableEffect(sharedPreferences) {
                 val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, chave ->
@@ -120,6 +122,12 @@ class MainActivity : ComponentActivity() {
                     if (chave == "cor_tema") {
                         corTemaSelecionada = sharedPreferences.getString("cor_tema", "CineList") ?: "CineList"
                     }
+                    if (chave == "cor_fundo") {
+                        corFundoSelecionada = sharedPreferences.getString("cor_fundo", "Padrao") ?: "Padrao"
+                    }
+                    if (chave == "cor_texto") {
+                        corTextoSelecionada = sharedPreferences.getString("cor_texto", "Padrao") ?: "Padrao"
+                    }
                 }
                 sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
                 onDispose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
@@ -127,7 +135,9 @@ class MainActivity : ComponentActivity() {
 
             CineListTheme(
                 darkTheme = modoEscuroAtivo,
-                corPersonalizada = corTemaSelecionada
+                corPersonalizada = corTemaSelecionada,
+                corFundo = corFundoSelecionada,
+                corTexto = corTextoSelecionada
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize().statusBarsPadding(),

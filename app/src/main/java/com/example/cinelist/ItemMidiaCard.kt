@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,8 +40,31 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+fun formatarDataRelativa(timestamp: Long): String {
+    if (timestamp <= 0L) return ""
+    val agora = System.currentTimeMillis()
+    val diffMs = agora - timestamp
+    if (diffMs < 0) return SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(timestamp))
+
+    val calAgora = Calendar.getInstance().apply { timeInMillis = agora }
+    val calData = Calendar.getInstance().apply { timeInMillis = timestamp }
+
+    val mesmoAno = calAgora.get(Calendar.YEAR) == calData.get(Calendar.YEAR)
+    if (mesmoAno) {
+        val diffDias = calAgora.get(Calendar.DAY_OF_YEAR) - calData.get(Calendar.DAY_OF_YEAR)
+        return when {
+            diffDias == 0 -> "Hoje"
+            diffDias == 1 -> "Ontem"
+            diffDias in 2..6 -> "Há $diffDias dias"
+            else -> SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(timestamp))
+        }
+    }
+    return SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(timestamp))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -347,44 +371,44 @@ private fun ConteudoItemMidiaCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .align(Alignment.BottomCenter),
-                                color = Color(0xDD000000)
+                                color = Color(0xEE000000)
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
                                         text = "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}",
                                         color = Color(0xFFFFD700),
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
                                     )
 
-                                    Surface(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .clickable { onIncrementarEpisodio() },
-                                        color = MaterialTheme.colorScheme.primary
+                                    Button(
+                                        onClick = { onIncrementarEpisodio() },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(30.dp)
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Add,
-                                                contentDescription = "Adicionar Episódio",
+                                                contentDescription = "Avançar Episódio",
                                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(12.dp)
+                                                modifier = Modifier.size(14.dp)
                                             )
                                             Text(
-                                                text = "1 Ep",
+                                                text = "+1 Ep",
                                                 color = MaterialTheme.colorScheme.onPrimary,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.ExtraBold
                                             )
                                         }
                                     }
@@ -491,6 +515,29 @@ private fun ConteudoItemMidiaCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
+                    if (statusEnum == StatusMidia.ASSISTINDO && midia.atualizadoEm > 0L) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
 
                     if (statusEnum == StatusMidia.CONCLUIDO) {
                         if (midia.dataConclusao > 0L) {
@@ -793,7 +840,11 @@ private fun ConteudoItemMidiaCardHorizontal(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (ehPendente || ehRecusado) 140.dp else 110.dp),
+                    .height(
+                        if (ehPendente || ehRecusado) 140.dp
+                        else if (ehSerieOuAnime && statusEnum == StatusMidia.ASSISTINDO) 128.dp
+                        else 110.dp
+                    ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -942,6 +993,29 @@ private fun ConteudoItemMidiaCardHorizontal(
                         }
                     }
 
+                    if (statusEnum == StatusMidia.ASSISTINDO && midia.atualizadoEm > 0L) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
                     if (statusEnum == StatusMidia.CONCLUIDO) {
                         if (midia.dataConclusao > 0L) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -1049,27 +1123,27 @@ private fun ConteudoItemMidiaCardHorizontal(
                             }
 
                             if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .clickable { onIncrementarEpisodio() },
-                                    color = MaterialTheme.colorScheme.primary
+                                Button(
+                                    onClick = { onIncrementarEpisodio() },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Add,
-                                            contentDescription = null,
+                                            contentDescription = "Avançar Episódio",
                                             tint = MaterialTheme.colorScheme.onPrimary,
-                                            modifier = Modifier.size(12.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = "T${midia.temporadaAtual} Ep ${midia.episodioAtual}",
+                                            text = "T${midia.temporadaAtual}:Ep ${midia.episodioAtual} (+1)",
                                             color = MaterialTheme.colorScheme.onPrimary,
-                                            fontSize = 10.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }

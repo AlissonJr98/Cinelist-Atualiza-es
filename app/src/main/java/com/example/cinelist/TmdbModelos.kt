@@ -38,6 +38,13 @@ data class TmdbGenero(
     @SerializedName("name") val nome: String = ""
 )
 
+data class TmdbFranquiaColecao(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("poster_path") val caminhoPoster: String? = null,
+    @SerializedName("backdrop_path") val caminhoBackdrop: String? = null
+)
+
 data class TmdbDetalhesEstendidos(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
@@ -52,7 +59,8 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("episode_run_time") val duracaoEpisodios: List<Int>? = null,
     @SerializedName("tagline") val fraseEfeito: String? = null,
     @SerializedName("next_episode_to_air") val proximoEpisodio: TmdbProximoEpisodio? = null,
-    @SerializedName("genres") val generos: List<TmdbGenero>? = emptyList()
+    @SerializedName("genres") val generos: List<TmdbGenero>? = emptyList(),
+    @SerializedName("belongs_to_collection") val colecaoFranquia: TmdbFranquiaColecao? = null
 ) {
     val generoTexto: String
         get() = generos?.map { it.nome }?.filter { it.isNotBlank() }?.joinToString(", ")?.ifBlank { "Geral" } ?: "Geral"
