@@ -35,6 +35,10 @@ jobs:
       - name: Conceder permissao de execucao ao Gradle
         run: chmod +x ./gradlew
 
+      - name: Gerar local.properties para a compilação
+        run: |
+          echo "tmdb.token=${{ secrets.TMDB_TOKEN }}" > local.properties
+
       - name: Compilar APK de Release Assinado
         run: ./gradlew assembleRelease
         env:
