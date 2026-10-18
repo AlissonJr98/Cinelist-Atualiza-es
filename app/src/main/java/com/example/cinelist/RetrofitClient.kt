@@ -26,16 +26,7 @@ object RetrofitClient {
 
     private val TOKEN_AUTENTICACAO: String = "Bearer $tokenBruto"
 
-    /** Lança uma falha clara caso o token não tenha sido configurado. */
-    private fun exigirToken() {
-        if (!tokenConfigurado) {
-            throw IllegalStateException(
-                "Token do TMDB ausente ou inválido. " +
-                    "Adicione 'tmdb.token=SEU_TOKEN_V4' no local.properties " +
-                    "(ou defina a variável de ambiente TMDB_TOKEN) e recompile."
-            )
-        }
-    }
+
 
     /** Lê o corpo da resposta em caso de erro, para diagnosis nas logs. */
     private class LoggingInterceptor : Interceptor {
@@ -55,10 +46,6 @@ object RetrofitClient {
     }
 
     val apiService: TmdbApiService by lazy {
-        require(tokenConfigurado) {
-            "Token do TMDB não configurado. Adicione 'tmdb.token=...' no local.properties e recompile."
-        }
-
         val client = okhttp3.OkHttpClient.Builder()
             // Timeouts generosos: sem isto, chamadas lentas travam a UI
             .connectTimeout(20, TimeUnit.SECONDS)
