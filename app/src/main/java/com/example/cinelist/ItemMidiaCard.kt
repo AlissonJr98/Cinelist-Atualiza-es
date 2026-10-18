@@ -185,6 +185,11 @@ private fun ConteudoItemMidiaCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .glassmorphic(
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+            )
             .combinedClickable(
                 onClick = { onClick() },
                 onLongClick = {
@@ -194,7 +199,7 @@ private fun ConteudoItemMidiaCard(
                 }
             ),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -311,7 +316,7 @@ private fun ConteudoItemMidiaCard(
                                     .size(32.dp)
                                     .clip(CircleShape)
                                     .background(Color.Black.copy(alpha = 0.6f))
-                                    .clickable { onAlternarFavorito() },
+                                    .bounceOnClick { onAlternarFavorito() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -334,7 +339,7 @@ private fun ConteudoItemMidiaCard(
                                         if (jaAdicionado) Color(0xFF2E7D32).copy(alpha = 0.9f)
                                         else MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                                     )
-                                    .clickable(enabled = !jaAdicionado) {
+                                    .bounceOnClick(enabled = !jaAdicionado) {
                                         onAdicionarRapido?.invoke()
                                     },
                                 contentAlignment = Alignment.Center
@@ -819,9 +824,14 @@ private fun ConteudoItemMidiaCardHorizontal(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .glassmorphic(
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+            )
+            .bounceOnClick { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {

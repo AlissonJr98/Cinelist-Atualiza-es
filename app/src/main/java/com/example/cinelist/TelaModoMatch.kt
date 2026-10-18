@@ -107,32 +107,34 @@ fun TelaModoMatch(
     // DIÁLOGO COMEMORATIVO DE MATCH
     midiaMatchCelebrada?.let { match ->
         Dialog(onDismissRequest = { midiaMatchCelebrada = null }) {
-            Card(
+            GlassmorphicCard(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+                elevation = 10.dp
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFF3366)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Match",
-                            tint = Color.White,
-                            modifier = Modifier.size(36.dp)
-                        )
+                    PulseMatchIcon {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFF3366)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "Match",
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
                     }
 
                     Text(
@@ -213,7 +215,7 @@ fun TelaModoMatch(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            TopBarModernaTranslucida(
                 title = {
                     Column {
                         Text("Modo Match 🍿", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -226,36 +228,36 @@ fun TelaModoMatch(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onVoltar) {
+                    IconeBouncyIconButton(onClick = onVoltar) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { mostrarAlbumRecordacoes = true }) {
+                    IconeBouncyIconButton(onClick = { mostrarAlbumRecordacoes = true }) {
                         Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Álbum de Matches", tint = Color(0xFFFF3366))
                     }
                     TextButton(onClick = { abaModoTorneio = !abaModoTorneio }) {
                         Text(if (abaModoTorneio) "🍿 Match" else "🏆 Torneio 1v1", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = {
+                    IconeAnimadoRotacao(onClick = {
                         viewModel.resetarRodadaMatch()
                         votosSessaoLocal = emptySet()
                         matchesJaExibidosIds = emptySet()
-                    }) {
+                    }, anguloRotacaoTotal = 360f) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reiniciar Rodada", tint = MaterialTheme.colorScheme.primary)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+        MeshBackground3D(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
             if (abaModoTorneio) {
                 TorneioModoView(listaDeMidias = listaDeMidiasDaSala, onAbrirDetalhesMidia = onAbrirDetalhesMidia)
             } else if (filaFinalParaVotar.isEmpty()) {
@@ -426,6 +428,7 @@ fun TelaModoMatch(
             }
         }
     }
+}
 }
 
 @Composable

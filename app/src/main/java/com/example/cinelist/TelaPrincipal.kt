@@ -1002,7 +1002,7 @@ fun TelaPrincipal(
             }
         },
         topBar = {
-            TopAppBar(
+            TopBarModernaTranslucida(
                 title = {
                     Column(
                         modifier = Modifier
@@ -1036,27 +1036,33 @@ fun TelaPrincipal(
                 },
                 actions = {
                     if (isModoCompartilhado) {
-                        Button(
-                            onClick = onAbrirMatch,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3366)),
-                            shape = RoundedCornerShape(20.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            modifier = Modifier.height(34.dp)
-                        ) { Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                        PulseMatchIcon {
+                            Button(
+                                onClick = onAbrirMatch,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3366)),
+                                shape = RoundedCornerShape(20.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) { Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                        }
                     }
-                    IconButton(onClick = { mostrarDialogoCineBot = true }) { Icon(Icons.Default.SmartToy, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary) }
-                    IconButton(onClick = { mostrarDialogoSorteio = true }) { Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary) }
-                    IconButton(onClick = onPerfilClique) { Icon(Icons.Default.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.primary) }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    actionIconContentColor = MaterialTheme.colorScheme.primary
-                )
+                    IconeBouncyIconButton(onClick = { mostrarDialogoCineBot = true }) {
+                        Icon(Icons.Default.SmartToy, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconeAnimadoRotacao(onClick = { mostrarDialogoSorteio = true }, anguloRotacaoTotal = 360f) {
+                        Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconeBouncyIconButton(onClick = onPerfilClique) {
+                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
             )
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        MeshBackground3D(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
             TabRow(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -1573,6 +1579,7 @@ fun TelaPrincipal(
             }
         }
     }
+}
 }
 
 // 🚀 O NOVO COMPONENTE QUE DESENHA AS SUGESTÕES

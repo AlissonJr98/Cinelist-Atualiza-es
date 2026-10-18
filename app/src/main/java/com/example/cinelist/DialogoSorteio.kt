@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,7 +67,9 @@ fun DialogoSorteio(
         onDismissRequest = onDispensar,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(imageVector = Icons.Default.Casino, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                IconeAnimadoRotacao(onClick = { sortearNovamente++ }, anguloRotacaoTotal = 360f) {
+                    Icon(imageVector = Icons.Default.Casino, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
                 Text("O Que Assistir Hoje?", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
@@ -125,9 +128,14 @@ fun DialogoSorteio(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(200.dp)
+                        .glassmorphic(
+                            shape = RoundedCornerShape(12.dp),
+                            backgroundColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                            borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                        ),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),

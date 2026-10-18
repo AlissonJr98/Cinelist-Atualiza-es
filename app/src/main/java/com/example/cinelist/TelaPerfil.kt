@@ -1384,7 +1384,7 @@ fun TelaPerfil(
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(
+                TopBarModernaTranslucida(
                     title = {
                         Column {
                             Text(
@@ -1403,20 +1403,15 @@ fun TelaPerfil(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = onVoltar) {
+                        IconeBouncyIconButton(onClick = onVoltar) {
                             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                         }
                     },
                     actions = {
-                        IconButton(onClick = { mostrarBottomSheetConfiguracoes = true }) {
+                        IconeAnimadoRotacao(onClick = { mostrarBottomSheetConfiguracoes = true }, anguloRotacaoTotal = 90f) {
                             Icon(imageVector = Icons.Default.Settings, contentDescription = "Configurações", tint = MaterialTheme.colorScheme.primary)
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.primary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.primary
-                    )
+                    }
                 )
 
                 TabRow(
@@ -1459,17 +1454,18 @@ fun TelaPerfil(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { pagina ->
+        MeshBackground3D(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { pagina ->
             when (pagina) {
                 0 -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
                             .verticalScroll(rememberScrollState())
                     ) {
                         Box(
@@ -1731,7 +1727,6 @@ fun TelaPerfil(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(paddingValues)
                                 .padding(CineListTokens.EspacoM)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)
@@ -1775,7 +1770,6 @@ fun TelaPerfil(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
                             .padding(CineListTokens.EspacoM)
                     ) {
                         Row(
@@ -1891,7 +1885,6 @@ fun TelaPerfil(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
                             .padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)
@@ -1995,7 +1988,7 @@ fun TelaPerfil(
 
                 4 -> {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
+                        modifier = Modifier.fillMaxSize().padding(horizontal = CineListTokens.EspacoM, vertical = CineListTokens.EspacoS)
                     ) {
                         Text(
                             text = if (modoGrupoAtivo) "Concluídos na Sala (${listaHistoricoConcluido.size})" else "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
@@ -2177,6 +2170,7 @@ fun TelaPerfil(
             }
         }
     }
+}
 }
 
 @Composable
@@ -3253,12 +3247,11 @@ fun AbaAmigosPerfil(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(CineListTokens.EspacoM)
         ) {
             Card(

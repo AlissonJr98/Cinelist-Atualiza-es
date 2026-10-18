@@ -488,7 +488,7 @@ fun TelaDetalhes(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            TopBarModernaTranslucida(
                 title = {
                     Text(
                         text = if (isModoCasal) "Detalhes • $nomeSalaAtiva" else "Detalhes da Mídia",
@@ -498,13 +498,13 @@ fun TelaDetalhes(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onVoltar) {
+                    IconeBouncyIconButton(onClick = onVoltar) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
                     midiaSalva?.let { midiaReal ->
-                        IconButton(onClick = {
+                        IconeBouncyIconButton(onClick = {
                             val novoFavorito = !ehFavorito
                             ehFavorito = novoFavorito
                             viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
@@ -516,7 +516,7 @@ fun TelaDetalhes(
                             )
                         }
 
-                        IconButton(onClick = {
+                        IconeBouncyIconButton(onClick = {
                             compartilharCardEstilizado(
                                 contexto = contexto,
                                 coroutineScope = coroutineScope,
@@ -533,7 +533,7 @@ fun TelaDetalhes(
 
                         val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
                         if (casalIdAtivo.isNotBlank()) {
-                            IconButton(onClick = {
+                            IconeBouncyIconButton(onClick = {
                                 val payload = "${midiaReal.idTmdb}|||${midiaReal.titulo}|||${midiaReal.imagemCapa}|||${midiaReal.tipo}"
                                 viewModel.enviarMensagemParaSala(
                                     texto = "Recomendo assistirmos \"${midiaReal.titulo}\"! 🍿",
@@ -550,30 +550,28 @@ fun TelaDetalhes(
                             }
                         }
 
-                        IconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
+                        IconeBouncyIconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
                             Icon(imageVector = Icons.Default.Delete, contentDescription = "Deletar", tint = Color(0xFFFF4C4C))
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(corSuaveAnimada.copy(alpha = 0.4f), MaterialTheme.colorScheme.background),
-                        endY = 1200f
-                    )
-                )
+        MeshBackground3D(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(corSuaveAnimada.copy(alpha = 0.4f), MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
+                            endY = 1200f
+                        )
+                    )
+            ) {
             if (isLoadingSkeleton) {
                 TelaDetalhesSkeleton()
             } else {
@@ -1714,6 +1712,7 @@ fun TelaDetalhes(
             }
         }
     }
+}
 }
 
 // 🚀 FÓRUM / COMUNIDADE MANTIDO INTACTO
