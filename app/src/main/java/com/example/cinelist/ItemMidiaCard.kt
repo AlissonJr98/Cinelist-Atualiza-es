@@ -461,7 +461,7 @@ private fun ConteudoItemMidiaCard(
                     }
 
                     Text(
-                        text = "${midia.tipo} • $colecaoExibicao",
+                        text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero}" else midia.tipo,
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 11.sp,
                         maxLines = 1,
@@ -974,12 +974,12 @@ private fun ConteudoItemMidiaCardHorizontal(
 
                     Column {
                         Text(
-                            text = "${midia.tipo} • $colecaoExibicao • 🍿 $plataformaPrincipal",
+                            text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero} • 🍿 $plataformaPrincipal" else "${midia.tipo} • 🍿 $plataformaPrincipal",
                             color = MaterialTheme.colorScheme.secondary,
                             fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
-                        )
+                        )                        
                         if (midia.isCasal && midia.adicionadoPor.isNotBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(

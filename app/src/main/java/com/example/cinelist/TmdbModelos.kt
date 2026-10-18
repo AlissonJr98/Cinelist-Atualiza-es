@@ -45,6 +45,15 @@ data class TmdbFranquiaColecao(
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null
 )
 
+data class TmdbFranquiaColecaoDetalhes(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("overview") val sinopse: String = "",
+    @SerializedName("poster_path") val caminhoPoster: String? = null,
+    @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
+    @SerializedName("parts") val partes: List<TmdbFilme>? = emptyList()
+)
+
 data class TmdbDetalhesEstendidos(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
@@ -60,8 +69,17 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("tagline") val fraseEfeito: String? = null,
     @SerializedName("next_episode_to_air") val proximoEpisodio: TmdbProximoEpisodio? = null,
     @SerializedName("genres") val generos: List<TmdbGenero>? = emptyList(),
-    @SerializedName("belongs_to_collection") val colecaoFranquia: TmdbFranquiaColecao? = null
+    @SerializedName("belongs_to_collection") val colecaoFranquia: TmdbFranquiaColecao? = null,
+    @SerializedName("status") val statusSerieApi: String? = null,
+    @SerializedName("in_production") val emProducao: Boolean? = null
 ) {
+    val statusSeloTexto: String
+        get() = when {
+            statusSerieApi.equals("Canceled", ignoreCase = true) -> "⚠️ Esta série foi cancelada"
+            statusSerieApi.equals("Ended", ignoreCase = true) -> "✅ Série finalizada (Todas temporadas disponíveis)"
+            statusSerieApi.equals("Returning Series", ignoreCase = true) -> "📺 Em exibição (Novas temporadas em produção)"
+            else -> ""
+        }
     val generoTexto: String
         get() = generos?.map { it.nome }?.filter { it.isNotBlank() }?.joinToString(", ")?.ifBlank { "Geral" } ?: "Geral"
 
@@ -173,3 +191,12 @@ data class TmdbImagemItem(
     val urlOriginal: String
         get() = if (caminhoArquivo.isNotBlank()) "https://image.tmdb.org/t/p/original$caminhoArquivo" else ""
 }
+
+data class TmdbKeywordsResposta(
+    @SerializedName("keywords") val keywords: List<TmdbKeywordItem>? = emptyList()
+)
+
+data class TmdbKeywordItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = ""
+)

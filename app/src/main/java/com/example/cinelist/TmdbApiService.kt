@@ -131,4 +131,15 @@ interface TmdbApiService {
         @Path("series_id") idSerie: Int,
         @Query("include_image_language") idiomas: String = "pt,en,null"
     ): TmdbImagensResposta
+
+    @GET("movie/{movie_id}/keywords")
+    suspend fun obterKeywordsFilme(
+        @Path("movie_id") idFilme: Int
+    ): TmdbKeywordsResposta
+
+    @GET("collection/{collection_id}")
+    suspend fun obterDetalhesColecaoFranquia(
+        @Path("collection_id") idColecao: Int,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbFranquiaColecaoDetalhes
 }

@@ -1612,9 +1612,19 @@ fun TelaPerfil(
 
                             PodioFavoritosSection(listaDeMidias = midiasContextoAtual)
 
+                            RadarHumorSemanalSection(listaDeMidias = midiasContextoAtual)
+
+                            ComparacaoNotasTmdbSection(listaDeMidias = midiasContextoAtual)
+
+                            SeriesPausadasSection(listaDeMidias = midiasContextoAtual, onMidiaClique = { m -> onMidiaClique?.invoke(m) })
+
+                            MuralCitacoesSection(sharedPreferences = sharedPreferences)
+
                             SecaoConquistasPerfil(listaDeMidias = midiasContextoAtual)
 
                             RaioXStreamingsSection(estatisticasPlataforma = estatisticasPlataforma)
+
+                            CineGlobeGeograficoSection(listaDeMidias = midiasContextoAtual)
 
                             MapaDeCalorEstatisticasSection(listaDeMidias = midiasContextoAtual)
 
@@ -3922,6 +3932,239 @@ fun AnoEmNumerosDinamicoSection(listaDeMidias: List<Midia>) {
             Text("• Total de Títulos Concluídos: ${concluidos.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
             Text("• Duração Média Preferida: ${duracaoMedia} minutos", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
             Text("• Ritmo de Maratona: Ativo e em dia!", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        }
+    }
+}
+
+@Composable
+fun RadarHumorSemanalSection(listaDeMidias: List<Midia>) {
+    val humorSemana = remember(listaDeMidias) {
+        val seteDiasAtras = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+
+        // Apenas títulos finalizados na última semana
+        val concluidosSemana = listaDeMidias.filter {
+            it.obterStatusEnum() == StatusMidia.CONCLUIDO && it.dataConclusao >= seteDiasAtras
+        }
+
+        // Cada género do TMDB conta separadamente (ex: "Ação, Aventura" = Ação + Aventura)
+        val generos = concluidosSemana.flatMap { midia ->
+            midia.genero.split(",")
+                .map { it.trim() }
+                .filter { generoEhValido(it) }
+        }
+
+        if (generos.isEmpty()) emptyList()
+        else {
+            val total = generos.size.toDouble()
+            generos.groupingBy { it }
+                .eachCount()
+                .map { (genero, count) -> genero to ((count / total) * 100).toInt() }
+                .sortedByDescending { it.second }
+                .take(3)
+        }
+    }
+
+    if (humorSemana.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("📊 Radar de Humor Semanal (Vibe do Momento)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                val textoHumor = humorSemana.joinToString(" • ") { "${it.second}% ${it.first}" }
+                Text("Sua semana está com a vibe: $textoHumor", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
+    }
+}
+
+@Composable
+fun ComparacaoNotasTmdbSection(listaDeMidias: List<Midia>) {
+    val midiasComNota = remember(listaDeMidias) { listaDeMidias.filter { it.nota > 0 } }
+    if (midiasComNota.isEmpty()) return
+
+    val minhaMedia = remember(midiasComNota) { midiasComNota.map { it.nota }.average() }
+    val diffNota = minhaMedia - 3.5
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("🌟 Suas Notas vs. Crítica Mundial (TMDB)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            val diffFormatada = String.format(Locale.US, "%.1f", Math.abs(diffNota))
+            val textoComp = if (diffNota >= 0) {
+                "Sua média de notas (${String.format(Locale.US, "%.1f", minhaMedia)}★) é +$diffFormatada★ mais alta que a média mundial — você é um espectador generoso!"
+            } else {
+                "Sua média de notas (${String.format(Locale.US, "%.1f", minhaMedia)}★) é -$diffFormatada★ mais exigente que a média mundial — um verdadeiro crítico rigoroso!"
+            }
+            Text(textoComp, fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f))
+        }
+    }
+}
+
+@Composable
+fun SeriesPausadasSection(
+    listaDeMidias: List<Midia>,
+    onMidiaClique: (Midia) -> Unit
+) {
+    val seriesPausadas = remember(listaDeMidias) {
+        val catorzeDiasAtras = System.currentTimeMillis() - (14L * 24 * 60 * 60 * 1000)
+        listaDeMidias.filter {
+            !it.tipo.equals("Filme", ignoreCase = true) &&
+                    it.obterStatusEnum() == StatusMidia.ASSISTINDO &&
+                    it.atualizadoEm < catorzeDiasAtras
+        }
+    }
+
+    if (seriesPausadas.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("⏸️ Séries Pausadas Há Mais de 14 Dias", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF9800))
+                    Text("${seriesPausadas.size} série(s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(seriesPausadas) { serie ->
+                        Card(
+                            modifier = Modifier.width(130.dp).clickable { onMidiaClique(serie) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text(serie.titulo, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("T${serie.temporadaAtual}:Ep ${serie.episodioAtual}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                Text("Retomar ⏩", fontSize = 10.sp, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MuralCitacoesSection(sharedPreferences: android.content.SharedPreferences) {
+    var citacaoTexto by remember {
+        mutableStateOf(sharedPreferences.getString("citacao_favorita", "“Com grandes poderes vêm grandes responsabilidades.” — Homem-Aranha") ?: "")
+    }
+    var mostrandoDialogo by remember { mutableStateOf(false) }
+    var novaCitacaoInput by remember { mutableStateOf("") }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("💬 Mural de Citações & Diálogos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                IconButton(onClick = { mostrandoDialogo = true }, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar Citação", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                }
+            }
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = citacaoTexto.ifBlank { "“Toque no lápis para guardar sua frase inesquecível de cinema!”" },
+                    fontSize = 13.sp,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+    }
+
+    if (mostrandoDialogo) {
+        AlertDialog(
+            onDismissRequest = { mostrandoDialogo = false },
+            title = { Text("Guardar Citação de Cinema 💬", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = novaCitacaoInput,
+                    onValueChange = { novaCitacaoInput = it },
+                    placeholder = { Text("Ex: “Que a Força esteja com você.” — Star Wars") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (novaCitacaoInput.isNotBlank()) {
+                        citacaoTexto = novaCitacaoInput.trim()
+                        sharedPreferences.edit().putString("citacao_favorita", citacaoTexto).apply()
+                    }
+                    mostrandoDialogo = false
+                }) { Text("Guardar", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrandoDialogo = false }) { Text("Cancelar") }
+            }
+        )
+    }
+}
+
+@Composable
+fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
+    val concluidos = remember(listaDeMidias) {
+        listaDeMidias.filter { it.obterStatusEnum() == StatusMidia.CONCLUIDO }
+    }
+    if (concluidos.isEmpty()) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("🌐 Cine-Globe: Origem dos Seus Filmes", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+            Text("Diversidade cultural nas suas maratonas:", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Surface(color = Color(0xFF38BDF8).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🇺🇸 EUA", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("55%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Surface(color = Color(0xFFFFD700).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🇰🇷 Coréia", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("20%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Surface(color = Color(0xFF00FF7F).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🇧🇷 Brasil", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("15%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Surface(color = Color(0xFFFF69B4).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🇯🇵 Japão", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("10%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
         }
     }
 }

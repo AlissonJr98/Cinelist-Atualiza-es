@@ -2,6 +2,9 @@ package com.example.cinelist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +13,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,6 +52,8 @@ fun TelaModoMatch(
 
     // Rastreia os IDs votados nesta sessão local para que saiam imediatamente da tela após o clique
     var votosSessaoLocal by remember { mutableStateOf(setOf<String>()) }
+    var abaModoTorneio by remember { mutableStateOf(false) }
+    var mostrarAlbumRecordacoes by remember { mutableStateOf(false) }
 
     // 1. Títulos da própria sala
     val midiasDaSalaParaVotar = remember(listaDeMidiasDaSala, chavesJaDeramMatch, votosSessaoLocal) {
@@ -197,6 +204,13 @@ fun TelaModoMatch(
         }
     }
 
+    if (mostrarAlbumRecordacoes) {
+        DialogoAlbumRecordacoesMatch(
+            matches = matchesConfirmados.filter { it.deuMatch(2) },
+            onDispensar = { mostrarAlbumRecordacoes = false }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -217,6 +231,12 @@ fun TelaModoMatch(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { mostrarAlbumRecordacoes = true }) {
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Álbum de Matches", tint = Color(0xFFFF3366))
+                    }
+                    TextButton(onClick = { abaModoTorneio = !abaModoTorneio }) {
+                        Text(if (abaModoTorneio) "🍿 Match" else "🏆 Torneio 1v1", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = {
                         viewModel.resetarRodadaMatch()
                         votosSessaoLocal = emptySet()
@@ -233,11 +253,12 @@ fun TelaModoMatch(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            if (filaFinalParaVotar.isEmpty()) {
+            if (abaModoTorneio) {
+                TorneioModoView(listaDeMidias = listaDeMidiasDaSala, onAbrirDetalhesMidia = onAbrirDetalhesMidia)
+            } else if (filaFinalParaVotar.isEmpty()) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -405,4 +426,169 @@ fun TelaModoMatch(
             }
         }
     }
+}
+
+@Composable
+fun TorneioModoView(
+    listaDeMidias: List<Midia>,
+    onAbrirDetalhesMidia: (Midia) -> Unit
+) {
+    val candidatos = remember(listaDeMidias) {
+        listaDeMidias.filter { !it.status.equals("Concluído", ignoreCase = true) && !it.status.equals("Concluido", ignoreCase = true) }.take(8)
+    }
+
+    var rodada by remember { mutableIntStateOf(0) }
+    var competidores by remember(candidatos) { mutableStateOf(candidatos) }
+    var campeao by remember { mutableStateOf<Midia?>(null) }
+
+    if (candidatos.size < 2) {
+        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text("Adicione pelo menos 2 mídias à sala para iniciar o Torneio 🏆", color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+        }
+        return
+    }
+
+    if (campeao != null) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("🏆 CAMPEÃO DO TORNEIO DA NOITE", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.size(140.dp, 210.dp).clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
+                if (campeao!!.imagemCapa.isNotBlank()) {
+                    AsyncImage(model = campeao!!.imagemCapa, contentDescription = campeao!!.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(campeao!!.titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { onAbrirDetalhesMidia(campeao!!) }) {
+                Text("Ver Detalhes & Assistir 🍿", fontWeight = FontWeight.Bold)
+            }
+        }
+        return
+    }
+
+    val itemA = competidores.getOrNull(0)
+    val itemB = competidores.getOrNull(1)
+
+    if (itemA == null || itemB == null) return
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp)) {
+            Text("⚔️ Duelo ${rodada + 1} • Escolha o Melhor!", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+        }
+
+        Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Card A
+            Card(
+                modifier = Modifier.weight(1f).fillMaxHeight().clickable {
+                    val proximos = competidores.drop(2) + itemA
+                    if (proximos.size <= 1) {
+                        campeao = itemA
+                    } else {
+                        competidores = proximos
+                        rodada++
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(12.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
+                        if (itemA.imagemCapa.isNotBlank()) {
+                            AsyncImage(model = itemA.imagemCapa, contentDescription = itemA.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(itemA.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+
+            Text("VS", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterVertically))
+
+            // Card B
+            Card(
+                modifier = Modifier.weight(1f).fillMaxHeight().clickable {
+                    val proximos = competidores.drop(2) + itemB
+                    if (proximos.size <= 1) {
+                        campeao = itemB
+                    } else {
+                        competidores = proximos
+                        rodada++
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(12.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
+                        if (itemB.imagemCapa.isNotBlank()) {
+                            AsyncImage(model = itemB.imagemCapa, contentDescription = itemB.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(itemB.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DialogoAlbumRecordacoesMatch(
+    matches: List<MatchMidia>,
+    onDispensar: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDispensar,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFFFF3366))
+                Text("Álbum de Matches da Sala 🖼️", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
+        },
+        text = {
+            if (matches.isEmpty()) {
+                Text("Nenhum Match registrado ainda nesta sala. Continuem votando!", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+            } else {
+                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    matches.forEach { match ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                if (match.imagemCapa.isNotBlank()) {
+                                    AsyncImage(
+                                        model = match.imagemCapa,
+                                        contentDescription = match.titulo,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(6.dp))
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(match.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("❤️ Deu Match com ${match.votos.size} votos!", fontSize = 11.sp, color = Color(0xFFFF3366), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDispensar) { Text("Fechar") }
+        }
+    )
 }

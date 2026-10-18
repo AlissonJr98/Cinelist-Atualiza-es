@@ -25,6 +25,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -55,6 +58,7 @@ import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Check
@@ -81,8 +85,10 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // =====================================
 // CLASSES E LISTAS DE APOIO
@@ -478,6 +484,10 @@ fun TelaPrincipal(
             meuUid = meuUid,
             totalMembros = maxOf(2, membrosSala.size),
             isAdministrador = isAdministrador,
+            onItemClique = { midia ->
+                mostrarDialogoSugestoes = false
+                onItemClique(midia)
+            },
             onAceitar = {
                 viewModel.aceitarMidiaPendente(it, maxOf(2, membrosSala.size))
                 mostrarSucesso("Sugestão \"${it.titulo}\" aprovada!")
@@ -495,6 +505,17 @@ fun TelaPrincipal(
 
     if (mostrarDialogoSorteio) {
         DialogoSorteio(listaDeMidias = listaDeMidias, onDispensar = { mostrarDialogoSorteio = false }, onSelecionarMidia = { m -> mostrarDialogoSorteio = false; onItemClique(m) })
+    }
+
+    if (mostrarDialogoCineBot) {
+        DialogoCineBot(
+            onDispensar = { mostrarDialogoCineBot = false },
+            onAdicionarClique = { idTmdb, titulo, tipo, status, nota, sinopse, capa, genero, plataforma ->
+                onAdicionarClique(idTmdb, titulo, tipo, status, nota, sinopse, capa, genero, plataforma)
+                mostrarDialogoCineBot = false
+                mostrarSucesso("\"$titulo\" adicionado à sua lista! 🍿")
+            }
+        )
     }
 
     // 🚀 ALERTA: CONFIRMAÇÃO DE RECUSA DE MÍDIA
@@ -941,17 +962,6 @@ fun TelaPrincipal(
                 }
             )
         }
-
-        if (mostrarDialogoCineBot) {
-            DialogoCineBot(
-                onDispensar = { mostrarDialogoCineBot = false },
-                onAdicionarMidia = { titulo ->
-                    onAdicionarClique(0, titulo, "Filme", StatusMidia.QUERO_ASSISTIR.valor, 0, "Sugerido pelo CineBot IA 🤖", "", "Geral", "Cinema")
-                    mostrarDialogoCineBot = false
-                    mostrarSucesso("\"$titulo\" adicionado à sua lista! 🍿")
-                }
-            )
-        }
     }
 
     Scaffold(
@@ -1034,7 +1044,7 @@ fun TelaPrincipal(
                             modifier = Modifier.height(34.dp)
                         ) { Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
                     }
-                    IconButton(onClick = { mostrarDialogoCineBot = true }) { Icon(Icons.Default.AutoAwesome, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = { mostrarDialogoCineBot = true }) { Icon(Icons.Default.SmartToy, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary) }
                     IconButton(onClick = { mostrarDialogoSorteio = true }) { Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary) }
                     IconButton(onClick = onPerfilClique) { Icon(Icons.Default.Person, contentDescription = "Perfil", tint = MaterialTheme.colorScheme.primary) }
                 },
@@ -1121,6 +1131,7 @@ fun TelaPrincipal(
             ) { pagina ->
                 if (pagina == 0) {
                     val listaFiltrada = listaDeMidias.filter { midia ->
+                        val bateSugestao = midia.statusSugestao == "APROVADO"
                         val termoBusca = textoPesquisa.trim()
                         val bateTexto = termoBusca.isBlank() || midia.titulo.contains(termoBusca, ignoreCase = true) || midia.genero.contains(termoBusca, ignoreCase = true) || midia.plataforma.contains(termoBusca, ignoreCase = true)
                         val bateCategoria = if (categoriaSelecionada == "Todos") true else midia.tipo.equals(when (categoriaSelecionada) { "Filmes" -> "Filme"; "Séries" -> "Série"; "Animes" -> "Anime"; "Novelas" -> "Novela"; "Doramas" -> "Dorama"; else -> "" }, ignoreCase = true)
@@ -1135,7 +1146,7 @@ fun TelaPrincipal(
                             "Concluído" -> statusEnum == StatusMidia.CONCLUIDO
                             else -> true
                         }
-                        bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
+                        bateSugestao && bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
                     }.let { lista ->
                         when (ordenacaoMinhaLista) {
                             "Favoritos Primeiro" -> lista.sortedWith(compareByDescending<Midia> { it.favorito }.thenByDescending { it.obterStatusEnum() == StatusMidia.ASSISTINDO })
@@ -1164,8 +1175,8 @@ fun TelaPrincipal(
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary) }
                             } else {
                                 // 🚀 MOSTRAR SUGESTÕES PENDENTES EM TODOS OS MODOS
-                                val listaPendentes = listaFiltrada.filter { it.statusSugestao == "PENDENTE" }
-                                val listaRecusados = listaFiltrada.filter { it.statusSugestao == "RECUSADO" }
+                                val listaPendentes = listaDeMidias.filter { it.statusSugestao == "PENDENTE" }
+                                val listaRecusados = listaDeMidias.filter { it.statusSugestao == "RECUSADO" }
 
                                 // 🔖 Onde parei: séries com episódio/temporada avançada,
                                 // ordenadas pela mais recentemente alterada.
@@ -1571,6 +1582,7 @@ fun CardSugestaoCasal(
     meuUid: String,
     totalMembros: Int,
     isAdministrador: Boolean,
+    onItemClique: () -> Unit,
     onAceitar: () -> Unit,
     onRecusar: () -> Unit,
     onResolverRecusado: () -> Unit,
@@ -1582,25 +1594,27 @@ fun CardSugestaoCasal(
     val jaAprovei = midia.uidsAprovados.contains(meuUid)
     val votosAtuais = midia.uidsAprovados.split(",").filter { it.isNotBlank() }.size + 1 // +1 do autor
 
-    // Calcula os dias desde que foi sugerido para dar senso de urgência
     val diasPendente = ((System.currentTimeMillis() - midia.atualizadoEm) / (1000 * 60 * 60 * 24)).toInt()
     val textoTempo = if (diasPendente == 0) "Hoje" else if (diasPendente == 1) "Ontem" else "Há $diasPendente dias"
 
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onItemClique() }
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when (midia.statusSugestao) {
                         "PENDENTE" -> if (souOAutor) "⏳ Aguardando... ($votosAtuais/$totalMembros)" else "💡 $nomeRemetente sugeriu:"
                         "RECUSADO" -> if (souOAutor) "❌ A sua sugestão foi recusada." else "Sugestão recusada."
                         else -> ""
                     },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
 
@@ -1609,56 +1623,101 @@ fun CardSugestaoCasal(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (midia.imagemCapa.isNotBlank()) {
-                    AsyncImage(model = midia.imagemCapa, contentDescription = midia.titulo, contentScale = ContentScale.Crop, modifier = Modifier.size(50.dp, 75.dp).clip(RoundedCornerShape(8.dp)))
+                    AsyncImage(
+                        model = midia.imagemCapa,
+                        contentDescription = midia.titulo,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(44.dp, 66.dp).clip(RoundedCornerShape(8.dp))
+                    )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = midia.titulo, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(text = "${midia.tipo} • ${midia.genero}", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text(text = midia.titulo, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = "${midia.tipo} • ${midia.genero}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text(text = "Toque para ver detalhes 🎬", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 if (midia.statusSugestao == "PENDENTE") {
                     if (souOAutor) {
-                        // Autor pode desistir da espera
-                        OutlinedButton(onClick = onRetirarSugestao, shape = RoundedCornerShape(8.dp)) {
-                            Text("Retirar Sugestão")
+                        OutlinedButton(
+                            onClick = onRetirarSugestao,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+                        ) {
+                            Text("Retirar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     } else if (jaAprovei) {
-                        Text("Você aprovou. Falta o resto!", fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
+                        Text("Você aprovou ✅", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     } else {
-                        // Membro vota
-                        OutlinedButton(onClick = onRecusar, shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(end = 8.dp)) {
-                            Text("Recusar", color = MaterialTheme.colorScheme.error)
+                        OutlinedButton(
+                            onClick = onRecusar,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(32.dp).padding(end = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+                        ) {
+                            Text("Recusar", color = MaterialTheme.colorScheme.error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
-                        Button(onClick = onAceitar, shape = RoundedCornerShape(8.dp)) {
-                            Text("Aprovar")
+                        Button(
+                            onClick = onAceitar,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+                        ) {
+                            Text("Aprovar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 } else if (midia.statusSugestao == "RECUSADO" && souOAutor) {
-                    Button(onClick = onResolverRecusado, shape = RoundedCornerShape(8.dp)) {
-                        Text("Resolver", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = onResolverRecusado,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+                    ) {
+                        Text("Resolver", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
 
-            // 🚀 PAINEL DO ADMIN (Só aparece se o utilizador for o Admin da sala)
             if (midia.statusSugestao == "PENDENTE" && isAdministrador) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("👑 Controlo Admin:", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = onRecusar, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(24.dp)) {
-                            Text("Forçar Recusa", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "👑 Controles de Administrador:",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onRecusar,
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Forçar Recusa", fontSize = 11.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                         }
-                        TextButton(onClick = onForcarAprovacaoAdmin, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(24.dp)) {
-                            Text("Forçar Aprovação", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                        Button(
+                            onClick = onForcarAprovacaoAdmin,
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Forçar Aprovação", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1674,6 +1733,7 @@ fun DialogoSugestoesPendentes(
     meuUid: String,
     totalMembros: Int,
     isAdministrador: Boolean,
+    onItemClique: (Midia) -> Unit,
     onAceitar: (Midia) -> Unit,
     onRecusar: (Midia) -> Unit,
     onResolverRecusado: (Midia) -> Unit,
@@ -1728,6 +1788,7 @@ fun DialogoSugestoesPendentes(
                                 meuUid = meuUid,
                                 totalMembros = totalMembros,
                                 isAdministrador = isAdministrador,
+                                onItemClique = { onItemClique(midia) },
                                 onAceitar = { onAceitar(midia) },
                                 onRecusar = { onRecusar(midia) },
                                 onResolverRecusado = { onResolverRecusado(midia) },
@@ -2280,26 +2341,100 @@ fun ConteudoCardCinema(
     }
 }
 
+private val palavrasIgnoradasBusca = setOf(
+    "de", "da", "do", "das", "dos", "um", "uma", "uns", "umas", "os", "as", "em", "no", "na", "nos", "nas",
+    "com", "por", "para", "pra", "que", "ao", "aos", "sua", "seu", "num", "numa", "sobre", "filme", "serie",
+    "onde", "quando", "ele", "ela", "eles", "elas", "mas", "ou", "como", "qual", "tem", "foi", "sao", "ser",
+    "quer", "esta", "estao", "isso", "essa", "esse", "muito", "mais", "tudo", "fica", "ficou"
+)
+
+private fun normalizarTextoBusca(s: String): String =
+    java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "")
+
+suspend fun buscarPorEnredo(consulta: String): List<TmdbFilme> = coroutineScope {
+    val api = RetrofitClient.apiService
+    val textoOriginal = consulta.trim()
+
+    val palavras = normalizarTextoBusca(textoOriginal)
+        .split(Regex("[^a-z0-9]+"))
+        .filter { it.length > 2 && it !in palavrasIgnoradasBusca }
+        .distinct()
+
+    // Busca direta por título (caso a pessoa escreva o nome do filme)
+    val diretoDeferred =
+        async { runCatching { api.buscarMulti(textoOriginal).resultados }.getOrNull().orEmpty() }
+
+    // Busca por cada palavra forte da frase
+    val porPalavraDeferred = palavras.sortedByDescending { it.length }.take(4).map { palavra ->
+        async { runCatching { api.buscarMulti(palavra).resultados }.getOrNull().orEmpty() }
+    }
+
+    // Filmes e séries populares (páginas 1 a 5), para casar com a sinopse
+    val populares = (1..5).flatMap { pagina ->
+        listOf(
+            async {
+                runCatching { api.descobrirFilmes(pagina = pagina).resultados }.getOrNull()
+                    .orEmpty()
+            },
+            async {
+                runCatching { api.descobrirSeries(pagina = pagina).resultados }.getOrNull()
+                    .orEmpty()
+            }
+        )
+    }
+
+    val direto = diretoDeferred.await().filter { !it.caminhoPoster.isNullOrBlank() }
+    val candidatos = (porPalavraDeferred + populares).awaitAll().flatten()
+        .filter { !it.caminhoPoster.isNullOrBlank() }
+        .distinctBy { "${it.ehSerie}_${it.idTmdb}" }
+
+    fun pontuar(item: TmdbFilme): Int {
+        val texto = normalizarTextoBusca(item.titulo + " " + item.sinopse)
+        return palavras.count { palavra ->
+            val raiz = if (palavra.length >= 5) palavra.take(5) else palavra
+            texto.contains(raiz)
+        }
+    }
+
+    val minimo = if (palavras.size <= 2) 1 else 2
+    val porSinopse = candidatos
+        .map { it to pontuar(it) }
+        .filter { it.second >= minimo }
+        .sortedByDescending { it.second }
+        .map { it.first }
+
+    (direto + porSinopse)
+        .distinctBy { "${it.ehSerie}_${it.idTmdb}" }
+        .take(15)
+}
+
 @Composable
 fun DialogoCineBot(
     onDispensar: () -> Unit,
-    onAdicionarMidia: (String) -> Unit
+    onAdicionarClique: (Int, String, String, String, Int, String, String, String, String) -> Unit
 ) {
     var pedidoText by remember { mutableStateOf("") }
-    var sugestoesBot by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var sugestoesBot by remember { mutableStateOf<List<TmdbFilme>>(emptyList()) }
+    var buscando by remember { mutableStateOf(false) }
+    var buscouUmaVez by remember { mutableStateOf(false) }
+    var todosResultados by remember { mutableStateOf<List<TmdbFilme>>(emptyList()) }
+    var ultimaConsulta by remember { mutableStateOf("") }
+    var indiceAtual by remember { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
 
     AlertDialog(
         onDismissRequest = onDispensar,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.SmartToy, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text("CineBot IA Assistente 🤖", fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Diga o que você quer ver (ex: 'Quero um suspense psicológico na Netflix'):",
+                    "Descreva o que quer ver ou o que acontece no filme/série (busca por título, gênero ou sinopse):",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -2307,61 +2442,122 @@ fun DialogoCineBot(
                 OutlinedTextField(
                     value = pedidoText,
                     onValueChange = { pedidoText = it },
-                    placeholder = { Text("Ex: Comédia curta para ver comendo...", fontSize = 12.sp) },
+                    placeholder = { Text("Ex: Homem preso num barco com tigre...", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 Button(
                     onClick = {
-                        val txt = pedidoText.lowercase()
-                        sugestoesBot = when {
-                            txt.contains("suspense") || txt.contains("psicológico") -> listOf(
-                                "Garota Exemplar" to "Filme • Suspense Psicológico",
-                                "Ilha do Medo" to "Filme • Mistério e Reviravolta"
-                            )
-                            txt.contains("comédia") || txt.contains("comer") -> listOf(
-                                "As Branquelas" to "Filme • Comédia Hilária",
-                                "Brooklyn Nine-Nine" to "Série • Comédia Curta"
-                            )
-                            txt.contains("terror") || txt.contains("assustador") -> listOf(
-                                "Invocação do Mal" to "Filme • Terror Sobrenatural",
-                                "O Oculto" to "Filme • Terror Psicológico"
-                            )
-                            else -> listOf(
-                                "O Lado Bom da Vida" to "Filme • Drama e Comédia",
-                                "Stranger Things" to "Série • Ficção e Mistério"
-                            )
+                        if (pedidoText.isNotBlank()) {
+                            val consulta = pedidoText.trim()
+                            val ehMesmaBusca = consulta.equals(ultimaConsulta, ignoreCase = true) && todosResultados.isNotEmpty()
+
+                            if (ehMesmaBusca) {
+                                // Mesma busca: mostra os próximos 3 resultados
+                                val proximo = indiceAtual + 3
+                                if (proximo >= todosResultados.size) {
+                                    todosResultados = todosResultados.shuffled()
+                                    indiceAtual = 0
+                                } else {
+                                    indiceAtual = proximo
+                                }
+                                sugestoesBot = todosResultados.drop(indiceAtual).take(3)
+                            } else {
+                                // Busca nova
+                                buscando = true
+                                coroutineScope.launch {
+                                    try {
+                                        val resultado = buscarPorEnredo(consulta)
+                                        todosResultados = resultado
+                                        ultimaConsulta = consulta
+                                        indiceAtual = 0
+                                        sugestoesBot = resultado.take(3)
+                                        buscouUmaVez = true
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        todosResultados = emptyList()
+                                        sugestoesBot = emptyList()
+                                        buscouUmaVez = true
+                                    } finally {
+                                        buscando = false
+                                    }
+                                }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !buscando && pedidoText.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Sugerir 2 Opções Exatas ✨", fontWeight = FontWeight.Bold)
+                    if (buscando) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                    } else {
+                        Text(
+                            if (sugestoesBot.isNotEmpty() && pedidoText.trim().equals(ultimaConsulta, ignoreCase = true)) "Ver outras sugestões 🔄" else "Buscar Sugestão IA ✨",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                if (buscouUmaVez && !buscando && sugestoesBot.isEmpty()) {
+                    Text(
+                        "Nada encontrado. Tente palavras mais específicas (ex: tigre, naufrágio, robô) ou o título.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
                 }
 
                 if (sugestoesBot.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    sugestoesBot.forEach { (titulo, desc) ->
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        sugestoesBot.forEach { item ->
+                            val tipoReal = if (item.ehSerie || item.mediaType.equals("tv", ignoreCase = true)) "Série" else "Filme"
+                            val posterUrl = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else ""
+
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                    Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
-                                }
-                                Button(
-                                    onClick = { onAdicionarMidia(titulo) },
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                    modifier = Modifier.height(30.dp)
+                                Row(
+                                    modifier = Modifier.padding(8.dp).fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Text("+ Adicionar", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    if (posterUrl.isNotBlank()) {
+                                        AsyncImage(
+                                            model = posterUrl,
+                                            contentDescription = item.titulo,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(6.dp))
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(item.titulo, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(item.sinopse.ifBlank { "Sem sinopse disponível." }, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    Button(
+                                        onClick = {
+                                            onAdicionarClique(
+                                                item.idTmdb,
+                                                item.titulo,
+                                                tipoReal,
+                                                StatusMidia.QUERO_ASSISTIR.valor,
+                                                0,
+                                                item.sinopse,
+                                                posterUrl,
+                                                item.generoTexto,
+                                                if (tipoReal == "Série") "TV / Original" else "Cinema"
+                                            )
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(30.dp)
+                                    ) {
+                                        Text("+ Lista", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }

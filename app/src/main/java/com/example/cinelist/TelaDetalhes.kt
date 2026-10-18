@@ -24,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -211,10 +213,6 @@ fun TelaDetalhes(
     var tagsInput by remember { mutableStateOf("") }
     var ehPrivadoState by remember { mutableStateOf(false) }
 
-    val colecoesExistentes = remember(listaAtualBanco) {
-        listOf("Geral") + listaAtualBanco.map { it.listaCustomizada }.filter { it.isNotBlank() && it != "Geral" }.distinct().sorted()
-    }
-
     val provedoresFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
             val nome = item.nomeProvedor.lowercase()
@@ -256,6 +254,16 @@ fun TelaDetalhes(
             ehPrivadoState = midiaSalva.ehPrivado
         }
     }
+    // Preenche automaticamente o género vindo do TMDB quando o item salvo está sem género real
+    LaunchedEffect(detalhesApi?.generoTexto, midiaSalva?.genero) {
+        val generoTmdb = detalhesApi?.generoTexto.orEmpty()
+        val atual = midiaSalva
+        if (atual != null && generoTmdb.isNotBlank() && !generoEhValido(atual.genero)) {
+            viewModel.atualizar(atual.copy(genero = generoTmdb))
+        }
+    }
+
+    var temCenaPosCreditos by remember { mutableStateOf<Boolean?>(null) }
 
     LaunchedEffect(idRealBuscaApi, tipoRealUtilizado) {
         viewModel.limparDetalhesEstendidos()
@@ -265,12 +273,74 @@ fun TelaDetalhes(
             viewModel.buscarDetalhesEstendidos(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
             viewModel.buscarOndeAssistir(idTmdb = idRealBuscaApi, tipo = tipoRealUtilizado)
             viewModel.carregarComentariosMidia(idRealBuscaApi)
+
+            if (!ehSerieOuAnime) {
+                try {
+                    val kw = withContext(Dispatchers.IO) {
+                        RetrofitClient.apiService.obterKeywordsFilme(idRealBuscaApi)
+                    }
+                    val listaKw = kw.keywords?.map {
+                        it.nome.lowercase().replace(" ", "").replace("-", "").replace("_", "")
+                    } ?: emptyList()
+
+                    val temStinger = listaKw.any {
+                        it.contains("aftercreditsstinger") ||
+                        it.contains("duringcreditsstinger") ||
+                        it.contains("postcredits") ||
+                        it.contains("midcredits") ||
+                        it.contains("aftercredits") ||
+                        it.contains("sceneduringcredits") ||
+                        it.contains("sceneaftercredits")
+                    }
+
+                    val tituloBaixo = (midiaSalva?.titulo ?: detalhesApi?.titulo ?: "").lowercase()
+                    val ehFilmeMarvelOuSuperhero = tituloBaixo.contains("vingadores") ||
+                            tituloBaixo.contains("avengers") ||
+                            tituloBaixo.contains("spider-man") ||
+                            tituloBaixo.contains("homem-aranha") ||
+                            tituloBaixo.contains("marvel") ||
+                            tituloBaixo.contains("batman") ||
+                            tituloBaixo.contains("deadpool") ||
+                            tituloBaixo.contains("capitão américa") ||
+                            tituloBaixo.contains("capitan america") ||
+                            tituloBaixo.contains("iron man") ||
+                            tituloBaixo.contains("homem de ferro") ||
+                            tituloBaixo.contains("thor") ||
+                            tituloBaixo.contains("guardiões da galáxia") ||
+                            tituloBaixo.contains("guardians of the galaxy") ||
+                            listaKw.any { it.contains("marvel") || it.contains("mcu") || it.contains("superhero") || it.contains("dccomics") }
+
+                    temCenaPosCreditos = temStinger || ehFilmeMarvelOuSuperhero
+                } catch (e: Exception) {
+                    val tituloBaixo = (midiaSalva?.titulo ?: detalhesApi?.titulo ?: "").lowercase()
+                    temCenaPosCreditos = tituloBaixo.contains("vingadores") || tituloBaixo.contains("avengers") || tituloBaixo.contains("marvel")
+                }
+            } else {
+                temCenaPosCreditos = null
+            }
         }
     }
 
     LaunchedEffect(idRealBuscaApi, abaTemporadaVisualizada, ehSerieOuAnime) {
         if (idRealBuscaApi > 0 && ehSerieOuAnime) {
             viewModel.buscarEpisodiosTemporada(idRealBuscaApi, abaTemporadaVisualizada)
+        }
+    }
+
+    var colecaoFranquiaDetalhes by remember { mutableStateOf<TmdbFranquiaColecaoDetalhes?>(null) }
+
+    LaunchedEffect(detalhesApi?.colecaoFranquia?.id) {
+        val idCol = detalhesApi?.colecaoFranquia?.id ?: 0
+        if (idCol > 0) {
+            try {
+                colecaoFranquiaDetalhes = withContext(Dispatchers.IO) {
+                    RetrofitClient.apiService.obterDetalhesColecaoFranquia(idCol)
+                }
+            } catch (e: Exception) {
+                colecaoFranquiaDetalhes = null
+            }
+        } else {
+            colecaoFranquiaDetalhes = null
         }
     }
 
@@ -579,7 +649,13 @@ fun TelaDetalhes(
                             val tituloDinamico = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "Título Indisponível"
 
                             Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            Text(text = "$tipoRealUtilizado • ${midiaSalva?.genero ?: detalhesApi?.generoTexto ?: "Geral"}", fontSize = 15.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
+                            val generoExibicao = if (generoEhValido(midiaSalva?.genero)) midiaSalva?.genero.orEmpty() else detalhesApi?.generoTexto.orEmpty()
+                            Text(
+                                text = if (generoExibicao.isBlank()) tipoRealUtilizado else "$tipoRealUtilizado • $generoExibicao",
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontWeight = FontWeight.Medium
+                            )
 
                             if (detalhesApi != null && !detalhesApi?.fraseEfeito.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -658,46 +734,122 @@ fun TelaDetalhes(
                                 )
                             }
 
-                            // 🚀 SELO DE CENAS PÓS-CRÉDITOS
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                    Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            // 🚀 SELO DE CENAS PÓS-CRÉDITOS (APENAS PARA FILMES)
+                            if (!ehSerieOuAnime && temCenaPosCreditos != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (temCenaPosCreditos == true) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                            Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        }
+                                    }
+                                } else {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
+                                            Text("✅ Sem cenas pós-créditos — Pode desligar a TV!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                        }
+                                    }
                                 }
                             }
 
-                            // 🚀 BOTÃO TRILHA SONORA (OST NO SPOTIFY)
+                            // 🚀 SELO DE STATUS DA SÉRIE (CANCELADA / FINALIZADA)
+                            if (ehSerieOuAnime && detalhesApi?.statusSeloTexto?.isNotBlank() == true) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Color(0xFFFF4C4C).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Icons.Default.Warning else Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = detalhesApi!!.statusSeloTexto,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+
+                            // 🚀 BOTÕES TRILHA SONORA (SPOTIFY & YOUTUBE MUSIC)
                             val tituloParaBuscaOst = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
                             if (tituloParaBuscaOst.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        val query = Uri.encode("$tituloParaBuscaOst Soundtrack Original OST")
-                                        val spotifyIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query")).apply {
-                                            setPackage("com.spotify.music")
-                                        }
-                                        try {
-                                            contexto.startActivity(spotifyIntent)
-                                        } catch (ex: Exception) {
-                                            val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$query"))
-                                            contexto.startActivity(intentWeb)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(38.dp),
-                                    shape = RoundedCornerShape(10.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("🎵 Ouvir Trilha Sonora (OST no Spotify)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    OutlinedButton(
+                                        onClick = {
+                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack Original OST")
+                                            val spotifyIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query")).apply {
+                                                setPackage("com.spotify.music")
+                                            }
+                                            try {
+                                                contexto.startActivity(spotifyIntent)
+                                            } catch (ex: Exception) {
+                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$query"))
+                                                contexto.startActivity(intentWeb)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f).height(38.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFF1DB954), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Spotify 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack OST")
+                                            val ytmIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query")).apply {
+                                                setPackage("com.google.android.apps.youtube.music")
+                                            }
+                                            try {
+                                                contexto.startActivity(ytmIntent)
+                                            } catch (ex: Exception) {
+                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query"))
+                                                contexto.startActivity(intentWeb)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f).height(38.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFFFF0000), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("YT Music 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
 
@@ -906,6 +1058,83 @@ fun TelaDetalhes(
                                                 textAlign = TextAlign.Center,
                                                 modifier = Modifier.fillMaxWidth()
                                             )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (colecaoFranquiaDetalhes != null && !colecaoFranquiaDetalhes!!.partes.isNullOrEmpty()) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "🍿 Saga / Franquia: ${colecaoFranquiaDetalhes!!.nome}",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    items(colecaoFranquiaDetalhes!!.partes ?: emptyList()) { filmeFranquia ->
+                                        val posterFranquia = if (!filmeFranquia.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${filmeFranquia.caminhoPoster}" else ""
+                                        val jaEstaNaMinhaLista = listaAtualBanco.any { it.idTmdb != 0 && it.idTmdb == filmeFranquia.idTmdb }
+
+                                        Card(
+                                            modifier = Modifier.width(125.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                        ) {
+                                            Column(modifier = Modifier.padding(8.dp)) {
+                                                Box(modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.DarkGray)) {
+                                                    if (posterFranquia.isNotBlank()) {
+                                                        AsyncImage(
+                                                            model = posterFranquia,
+                                                            contentDescription = filmeFranquia.titulo,
+                                                            contentScale = ContentScale.Crop,
+                                                            modifier = Modifier.fillMaxSize()
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(
+                                                    text = filmeFranquia.titulo,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Button(
+                                                    onClick = {
+                                                        if (!jaEstaNaMinhaLista) {
+                                                            viewModel.inserir(
+                                                                Midia(
+                                                                    idTmdb = filmeFranquia.idTmdb,
+                                                                    titulo = filmeFranquia.titulo,
+                                                                    tipo = "Filme",
+                                                                    status = StatusMidia.QUERO_ASSISTIR.valor,
+                                                                    nota = 0,
+                                                                    sinopse = filmeFranquia.sinopse,
+                                                                    imagemCapa = posterFranquia,
+                                                                    genero = filmeFranquia.generoTexto,
+                                                                    plataforma = "Cinema",
+                                                                    isCasal = isModoCasal,
+                                                                    casalId = casalIdAtivo
+                                                                )
+                                                            )
+                                                        }
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth().height(28.dp),
+                                                    contentPadding = PaddingValues(0.dp),
+                                                    enabled = !jaEstaNaMinhaLista,
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = if (jaEstaNaMinhaLista) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
+                                                    )
+                                                ) {
+                                                    Text(if (jaEstaNaMinhaLista) "Na Lista ✅" else "+ Lista", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1239,46 +1468,6 @@ fun TelaDetalhes(
                                         )
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.height(20.dp))
-
-                                Text(text = "Coleção Temática / Lista:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    colecoesExistentes.forEach { col ->
-                                        FilterChip(
-                                            selected = (listaCustomizada == col),
-                                            onClick = { listaCustomizada = col },
-                                            label = { Text(col, fontSize = 12.sp) },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = if (colecoesExistentes.contains(listaCustomizada)) "" else listaCustomizada,
-                                    onValueChange = { listaCustomizada = it },
-                                    label = { Text("Ou criar nova coleção...") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                )
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -1332,7 +1521,7 @@ fun TelaDetalhes(
                                             nota = 0,
                                             sinopse = "",
                                             imagemCapa = urlPoster,
-                                            genero = "Sugerido",
+                                            genero = recomendacao.generoTexto,
                                             plataforma = plataformaFinalRec,
                                             favorito = false,
                                             listaCustomizada = "Geral"
@@ -1493,7 +1682,7 @@ fun TelaDetalhes(
                                             status = StatusMidia.QUERO_ASSISTIR.valor,
                                             sinopse = sinopseParaSalvar,
                                             imagemCapa = capaParaSalvar,
-                                            genero = "Geral",
+                                            genero = detalhesApi?.generoTexto ?: "",
                                             plataforma = streamingPrincipal,
                                             favorito = false,
                                             listaCustomizada = "Geral",
@@ -1901,7 +2090,11 @@ fun ItemComentarioSocial(
 }
 
 // ... (O Resto do ficheiro mantém-se igual com o TelaDetalhesSkeleton e o CompartilharCard)
-
+// Diz se o género guardado é um género real (e não um texto "placeholder")
+fun generoEhValido(g: String?): Boolean {
+    if (g.isNullOrBlank()) return false
+    return g.trim().lowercase() !in listOf("geral", "sugerido", "recomendação", "recomendacao", "não informado")
+}
 @Composable
 fun TelaDetalhesSkeleton() {
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer_detalhes")
