@@ -167,7 +167,7 @@ fun ConfiguracaoNavegacao() {
 
     // 🚀 Pop-up automático quando há atualização no GitHub (igual ao LivennIA)
     val infoAtu = viewModel.infoAtualizacao
-    if (viewModel.mostrarDialogoAtualizacao && infoAtu != null) {
+    if (viewModel.mostrarDialogoAtualizacao && infoAtu != null && viewModel.temNovaAtualizacao) {
         DialogoAtualizacaoGitHub(
             info = infoAtu,
             versaoInstalada = viewModel.versaoInstaladaNome,

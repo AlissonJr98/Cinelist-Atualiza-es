@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 60,
-  "versaoNome": "2.0.20",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.20/CineList-v2.0.20.apk"
+  "versaoCodigo": 61,
+  "versaoNome": "2.0.21",
+  "notas": "Correção na validação de versão atual e aprimoramentos gerais.",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

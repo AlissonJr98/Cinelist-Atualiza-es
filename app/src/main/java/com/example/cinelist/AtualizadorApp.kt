@@ -124,7 +124,8 @@ object AtualizadorGitHub {
 
         val melhorInfo = when {
             infoJson != null && infoRelease != null -> {
-                if (ehMaisNova(infoRelease.versaoCodigo, infoRelease.versaoNome, infoJson.versaoCodigo, infoJson.versaoNome)) {
+                val cmp = compararSemver(infoRelease.versaoNome, infoJson.versaoNome)
+                if (cmp > 0) {
                     infoRelease
                 } else {
                     infoJson
@@ -239,8 +240,6 @@ object AtualizadorGitHub {
     private fun extrairCodigoDeTag(tag: String): Int {
         val limpo = tag.removePrefix("v").trim()
         val partes = limpo.split(".", "-", "_").mapNotNull { it.toIntOrNull() }
-        if (partes.size >= 3) return partes[0] * 100 + partes[1] * 10 + partes[2]
-        if (partes.size == 2 && partes[0] == 1) return partes[1] + 1
         return partes.lastOrNull() ?: 1
     }
 
@@ -250,14 +249,24 @@ object AtualizadorGitHub {
         codigoLocal: Int,
         nomeLocal: String
     ): Boolean {
-        if (codigoRemoto > codigoLocal) return true
         val cmp = compararSemver(nomeRemoto, nomeLocal)
-        return cmp > 0
+        if (cmp > 0) return true
+        if (cmp < 0) return false
+
+        // Se os nomes das versões forem iguais (ex: "2.0.21" == "2.0.21"),
+        // NÃO há atualização: o usuário já possui a versão mais recente instalada.
+        val normRemoto = nomeRemoto.removePrefix("v").trim()
+        val normLocal = nomeLocal.removePrefix("v").trim()
+        if (normRemoto.isNotBlank() && normRemoto.equals(normLocal, ignoreCase = true)) {
+            return false
+        }
+
+        return false
     }
 
-    private fun compararSemver(a: String, b: String): Int {
-        val pa = a.removePrefix("v").trim().split(".", "-").map { it.toIntOrNull() ?: 0 }
-        val pb = b.removePrefix("v").trim().split(".", "-").map { it.toIntOrNull() ?: 0 }
+    fun compararSemver(a: String, b: String): Int {
+        val pa = a.removePrefix("v").trim().split(".", "-", "_").map { it.toIntOrNull() ?: 0 }
+        val pb = b.removePrefix("v").trim().split(".", "-", "_").map { it.toIntOrNull() ?: 0 }
         val max = maxOf(pa.size, pb.size)
         for (i in 0 until max) {
             val va = pa.getOrElse(i) { 0 }
@@ -704,7 +713,7 @@ fun CardAtualizacaoGitHub(
                     }
                 }
 
-                if (infoAtualizacao != null) {
+                if (temNovaAtualizacao && infoAtualizacao != null) {
                     Button(
                         onClick = onBaixarOuInstalar,
                         enabled = !baixandoAtualizacao,
@@ -715,8 +724,7 @@ fun CardAtualizacaoGitHub(
                         Text(
                             text = when {
                                 apkAtualizacaoBaixado != null && apkAtualizacaoBaixado.exists() -> "📦 Instalar"
-                                temNovaAtualizacao -> "⬇ Atualizar"
-                                else -> "⬇ Reinstalar"
+                                else -> "⬇ Atualizar"
                             },
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,

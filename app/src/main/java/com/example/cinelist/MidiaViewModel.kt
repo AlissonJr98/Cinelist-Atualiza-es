@@ -738,7 +738,7 @@ class MidiaViewModel @Inject constructor(
     }
 
     fun abrirDialogoAtualizacao() {
-        if (infoAtualizacao != null) {
+        if (infoAtualizacao != null && temNovaAtualizacao) {
             mostrarDialogoAtualizacao = true
         }
     }
