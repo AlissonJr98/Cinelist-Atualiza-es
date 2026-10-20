@@ -11,50 +11,44 @@ Set-Location $PSScriptRoot
 $gradleFile = Join-Path $PSScriptRoot "app\build.gradle.kts"
 $gradleContent = Get-Content $gradleFile -Raw
 
-$codigoAtual = 58
+$codigoAtual = 59
 if ($gradleContent -match 'versionCode\s*=\s*(\d+)') {
     $codigoAtual = [int]$matches[1]
 }
 
-$nomeAtual = "2.0.18"
+$nomeAtual = "2.0.19"
 if ($gradleContent -match 'versionName\s*=\s*"([^"]+)"') {
     $nomeAtual = $matches[1]
 }
 
 if (-not $PSBoundParameters.ContainsKey('VersaoCodigo') -or $VersaoCodigo -le 0) {
-    $VersaoCodigo = $codigoAtual + 1
+    $VersaoCodigo = $codigoAtual
 }
 
 if (-not $PSBoundParameters.ContainsKey('VersaoNome') -or [string]::IsNullOrWhiteSpace($VersaoNome)) {
-    # Incrementa versão semver patch: ex 2.0.18 -> 2.0.19
-    $partes = $nomeAtual.Split('.')
-    if ($partes.Length -ge 1) {
-        $ultimoIndice = $partes.Length - 1
-        $num = 0
-        if ([int]::TryParse($partes[$ultimoIndice], [ref]$num)) {
-            $partes[$ultimoIndice] = ($num + 1).ToString()
-            $VersaoNome = [string]::Join('.', $partes)
-        } else {
-            $VersaoNome = "$nomeAtual.1"
-        }
-    } else {
-        $VersaoNome = "2.0.19"
-    }
+    $VersaoNome = $nomeAtual
 }
 
 Write-Host "=== Publicando atualizacao CineList ===" -ForegroundColor Yellow
 Write-Host "Versao: v$VersaoNome (build $VersaoCodigo)" -ForegroundColor Yellow
 Write-Host "Notas: $Notas" -ForegroundColor Yellow
 
-# Atualiza no app/build.gradle.kts
+# Atualiza no app/build.gradle.kts se necessário
 $gradleContent = $gradleContent -replace 'versionCode\s*=\s*\d+', "versionCode = $VersaoCodigo"
 $gradleContent = $gradleContent -replace 'versionName\s*=\s*"[^"]+"', "versionName = `"$VersaoNome`""
 Set-Content -Path $gradleFile -Value $gradleContent -NoNewline
 
-Write-Host "`n1. Compilando APK..." -ForegroundColor Cyan
-.\gradlew.bat assembleDebug --console=plain
+Write-Host "`n1. Compilando APK assinado com a chave oficial..." -ForegroundColor Cyan
+.\gradlew.bat assembleRelease --console=plain
 
-$apkOrigem = Join-Path $PSScriptRoot "app\build\outputs\apk\debug\app-debug.apk"
+$apkOrigem = Join-Path $PSScriptRoot "app\build\outputs\apk\release\app-release.apk"
+if (-not (Test-Path $apkOrigem)) {
+    # Fallback para debug se release falhar
+    Write-Host "Compilando debug como fallback..." -ForegroundColor Yellow
+    .\gradlew.bat assembleDebug --console=plain
+    $apkOrigem = Join-Path $PSScriptRoot "app\build\outputs\apk\debug\app-debug.apk"
+}
+
 if (-not (Test-Path $apkOrigem)) {
     throw "APK nao encontrado em $apkOrigem"
 }
@@ -92,4 +86,4 @@ git add .
 git commit -m "Release v$VersaoNome (build $VersaoCodigo) - $Notas"
 git push origin main
 
-Write-Host "`nPronto! O CineList ja pode atualizar pelo GitHub para a v$VersaoNome." -ForegroundColor Green
+Write-Host "`nPronto! O CineList assinado ja pode atualizar pelo GitHub para a v$VersaoNome." -ForegroundColor Green

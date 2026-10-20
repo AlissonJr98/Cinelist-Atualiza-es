@@ -42,12 +42,19 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = file("cinelist-key.jks")
-            if (keystoreFile.exists()) {
+            val keystoreFile = file("cinelist-key.jks").takeIf { it.exists() }
+                ?: rootProject.file("cinelist-key.jks").takeIf { it.exists() }
+            if (keystoreFile != null) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                storePassword = localProperties.getProperty("keystore.password")
+                    ?: System.getenv("KEYSTORE_PASSWORD")
+                    ?: "#eLena2023"
+                keyAlias = localProperties.getProperty("key.alias")
+                    ?: System.getenv("KEY_ALIAS")
+                    ?: "key0cinelist"
+                keyPassword = localProperties.getProperty("key.password")
+                    ?: System.getenv("KEY_PASSWORD")
+                    ?: "#eLena2023"
             }
         }
     }
