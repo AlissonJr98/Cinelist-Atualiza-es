@@ -14,8 +14,14 @@ import dagger.hilt.android.HiltAndroidApp
 @HiltAndroidApp
 class CineListApplication : Application(), ImageLoaderFactory {
 
+    companion object {
+        var instance: CineListApplication? = null
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         criarCanaisDeNotificacao()
     }
 

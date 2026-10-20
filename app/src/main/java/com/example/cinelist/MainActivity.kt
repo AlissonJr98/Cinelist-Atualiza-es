@@ -151,153 +151,6 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun DialogoNovidadesAtualizacao(
-    info: InfoAtualizacao,
-    onDispensar: () -> Unit,
-    onConfirmarAtualizacao: () -> Unit
-) {
-    val linhasNovidades = remember(info.notasDaVersao) {
-        info.notasDaVersao
-            .split("\n", ";")
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-    }
-
-    Dialog(onDismissRequest = onDispensar) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(22.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                RoundedCornerShape(12.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Novidades",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = "O que há de novo?",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Versão ${info.versaoNome} (Build ${info.versaoCode})",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = "Alterações implementadas:",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 240.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    if (linhasNovidades.isNotEmpty()) {
-                        linhasNovidades.forEach { item ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .size(18.dp)
-                                        .padding(top = 2.dp)
-                                )
-                                Text(
-                                    text = item.removePrefix("-").trim(),
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    lineHeight = 19.sp
-                                )
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = info.notasDaVersao.ifBlank { "Melhorias gerais de estabilidade e novas otimizações no sistema." },
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDispensar,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Mais Tarde", color = MaterialTheme.colorScheme.secondary)
-                    }
-
-                    Button(
-                        onClick = onConfirmarAtualizacao,
-                        modifier = Modifier.weight(1.3f),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(
-                            text = "Atualizar Agora",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun ConfiguracaoNavegacao() {
     val navController = rememberNavController()
     val contexto = LocalContext.current
@@ -311,6 +164,30 @@ fun ConfiguracaoNavegacao() {
     val intentRecebida = activity?.intent
     val tipoAcao = remember { intentRecebida?.getStringExtra("TIPO_ACAO") }
     val alvoId = remember { intentRecebida?.getStringExtra("ALVO_ID") }
+
+    // 🚀 Pop-up automático quando há atualização no GitHub (igual ao LivennIA)
+    val infoAtu = viewModel.infoAtualizacao
+    if (viewModel.mostrarDialogoAtualizacao && infoAtu != null) {
+        DialogoAtualizacaoGitHub(
+            info = infoAtu,
+            versaoInstalada = viewModel.versaoInstaladaNome,
+            baixando = viewModel.baixandoAtualizacao,
+            progresso = viewModel.progressoAtualizacao,
+            apkPronto = viewModel.apkAtualizacaoBaixado?.exists() == true,
+            erro = viewModel.erroAtualizacao,
+            onBaixarOuInstalar = { viewModel.iniciarDownloadOuInstalacaoGitHub() },
+            onFechar = { viewModel.fecharDialogoAtualizacao() }
+        )
+    }
+
+    // Se o usuário tocou na notificação do sistema para abrir a atualização
+    val abrirAtualizacaoExtra = remember { intentRecebida?.getBooleanExtra("abrir_atualizacao", false) ?: false }
+    LaunchedEffect(abrirAtualizacaoExtra) {
+        if (abrirAtualizacaoExtra) {
+            intentRecebida?.removeExtra("abrir_atualizacao")
+            viewModel.verificarAtualizacaoGitHub(manual = true)
+        }
+    }
 
     // 🚀 Subscreve automaticamente o utilizador logado no tópico privado do FCM
     LaunchedEffect(Unit) {

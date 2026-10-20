@@ -1,6 +1,6 @@
 {
-  "versionCode": 58,
-  "versionName": "2.0.18",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.18/CineList-v2.0.18.apk",
-  "changelog": "Correção barra de status2.0.18."
+    "versionCode": 59,
+    "versionName": "2.0.19",
+    "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog": "Sistema de atualizacoes OTA integrado via GitHub com pop-up automatico"
 }

@@ -22,51 +22,20 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
-
-data class InfoAtualizacao(
-    val versaoCode: Int,
-    val versaoNome: String,
-    val urlApk: String,
-    val notasDaVersao: String
-)
 
 object UpdateManager {
 
-    const val URL_JSON_PADRAO = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
+    const val URL_JSON_PADRAO = AtualizadorGitHub.URL_VERSAO_JSON
     private const val CANAL_ID = "canal_atualizacoes_cinelist"
     private const val ID_NOTIFICACAO = 2001
 
     suspend fun checarAtualizacao(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
         return withContext(Dispatchers.IO) {
             try {
-                val url = URL(urlEndpointJson)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
-                conn.requestMethod = "GET"
-
-                if (conn.responseCode == 200) {
-                    val reader = BufferedReader(InputStreamReader(conn.inputStream))
-                    val resposta = reader.readText()
-                    reader.close()
-
-                    val json = JSONObject(resposta)
-
-                    val versionCode = json.optInt("versionCode", 0)
-                    val versionName = json.optString("versionName", "")
-                    val apkUrl = json.optString("apkUrl", "")
-                    val changelog = json.optString("changelog", "Melhorias gerais e correções.")
-
-                    InfoAtualizacao(versionCode, versionName, apkUrl, changelog)
-                } else {
-                    null
-                }
+                val app = CineListApplication.instance ?: return@withContext null
+                val res = AtualizadorGitHub.verificar(app)
+                res.info
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -75,8 +44,16 @@ object UpdateManager {
     }
 
     suspend fun checarAtualizacaoSilenciosa(urlEndpointJson: String = URL_JSON_PADRAO): InfoAtualizacao? {
-        val info = checarAtualizacao(urlEndpointJson) ?: return null
-        return if (info.versaoCode > BuildConfig.VERSION_CODE) info else null
+        return withContext(Dispatchers.IO) {
+            try {
+                val app = CineListApplication.instance ?: return@withContext null
+                val res = AtualizadorGitHub.verificar(app)
+                if (res.disponivel) res.info else null
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 
     fun exibirNotificacaoAtualizacao(context: Context, info: InfoAtualizacao) {
@@ -105,7 +82,7 @@ object UpdateManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val resumoNovidades = info.notasDaVersao.ifBlank { "Uma nova versão com melhorias está disponível." }
+        val resumoNovidades = info.notas.ifBlank { "Uma nova versão com melhorias está disponível." }
 
         val notificacao = NotificationCompat.Builder(context, CANAL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)

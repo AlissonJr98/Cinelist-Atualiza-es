@@ -1,6 +1,9 @@
 package com.example.cinelist
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -185,7 +188,7 @@ class MidiaViewModel @Inject constructor(
 
     init {
         carregarGrupoAtivoInicial()
-        verificarAtualizacaoSilenciosa()
+        verificarAtualizacaoGitHub(manual = false)
         iniciarSincronizacaoSilenciosaNuvem()
         carregarMaisPopularesMatch()
         carregarFilmesEmCartaz()
@@ -691,6 +694,141 @@ class MidiaViewModel @Inject constructor(
     private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
     val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
 
+    // ---- Atualização do aplicativo via GitHub (estilo LivennIA) ----
+    private val versaoInicial = AtualizadorGitHub.obterVersaoInstalada(context)
+
+    var versaoInstaladaCodigo by mutableStateOf(versaoInicial.first)
+        private set
+
+    var versaoInstaladaNome by mutableStateOf(versaoInicial.second)
+        private set
+
+    var infoAtualizacao by mutableStateOf<InfoAtualizacao?>(null)
+        private set
+
+    var temNovaAtualizacao by mutableStateOf(false)
+        private set
+
+    var mostrarDialogoAtualizacao by mutableStateOf(false)
+        private set
+
+    var verificandoAtualizacao by mutableStateOf(false)
+        private set
+
+    var baixandoAtualizacao by mutableStateOf(false)
+        private set
+
+    var progressoAtualizacao by mutableStateOf(0f)
+        private set
+
+    var statusAtualizacao by mutableStateOf<String?>(null)
+        private set
+
+    var erroAtualizacao by mutableStateOf<String?>(null)
+        private set
+
+    var apkAtualizacaoBaixado by mutableStateOf<java.io.File?>(null)
+        private set
+
+    fun fecharDialogoAtualizacao() {
+        if (!baixandoAtualizacao) {
+            mostrarDialogoAtualizacao = false
+        }
+    }
+
+    fun abrirDialogoAtualizacao() {
+        if (infoAtualizacao != null) {
+            mostrarDialogoAtualizacao = true
+        }
+    }
+
+    fun verificarAtualizacaoGitHub(manual: Boolean = false, onConcluido: ((Boolean) -> Unit)? = null) {
+        if (verificandoAtualizacao || baixandoAtualizacao) return
+        verificandoAtualizacao = true
+        erroAtualizacao = null
+        if (manual) statusAtualizacao = "Consultando repositório no GitHub..."
+        viewModelScope.launch {
+            try {
+                val res = AtualizadorGitHub.verificar(context)
+                versaoInstaladaCodigo = res.versaoInstaladaCodigo
+                versaoInstaladaNome = res.versaoInstaladaNome
+                infoAtualizacao = res.info
+                temNovaAtualizacao = res.disponivel
+                if (res.disponivel && res.info != null) {
+                    statusAtualizacao = "Nova versão v${res.info.versaoNome} disponível! ${res.info.notas}"
+                    mostrarDialogoAtualizacao = true
+                    _updatePendente.value = res.info
+                    onConcluido?.invoke(true)
+                } else if (res.info != null) {
+                    statusAtualizacao = "Você já está na versão mais recente do GitHub (v${res.info.versaoNome})."
+                    _updatePendente.value = null
+                    onConcluido?.invoke(false)
+                } else {
+                    statusAtualizacao = "Nenhuma versão publicada ainda no GitHub."
+                    _updatePendente.value = null
+                    onConcluido?.invoke(false)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                statusAtualizacao = "Não foi possível verificar o GitHub agora."
+                erroAtualizacao = e.message ?: "Falha ao consultar GitHub"
+                onConcluido?.invoke(false)
+            } finally {
+                verificandoAtualizacao = false
+            }
+        }
+    }
+
+    fun iniciarDownloadOuInstalacaoGitHub() {
+        val arquivoExistente = apkAtualizacaoBaixado
+        if (arquivoExistente != null && arquivoExistente.exists()) {
+            val abriuInstalador = AtualizadorGitHub.instalarApk(context, arquivoExistente)
+            if (!abriuInstalador) {
+                erroAtualizacao = "Permita 'Instalar apps desconhecidos' para o CineList e toque em Instalar novamente."
+            }
+            return
+        }
+
+        val info = infoAtualizacao ?: return
+        if (baixandoAtualizacao) return
+        baixandoAtualizacao = true
+        progressoAtualizacao = 0f
+        erroAtualizacao = null
+        statusAtualizacao = "Baixando APK v${info.versaoNome} do GitHub..."
+        viewModelScope.launch {
+            try {
+                val arquivo = AtualizadorGitHub.baixarApk(context, info.apkUrl) { prog ->
+                    progressoAtualizacao = prog
+                }
+                apkAtualizacaoBaixado = arquivo
+                statusAtualizacao = "Download concluído! Abrindo instalador..."
+                val abriuInstalador = AtualizadorGitHub.instalarApk(context, arquivo)
+                if (!abriuInstalador) {
+                    erroAtualizacao = "Ative a permissão 'Instalar apps desconhecidos' na tela que abriu e depois toque em 'Instalar atualização agora'."
+                    mostrarDialogoAtualizacao = true
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                val msg = e.message ?: "Erro ao baixar atualização do GitHub."
+                erroAtualizacao = msg
+                statusAtualizacao = msg
+            } finally {
+                baixandoAtualizacao = false
+            }
+        }
+    }
+
+    fun verificarAtualizacaoSilenciosa() {
+        verificarAtualizacaoGitHub(manual = false)
+    }
+
+    fun dispensarUpdate() {
+        _updatePendente.value = null
+        fecharDialogoAtualizacao()
+    }
+
     fun iniciarSincronizacaoSilenciosaNuvem() {
         viewModelScope.launch {
             repository.sincronizacaoAutomaticaSilenciosa()
@@ -710,20 +848,6 @@ class MidiaViewModel @Inject constructor(
         _casalIdAtivo.value = ""
         _isAdministradorSala.value = false
         _salaMutada.value = false
-    }
-
-    fun verificarAtualizacaoSilenciosa() {
-        viewModelScope.launch {
-            val update = UpdateManager.checarAtualizacaoSilenciosa()
-            if (update != null) {
-                _updatePendente.value = update
-                UpdateManager.exibirNotificacaoAtualizacao(context, update)
-            }
-        }
-    }
-
-    fun dispensarUpdate() {
-        _updatePendente.value = null
     }
 
     private val _resultadosBuscaApi = MutableStateFlow<List<TmdbFilme>>(emptyList())

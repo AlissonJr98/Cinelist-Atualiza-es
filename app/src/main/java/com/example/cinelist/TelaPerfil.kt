@@ -786,17 +786,6 @@ fun TelaPerfil(
         )
     }
 
-    var verificandoAtualizacao by remember { mutableStateOf(false) }
-    var infoNovaVersao by remember { mutableStateOf<InfoAtualizacao?>(null) }
-    var mostrarDialogoAtualizacao by remember { mutableStateOf(false) }
-
-    if (mostrarDialogoAtualizacao && infoNovaVersao != null) {
-        DialogoNovidadesAtualizacao(
-            info = infoNovaVersao!!,
-            onDispensar = { mostrarDialogoAtualizacao = false }
-        )
-    }
-
     val urlJsonAtualizacao = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/version.json"
 
     var receberNotificacoes by remember {
@@ -1284,20 +1273,14 @@ fun TelaPerfil(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(enabled = !verificandoAtualizacao) {
-                            verificandoAtualizacao = true
-                            escopoCorrotina.launch {
-                                val info = withContext(Dispatchers.IO) {
-                                    UpdateManager.checarAtualizacao()
-                                }
-                                verificandoAtualizacao = false
-
-                                val versaoAtual = BuildConfig.VERSION_CODE
-                                if (info != null && info.versaoCode > versaoAtual) {
-                                    infoNovaVersao = info
-                                    mostrarDialogoAtualizacao = true
-                                } else {
-                                    Toast.makeText(contexto, "Você já possui a versão mais recente!", Toast.LENGTH_SHORT).show()
+                        .clickable(enabled = !viewModel.verificandoAtualizacao && !viewModel.baixandoAtualizacao) {
+                            viewModel.verificarAtualizacaoGitHub(manual = true) { disponivel ->
+                                if (!disponivel) {
+                                    Toast.makeText(
+                                        contexto,
+                                        "Você já possui a versão mais recente (v${viewModel.versaoInstaladaNome})!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         }
@@ -1308,9 +1291,9 @@ fun TelaPerfil(
                 ) {
                     Column {
                         Text(text = "Verificar Atualização", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = "Instalada: v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                        Text(text = "Instalada: v${viewModel.versaoInstaladaNome} (Build ${viewModel.versaoInstaladaCodigo})", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                     }
-                    if (verificandoAtualizacao) {
+                    if (viewModel.verificandoAtualizacao) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                     } else {
                         Icon(imageVector = Icons.Default.SystemUpdate, contentDescription = "Atualizar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
