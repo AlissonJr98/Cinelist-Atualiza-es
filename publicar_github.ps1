@@ -43,7 +43,6 @@ Write-Host "`n1. Compilando APK assinado com a chave oficial..." -ForegroundColo
 
 $apkOrigem = Join-Path $PSScriptRoot "app\build\outputs\apk\release\app-release.apk"
 if (-not (Test-Path $apkOrigem)) {
-    # Fallback para debug se release falhar
     Write-Host "Compilando debug como fallback..." -ForegroundColor Yellow
     .\gradlew.bat assembleDebug --console=plain
     $apkOrigem = Join-Path $PSScriptRoot "app\build\outputs\apk\debug\app-debug.apk"
@@ -61,7 +60,7 @@ Copy-Item $apkOrigem $apkDestino -Force
 
 $apkUrl = "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 
-# Cria atualizacao/versao.json (padrão LivennIA)
+# Cria atualizacao/versao.json (padrão OTA)
 $jsonNovo = [ordered]@{
     versaoCodigo = $VersaoCodigo
     versaoNome   = $VersaoNome
@@ -81,9 +80,13 @@ $jsonRaiz = [ordered]@{
 
 Set-Content -Path (Join-Path $PSScriptRoot "version.json") -Value $jsonRaiz -Encoding UTF8
 
-Write-Host "`n2. Enviando para o GitHub..." -ForegroundColor Cyan
+Write-Host "`n2. Enviando arquivos para a branch main..." -ForegroundColor Cyan
 git add .
 git commit -m "Release v$VersaoNome (build $VersaoCodigo) - $Notas"
 git push origin main
 
-Write-Host "`nPronto! O CineList assinado ja esta publicado para a v$VersaoNome." -ForegroundColor Green
+Write-Host "`n3. Criando e enviando a tag v$VersaoNome para acionar a Release no GitHub..." -ForegroundColor Cyan
+git tag -a "v$VersaoNome" -m "Release v$VersaoNome (build $VersaoCodigo)" -f
+git push origin "v$VersaoNome" -f
+
+Write-Host "`nPronto! A versao v$VersaoNome (build $VersaoCodigo) foi publicada na main e a tag foi enviada para o GitHub!" -ForegroundColor Green

@@ -76,17 +76,27 @@ jobs:
           git checkout main
           git pull origin main
 
-          # 2. Gera o version.json atualizado
+          # 2. Gera o version.json e atualizacao/versao.json atualizados
           cat <<EOF > version.json
           {
             "versionCode": $VERSION_CODE,
             "versionName": "$VERSAO_NOME",
             "apkUrl": "$APK_URL",
-            "changelog": "Correção barra de status$VERSAO_NOME."
+            "changelog": "Melhorias gerais e correções de desempenho."
+          }
+          EOF
+
+          mkdir -p atualizacao
+          cat <<EOF > atualizacao/versao.json
+          {
+            "versaoCodigo": $VERSION_CODE,
+            "versaoNome": "$VERSAO_NOME",
+            "notas": "Melhorias gerais e correções de desempenho.",
+            "apkUrl": "$APK_URL"
           }
           EOF
 
           # 3. Commita e envia diretamente para a branch main
-          git add version.json
+          git add version.json atualizacao/versao.json
           git commit -m "Auto: Atualiza version.json para $TAG [skip ci]" || echo "Nenhuma alteração no version.json"
           git push origin main
