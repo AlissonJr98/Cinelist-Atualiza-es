@@ -2,5 +2,5 @@
   "versionCode": 62,
   "versionName": "2.0.22",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.22/CineList-v2.0.22.apk",
-  "changelog": "Otimizações de desempenho, segurança com ProGuard/R8, correções de estabilidade no widget e economia de bateria."
+  "changelog": "Melhorias gerais e correções de desempenho."
 }
