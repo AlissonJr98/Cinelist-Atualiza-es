@@ -1,4 +1,4 @@
-﻿package com.example.cinelist
+package com.example.cinelist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState

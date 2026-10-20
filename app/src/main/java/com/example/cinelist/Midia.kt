@@ -1,4 +1,4 @@
-﻿package com.example.cinelist
+package com.example.cinelist
 
 import androidx.room.Entity
 import androidx.room.Index

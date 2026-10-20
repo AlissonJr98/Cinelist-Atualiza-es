@@ -1,4 +1,4 @@
-﻿package com.example.cinelist
+package com.example.cinelist
 
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult

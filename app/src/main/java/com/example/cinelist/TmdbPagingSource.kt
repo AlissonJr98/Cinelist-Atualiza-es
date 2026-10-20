@@ -1,4 +1,4 @@
-﻿package com.example.cinelist
+package com.example.cinelist
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
