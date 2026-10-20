@@ -4,11 +4,15 @@
     <external-files-path name="external_files" path="." />
     <!-- Mapeia a pasta Download específica -->
     <external-files-path name="external_download" path="Download" />
+    <external-files-path name="external_download_lower" path="download" />
+    <!-- Mapeia external cache -->
+    <external-cache-path name="external_cache" path="." />
     <!-- Mapeia cache e armazenamento raiz -->
     <external-path name="external_storage" path="." />
     <cache-path name="cache" path="." />
+    <cache-path name="updates" path="updates" />
     <files-path name="files" path="." />
 
-    <!-- NOVO: Mapeia a pasta de imagens temporárias para o Instagram Stories -->
+    <!-- Mapeia a pasta de imagens temporárias para o Instagram Stories -->
     <cache-path name="cinelist_imagens" path="cinelist_imagens/" />
 </paths>

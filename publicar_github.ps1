@@ -1,7 +1,7 @@
 param(
     [int]$VersaoCodigo,
     [string]$VersaoNome,
-    [string]$Notas = "Nova atualizacao publicada pelo GitHub."
+    [string]$Notas = "Melhorias gerais e correções de desempenho."
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,12 +11,12 @@ Set-Location $PSScriptRoot
 $gradleFile = Join-Path $PSScriptRoot "app\build.gradle.kts"
 $gradleContent = Get-Content $gradleFile -Raw
 
-$codigoAtual = 59
+$codigoAtual = 60
 if ($gradleContent -match 'versionCode\s*=\s*(\d+)') {
     $codigoAtual = [int]$matches[1]
 }
 
-$nomeAtual = "2.0.19"
+$nomeAtual = "2.0.20"
 if ($gradleContent -match 'versionName\s*=\s*"([^"]+)"') {
     $nomeAtual = $matches[1]
 }
@@ -86,4 +86,4 @@ git add .
 git commit -m "Release v$VersaoNome (build $VersaoCodigo) - $Notas"
 git push origin main
 
-Write-Host "`nPronto! O CineList assinado ja pode atualizar pelo GitHub para a v$VersaoNome." -ForegroundColor Green
+Write-Host "`nPronto! O CineList assinado ja esta publicado para a v$VersaoNome." -ForegroundColor Green

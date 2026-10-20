@@ -747,7 +747,7 @@ class MidiaViewModel @Inject constructor(
         if (verificandoAtualizacao || baixandoAtualizacao) return
         verificandoAtualizacao = true
         erroAtualizacao = null
-        if (manual) statusAtualizacao = "Consultando repositório no GitHub..."
+        if (manual) statusAtualizacao = "Buscando atualizações..."
         viewModelScope.launch {
             try {
                 val res = AtualizadorGitHub.verificar(context)
@@ -761,19 +761,19 @@ class MidiaViewModel @Inject constructor(
                     _updatePendente.value = res.info
                     onConcluido?.invoke(true)
                 } else if (res.info != null) {
-                    statusAtualizacao = "Você já está na versão mais recente do GitHub (v${res.info.versaoNome})."
+                    statusAtualizacao = "Você já está na versão mais recente (v${res.info.versaoNome})."
                     _updatePendente.value = null
                     onConcluido?.invoke(false)
                 } else {
-                    statusAtualizacao = "Nenhuma versão publicada ainda no GitHub."
+                    statusAtualizacao = "Nenhuma atualização encontrada no momento."
                     _updatePendente.value = null
                     onConcluido?.invoke(false)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                statusAtualizacao = "Não foi possível verificar o GitHub agora."
-                erroAtualizacao = e.message ?: "Falha ao consultar GitHub"
+                statusAtualizacao = "Não foi possível verificar atualizações no momento."
+                erroAtualizacao = e.message ?: "Falha ao verificar atualização"
                 onConcluido?.invoke(false)
             } finally {
                 verificandoAtualizacao = false
@@ -796,7 +796,7 @@ class MidiaViewModel @Inject constructor(
         baixandoAtualizacao = true
         progressoAtualizacao = 0f
         erroAtualizacao = null
-        statusAtualizacao = "Baixando APK v${info.versaoNome} do GitHub..."
+        statusAtualizacao = "Baixando atualização v${info.versaoNome}..."
         viewModelScope.launch {
             try {
                 val arquivo = AtualizadorGitHub.baixarApk(context, info.apkUrl) { prog ->
@@ -812,7 +812,7 @@ class MidiaViewModel @Inject constructor(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                val msg = e.message ?: "Erro ao baixar atualização do GitHub."
+                val msg = e.message ?: "Erro ao baixar a atualização."
                 erroAtualizacao = msg
                 statusAtualizacao = msg
             } finally {

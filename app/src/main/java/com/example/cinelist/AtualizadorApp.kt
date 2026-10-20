@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -149,7 +150,6 @@ object AtualizadorGitHub {
     }
 
     private fun buscarPorVersaoJson(): InfoAtualizacao? {
-        // Tenta primeiro o endpoint em atualizacao/versao.json e faz fallback para version.json raiz
         val urls = listOf(
             "$URL_VERSAO_JSON?t=${System.currentTimeMillis()}",
             "$URL_VERSAO_JSON_LEGACY?t=${System.currentTimeMillis()}"
@@ -176,7 +176,7 @@ object AtualizadorGitHub {
                         ?.removePrefix("v")?.trim() ?: "1.0"
 
                     val notas = (obj.get("notas")?.asString ?: obj.get("changelog")?.asString ?: obj.get("notasDaVersao")?.asString)
-                        ?.trim() ?: "Nova atualização disponível no GitHub."
+                        ?.trim() ?: "Nova atualização disponível."
 
                     val apkUrl = (obj.get("apkUrl")?.asString ?: obj.get("urlApk")?.asString)
                         ?.trim().takeUnless { it.isNullOrBlank() } ?: URL_APK_PADRAO
@@ -209,7 +209,7 @@ object AtualizadorGitHub {
             val tag = obj.get("tag_name")?.asString?.removePrefix("v")?.trim() ?: return null
             val notas = obj.get("body")?.asString?.trim().takeUnless { it.isNullOrBlank() }
                 ?: obj.get("name")?.asString?.trim()
-                ?: "Nova versão publicada no GitHub."
+                ?: "Nova versão disponível com melhorias e correções."
             val htmlUrl = obj.get("html_url")?.asString ?: "https://github.com/$DONO_REPO/$NOME_REPO/releases"
             val assets = obj.getAsJsonArray("assets")
             var apkUrl: String? = null
@@ -272,8 +272,9 @@ object AtualizadorGitHub {
         apkUrl: String,
         onProgresso: (Float) -> Unit
     ): File = withContext(Dispatchers.IO) {
-        val pasta = File(context.cacheDir, "updates").apply { mkdirs() }
-        val destino = File(pasta, "cinelist-update.apk")
+        val pasta = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?: File(context.getExternalFilesDir(null), "Download").apply { mkdirs() }
+        val destino = File(pasta, "cinelist_update.apk")
         if (destino.exists()) destino.delete()
 
         val urlComCacheBust = if (apkUrl.contains("?")) "$apkUrl&t=${System.currentTimeMillis()}"
@@ -287,9 +288,9 @@ object AtualizadorGitHub {
 
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
-                throw IllegalStateException("Não foi possível baixar o APK no GitHub (HTTP ${resp.code}).")
+                throw IllegalStateException("Não foi possível baixar o pacote da atualização (HTTP ${resp.code}).")
             }
-            val body = resp.body ?: throw IllegalStateException("Resposta vazia ao baixar o APK.")
+            val body = resp.body ?: throw IllegalStateException("Resposta vazia ao baixar a atualização.")
             val total = body.contentLength()
             body.byteStream().use { input ->
                 FileOutputStream(destino).use { output ->
@@ -308,10 +309,10 @@ object AtualizadorGitHub {
             }
         }
 
-        // Verifica se é realmente um arquivo APK (ZIP começa com 'P' 'K')
+        // Verifica se é realmente um arquivo APK (formato ZIP inicia com 'P' 'K')
         if (destino.length() < 50_000L) {
             destino.delete()
-            throw IllegalStateException("O arquivo baixado do GitHub é inválido ou ainda não foi publicado.")
+            throw IllegalStateException("O arquivo baixado está corrompido ou incompleto.")
         }
         val cabecalho = destino.inputStream().use {
             val b = ByteArray(2)
@@ -320,7 +321,7 @@ object AtualizadorGitHub {
         }
         if (cabecalho[0] != 'P'.code.toByte() || cabecalho[1] != 'K'.code.toByte()) {
             destino.delete()
-            throw IllegalStateException("O arquivo baixado não é um pacote APK válido.")
+            throw IllegalStateException("O arquivo baixado não é um pacote de instalação válido.")
         }
 
         onProgresso(1f)
@@ -348,6 +349,9 @@ object AtualizadorGitHub {
     }
 
     fun instalarApk(context: Context, arquivoApk: File): Boolean {
+        if (!arquivoApk.exists() || arquivoApk.length() < 50_000L) {
+            return false
+        }
         if (!podeInstalarPacotes(context)) {
             abrirConfiguracaoFontesDesconhecidas(context)
             return false
@@ -360,8 +364,49 @@ object AtualizadorGitHub {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+
+        // Concede permissão explícita de leitura aos pacotes instaladores resolvidos pelo sistema
+        try {
+            val resolvedorIntentList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            }
+            for (resolveInfo in resolvedorIntentList) {
+                val targetPkg = resolveInfo.activityInfo.packageName
+                context.grantUriPermission(
+                    targetPkg,
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+        } catch (_: Throwable) {}
+
+        // Concede permissão explícita para os instaladores de sistema mais comuns (Google, Xiaomi/MIUI, Samsung)
+        val instaladoresConhecidos = listOf(
+            "com.google.android.packageinstaller",
+            "com.android.packageinstaller",
+            "com.miui.global.packageinstaller",
+            "com.miui.packageinstaller",
+            "com.samsung.android.packageinstaller"
+        )
+        for (pkg in instaladoresConhecidos) {
+            try {
+                context.grantUriPermission(
+                    pkg,
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Throwable) {}
+        }
+
         context.startActivity(intent)
         return true
     }
@@ -424,13 +469,13 @@ fun DialogoAtualizacaoGitHub(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Atualização via GitHub",
+                            text = "Nova Atualização",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Instalada: v$versaoInstalada → GitHub: v${info.versaoNome}",
+                            text = "Versão instalada: v$versaoInstalada → Nova: v${info.versaoNome}",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold
@@ -498,7 +543,7 @@ fun DialogoAtualizacaoGitHub(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         val pct = (progresso * 100).toInt()
                         Text(
-                            text = "Baixando atualização do GitHub... $pct%",
+                            text = "Baixando atualização... $pct%",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium
@@ -533,9 +578,9 @@ fun DialogoAtualizacaoGitHub(
                 ) {
                     Text(
                         text = when {
-                            baixando -> "Baixando APK..."
+                            baixando -> "Baixando atualização..."
                             apkPronto -> "📦 Instalar atualização agora"
-                            else -> "⬇ Baixar e atualizar pelo GitHub"
+                            else -> "⬇ Baixar e Atualizar"
                         },
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary
@@ -590,7 +635,7 @@ fun CardAtualizacaoGitHub(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Atualização do App (GitHub)",
+                        text = "Atualização do Aplicativo",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -598,11 +643,6 @@ fun CardAtualizacaoGitHub(
                     Text(
                         text = "Versão instalada: v$versaoInstaladaNome (build $versaoInstaladaCodigo)",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                    Text(
-                        text = "Repositório: github.com/${AtualizadorGitHub.DONO_REPO}/${AtualizadorGitHub.NOME_REPO}",
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
@@ -633,7 +673,7 @@ fun CardAtualizacaoGitHub(
             if (baixandoAtualizacao) {
                 val pct = (progressoAtualizacao * 100).toInt()
                 Text(
-                    text = "Baixando APK: $pct%",
+                    text = "Baixando atualização: $pct%",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -660,7 +700,7 @@ fun CardAtualizacaoGitHub(
                         Spacer(Modifier.width(6.dp))
                         Text("Buscando...", fontSize = 12.sp)
                     } else {
-                        Text("🔄 Verificar no GitHub", fontSize = 12.sp)
+                        Text("🔄 Verificar Atualização", fontSize = 12.sp)
                     }
                 }
 
