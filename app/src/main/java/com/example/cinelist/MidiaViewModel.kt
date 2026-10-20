@@ -59,6 +59,45 @@ class MidiaViewModel @Inject constructor(
     private val firestore = FirebaseFirestore.getInstance()
     private val prefsMute = context.getSharedPreferences("CineListMutePrefs", Context.MODE_PRIVATE)
 
+    // ---- Atualização do aplicativo via GitHub (estilo LivennIA) ----
+    private val versaoInicial = AtualizadorGitHub.obterVersaoInstalada(context)
+
+    var versaoInstaladaCodigo by mutableStateOf(versaoInicial.first)
+        private set
+
+    var versaoInstaladaNome by mutableStateOf(versaoInicial.second)
+        private set
+
+    var infoAtualizacao by mutableStateOf<InfoAtualizacao?>(null)
+        private set
+
+    var temNovaAtualizacao by mutableStateOf(false)
+        private set
+
+    var mostrarDialogoAtualizacao by mutableStateOf(false)
+        private set
+
+    var verificandoAtualizacao by mutableStateOf(false)
+        private set
+
+    var baixandoAtualizacao by mutableStateOf(false)
+        private set
+
+    var progressoAtualizacao by mutableStateOf(0f)
+        private set
+
+    var statusAtualizacao by mutableStateOf<String?>(null)
+        private set
+
+    var erroAtualizacao by mutableStateOf<String?>(null)
+        private set
+
+    var apkAtualizacaoBaixado by mutableStateOf<java.io.File?>(null)
+        private set
+
+    private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
+    val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
+
     // Estado global de operação para feedback ao usuário
     private val _estadoOperacao = MutableStateFlow<Resultado<Unit>?>(null)
     val estadoOperacao: StateFlow<Resultado<Unit>?> = _estadoOperacao.asStateFlow()
@@ -691,44 +730,6 @@ class MidiaViewModel @Inject constructor(
         viewModelScope.launch { notificacaoRepository.limparTodas() }
     }
 
-    private val _updatePendente = MutableStateFlow<InfoAtualizacao?>(null)
-    val updatePendente: StateFlow<InfoAtualizacao?> = _updatePendente.asStateFlow()
-
-    // ---- Atualização do aplicativo via GitHub (estilo LivennIA) ----
-    private val versaoInicial = AtualizadorGitHub.obterVersaoInstalada(context)
-
-    var versaoInstaladaCodigo by mutableStateOf(versaoInicial.first)
-        private set
-
-    var versaoInstaladaNome by mutableStateOf(versaoInicial.second)
-        private set
-
-    var infoAtualizacao by mutableStateOf<InfoAtualizacao?>(null)
-        private set
-
-    var temNovaAtualizacao by mutableStateOf(false)
-        private set
-
-    var mostrarDialogoAtualizacao by mutableStateOf(false)
-        private set
-
-    var verificandoAtualizacao by mutableStateOf(false)
-        private set
-
-    var baixandoAtualizacao by mutableStateOf(false)
-        private set
-
-    var progressoAtualizacao by mutableStateOf(0f)
-        private set
-
-    var statusAtualizacao by mutableStateOf<String?>(null)
-        private set
-
-    var erroAtualizacao by mutableStateOf<String?>(null)
-        private set
-
-    var apkAtualizacaoBaixado by mutableStateOf<java.io.File?>(null)
-        private set
 
     fun fecharDialogoAtualizacao() {
         if (!baixandoAtualizacao) {
