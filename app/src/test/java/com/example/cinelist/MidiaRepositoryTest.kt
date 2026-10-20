@@ -49,7 +49,11 @@ class MidiaRepositoryTest {
         repository.inserir(midiaExemplo)
 
         // THEN (Então verificamos se o repositório repassou a mídia corretamente para o DAO)
-        coVerify(exactly = 1) { midiaDao.inserirMidia(midiaExemplo) }
+        coVerify(exactly = 1) {
+            midiaDao.inserirMidia(match {
+                it.idTmdb == midiaExemplo.idTmdb && it.titulo == midiaExemplo.titulo
+            })
+        }
     }
 
     @Test

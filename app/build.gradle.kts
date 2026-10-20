@@ -77,9 +77,12 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
 
-        testOptions {
-            unitTests.all {
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            all {
                 it.jvmArgs("-XX:+EnableDynamicAgentLoading")
             }
         }

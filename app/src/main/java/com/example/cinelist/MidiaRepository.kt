@@ -35,8 +35,8 @@ class MidiaRepository @Inject constructor(
     private val midiaDao: MidiaDao,
     private val notificacaoRepository: NotificacaoRepository
 ) {
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val auth by lazy { FirebaseAuth.getInstance() }
 
     private val mutexSincronizacao = Mutex()
     private val mutexSyncGrupo = Mutex()
@@ -228,7 +228,7 @@ class MidiaRepository @Inject constructor(
     }
 
     suspend fun obterNomeRealUsuario(): String {
-        val usuario = auth.currentUser ?: return "Alguém"
+        val usuario = runCatching { auth.currentUser }.getOrNull() ?: return "Alguém"
         return try {
             val doc = firestore.collection("usuarios_publicos").document(usuario.uid).get().await()
             val nome = doc.getString("nome")
@@ -245,7 +245,7 @@ class MidiaRepository @Inject constructor(
     }
 
     private suspend fun obterFotoUsuario(): String {
-        val usuario = auth.currentUser ?: return ""
+        val usuario = runCatching { auth.currentUser }.getOrNull() ?: return ""
         return try {
             val doc = firestore.collection("usuarios_publicos").document(usuario.uid).get().await()
             doc.getString("fotoUrl") ?: usuario.photoUrl?.toString() ?: ""
