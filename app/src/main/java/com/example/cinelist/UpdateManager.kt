@@ -133,14 +133,20 @@ object UpdateManager {
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = manager.enqueue(request)
 
+        val handler = Handler(Looper.getMainLooper())
+        var receiverDesregistrado = false
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, intent: Intent?) {
                 val idRecebido = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (idRecebido == downloadId) {
+                    if (!receiverDesregistrado) {
+                        receiverDesregistrado = true
+                        try {
+                            context.unregisterReceiver(this)
+                        } catch (_: Exception) {}
+                    }
                     instalarApk(context, destino)
-                    try {
-                        context.unregisterReceiver(this)
-                    } catch (_: Exception) {}
                 }
             }
         }
@@ -151,6 +157,16 @@ object UpdateManager {
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
             ContextCompat.RECEIVER_EXPORTED
         )
+
+        // Limpeza de segurança por timeout (30 min) para evitar vazamento se o download for cancelado ou abortado
+        handler.postDelayed({
+            if (!receiverDesregistrado) {
+                receiverDesregistrado = true
+                try {
+                    context.unregisterReceiver(receiver)
+                } catch (_: Exception) {}
+            }
+        }, 30 * 60 * 1000L)
     }
 
     private fun instalarApk(context: Context, arquivoApk: File) {

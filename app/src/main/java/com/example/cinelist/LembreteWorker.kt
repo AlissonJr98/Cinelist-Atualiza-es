@@ -63,7 +63,8 @@ class LembreteWorker(
 
                             // Notifica se estreou hoje ou vai estrear nos próximos 7 dias
                             if (diffDias in 0..7) {
-                                val idReferenciaEp = (serie.idTmdb * 1000) + (proximoEp.numeroTemporada * 100) + proximoEp.numeroEpisodio
+                                // Gera ID positivo de 31 bits imune a overflow numérico
+                                val idReferenciaEp = ("ep_${serie.idTmdb}_${proximoEp.numeroTemporada}_${proximoEp.numeroEpisodio}").hashCode() and 0x7FFFFFFF
 
                                 val jaNotificouEp = notificacaoDao.contarNotificacaoRecente(
                                     idRef = idReferenciaEp,
@@ -116,7 +117,7 @@ class LembreteWorker(
                             val hojeMs = System.currentTimeMillis()
                             val diffDias = TimeUnit.MILLISECONDS.toDays(hojeMs - dataEstreia.time)
                             if (diffDias in 0..3) {
-                                val idRef = itemPendente.idTmdb * 10
+                                val idRef = ("estreia_${itemPendente.idTmdb}").hashCode() and 0x7FFFFFFF
                                 val jaNotificouEstreia = notificacaoDao.contarNotificacaoRecente(
                                     idRef = idRef,
                                     tipo = "ESTREIA",

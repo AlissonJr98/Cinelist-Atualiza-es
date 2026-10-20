@@ -1,4 +1,4 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -44,6 +44,11 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+
+object PaletteColorCache {
+    val cache = android.util.LruCache<String, Int>(250)
+}
+
 fun formatarDataRelativa(timestamp: Long): String {
     if (timestamp <= 0L) return ""
     val agora = System.currentTimeMillis()
@@ -82,48 +87,34 @@ fun ItemMidiaCard(
     onRecusarPendente: (() -> Unit)? = null,
     onProcessarRecusado: ((Boolean) -> Unit)? = null
 ) {
-    var visivel by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        visivel = true
-    }
-
-    AnimatedVisibility(
-        visible = visivel,
-        enter = fadeIn(animationSpec = tween(durationMillis = 350)) +
-                scaleIn(initialScale = 0.94f, animationSpec = tween(durationMillis = 350))
-    ) {
-        if (modoListaHorizontal) {
-            // Na Lista Vertical, o Swipe-to-Dismiss funciona perfeitamente!
-            ItemMidiaCardHorizontalComSwipe(
-                midia = midia,
-                onClick = onClick,
-                onIncrementarEpisodio = onIncrementarEpisodio,
-                onDeletar = onDeletar,
-                onAlternarStatusConcluido = onAlternarStatusConcluido,
-                onAlternarFavorito = onAlternarFavorito,
-                jaAdicionado = jaAdicionado,
-                onAdicionarRapido = onAdicionarRapido,
-                onAceitarPendente = onAceitarPendente,
-                onRecusarPendente = onRecusarPendente,
-                onProcessarRecusado = onProcessarRecusado
-            )
-        } else {
-            // 🚀 CORREÇÃO DO CONFLITO: Na Grelha e Carrossel não usamos Swipe!
-            // Em vez disso, usamos a ação de "Toque Longo" (Segurar o dedo).
-            ConteudoItemMidiaCard(
-                midia = midia,
-                onClick = onClick,
-                onIncrementarEpisodio = onIncrementarEpisodio,
-                onDeletar = onDeletar,
-                onAlternarStatusConcluido = onAlternarStatusConcluido,
-                onAlternarFavorito = onAlternarFavorito,
-                jaAdicionado = jaAdicionado,
-                onAdicionarRapido = onAdicionarRapido,
-                onAceitarPendente = onAceitarPendente,
-                onRecusarPendente = onRecusarPendente,
-                onProcessarRecusado = onProcessarRecusado
-            )
-        }
+    if (modoListaHorizontal) {
+        ItemMidiaCardHorizontalComSwipe(
+            midia = midia,
+            onClick = onClick,
+            onIncrementarEpisodio = onIncrementarEpisodio,
+            onDeletar = onDeletar,
+            onAlternarStatusConcluido = onAlternarStatusConcluido,
+            onAlternarFavorito = onAlternarFavorito,
+            jaAdicionado = jaAdicionado,
+            onAdicionarRapido = onAdicionarRapido,
+            onAceitarPendente = onAceitarPendente,
+            onRecusarPendente = onRecusarPendente,
+            onProcessarRecusado = onProcessarRecusado
+        )
+    } else {
+        ConteudoItemMidiaCard(
+            midia = midia,
+            onClick = onClick,
+            onIncrementarEpisodio = onIncrementarEpisodio,
+            onDeletar = onDeletar,
+            onAlternarStatusConcluido = onAlternarStatusConcluido,
+            onAlternarFavorito = onAlternarFavorito,
+            jaAdicionado = jaAdicionado,
+            onAdicionarRapido = onAdicionarRapido,
+            onAceitarPendente = onAceitarPendente,
+            onRecusarPendente = onRecusarPendente,
+            onProcessarRecusado = onProcessarRecusado
+        )
     }
 }
 
@@ -272,10 +263,17 @@ private fun ConteudoItemMidiaCard(
                                 val drawable = state.result.drawable
                                 val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                                 bitmap?.let { bmp ->
-                                    androidx.palette.graphics.Palette.from(bmp).generate { palette ->
-                                        val swatch = palette?.vibrantSwatch ?: palette?.dominantSwatch ?: palette?.mutedSwatch
-                                        swatch?.rgb?.let { colorInt ->
-                                            corCapa = Color(colorInt)
+                                    val urlCapa = midia.imagemCapa
+                                    val corEmCache = if (urlCapa.isNotBlank()) PaletteColorCache.cache.get(urlCapa) else null
+                                    if (corEmCache != null) {
+                                        corCapa = Color(corEmCache)
+                                    } else {
+                                        androidx.palette.graphics.Palette.from(bmp).generate { palette ->
+                                            val swatch = palette?.vibrantSwatch ?: palette?.dominantSwatch ?: palette?.mutedSwatch
+                                            swatch?.rgb?.let { colorInt ->
+                                                if (urlCapa.isNotBlank()) PaletteColorCache.cache.put(urlCapa, colorInt)
+                                                corCapa = Color(colorInt)
+                                            }
                                         }
                                     }
                                 }
@@ -878,10 +876,17 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 val drawable = state.result.drawable
                                 val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                                 bitmap?.let { bmp ->
-                                    androidx.palette.graphics.Palette.from(bmp).generate { palette ->
-                                        val swatch = palette?.vibrantSwatch ?: palette?.dominantSwatch ?: palette?.mutedSwatch
-                                        swatch?.rgb?.let { colorInt ->
-                                            corCapa = Color(colorInt)
+                                    val urlCapa = midia.imagemCapa
+                                    val corEmCache = if (urlCapa.isNotBlank()) PaletteColorCache.cache.get(urlCapa) else null
+                                    if (corEmCache != null) {
+                                        corCapa = Color(corEmCache)
+                                    } else {
+                                        androidx.palette.graphics.Palette.from(bmp).generate { palette ->
+                                            val swatch = palette?.vibrantSwatch ?: palette?.dominantSwatch ?: palette?.mutedSwatch
+                                            swatch?.rgb?.let { colorInt ->
+                                                if (urlCapa.isNotBlank()) PaletteColorCache.cache.put(urlCapa, colorInt)
+                                                corCapa = Color(colorInt)
+                                            }
                                         }
                                     }
                                 }

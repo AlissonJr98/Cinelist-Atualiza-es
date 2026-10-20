@@ -1,4 +1,4 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldPath
@@ -80,9 +80,9 @@ data class ComentarioSocial(
 @Singleton
 class SocialRepository @Inject constructor() {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val storage = FirebaseStorage.getInstance()
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val storage by lazy { FirebaseStorage.getInstance() }
 
     fun observarMensagensGrupo(grupoId: String): Flow<List<MensagemGrupo>> = callbackFlow {
         if (grupoId.isBlank()) {
@@ -157,20 +157,28 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun editarMensagemGrupo(grupoId: String, mensagemId: String, novoTexto: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
         try {
-            firestore.collection("grupos").document(grupoId)
+            val docRef = firestore.collection("grupos").document(grupoId)
                 .collection("chat_mensagens").document(mensagemId)
-                .update("texto", novoTexto.trim(), "editada", true).await()
+            val doc = docRef.get().await()
+            if (doc.getString("autorUid") == uid) {
+                docRef.update("texto", novoTexto.trim(), "editada", true).await()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     suspend fun deletarMensagemGrupo(grupoId: String, mensagemId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
         try {
-            firestore.collection("grupos").document(grupoId)
+            val docRef = firestore.collection("grupos").document(grupoId)
                 .collection("chat_mensagens").document(mensagemId)
-                .delete().await()
+            val doc = docRef.get().await()
+            if (doc.getString("autorUid") == uid) {
+                docRef.delete().await()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -263,20 +271,28 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun deletarComentarioPublico(tmdbId: Int, comentarioId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
         try {
-            firestore.collection("comentarios_globais").document(tmdbId.toString())
+            val docRef = firestore.collection("comentarios_globais").document(tmdbId.toString())
                 .collection("comentarios").document(comentarioId)
-                .delete().await()
+            val doc = docRef.get().await()
+            if (doc.getString("autorUid") == uid) {
+                docRef.delete().await()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     suspend fun editarComentarioPublico(tmdbId: Int, comentarioId: String, novoTexto: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
         try {
-            firestore.collection("comentarios_globais").document(tmdbId.toString())
+            val docRef = firestore.collection("comentarios_globais").document(tmdbId.toString())
                 .collection("comentarios").document(comentarioId)
-                .update("texto", novoTexto.trim()).await()
+            val doc = docRef.get().await()
+            if (doc.getString("autorUid") == uid) {
+                docRef.update("texto", novoTexto.trim()).await()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

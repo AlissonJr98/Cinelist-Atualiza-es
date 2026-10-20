@@ -1,7 +1,15 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+
+object TmdbProvedorCache {
+    val cache = android.util.LruCache<String, String>(400)
+}
+
 
 class TmdbPagingSource(
     private val apiService: TmdbApiService,
@@ -96,42 +104,52 @@ class TmdbPagingSource(
             // Prioriza os primeiros itens visíveis e trata falhas sem quebrar a página.
             val LIMITE_BUSCA_PROVEDORES = 12
 
-            val listaComProvedor = listaBruta.mapIndexed { indice, filme ->
-                if (indice >= LIMITE_BUSCA_PROVEDORES) {
-                    filme
-                } else {
-                    try {
-                        val ehSerie = filme.mediaType.equals("tv", ignoreCase = true) || filme.ehSerie
-                        val resposta = if (ehSerie) {
-                            apiService.obterProvedoresSerieOuAnime(idSerie = filme.idTmdb)
+            val listaComProvedor = coroutineScope {
+                listaBruta.mapIndexed { indice, filme ->
+                    async {
+                        if (indice >= LIMITE_BUSCA_PROVEDORES) {
+                            filme
                         } else {
-                            apiService.obterProvedoresFilme(idFilme = filme.idTmdb)
+                            val chaveCache = "${filme.mediaType}_${filme.idTmdb}"
+                            val plataformaCache = TmdbProvedorCache.cache.get(chaveCache)
+                            if (plataformaCache != null) {
+                                filme.copy(plataformaDetectada = plataformaCache)
+                            } else {
+                                try {
+                                    val ehSerie = filme.mediaType.equals("tv", ignoreCase = true) || filme.ehSerie
+                                    val resposta = if (ehSerie) {
+                                        apiService.obterProvedoresSerieOuAnime(idSerie = filme.idTmdb)
+                                    } else {
+                                        apiService.obterProvedoresFilme(idFilme = filme.idTmdb)
+                                    }
+
+                                    val providerBr = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
+                                    val primeiroProvedor = providerBr.firstOrNull()?.nomeProvedor
+
+                                    val plataformaReal = when {
+                                        !primeiroProvedor.isNullOrBlank() -> primeiroProvedor
+                                        ehSerie -> "TV / Original"
+                                        else -> "Cinema"
+                                    }
+
+                                    val tituloLower = filme.titulo.lowercase()
+                                    val plataformaFinal = when {
+                                        tituloLower.contains("reacher") || tituloLower.contains("the boys") ||
+                                                tituloLower.contains("invincible") || tituloLower.contains("rings of power") -> "Prime Video"
+                                        tituloLower.contains("stranger things") || tituloLower.contains("squid game") ||
+                                                tituloLower.contains("wednesday") -> "Netflix"
+                                        else -> plataformaReal
+                                    }
+
+                                    TmdbProvedorCache.cache.put(chaveCache, plataformaFinal)
+                                    filme.copy(plataformaDetectada = plataformaFinal)
+                                } catch (e: Exception) {
+                                    filme
+                                }
+                            }
                         }
-
-                        val providerBr = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
-                        val primeiroProvedor = providerBr.firstOrNull()?.nomeProvedor
-
-                        val plataformaReal = when {
-                            !primeiroProvedor.isNullOrBlank() -> primeiroProvedor
-                            ehSerie -> "TV / Original"
-                            else -> "Cinema"
-                        }
-
-                        val tituloLower = filme.titulo.lowercase()
-                        val plataformaFinal = when {
-                            tituloLower.contains("reacher") || tituloLower.contains("the boys") ||
-                                    tituloLower.contains("invincible") || tituloLower.contains("rings of power") -> "Prime Video"
-                            tituloLower.contains("stranger things") || tituloLower.contains("squid game") ||
-                                    tituloLower.contains("wednesday") -> "Netflix"
-                            else -> plataformaReal
-                        }
-
-                        filme.copy(plataformaDetectada = plataformaFinal)
-                    } catch (e: Exception) {
-                        // Falha ao buscar provedor não deve derrubar a listagem
-                        filme
                     }
-                }
+                }.awaitAll()
             }
 
             val listaResultado = listaComProvedor.distinctBy { "${it.mediaType ?: "midia"}_${it.idTmdb}" }

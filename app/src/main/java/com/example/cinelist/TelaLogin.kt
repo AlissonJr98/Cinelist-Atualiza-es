@@ -1,4 +1,4 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,12 +51,14 @@ fun TelaLogin(
     val firebaseAuth = FirebaseAuth.getInstance()
     val contexto = LocalContext.current
 
-    // 1. CONFIGURAÇÃO DO GOOGLE SIGN-IN
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken("336901227453-42ejfkk06rr8rifu7cs1lon7vvkjgkab.apps.googleusercontent.com")
-        .requestEmail()
-        .build()
-    val googleSignInClient = GoogleSignIn.getClient(contexto, gso)
+    // 1. CONFIGURAÇÃO DO GOOGLE SIGN-IN (Com cache em remember para não recriar na digitação)
+    val googleSignInClient = remember(contexto) {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("336901227453-42ejfkk06rr8rifu7cs1lon7vvkjgkab.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(contexto, gso)
+    }
 
     // 2. LANÇADOR DA TELA DO GOOGLE
     val launcherGoogle = rememberLauncherForActivityResult(

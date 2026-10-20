@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,20 +141,34 @@ fun TelaCadastro(
                                 firebaseAuth.createUserWithEmailAndPassword(email.trim(), senha.trim())
                                     .addOnCompleteListener { tarefa ->
                                         if (tarefa.isSuccessful) {
-                                            // Se criou a conta, vamos salvar o Nome do usuário no perfil do Firebase
                                             val usuario = firebaseAuth.currentUser
+                                            val nomeFinal = nome.trim()
                                             val atualizacaoPerfil = userProfileChangeRequest {
-                                                displayName = nome.trim()
+                                                displayName = nomeFinal
                                             }
 
                                             usuario?.updateProfile(atualizacaoPerfil)
                                                 ?.addOnCompleteListener {
-                                                    carregando = false
-                                                    onCadastroSucesso() // Avança para a Home
+                                                    val uid = usuario.uid
+                                                    val dadosPublicos = mapOf(
+                                                        "uid" to uid,
+                                                        "nome" to nomeFinal,
+                                                        "nomeBusca" to nomeFinal.lowercase(),
+                                                        "email" to email.trim().lowercase(),
+                                                        "fotoUrl" to "",
+                                                        "online" to true,
+                                                        "vistoPorUltimo" to System.currentTimeMillis()
+                                                    )
+                                                    FirebaseFirestore.getInstance().collection("usuarios_publicos")
+                                                        .document(uid)
+                                                        .set(dadosPublicos, SetOptions.merge())
+                                                        .addOnCompleteListener {
+                                                            carregando = false
+                                                            onCadastroSucesso()
+                                                        }
                                                 }
                                         } else {
                                             carregando = false
-                                            // Traduz os erros mais comuns do Firebase para o usuário
                                             val excecao = tarefa.exception?.message ?: ""
                                             erroMensagem = when {
                                                 excecao.contains("already in use") -> "Este e-mail já está cadastrado."

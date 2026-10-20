@@ -12,10 +12,8 @@ import kotlinx.coroutines.tasks.await
 /**
  * Worker de backup automático e silencioso: roda periodicamente em segundo plano
  * (agendado em agendarBackupAutomaticoSemanal, no MainActivity.kt) e envia a lista
- * pessoal local (Room) para o Firestore, sem exigir nenhuma ação do usuário.
- *
- * Isso complementa o backup manual em JSON que já existe na tela de Perfil —
- * aqui não é preciso escolher um arquivo, e o usuário nunca precisa lembrar de fazer.
+ * pessoal local (Room) para o Firestore em lotes atômicos (WriteBatch), sem exigir
+ * nenhuma ação do usuário.
  */
 class BackupWorker(
     private val appContext: Context,
@@ -41,9 +39,15 @@ class BackupWorker(
             val firestore = FirebaseFirestore.getInstance()
             val colecao = firestore.collection("usuarios").document(uid).collection("midias")
 
-            midiasPessoais.forEach { midia ->
-                val chaveDoc = if (midia.idTmdb != 0) "tmdb_${midia.idTmdb}" else "local_${midia.uuid}"
-                colecao.document(chaveDoc).set(midia.toMap(), SetOptions.merge()).await()
+            // Sincroniza em lotes de até 450 itens (máx suportado pelo Firestore é 500)
+            midiasPessoais.chunked(450).forEach { lote ->
+                val batch = firestore.batch()
+                lote.forEach { midia ->
+                    val chaveDoc = if (midia.idTmdb != 0) "tmdb_${midia.idTmdb}" else "local_${midia.uuid}"
+                    val docRef = colecao.document(chaveDoc)
+                    batch.set(docRef, midia.toMap(), SetOptions.merge())
+                }
+                batch.commit().await()
             }
 
             val prefs = appContext.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)

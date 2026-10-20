@@ -1,6 +1,7 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
@@ -62,7 +63,15 @@ class AvaliacoesConverters {
     }
 }
 
-@Entity(tableName = "midias")
+@Entity(
+    tableName = "midias",
+    indices = [
+        Index("isCasal"),
+        Index("casalId"),
+        Index("status"),
+        Index("idTmdb")
+    ]
+)
 @TypeConverters(AvaliacoesConverters::class)
 data class Midia(
     @PrimaryKey(autoGenerate = true) var id: Int = 0,

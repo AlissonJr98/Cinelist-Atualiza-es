@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 61
-        versionName = "2.0.21"
+        versionCode = 62
+        versionName = "2.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -61,7 +61,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -107,11 +108,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Firebase Cloud Messaging
+    // Firebase Cloud Messaging & Storage
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
-
-    implementation("androidx.glance:glance-appwidget:1.1.0")
 
     // Google Play Services Auth
     implementation("com.google.android.gms:play-services-auth:21.2.0")
@@ -155,15 +154,6 @@ dependencies {
     // Paginação Reativa (Paging 3)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
-
-    // Splash Screen Oficial
-    implementation("androidx.core:core-splashscreen:1.0.1")
-
-    // Gráficos
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-
-    // YouTube Player
-    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
     // Testes Unitários e Instrumentados
     testImplementation(libs.mockk)

@@ -1,0 +1,330 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: usuarios/{uid}
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - ultimoGrupoAtivo: string (optional, <= 50 chars)
+    //   - ultimoNomeGrupo: string (optional, <= 100 chars)
+    // Subcollections:
+    //   - midias/{midiaDoc}: Midia entity synced from local Room database
+    //   - amigos/{amigoUid}: Friendship relationship ('pendente' | 'aceito')
+    //   - solicitacoes/{remetenteUid}: Friend requests sent by other users
+    //   - bloqueados/{bloqueadoUid}: Blocked users list
+    //   - minhas_salas/{grupoId}: Rooms/groups user participates in
+    //   - notificacoes_chat/{remetenteUid}: In-app chat notifications
+    //   - notificacoes/{notificacaoId}: System and group notifications
+    //
+    // Collection: usuarios_publicos/{uid}
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - uid: string (matches document id, immutable, <= 128 chars)
+    //   - nome: string (1..100 chars)
+    //   - nomeBusca: string (optional, <= 100 chars, lowercase for search)
+    //   - email: string (optional, <= 150 chars)
+    //   - fotoUrl: string (optional, <= 2000 chars)
+    //   - online: bool (optional)
+    //   - vistoPorUltimo: number (optional)
+    //   - bio: string (optional, <= 500 chars)
+    //   - fcmToken: string (optional, <= 500 chars)
+    //   - instagram: string (optional, <= 100 chars)
+    //   - twitter: string (optional, <= 100 chars)
+    //   - letterboxd: string (optional, <= 100 chars)
+    //   - atualizadoEm: number (optional)
+    //
+    // Collection: grupos/{grupoId}
+    // Document ID: Group ID (e.g. alphanumeric code)
+    // Fields:
+    //   - grupoId: string (matches document id, immutable, <= 50 chars)
+    //   - nomeGrupo: string (1..100 chars)
+    //   - tipoGrupo: string (1..50 chars)
+    //   - senha: string (optional, <= 50 chars)
+    //   - criadoEm: number (immutable)
+    //   - criadorUid: string (matches auth.uid on create, immutable)
+    // Subcollections:
+    //   - membros/{membroUid}: Group member state & presence
+    //   - midias/{midiaDoc}: Group shared movie/series list
+    //   - chat_mensagens/{mensagemId}: Group chat messages
+    //   - matches/{matchDoc}: Group movie roulette matches
+    //
+    // Collection: chats/{chatId}/mensagens/{mensagemId}
+    // Document ID: Formatted as uidA_uidB
+    // Fields:
+    //   - id: string (message id, <= 128 chars)
+    //   - remetenteUid: string (matches auth.uid on create, immutable)
+    //   - texto: string (<= 5000 chars)
+    //   - timestamp: number
+    //   - tipoMensagem: string ('TEXTO' | 'IMAGEM' | 'STICKER')
+    //   - mediaUrl: string (optional, <= 2000 chars)
+    //
+    // Collection: comentarios_globais/{tmdbId}/comentarios/{comentarioId}
+    // Document ID: TMDB ID (integer as string)
+    // Fields:
+    //   - id: string (comentario id, <= 128 chars)
+    //   - autorUid: string (matches auth.uid on create, immutable)
+    //   - autorNome: string (1..100 chars)
+    //   - autorFoto: string (optional, <= 2000 chars)
+    //   - texto: string (1..2000 chars)
+    //   - contemSpoiler: bool (optional)
+    //   - timestamp: number
+    //   - curtidasUids: list of strings (<= 10000 items)
+    //   - respostas: list of maps (<= 1000 items)
+    //
+    // ===============================================================
+
+    // Default deny for any unhandled path
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isChatParticipant(chatId) {
+      return isAuthenticated() && (
+        chatId.matches('^' + request.auth.uid + '_.*$') ||
+        chatId.matches('^.*_' + request.auth.uid + '$')
+      );
+    }
+
+    function isGroupCreator(grupoId) {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/grupos/$(grupoId)) &&
+        get(/databases/$(database)/documents/grupos/$(grupoId)).data.get('criadorUid', '') == request.auth.uid
+      );
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUsuarioPublico(data) {
+      return (!('uid' in data) || (data.uid is string && data.uid.size() <= 128)) &&
+        (!('nome' in data) || (data.nome is string && data.nome.size() >= 1 && data.nome.size() <= 100)) &&
+        (!('nomeBusca' in data) || (data.nomeBusca is string && data.nomeBusca.size() <= 100)) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+        (!('fotoUrl' in data) || (data.fotoUrl is string && data.fotoUrl.size() <= 2000)) &&
+        (!('online' in data) || data.online is bool) &&
+        (!('vistoPorUltimo' in data) || data.vistoPorUltimo is number) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+        (!('fcmToken' in data) || (data.fcmToken is string && data.fcmToken.size() <= 500)) &&
+        (!('instagram' in data) || (data.instagram is string && data.instagram.size() <= 100)) &&
+        (!('twitter' in data) || (data.twitter is string && data.twitter.size() <= 100)) &&
+        (!('letterboxd' in data) || (data.letterboxd is string && data.letterboxd.size() <= 100)) &&
+        (!('atualizadoEm' in data) || data.atualizadoEm is number);
+    }
+
+    function isValidGrupo(data) {
+      return (!('grupoId' in data) || (data.grupoId is string && data.grupoId.size() <= 50)) &&
+        (!('nomeGrupo' in data) || (data.nomeGrupo is string && data.nomeGrupo.size() >= 1 && data.nomeGrupo.size() <= 100)) &&
+        (!('tipoGrupo' in data) || (data.tipoGrupo is string && data.tipoGrupo.size() <= 50)) &&
+        (!('senha' in data) || (data.senha is string && data.senha.size() <= 50)) &&
+        (!('criadoEm' in data) || data.criadoEm is number) &&
+        (!('criadorUid' in data) || (data.criadorUid is string && data.criadorUid.size() <= 128));
+    }
+
+    function isValidMembro(data) {
+      return (!('uid' in data) || (data.uid is string && data.uid.size() <= 128)) &&
+        (!('nome' in data) || (data.nome is string && data.nome.size() <= 100)) &&
+        (!('fotoUrl' in data) || (data.fotoUrl is string && data.fotoUrl.size() <= 2000)) &&
+        (!('online' in data) || data.online is bool) &&
+        (!('vistoPorUltimo' in data) || data.vistoPorUltimo is number) &&
+        (!('assistindoAgoraTitulo' in data) || (data.assistindoAgoraTitulo is string && data.assistindoAgoraTitulo.size() <= 200)) &&
+        (!('assistindoAgoraEpisodio' in data) || (data.assistindoAgoraEpisodio is string && data.assistindoAgoraEpisodio.size() <= 100));
+    }
+
+    function isValidMensagemGrupo(data) {
+      return data.autorUid is string && data.autorUid.size() <= 128 &&
+        (!('autorNome' in data) || (data.autorNome is string && data.autorNome.size() <= 100)) &&
+        (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
+        (!('texto' in data) || (data.texto is string && data.texto.size() <= 5000)) &&
+        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER'])) &&
+        (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() <= 2000)) &&
+        (!('timestamp' in data) || data.timestamp is number) &&
+        (!('editada' in data) || data.editada is bool);
+    }
+
+    function isValidMensagemChat(data) {
+      return data.remetenteUid is string && data.remetenteUid.size() <= 128 &&
+        (!('texto' in data) || (data.texto is string && data.texto.size() <= 5000)) &&
+        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER'])) &&
+        (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() <= 2000)) &&
+        (!('timestamp' in data) || data.timestamp is number);
+    }
+
+    function isValidComentarioSocial(data) {
+      return data.autorUid is string && data.autorUid.size() <= 128 &&
+        (!('autorNome' in data) || (data.autorNome is string && data.autorNome.size() <= 100)) &&
+        (!('autorFoto' in data) || (data.autorFoto is string && data.autorFoto.size() <= 2000)) &&
+        (!('texto' in data) || (data.texto is string && data.texto.size() >= 1 && data.texto.size() <= 2000)) &&
+        (!('contemSpoiler' in data) || data.contemSpoiler is bool) &&
+        (!('timestamp' in data) || data.timestamp is number) &&
+        (!('curtidasUids' in data) || (data.curtidasUids is list && data.curtidasUids.size() <= 10000)) &&
+        (!('respostas' in data) || (data.respostas is list && data.respostas.size() <= 1000));
+    }
+
+    function isValidSolicitacaoAmizade(data) {
+      return data.remetenteUid is string && data.remetenteUid.size() <= 128 &&
+        (!('remetenteNome' in data) || (data.remetenteNome is string && data.remetenteNome.size() <= 100)) &&
+        (!('remetenteFoto' in data) || (data.remetenteFoto is string && data.remetenteFoto.size() <= 2000)) &&
+        (!('status' in data) || (data.status is string && data.status in ['pendente', 'aceito', 'recusado'])) &&
+        (!('dataCriacao' in data) || data.dataCriacao is number);
+    }
+
+    // ===============================================================
+    // Rules Definition
+    // ===============================================================
+
+    // 1. USUÁRIOS (Dados privados e subcoleções pessoais)
+    match /usuarios/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /midias/{midiaDoc} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /amigos/{amigoUid} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) || (isOwner(amigoUid) && request.resource.data.get('status', '') == 'aceito');
+        allow delete: if isOwner(uid) || isOwner(amigoUid);
+      }
+
+      match /solicitacoes/{remetenteUid} {
+        allow read: if isOwner(uid);
+        allow create: if isAuthenticated() && request.auth.uid == remetenteUid && isValidSolicitacaoAmizade(request.resource.data);
+        allow update: if isOwner(uid) && isValidSolicitacaoAmizade(request.resource.data);
+        allow delete: if isOwner(uid) || (isAuthenticated() && request.auth.uid == remetenteUid);
+      }
+
+      match /bloqueados/{bloqueadoUid} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /minhas_salas/{grupoId} {
+        allow read, write: if isOwner(uid);
+        allow delete: if isOwner(uid) || isGroupCreator(grupoId);
+      }
+
+      match /notificacoes_chat/{remetenteUid} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isAuthenticated() && request.auth.uid == remetenteUid;
+      }
+
+      match /notificacoes/{notificacaoId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // 2. USUÁRIOS PÚBLICOS (Perfis sociais e presença)
+    match /usuarios_publicos/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid) && isValidUsuarioPublico(request.resource.data);
+      allow update: if isOwner(uid) && isValidUsuarioPublico(request.resource.data) &&
+        areImmutableFieldsUnchanged(['uid']);
+      allow delete: if isOwner(uid);
+    }
+
+    // 3. GRUPOS / SALAS COMPARTILHADAS
+    match /grupos/{grupoId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.get('criadorUid', '') == request.auth.uid &&
+        isValidGrupo(request.resource.data);
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == resource.data.get('criadorUid', '') ||
+         request.auth.uid == resource.data.get('adminUid', '') ||
+         exists(/databases/$(database)/documents/grupos/$(grupoId)/membros/$(request.auth.uid))) &&
+        isValidGrupo(request.resource.data) &&
+        areImmutableFieldsUnchanged(['grupoId', 'criadorUid', 'criadoEm']);
+      allow delete: if isAuthenticated() &&
+        (request.auth.uid == resource.data.get('criadorUid', '') ||
+         request.auth.uid == resource.data.get('adminUid', ''));
+
+      match /membros/{membroUid} {
+        allow read: if isAuthenticated();
+        allow create, update: if (isOwner(membroUid) || isGroupCreator(grupoId)) && isValidMembro(request.resource.data);
+        allow delete: if isOwner(membroUid) || isGroupCreator(grupoId);
+      }
+
+      match /midias/{midiaDoc} {
+        allow read, write: if isAuthenticated();
+      }
+
+      match /matches/{matchDoc} {
+        allow read, write: if isAuthenticated();
+      }
+
+      match /chat_mensagens/{mensagemId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.auth.uid == request.resource.data.autorUid &&
+          isValidMensagemGrupo(request.resource.data);
+        allow update: if isAuthenticated() &&
+          request.auth.uid == resource.data.autorUid &&
+          isValidMensagemGrupo(request.resource.data) &&
+          areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp']);
+        allow delete: if isAuthenticated() &&
+          request.auth.uid == resource.data.autorUid;
+      }
+    }
+
+    // 4. CHATS PRIVADOS / DIRECT ENTRE AMIGOS
+    match /chats/{chatId} {
+      allow read, create, update, delete: if isChatParticipant(chatId);
+
+      match /mensagens/{mensagemId} {
+        allow read: if isChatParticipant(chatId);
+        allow create: if isChatParticipant(chatId) &&
+          request.auth.uid == request.resource.data.remetenteUid &&
+          isValidMensagemChat(request.resource.data);
+        allow update: if isChatParticipant(chatId) &&
+          request.auth.uid == resource.data.remetenteUid &&
+          isValidMensagemChat(request.resource.data) &&
+          areImmutableFieldsUnchanged(['remetenteUid', 'id', 'timestamp']);
+        allow delete: if isChatParticipant(chatId);
+      }
+    }
+
+    // 5. COMENTÁRIOS GLOBAIS SOBRE MÍDIAS TMDB
+    match /comentarios_globais/{tmdbId} {
+      allow read, write: if isAuthenticated();
+
+      match /comentarios/{comentarioId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.auth.uid == request.resource.data.autorUid &&
+          isValidComentarioSocial(request.resource.data);
+        allow update: if isAuthenticated() && (
+          // O autor pode editar seu próprio texto do comentário
+          (request.auth.uid == resource.data.autorUid &&
+           isValidComentarioSocial(request.resource.data) &&
+           areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
+          // Qualquer usuário autenticado pode curtir/descurtir ou adicionar resposta, mantendo os dados originais inalterados
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidasUids', 'respostas']) &&
+           isValidComentarioSocial(request.resource.data) &&
+           areImmutableFieldsUnchanged(['autorUid', 'autorNome', 'autorFoto', 'texto', 'contemSpoiler', 'timestamp', 'id']))
+        );
+        allow delete: if isAuthenticated() &&
+          request.auth.uid == resource.data.autorUid;
+      }
+    }
+  }
+}

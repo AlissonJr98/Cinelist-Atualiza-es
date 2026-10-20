@@ -26,16 +26,14 @@ object RetrofitClient {
 
     private val TOKEN_AUTENTICACAO: String = "Bearer $tokenBruto"
 
-
-
-    /** Lê o corpo da resposta em caso de erro, para diagnosis nas logs. */
+    /** Lê o corpo da resposta em caso de erro sem consumir a stream (usando peekBody). */
     private class LoggingInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val request = chain.request()
             val response = chain.proceed(request)
 
             if (!response.isSuccessful) {
-                val corpoErro = runCatching { response.body?.string() }.getOrNull()
+                val corpoErro = runCatching { response.peekBody(1024 * 1024).string() }.getOrNull()
                 Log.e(
                     TAG,
                     "TMDB ${response.code} em ${request.url.encodedPath}: ${corpoErro.orEmpty().take(300)}"

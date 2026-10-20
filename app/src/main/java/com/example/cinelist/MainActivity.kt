@@ -1,4 +1,4 @@
-package com.example.cinelist
+﻿package com.example.cinelist
 
 import android.app.Activity
 import android.content.Context
@@ -234,15 +234,7 @@ fun ConfiguracaoNavegacao() {
         }
     }
 
-    LaunchedEffect(casalIdAtivoGlobal) {
-        while (true) {
-            viewModel.atualizarPresencaGlobal(true)
-            if (casalIdAtivoGlobal.isNotBlank()) {
-                viewModel.atualizarStatusPresenca(true)
-            }
-            delay(20_000L)
-        }
-    }
+
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.atualizarPresencaGlobal(true)

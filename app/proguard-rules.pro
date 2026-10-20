@@ -1,21 +1,50 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# CineList ProGuard / R8 Production Rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Rastreio de stacktrace seguro
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserva anotações do Gson
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep class com.google.gson.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Preserva modelos de dados do CineList (usados pelo Gson, Room e Firestore)
+-keep class com.example.cinelist.Midia { *; }
+-keep class com.example.cinelist.NotificacaoEntity { *; }
+-keep class com.example.cinelist.GrupoEntity { *; }
+-keep class com.example.cinelist.StatusMidia { *; }
+-keep class com.example.cinelist.AvaliacaoMembro { *; }
+-keep class com.example.cinelist.MensagemChat { *; }
+-keep class com.example.cinelist.MensagemGrupo { *; }
+-keep class com.example.cinelist.ComentarioSocial { *; }
+-keep class com.example.cinelist.RespostaSocial { *; }
+-keep class com.example.cinelist.AmigoPerfil { *; }
+-keep class com.example.cinelist.MembroGrupo { *; }
+-keep class com.example.cinelist.InfoAtualizacao { *; }
+-keep class com.example.cinelist.ResultadoAtualizacao { *; }
+-keep class com.example.cinelist.Tmdb* { *; }
+-keep class com.example.cinelist.Match* { *; }
+-keep class com.example.cinelist.Solicitacao* { *; }
+
+# Retrofit 2
+-keepclassmembers,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+
+# OkHttp e Okio
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# Room Database
+-keep class * extends androidx.room.RoomDatabase
+-dontwarn androidx.room.paging.**
+
+# Firebase
+-dontwarn com.google.firebase.**
+-keep class com.google.firebase.** { *; }
+
+# Dagger / Hilt
+-dontwarn dagger.hilt.**
