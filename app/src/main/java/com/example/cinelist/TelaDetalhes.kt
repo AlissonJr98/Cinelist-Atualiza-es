@@ -18,6 +18,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -505,17 +506,14 @@ fun TelaDetalhes(
                 },
                 actions = {
                     midiaSalva?.let { midiaReal ->
-                        IconeBouncyIconButton(onClick = {
-                            val novoFavorito = !ehFavorito
-                            ehFavorito = novoFavorito
-                            viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
-                        }) {
-                            Icon(
-                                imageVector = if (ehFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = if (ehFavorito) "Remover dos favoritos" else "Favoritar",
-                                tint = if (ehFavorito) Color(0xFFFF3366) else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        BotaoFavoritoAnimado(
+                            favorito = ehFavorito,
+                            onToggle = {
+                                val novoFavorito = !ehFavorito
+                                ehFavorito = novoFavorito
+                                viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
+                            }
+                        )
 
                         IconeBouncyIconButton(onClick = {
                             compartilharCardEstilizado(
@@ -613,12 +611,22 @@ fun TelaDetalhes(
 
                             Card(
                                 modifier = Modifier
-                                    .width(150.dp)
-                                    .height(220.dp)
+                                    .width(154.dp)
+                                    .height(224.dp)
                                     .align(Alignment.Center),
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    brush = Brush.linearGradient(
+                                        listOf(
+                                            Color(0xFF00E5FF).copy(alpha = 0.5f),
+                                            Color(0xFFFFD700).copy(alpha = 0.25f),
+                                            Color.White.copy(alpha = 0.08f)
+                                        )
+                                    )
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
                             ) {
                                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
                                     val urlPosterExibicao = when {

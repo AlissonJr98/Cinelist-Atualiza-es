@@ -9,7 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -59,9 +61,20 @@ fun DialogoCineAi(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.92f)
-                .clip(RoundedCornerShape(24.dp)),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+                .clip(RoundedCornerShape(24.dp))
+                .border(
+                    width = 1.dp,
+                    brush = Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFF00E5FF).copy(alpha = 0.50f),
+                            Color(0xFFFF007F).copy(alpha = 0.30f),
+                            Color.White.copy(alpha = 0.05f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ),
+            color = Color(0xFF0C101B),
+            tonalElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
@@ -214,6 +227,36 @@ fun DialogoCineAi(
                                 selected = filtroTipo == chave,
                                 onClick = { filtroTipo = chave },
                                 label = { Text(rotulo, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+
+                    // CHIPS DE PROMPT RÁPIDO
+                    Text(
+                        text = "Sugestões de busca rápida:",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF00E5FF)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "Suspense com reviravolta",
+                            "Parecido com Interestelar",
+                            "Sci-fi dos anos 90",
+                            "Comédia leve para relaxar",
+                            "Terror psicológico tenso"
+                        ).forEach { prompt ->
+                            CyberFilterChip(
+                                selected = (textoLivre == prompt),
+                                onClick = { textoLivre = prompt },
+                                label = prompt,
+                                corDestaque = Color(0xFF00E5FF)
                             )
                         }
                     }

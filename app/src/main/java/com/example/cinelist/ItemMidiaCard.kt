@@ -307,23 +307,13 @@ private fun ConteudoItemMidiaCard(
 
                     if (!ehPendente && !ehRecusado) {
                         if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
-                            Box(
+                            BotaoFavoritoAnimado(
+                                favorito = midia.favorito,
+                                onToggle = { onAlternarFavorito() },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(6.dp)
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Black.copy(alpha = 0.6f))
-                                    .bounceOnClick { onAlternarFavorito() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = if (midia.favorito) "Remover dos favoritos" else "Favoritar",
-                                    tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            )
                         }
 
                         if (onAdicionarRapido != null || jaAdicionado) {
@@ -903,23 +893,14 @@ private fun ConteudoItemMidiaCardHorizontal(
 
                     if (!ehPendente && !ehRecusado) {
                         if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
-                            Box(
+                            BotaoFavoritoAnimado(
+                                favorito = midia.favorito,
+                                onToggle = { onAlternarFavorito() },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(4.dp)
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Black.copy(alpha = 0.6f))
-                                    .clickable { onAlternarFavorito() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (midia.favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = "Favoritar",
-                                    tint = if (midia.favorito) Color(0xFFFF3366) else Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
+                                    .padding(4.dp),
+                                tamanhoIcone = 15.dp
+                            )
                         }
 
                         if (onAdicionarRapido != null || jaAdicionado) {

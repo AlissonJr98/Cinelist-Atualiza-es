@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 71,
-  "versaoNome": "2.0.31",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.31/CineList-v2.0.31.apk"
+  "versaoCodigo": 72,
+  "versaoNome": "2.0.32",
+  "notas": "Novas micro-animacoes e haptics: Roleta cibernetica com desaceleracao tatil, CineAI com prompts rapidos, coracao favorito pulsante e cards holograficos.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.32/CineList-v2.0.32.apk"
 }

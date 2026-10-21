@@ -24,6 +24,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -274,8 +277,17 @@ fun Modifier.bounceOnClick(
     enabled: Boolean = true,
     onClick: () -> Unit
 ): Modifier {
+    val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+
+    LaunchedEffect(isPressed) {
+        if (isPressed && enabled) {
+            try {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            } catch (_: Exception) {}
+        }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.84f else 1.0f,
@@ -294,6 +306,63 @@ fun Modifier.bounceOnClick(
             enabled = enabled,
             onClick = onClick
         )
+}
+
+/**
+ * Botão Favorito com Animação de Explosão/Pulso (Burst) e Feedback Háptico.
+ */
+@Composable
+fun BotaoFavoritoAnimado(
+    favorito: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    tamanhoIcone: Dp = 18.dp
+) {
+    val haptic = LocalHapticFeedback.current
+    var escalaAlvo by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(favorito) {
+        escalaAlvo = 1.38f
+        delay(120)
+        escalaAlvo = 1f
+    }
+
+    val escalaAnimada by animateFloatAsState(
+        targetValue = escalaAlvo,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "burst_heart"
+    )
+
+    Box(
+        modifier = modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.65f))
+            .border(
+                1.dp,
+                if (favorito) Color(0xFFFF3366).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.15f),
+                CircleShape
+            )
+            .bounceOnClick {
+                try {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                } catch (_: Exception) {}
+                onToggle()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (favorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+            contentDescription = if (favorito) "Remover dos favoritos" else "Favoritar",
+            tint = if (favorito) Color(0xFFFF3366) else Color.White,
+            modifier = Modifier
+                .size(tamanhoIcone)
+                .scale(escalaAnimada)
+        )
+    }
 }
 
 /**
