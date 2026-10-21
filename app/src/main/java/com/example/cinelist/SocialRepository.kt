@@ -843,4 +843,265 @@ class SocialRepository @Inject constructor() {
             listenerPublicos?.remove()
         }
     }
+
+    // =========================================================================
+    // FEED SOCIAL DE ATIVIDADES DOS AMIGOS
+    // =========================================================================
+
+    suspend fun publicarAtividade(
+        tipo: String, // "AVALIOU", "ASSISTIU", "QUERO_VER", "FAVORITOU", "RECOMENDACAO"
+        tmdbId: Int,
+        tituloMidia: String,
+        posterPath: String,
+        tipoMidia: String,
+        nota: Float = 0f,
+        comentario: String = ""
+    ) = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (tituloMidia.isBlank()) return@withContext
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
+            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+
+            val ref = firestore.collection("atividades_sociais").document()
+            val atividade = AtividadeSocial(
+                id = ref.id,
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFotoUrl = foto,
+                tipo = tipo,
+                tmdbId = tmdbId,
+                tituloMidia = tituloMidia,
+                posterPath = posterPath,
+                tipoMidia = tipoMidia,
+                nota = nota,
+                comentario = comentario.trim(),
+                timestamp = System.currentTimeMillis(),
+                reacoes = emptyMap()
+            )
+            ref.set(atividade).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun observarFeedAtividades(): Flow<List<AtividadeSocial>> = callbackFlow {
+        val listener = firestore.collection("atividades_sociais")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(60)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val lista = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        val ativ = doc.toObject(AtividadeSocial::class.java)
+                        ativ?.copy(id = doc.id)
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+                trySend(lista)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun alternarReacaoAtividade(atividadeId: String, emoji: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        if (atividadeId.isBlank() || emoji.isBlank()) return@withContext
+
+        try {
+            val ref = firestore.collection("atividades_sociais").document(atividadeId)
+            val doc = ref.get().await()
+            if (!doc.exists()) return@withContext
+
+            val mapaRaw = doc.get("reacoes") as? Map<*, *> ?: emptyMap<String, List<String>>()
+            val mapaAtual = mutableMapOf<String, List<String>>()
+            mapaRaw.forEach { (k, v) ->
+                if (k is String && v is List<*>) {
+                    mapaAtual[k] = v.filterIsInstance<String>()
+                }
+            }
+
+            val listaUids = (mapaAtual[emoji] ?: emptyList()).toMutableList()
+            if (listaUids.contains(uid)) {
+                listaUids.remove(uid)
+            } else {
+                listaUids.add(uid)
+            }
+
+            if (listaUids.isEmpty()) {
+                mapaAtual.remove(emoji)
+            } else {
+                mapaAtual[emoji] = listaUids
+            }
+
+            ref.update("reacoes", mapaAtual).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deletarAtividade(atividadeId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        try {
+            val ref = firestore.collection("atividades_sociais").document(atividadeId)
+            val doc = ref.get().await()
+            if (doc.getString("autorUid") == uid) {
+                ref.delete().await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // =========================================================================
+    // ENQUETES RÁPIDAS NAS SALAS / GRUPOS
+    // =========================================================================
+
+    suspend fun criarEnqueteGrupo(
+        grupoId: String,
+        titulo: String,
+        descricao: String,
+        opcoes: List<Map<String, Any>>,
+        duracaoMinutos: Int = 60
+    ) = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (grupoId.isBlank() || titulo.isBlank() || opcoes.isEmpty()) return@withContext
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Membro"
+            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+
+            val ref = firestore.collection("grupos").document(grupoId)
+                .collection("enquetes").document()
+
+            val agora = System.currentTimeMillis()
+            val expiraEm = if (duracaoMinutos > 0) agora + (duracaoMinutos * 60_000L) else 0L
+
+            val enquete = EnqueteGrupo(
+                id = ref.id,
+                grupoId = grupoId,
+                criadorUid = user.uid,
+                criadorNome = nome,
+                criadorFotoUrl = foto,
+                titulo = titulo.trim(),
+                descricao = descricao.trim(),
+                opcoes = opcoes,
+                votos = emptyMap(),
+                encerrada = false,
+                timestamp = agora,
+                expiraEm = expiraEm
+            )
+
+            ref.set(enquete).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun observarEnquetesGrupo(grupoId: String): Flow<List<EnqueteGrupo>> = callbackFlow {
+        if (grupoId.isBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("grupos").document(grupoId)
+            .collection("enquetes")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(20)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val lista = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        val enq = doc.toObject(EnqueteGrupo::class.java)
+                        enq?.copy(id = doc.id)
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+                trySend(lista)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun votarEnqueteGrupo(grupoId: String, enqueteId: String, opcaoId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        if (grupoId.isBlank() || enqueteId.isBlank() || opcaoId.isBlank()) return@withContext
+
+        try {
+            val ref = firestore.collection("grupos").document(grupoId)
+                .collection("enquetes").document(enqueteId)
+
+            val doc = ref.get().await()
+            if (!doc.exists()) return@withContext
+
+            val encerrada = doc.getBoolean("encerrada") ?: false
+            if (encerrada) return@withContext
+
+            val votosRaw = doc.get("votos") as? Map<*, *> ?: emptyMap<String, String>()
+            val mapaVotos = mutableMapOf<String, String>()
+            votosRaw.forEach { (k, v) ->
+                if (k is String && v is String) {
+                    mapaVotos[k] = v
+                }
+            }
+
+            // Alterna o voto se clicar na mesma opção, ou altera para nova opção
+            if (mapaVotos[uid] == opcaoId) {
+                mapaVotos.remove(uid)
+            } else {
+                mapaVotos[uid] = opcaoId
+            }
+
+            ref.update("votos", mapaVotos).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun encerrarEnqueteGrupo(grupoId: String, enqueteId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        if (grupoId.isBlank() || enqueteId.isBlank()) return@withContext
+
+        try {
+            val ref = firestore.collection("grupos").document(grupoId)
+                .collection("enquetes").document(enqueteId)
+
+            val doc = ref.get().await()
+            if (doc.getString("criadorUid") == uid) {
+                ref.update("encerrada", true).await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun deletarEnqueteGrupo(grupoId: String, enqueteId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        if (grupoId.isBlank() || enqueteId.isBlank()) return@withContext
+
+        try {
+            val ref = firestore.collection("grupos").document(grupoId)
+                .collection("enquetes").document(enqueteId)
+
+            val doc = ref.get().await()
+            val criadorUid = doc.getString("criadorUid")
+            if (criadorUid == uid) {
+                ref.delete().await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

@@ -863,6 +863,37 @@ fun TelaPerfil(
         }
     }
 
+    val exportarCsvLauncher = rememberLauncherForActivityResult(
+        contract = CreateDocument("text/csv")
+    ) { uri: Uri? ->
+        uri?.let {
+            val sucesso = BackupManager.exportarParaCsv(contexto, it, midiasContextoAtual)
+            Toast.makeText(
+                contexto,
+                if (sucesso) "CSV exportado com sucesso!" else "Erro ao exportar CSV.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val importarCsvLauncher = rememberLauncherForActivityResult(
+        contract = OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            val midiasImportadas = BackupManager.importarDeCsv(contexto, it)
+            if (!midiasImportadas.isNullOrEmpty()) {
+                viewModel.importarMidiasEmLote(midiasImportadas)
+                Toast.makeText(
+                    contexto,
+                    "${midiasImportadas.size} títulos importados do Letterboxd/IMDb!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Toast.makeText(contexto, "Arquivo CSV não reconhecido ou vazio.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     var generoFavorito by remember { mutableStateOf(sharedPreferences.getString("genero", "Não definido") ?: "Não definido") }
     var menuGeneroExpandido by remember { mutableStateOf(false) }
     val listaGeneros = listOf("Ação", "Animes", "Comédia", "Drama", "Ficção Científica", "Terror", "Suspense", "Romance", "Novelas", "Doramas")
@@ -1363,6 +1394,22 @@ fun TelaPerfil(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text("Importar JSON", fontSize = 12.sp)
+                        }
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                        OutlinedButton(
+                            onClick = { exportarCsvLauncher.launch("cinelist_${System.currentTimeMillis()}.csv") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Exportar CSV", fontSize = 12.sp)
+                        }
+                        Button(
+                            onClick = { importarCsvLauncher.launch(arrayOf("text/*", "application/*")) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Text("Importar Letterboxd/IMDb", fontSize = 11.sp)
                         }
                     }
                 }

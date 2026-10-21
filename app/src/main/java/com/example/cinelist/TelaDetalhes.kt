@@ -1692,6 +1692,18 @@ fun TelaDetalhes(
                                             viewModel.enviarComentarioPublico(idRealBuscaApi, comentarioPessoalInput)
                                         }
 
+                                        if (nota > 0 || comentarioPessoalInput.isNotBlank()) {
+                                            viewModel.publicarAtividade(
+                                                tipo = if (nota > 0) "AVALIOU" else if (concluido) "ASSISTIU" else "RECOMENDACAO",
+                                                tmdbId = midiaAtualizada.idTmdb,
+                                                tituloMidia = midiaAtualizada.titulo,
+                                                posterPath = midiaAtualizada.imagemCapa,
+                                                tipoMidia = midiaAtualizada.tipo,
+                                                nota = nota.toFloat(),
+                                                comentario = comentarioPessoalInput
+                                            )
+                                        }
+
                                         if (statusAtual == StatusMidia.ASSISTINDO && isModoCasal) {
                                             viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
                                         } else if (concluido || querAssistir) {

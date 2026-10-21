@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 65,
-  "versaoNome": "2.0.25",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.25/CineList-v2.0.25.apk"
+  "versaoCodigo": 66,
+  "versaoNome": "2.0.26",
+  "notas": "Super atualização: Feed Social de Atividades dos Amigos com reações, Enquetes Rápidas nas Salas de Grupo para decidir o que assistir, Importação/Exportação Letterboxd e IMDb (CSV) e Emblemas.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.26/CineList-v2.0.26.apk"
 }

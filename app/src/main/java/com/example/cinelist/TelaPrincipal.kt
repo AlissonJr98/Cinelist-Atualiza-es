@@ -377,7 +377,7 @@ fun TelaPrincipal(
     var historicoBuscas by remember { mutableStateOf(historicoManager.obterHistorico()) }
 
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
 
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     var searchFocused by remember { mutableStateOf(false) }
@@ -401,6 +401,7 @@ fun TelaPrincipal(
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
     var mostrarDialogoCineBot by remember { mutableStateOf(false) }
     var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
+    var mostrarDialogoEnquetes by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
@@ -533,6 +534,14 @@ fun TelaPrincipal(
                 mostrarDialogoCineBot = false
                 onTmdbItemClique(tmdbItem, tipo)
             }
+        )
+    }
+
+    if (mostrarDialogoEnquetes) {
+        DialogoEnquetesSala(
+            viewModel = viewModel,
+            listaDeMidiasSala = listaDeMidias,
+            onDispensar = { mostrarDialogoEnquetes = false }
         )
     }
 
@@ -857,6 +866,13 @@ fun TelaPrincipal(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { mostrarDialogoEnquetes = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Poll,
+                                contentDescription = "Votações da Sala",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(onClick = { viewModel.alternarMuteSala(); mostrarSucesso(if (salaMutada) "Notificações da sala ativadas" else "Notificações da sala silenciadas") }) {
                             Icon(
                                 imageVector = if (salaMutada) Icons.Default.NotificationsOff else Icons.Default.NotificationsActive,
@@ -871,6 +887,32 @@ fun TelaPrincipal(
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.surfaceVariant)
+
+                val enquetesSalaChat by viewModel.enquetesSalaAtiva.collectAsState(initial = emptyList())
+                val enqueteAbertaChat = enquetesSalaChat.firstOrNull { !it.encerrada }
+                if (enqueteAbertaChat != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                            .clickable { mostrarDialogoEnquetes = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Poll, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Votação aberta: ${enqueteAbertaChat.titulo}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("Toque para votar (${enqueteAbertaChat.votos.size} voto(s))", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
 
                 LazyColumn(
                     state = listState,
@@ -1131,6 +1173,7 @@ fun TelaPrincipal(
             ) {
                 Tab(selected = pagerState.currentPage == 0, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(0) } }, text = { Text("Minha Lista", fontWeight = FontWeight.Bold) })
                 Tab(selected = pagerState.currentPage == 1, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(1) } }, text = { Text("Descobrir", fontWeight = FontWeight.Bold) })
+                Tab(selected = pagerState.currentPage == 2, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(2) } }, text = { Text("Feed Social", fontWeight = FontWeight.Bold) })
             }
 
             if (isModoCompartilhado && membroAssistindo != null && pagerState.currentPage == 0) {
@@ -1154,36 +1197,38 @@ fun TelaPrincipal(
                 }
             }
 
-            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    TextField(
-                        value = textoPesquisa,
-                        onValueChange = { textoPesquisa = it },
-                        modifier = Modifier.fillMaxWidth().onFocusChanged { state -> searchFocused = state.isFocused },
-                        placeholder = { Text(if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp) },
-                        trailingIcon = { if (textoPesquisa.isNotBlank()) { IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus() }) { Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary) } } },
-                        colors = TextFieldDefaults.colors(focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-                        singleLine = true,
-                        shape = RoundedCornerShape(if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
-                    )
+            if (pagerState.currentPage != 2) {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        TextField(
+                            value = textoPesquisa,
+                            onValueChange = { textoPesquisa = it },
+                            modifier = Modifier.fillMaxWidth().onFocusChanged { state -> searchFocused = state.isFocused },
+                            placeholder = { Text(if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp) },
+                            trailingIcon = { if (textoPesquisa.isNotBlank()) { IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus() }) { Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary) } } },
+                            colors = TextFieldDefaults.colors(focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+                            singleLine = true,
+                            shape = RoundedCornerShape(if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
+                        )
 
-                    if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text("Pesquisas Recentes", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                    TextButton(onClick = { historicoManager.limparHistorico(); historicoBuscas = emptyList(); focusManager.clearFocus() }, contentPadding = PaddingValues(0.dp)) { Text("Limpar histórico", fontSize = 10.sp, color = Color(0xFFFF5252)) }
-                                }
-                                for (termo in historicoBuscas) {
-                                    Row(modifier = Modifier.fillMaxWidth().clickable { textoPesquisa = termo; focusManager.clearFocus() }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                                        Text(termo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Pesquisas Recentes", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        TextButton(onClick = { historicoManager.limparHistorico(); historicoBuscas = emptyList(); focusManager.clearFocus() }, contentPadding = PaddingValues(0.dp)) { Text("Limpar histórico", fontSize = 10.sp, color = Color(0xFFFF5252)) }
+                                    }
+                                    for (termo in historicoBuscas) {
+                                        Row(modifier = Modifier.fillMaxWidth().clickable { textoPesquisa = termo; focusManager.clearFocus() }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                            Text(termo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
                             }
@@ -1387,7 +1432,7 @@ fun TelaPrincipal(
                             }
                         }
                     }
-                } else {
+                } else if (pagina == 1) {
                     // Modo Descobrir (não compartilhado)
                     Column(modifier = Modifier.fillMaxSize()) {
                         LaunchedEffect(textoPesquisa, quantidadeFiltrosAtivosDescobrir) {
@@ -1637,6 +1682,19 @@ fun TelaPrincipal(
                             }
                         }
                     }
+                } else {
+                    FeedAtividadesScreen(
+                        viewModel = viewModel,
+                        onMidiaClick = { idTmdb, titulo, tipo ->
+                            val fakeFilme = TmdbFilme(
+                                idTmdb = idTmdb,
+                                titulo = titulo,
+                                mediaType = if (tipo.equals("Série", ignoreCase = true)) "tv" else "movie"
+                            )
+                            onTmdbItemClique(fakeFilme, tipo)
+                        },
+                        onAdicionarAmigoClick = onPerfilClique
+                    )
                 }
             }
         }

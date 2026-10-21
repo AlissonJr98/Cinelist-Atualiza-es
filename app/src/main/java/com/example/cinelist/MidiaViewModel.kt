@@ -333,6 +333,19 @@ class MidiaViewModel @Inject constructor(
         if (grupoId.isNotBlank()) {
             viewModelScope.launch {
                 repository.salvarAvaliacaoMembro(grupoId, midia, nota, comentario, contemSpoiler)
+                try {
+                    socialRepository.publicarAtividade(
+                        tipo = "AVALIOU",
+                        tmdbId = midia.idTmdb,
+                        tituloMidia = midia.titulo,
+                        posterPath = midia.imagemCapa,
+                        tipoMidia = midia.tipo,
+                        nota = nota.toFloat(),
+                        comentario = comentario
+                    )
+                } catch (ePub: Exception) {
+                    ePub.printStackTrace()
+                }
             }
         }
     }
@@ -567,6 +580,92 @@ class MidiaViewModel @Inject constructor(
     val solicitacoesRecebidas: Flow<List<SolicitacaoAmizadeRecebida>> = socialRepository.observarSolicitacoesRecebidas()
     val solicitacoesPendentesEnviadas: Flow<List<String>> = socialRepository.observarUidsStatusPendente()
     val usuariosBloqueados: Flow<List<AmigoPerfil>> = socialRepository.observarUsuariosBloqueados()
+    val feedAtividades: Flow<List<AtividadeSocial>> = socialRepository.observarFeedAtividades()
+
+    fun publicarAtividade(
+        tipo: String,
+        tmdbId: Int,
+        tituloMidia: String,
+        posterPath: String,
+        tipoMidia: String,
+        nota: Float = 0f,
+        comentario: String = ""
+    ) {
+        viewModelScope.launch {
+            socialRepository.publicarAtividade(
+                tipo = tipo,
+                tmdbId = tmdbId,
+                tituloMidia = tituloMidia,
+                posterPath = posterPath,
+                tipoMidia = tipoMidia,
+                nota = nota,
+                comentario = comentario
+            )
+        }
+    }
+
+    fun alternarReacaoAtividade(atividadeId: String, emoji: String) {
+        viewModelScope.launch {
+            socialRepository.alternarReacaoAtividade(atividadeId, emoji)
+        }
+    }
+
+    fun deletarAtividade(atividadeId: String) {
+        viewModelScope.launch {
+            socialRepository.deletarAtividade(atividadeId)
+        }
+    }
+
+    // =========================================================================
+    // ENQUETES RÁPIDAS NA SALA
+    // =========================================================================
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val enquetesSalaAtiva: Flow<List<EnqueteGrupo>> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) kotlinx.coroutines.flow.flowOf(emptyList())
+        else socialRepository.observarEnquetesGrupo(grupoId)
+    }
+
+    fun criarEnqueteNaSala(
+        titulo: String,
+        descricao: String,
+        opcoes: List<Map<String, Any>>,
+        duracaoMinutos: Int = 60
+    ) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.criarEnqueteGrupo(grupoId, titulo, descricao, opcoes, duracaoMinutos)
+            }
+        }
+    }
+
+    fun votarEnqueteNaSala(enqueteId: String, opcaoId: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.votarEnqueteGrupo(grupoId, enqueteId, opcaoId)
+            }
+        }
+    }
+
+    fun encerrarEnqueteNaSala(enqueteId: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.encerrarEnqueteGrupo(grupoId, enqueteId)
+            }
+        }
+    }
+
+    fun deletarEnqueteNaSala(enqueteId: String) {
+        val grupoId = _casalIdAtivo.value
+        if (grupoId.isNotBlank()) {
+            viewModelScope.launch {
+                socialRepository.deletarEnqueteGrupo(grupoId, enqueteId)
+            }
+        }
+    }
 
     private val _resultadosBuscaAmigos = MutableStateFlow<List<AmigoPerfil>>(emptyList())
     val resultadosBuscaAmigos: StateFlow<List<AmigoPerfil>> = _resultadosBuscaAmigos
@@ -1055,6 +1154,20 @@ class MidiaViewModel @Inject constructor(
 
             if (midia.isCasal && midia.casalId.isNotBlank()) {
                 repository.limparAssistindoAgora(midia.casalId)
+            }
+
+            try {
+                socialRepository.publicarAtividade(
+                    tipo = "ASSISTIU",
+                    tmdbId = midia.idTmdb,
+                    tituloMidia = midia.titulo,
+                    posterPath = midia.imagemCapa,
+                    tipoMidia = midia.tipo,
+                    nota = midia.nota.toFloat(),
+                    comentario = ""
+                )
+            } catch (ePub: Exception) {
+                ePub.printStackTrace()
             }
         }
     }

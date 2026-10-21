@@ -51,6 +51,7 @@ service cloud.firestore {
     //   - midias/{midiaDoc}: Group shared movie/series list
     //   - chat_mensagens/{mensagemId}: Group chat messages
     //   - matches/{matchDoc}: Group movie roulette matches
+    //   - enquetes/{enqueteId}: Group quick polls and votes
     //
     // Collection: chats/{chatId}/mensagens/{mensagemId}
     // Document ID: Formatted as uidA_uidB
@@ -74,6 +75,26 @@ service cloud.firestore {
     //   - timestamp: number
     //   - curtidasUids: list of strings (<= 10000 items)
     //   - respostas: list of maps (<= 1000 items)
+    //
+    // Collection: atividades_sociais/{atividadeId}
+    // Document ID: Activity ID (<= 128 chars)
+    // Fields:
+    //   - id: string (activity id, optional, <= 128 chars)
+    //   - autorUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //   - autorNome: string (optional, <= 100 chars)
+    //   - autorFoto: string (optional, <= 2000 chars)
+    //   - autorFotoUrl: string (optional, <= 2000 chars)
+    //   - tipo: string (activity type, <= 50 chars)
+    //   - tituloMidia: string (media title, <= 200 chars)
+    //   - midiaId: string or number (optional)
+    //   - tmdbId: number or string (optional)
+    //   - posterPath: string (optional, <= 2000 chars)
+    //   - fotoPoster: string (optional, <= 2000 chars)
+    //   - nota: number (optional)
+    //   - texto: string (optional, <= 2000 chars)
+    //   - comentario: string (optional, <= 2000 chars)
+    //   - timestamp: number
+    //   - reacoes: map or list (reactions/likes, <= 1000 items)
     //
     // ===============================================================
 
@@ -105,6 +126,22 @@ service cloud.firestore {
       return isAuthenticated() && (
         exists(/databases/$(database)/documents/grupos/$(grupoId)) &&
         get(/databases/$(database)/documents/grupos/$(grupoId)).data.get('criadorUid', '') == request.auth.uid
+      );
+    }
+
+    function isGroupAdmin(grupoId) {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/grupos/$(grupoId)) && (
+          get(/databases/$(database)/documents/grupos/$(grupoId)).data.get('criadorUid', '') == request.auth.uid ||
+          get(/databases/$(database)/documents/grupos/$(grupoId)).data.get('adminUid', '') == request.auth.uid
+        )
+      );
+    }
+
+    function isGroupMember(grupoId) {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/grupos/$(grupoId)/membros/$(request.auth.uid)) ||
+        isGroupAdmin(grupoId)
       );
     }
 
@@ -187,6 +224,40 @@ service cloud.firestore {
         (!('remetenteFoto' in data) || (data.remetenteFoto is string && data.remetenteFoto.size() <= 2000)) &&
         (!('status' in data) || (data.status is string && data.status in ['pendente', 'aceito', 'recusado'])) &&
         (!('dataCriacao' in data) || data.dataCriacao is number);
+    }
+
+    function isValidAtividadeSocial(data) {
+      return data.autorUid is string && data.autorUid.size() <= 128 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('autorNome' in data) || (data.autorNome is string && data.autorNome.size() <= 100)) &&
+        (!('autorFoto' in data) || (data.autorFoto is string && data.autorFoto.size() <= 2000)) &&
+        (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
+        (!('tipo' in data) || (data.tipo is string && data.tipo.size() <= 50)) &&
+        (!('tituloMidia' in data) || (data.tituloMidia is string && data.tituloMidia.size() <= 200)) &&
+        (!('midiaId' in data) || (data.midiaId is string && data.midiaId.size() <= 128) || data.midiaId is number) &&
+        (!('tmdbId' in data) || data.tmdbId is number || (data.tmdbId is string && data.tmdbId.size() <= 50)) &&
+        (!('posterPath' in data) || (data.posterPath is string && data.posterPath.size() <= 2000)) &&
+        (!('fotoPoster' in data) || (data.fotoPoster is string && data.fotoPoster.size() <= 2000)) &&
+        (!('nota' in data) || data.nota is number) &&
+        (!('texto' in data) || (data.texto is string && data.texto.size() <= 2000)) &&
+        (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000)) &&
+        (!('timestamp' in data) || data.timestamp is number) &&
+        (!('reacoes' in data) || (data.reacoes is map && data.reacoes.size() <= 1000) || (data.reacoes is list && data.reacoes.size() <= 1000));
+    }
+
+    function isValidEnquete(data) {
+      return data.criadorUid is string && data.criadorUid.size() <= 128 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('criadorNome' in data) || (data.criadorNome is string && data.criadorNome.size() <= 100)) &&
+        (!('criadorFoto' in data) || (data.criadorFoto is string && data.criadorFoto.size() <= 2000)) &&
+        (!('criadorFotoUrl' in data) || (data.criadorFotoUrl is string && data.criadorFotoUrl.size() <= 2000)) &&
+        (!('titulo' in data) || (data.titulo is string && data.titulo.size() >= 1 && data.titulo.size() <= 200)) &&
+        (!('descricao' in data) || (data.descricao is string && data.descricao.size() <= 1000)) &&
+        (!('opcoes' in data) || (data.opcoes is list && data.opcoes.size() <= 50)) &&
+        (!('votos' in data) || (data.votos is map && data.votos.size() <= 1000) || (data.votos is list && data.votos.size() <= 1000)) &&
+        (!('encerrada' in data) || data.encerrada is bool) &&
+        (!('timestamp' in data) || data.timestamp is number) &&
+        (!('expiraEm' in data) || data.expiraEm is number);
     }
 
     // ===============================================================
@@ -284,6 +355,26 @@ service cloud.firestore {
         allow delete: if isAuthenticated() &&
           request.auth.uid == resource.data.autorUid;
       }
+
+      match /enquetes/{enqueteId} {
+        allow read: if isAuthenticated();
+        allow create: if isGroupMember(grupoId) &&
+          request.auth.uid == request.resource.data.criadorUid &&
+          isValidEnquete(request.resource.data);
+        allow update: if isAuthenticated() && (
+          // O criador da enquete para encerrar ('encerrada') ou gerenciar a enquete
+          (request.auth.uid == resource.data.criadorUid &&
+           isValidEnquete(request.resource.data) &&
+           areImmutableFieldsUnchanged(['criadorUid', 'id', 'timestamp'])) ||
+          // Membros autenticados para computar votos (campo 'votos' ou 'opcoes')
+          (isGroupMember(grupoId) &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votos', 'opcoes']) &&
+           isValidEnquete(request.resource.data) &&
+           areImmutableFieldsUnchanged(['criadorUid', 'titulo', 'timestamp', 'id', 'encerrada']))
+        );
+        allow delete: if isAuthenticated() &&
+          (request.auth.uid == resource.data.criadorUid || isGroupAdmin(grupoId));
+      }
     }
 
     // 4. CHATS PRIVADOS / DIRECT ENTRE AMIGOS
@@ -325,6 +416,26 @@ service cloud.firestore {
         allow delete: if isAuthenticated() &&
           request.auth.uid == resource.data.autorUid;
       }
+    }
+
+    // 6. FEED SOCIAL DE ATIVIDADES
+    match /atividades_sociais/{atividadeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.autorUid &&
+        isValidAtividadeSocial(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // O próprio autor atualizando sua atividade
+        (request.auth.uid == resource.data.autorUid &&
+         isValidAtividadeSocial(request.resource.data) &&
+         areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
+        // Qualquer usuário autenticado atualizando apenas o campo de reações ('reacoes') para curtir/reagir
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacoes']) &&
+         isValidAtividadeSocial(request.resource.data) &&
+         areImmutableFieldsUnchanged(['autorUid', 'autorNome', 'tipo', 'tituloMidia', 'timestamp', 'id']))
+      );
+      allow delete: if isAuthenticated() &&
+        request.auth.uid == resource.data.autorUid;
     }
   }
 }
