@@ -1196,6 +1196,59 @@ fun TelaDetalhes(
                                                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                                             }
                                         } else if (episodiosTmdb.isNotEmpty()) {
+                                            val totalEpsNestaTemporada = episodiosTmdb.size.coerceAtLeast(1)
+                                            val epsAssistidosNestaTemporada = if (abaTemporadaVisualizada < temporadaAtual) {
+                                                totalEpsNestaTemporada
+                                            } else if (abaTemporadaVisualizada == temporadaAtual) {
+                                                episodioAtual.coerceIn(0, totalEpsNestaTemporada)
+                                            } else {
+                                                0
+                                            }
+                                            val percentualTemporada = (epsAssistidosNestaTemporada.toFloat() / totalEpsNestaTemporada).coerceIn(0f, 1f)
+
+                                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "Progresso T$abaTemporadaVisualizada: $epsAssistidosNestaTemporada/$totalEpsNestaTemporada eps (${(percentualTemporada * 100).toInt()}%)",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+
+                                                    Surface(
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                                        border = BorderStroke(1.dp, Color(0xFF10B981)),
+                                                        modifier = Modifier.clickable {
+                                                            temporadaAtual = abaTemporadaVisualizada
+                                                            episodioAtual = totalEpsNestaTemporada
+                                                            if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
+                                                                statusAtual = StatusMidia.ASSISTINDO
+                                                            }
+                                                            Toast.makeText(contexto, "Temporada $abaTemporadaVisualizada marcada como concluída! 🎉", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    ) {
+                                                        Text(
+                                                            text = "Concluir Temporada ✓",
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF10B981),
+                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                        )
+                                                    }
+                                                }
+
+                                                LinearProgressIndicator(
+                                                    progress = { percentualTemporada },
+                                                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                                    color = Color(0xFF00E5FF),
+                                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                            }
                                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 episodiosTmdb.forEach { epItem ->
                                                     val jaAssistido = (abaTemporadaVisualizada < temporadaAtual) ||

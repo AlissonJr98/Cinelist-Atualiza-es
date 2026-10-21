@@ -2111,7 +2111,7 @@ fun TelaWrapped(
                 4 -> PaginaFinalWrapped(
                     dadosWrapped = dadosWrapped,
                     onCompartilhar = {
-                        // InstagramShareHelper.compartilharWrappedNoInstagram(contexto, dadosWrapped)
+                        InstagramShareHelper.compartilharWrappedNoInstagram(contexto, dadosWrapped)
                     }
                 )
             }

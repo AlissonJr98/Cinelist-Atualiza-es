@@ -275,7 +275,7 @@ fun TopBarModernaTranslucida(
 @Composable
 fun Modifier.bounceOnClick(
     enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: (() -> Unit)? = null
 ): Modifier {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -298,14 +298,17 @@ fun Modifier.bounceOnClick(
         label = "bounce_scale"
     )
 
-    return this
-        .scale(scale)
-        .clickable(
+    val base = this.scale(scale)
+    return if (onClick != null) {
+        base.clickable(
             interactionSource = interactionSource,
             indication = null,
             enabled = enabled,
             onClick = onClick
         )
+    } else {
+        base
+    }
 }
 
 /**
@@ -370,7 +373,7 @@ fun BotaoFavoritoAnimado(
  */
 @Composable
 fun IconeBouncyIconButton(
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     content: @Composable () -> Unit
@@ -418,7 +421,7 @@ fun PulseMatchIcon(
  */
 @Composable
 fun IconeAnimadoRotacao(
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     anguloRotacaoTotal: Float = 360f,
     content: @Composable () -> Unit
@@ -443,7 +446,7 @@ fun IconeAnimadoRotacao(
             .graphicsLayer { rotationZ = anguloAnimado }
             .bounceOnClick {
                 estaGirando = true
-                onClick()
+                onClick?.invoke()
             },
         contentAlignment = Alignment.Center
     ) {
@@ -917,7 +920,7 @@ fun CyberLiveRadarBanner(
 @Composable
 fun CyberFilterChip(
     selected: Boolean,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     label: String,
     modifier: Modifier = Modifier,
     icone: ImageVector? = null,

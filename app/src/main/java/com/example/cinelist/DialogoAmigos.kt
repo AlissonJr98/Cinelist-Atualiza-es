@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,6 +40,7 @@ fun DialogoAmigos(
     var termoPesquisa by remember { mutableStateOf("") }
     var amigoVisualizando by remember { mutableStateOf<AmigoPerfil?>(null) }
     var mostrarDuelo by remember { mutableStateOf(false) }
+    var mostrarDialogoQrCode by remember { mutableStateOf(false) }
 
     // Atualiza o perfil público do usuário atual ao abrir o diálogo para garantir que ele seja encontrado
     LaunchedEffect(Unit) {
@@ -54,6 +56,13 @@ fun DialogoAmigos(
             minhaLista = minhaLista,
             listaDoAmigo = listaAmigoSelecionado,
             onDispensar = { mostrarDuelo = false }
+        )
+    }
+
+    if (mostrarDialogoQrCode) {
+        DialogoQRCodeAmigo(
+            viewModel = viewModel,
+            onDispensar = { mostrarDialogoQrCode = false }
         )
     }
 
@@ -139,6 +148,27 @@ fun DialogoAmigos(
                     .heightIn(max = 400.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Button(
+                    onClick = { mostrarDialogoQrCode = true },
+                    modifier = Modifier.fillMaxWidth().bounceOnClick(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode2,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Meu QR Code & Conectar por ID",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+
                 OutlinedTextField(
                     value = termoPesquisa,
                     onValueChange = {

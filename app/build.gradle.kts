@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 72
-        versionName = "2.0.32"
+        versionCode = 73
+        versionName = "2.0.33"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -159,6 +159,7 @@ dependencies {
     // Paginação Reativa (Paging 3)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    implementation("com.google.zxing:core:3.5.3")
 
     // Testes Unitários e Instrumentados
     testImplementation(libs.mockk)

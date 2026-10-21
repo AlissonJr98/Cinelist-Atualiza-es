@@ -1,5 +1,15 @@
 package com.example.cinelist
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -274,156 +284,302 @@ fun TelaModoMatch(
                 }
             } else {
                 val midiaAtual = filaFinalParaVotar.first()
+                val proximaMidia = if (filaFinalParaVotar.size > 1) filaFinalParaVotar[1] else null
                 val chaveDocAtual = if (midiaAtual.idTmdb != 0) "match_tmdb_${midiaAtual.idTmdb}" else "match_local_${midiaAtual.uuid}"
 
+                val haptic = LocalHapticFeedback.current
+                val escopoVoto = rememberCoroutineScope()
+                val offsetX = remember(midiaAtual) { Animatable(0f) }
+                val offsetY = remember(midiaAtual) { Animatable(0f) }
+
+                fun executarVotoAnimado(quero: Boolean) {
+                    escopoVoto.launch {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        val alvo = if (quero) 1400f else -1400f
+                        offsetX.animateTo(alvo, animationSpec = tween(durationMillis = 260))
+                        viewModel.votarMatch(midiaAtual, quero)
+                        votosSessaoLocal = votosSessaoLocal + chaveDocAtual
+                    }
+                }
+
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Card(
+                    // Deck de Cards Sobrepostos
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            if (!midiaAtual.imagemCapa.isNullOrBlank()) {
-                                AsyncImage(
-                                    model = midiaAtual.imagemCapa,
-                                    contentDescription = midiaAtual.titulo,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
+                        // Card de Fundo (Próximo título na fila com escala reduzida)
+                        proximaMidia?.let { prox ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = 0.92f
+                                        scaleY = 0.92f
+                                        translationY = 24f
+                                        alpha = 0.55f
+                                    },
+                                shape = RoundedCornerShape(24.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    if (!prox.imagemCapa.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model = prox.imagemCapa,
+                                            contentDescription = prox.titulo,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Card Frontal Interativo (com Gestos de Swipe e Rotação)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    translationX = offsetX.value
+                                    translationY = offsetY.value
+                                    rotationZ = (offsetX.value / 45f).coerceIn(-28f, 28f)
+                                }
+                                .pointerInput(midiaAtual) {
+                                    detectDragGestures(
+                                        onDragEnd = {
+                                            if (offsetX.value > 260f) {
+                                                executarVotoAnimado(true)
+                                            } else if (offsetX.value < -260f) {
+                                                executarVotoAnimado(false)
+                                            } else {
+                                                escopoVoto.launch {
+                                                    offsetX.animateTo(0f, spring(dampingRatio = 0.65f))
+                                                    offsetY.animateTo(0f, spring(dampingRatio = 0.65f))
+                                                }
+                                            }
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            escopoVoto.launch {
+                                                offsetX.snapTo(offsetX.value + dragAmount.x)
+                                                offsetY.snapTo(offsetY.value + dragAmount.y * 0.4f)
+                                            }
+                                        }
+                                    )
+                                },
+                            shape = RoundedCornerShape(24.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (!midiaAtual.imagemCapa.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = midiaAtual.imagemCapa,
+                                        contentDescription = midiaAtual.titulo,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("SEM CAPA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                    }
+                                }
+
+                                // Gradiente escuro para leitura das informações
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(Color.Transparent, Color(0xB3000000), Color(0xF2050811)),
+                                                startY = 300f
+                                            )
+                                        )
+                                )
+
+                                // Informações do título
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(20.dp)
                                 ) {
-                                    Text("SEM CAPA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors = listOf(Color.Transparent, Color(0xCC000000), Color(0xF5000000)),
-                                            startY = 350f
-                                        )
-                                    )
-                            )
-
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(18.dp)
-                            ) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = RoundedCornerShape(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "${midiaAtual.tipo} • ${midiaAtual.genero.ifBlank { "Geral" }}",
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                        )
-                                    }
-
-                                    if (estaNoModoDescobertaTmdb) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Surface(
-                                            color = Color(0xFFFF9800),
-                                            shape = RoundedCornerShape(6.dp)
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = "Em Alta TMDB",
-                                                color = Color.Black,
+                                                text = "${midiaAtual.tipo} • ${midiaAtual.genero.ifBlank { "Geral" }}",
+                                                color = MaterialTheme.colorScheme.onPrimary,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                             )
+                                        }
+
+                                        if (estaNoModoDescobertaTmdb) {
+                                            Surface(
+                                                color = Color(0xFFFF9800),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Em Alta TMDB",
+                                                    color = Color.Black,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = midiaAtual.titulo,
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White
+                                    )
+
+                                    if (midiaAtual.sinopse.isNotBlank() && midiaAtual.sinopse != "Nenhuma sinopse adicionada ainda.") {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = midiaAtual.sinopse,
+                                            fontSize = 12.sp,
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            maxLines = 3,
+                                            overflow = TextOverflow.Ellipsis,
+                                            lineHeight = 16.sp
+                                        )
+                                    }
+                                }
+
+                                // Selo Holográfico Dinâmico QUERO (Direita)
+                                if (offsetX.value > 20f) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(24.dp)
+                                            .graphicsLayer {
+                                                rotationZ = -14f
+                                                alpha = (offsetX.value / 200f).coerceIn(0f, 1f)
+                                            },
+                                        color = Color(0xDD00E5FF),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(2.5.dp, Color(0xFF00E5FF))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(26.dp))
+                                            Text("QUERO! 🍿", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.Black)
                                         }
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Text(
-                                    text = midiaAtual.titulo,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-
-                                if (midiaAtual.sinopse.isNotBlank() && midiaAtual.sinopse != "Nenhuma sinopse adicionada ainda.") {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = midiaAtual.sinopse,
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.85f),
-                                        maxLines = 3,
-                                        overflow = TextOverflow.Ellipsis,
-                                        lineHeight = 16.sp
-                                    )
+                                // Selo Holográfico Dinâmico PASSO (Esquerda)
+                                if (offsetX.value < -20f) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(24.dp)
+                                            .graphicsLayer {
+                                                rotationZ = 14f
+                                                alpha = (-offsetX.value / 200f).coerceIn(0f, 1f)
+                                            },
+                                        color = Color(0xDDFF1744),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(2.5.dp, Color(0xFFFF1744))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                                            Text("PASSO ❌", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.White)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
+                    // Painel de Ações Rápidas
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Botão Passar (Esquerda)
                         IconButton(
-                            onClick = {
-                                viewModel.votarMatch(midiaAtual, false)
-                                votosSessaoLocal = votosSessaoLocal + chaveDocAtual
-                            },
+                            onClick = { executarVotoAnimado(false) },
                             modifier = Modifier
                                 .size(64.dp)
+                                .bounceOnClick()
                                 .clip(CircleShape)
-                                .background(Color(0xFF2C2C2C))
-                                .border(2.dp, Color(0xFFFF4C4C), CircleShape)
+                                .background(Color(0xFF181B22))
+                                .border(2.dp, Color(0xFFFF1744).copy(alpha = 0.8f), CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Não quero agora",
-                                tint = Color(0xFFFF4C4C),
+                                tint = Color(0xFFFF1744),
                                 modifier = Modifier.size(32.dp)
                             )
                         }
 
+                        // Dica de navegação por gesto
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "⟵ Passe ou Curta ⟶",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+
+                        // Botão Quero (Direita)
                         IconButton(
-                            onClick = {
-                                viewModel.votarMatch(midiaAtual, true)
-                                votosSessaoLocal = votosSessaoLocal + chaveDocAtual
-                            },
+                            onClick = { executarVotoAnimado(true) },
                             modifier = Modifier
                                 .size(64.dp)
+                                .bounceOnClick()
                                 .clip(CircleShape)
-                                .background(Color(0xFF2C2C2C))
-                                .border(2.dp, Color(0xFF4CAF50), CircleShape)
+                                .background(Color(0xFF181B22))
+                                .border(2.dp, Color(0xFF00E5FF).copy(alpha = 0.8f), CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Quero assistir hoje!",
-                                tint = Color(0xFF4CAF50),
+                                tint = Color(0xFF00E5FF),
                                 modifier = Modifier.size(32.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
         }
