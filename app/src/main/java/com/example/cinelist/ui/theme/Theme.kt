@@ -16,64 +16,85 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// 🚀 As Nossas Cores de Temas Customizados
+// 🚀 Paleta de Destaque / Identidade Visual
 val CineListGold = Color(0xFFFFD700)
 val NetflixRed = Color(0xFFE50914)
-val MaxPurple = Color(0xFF8A2BE2)
-val PrimeBlue = Color(0xFF38BDF8)
-val SpotifyGreen = Color(0xFF1DB954)
-
-// Cores secundárias base mantidas por segurança (caso estejam no seu Color.kt)
-private val DarkColorSchemeBase = darkColorScheme(
-    secondary = Color(0xFFCCC2DC),
-    tertiary = Color(0xFFEFB8C8),
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E)
-)
-
-private val LightColorSchemeBase = lightColorScheme(
-    secondary = Color(0xFF625b71),
-    tertiary = Color(0xFF7D5260)
-)
+val MaxPurple = Color(0xFF8B5CF6)
+val PrimeCyan = Color(0xFF00E5FF)
+val SpotifyGreen = Color(0xFF10B981)
+val RosePink = Color(0xFFF43F5E)
 
 @Composable
 fun CineListTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    corPersonalizada: String = "CineList", // 🚀 Cor de Destaque
-    corFundo: String = "Padrao",           // 🚀 Cor de Fundo
-    corTexto: String = "Padrao",           // 🚀 Cor da Letra / Texto
-    dynamicColor: Boolean = false, // 🚀 Desligado por padrão para respeitar a nossa cor!
+    corPersonalizada: String = "CineList", // Cor de Destaque
+    corFundo: String = "Padrao",           // Fundo do Sistema
+    corTexto: String = "Padrao",           // Estilo de Texto
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // 🎨 Identifica a Cor Principal baseada na string guardada no SharedPreferences
+    // 🎨 1. Cor Primária de Destaque
     val corPrimaria = when (corPersonalizada) {
         "Netflix" -> NetflixRed
         "Max" -> MaxPurple
-        "Prime" -> PrimeBlue
+        "Prime" -> PrimeCyan
         "Spotify" -> SpotifyGreen
+        "Rose" -> RosePink
         else -> CineListGold
     }
 
-    // 🎨 Identifica a Cor de Fundo (background e surface)
-    val (corBg, corSurf) = when (corFundo) {
-        "Amoled" -> Color(0xFF000000) to Color(0xFF0E0E0E)
-        "AzulNoite" -> Color(0xFF0B132B) to Color(0xFF1C2541)
-        "Grafite" -> Color(0xFF181820) to Color(0xFF242432)
-        "Claro" -> Color(0xFFF5F5F7) to Color(0xFFFFFFFF)
-        else -> if (darkTheme) Color(0xFF121212) to Color(0xFF1E1E1E) else Color(0xFFF5F5F5) to Color(0xFFFFFFFF)
+    // 🎨 2. Contraste nos Botões Primários (onPrimary)
+    // Para CineList Gold, texto escuro é ideal. Para vermelho, roxo, rosa, etc., texto branco puro!
+    val corTextoBotao = if (corPersonalizada == "CineList") Color(0xFF141000) else Color.White
+
+    val isDarkScheme = (darkTheme || corFundo != "Claro") && corFundo != "Claro"
+
+    // 🎨 3. Paleta de Fundo e Superfícies (Backdrops Cinematográficos)
+    val (corBg, corSurf, corSurfVar) = when (corFundo) {
+        "Amoled" -> Triple(
+            Color(0xFF000000), // Preto absoluto (desliga pixels OLED)
+            Color(0xFF0C0E14), // Superfície de card sutilmente destacada
+            Color(0xFF141822)
+        )
+        "AzulNoite" -> Triple(
+            Color(0xFF070C18), // Deep Space Midnight Blue
+            Color(0xFF0F172A),
+            Color(0xFF1E293B)
+        )
+        "Grafite" -> Triple(
+            Color(0xFF121316), // Titanium Slate
+            Color(0xFF1A1C22),
+            Color(0xFF242730)
+        )
+        "Claro" -> Triple(
+            Color(0xFFF8FAFC), // Fundo Claro Limpo
+            Color(0xFFFFFFFF), // Cards em Branco Puro
+            Color(0xFFF1F5F9)  // Variantes em Cinza Suave
+        )
+        else -> if (isDarkScheme) {
+            Triple(
+                Color(0xFF0D111A), // Padrão CineList: Slate Cósmico escuro
+                Color(0xFF151C2C),
+                Color(0xFF1E273D)
+            )
+        } else {
+            Triple(
+                Color(0xFFF8FAFC),
+                Color(0xFFFFFFFF),
+                Color(0xFFF1F5F9)
+            )
+        }
     }
 
-    // 🎨 Identifica a Cor do Texto (onBackground e onSurface)
-    val corLetra = when (corTexto) {
-        "Branco" -> Color(0xFFFFFFFF)
-        "Amarelo" -> Color(0xFFFFD700)
-        "Verde" -> Color(0xFF00FF7F)
-        "Ciano" -> Color(0xFF00E5FF)
-        "Rosa" -> Color(0xFFFF69B4)
-        else -> if (darkTheme || corFundo != "Claro") Color(0xFFFFFFFF) else Color(0xFF121212)
+    // 🎨 4. Legibilidade e Contraste do Texto
+    val corTextoPrincipal = when (corTexto) {
+        "Branco" -> if (isDarkScheme) Color(0xFFFFFFFF) else Color(0xFF0F172A)
+        "Quente" -> if (isDarkScheme) Color(0xFFFBF7EE) else Color(0xFF1C1917)
+        "Titanio" -> if (isDarkScheme) Color(0xFFE2E8F0) else Color(0xFF1E293B)
+        else -> if (isDarkScheme) Color(0xFFF1F5F9) else Color(0xFF0F172A)
     }
 
-    val isDarkScheme = darkTheme || corFundo != "Claro"
+    val corTextoSecundario = if (isDarkScheme) Color(0xFF94A3B8) else Color(0xFF64748B)
 
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -82,29 +103,33 @@ fun CineListTheme(
         }
         isDarkScheme -> darkColorScheme(
             primary = corPrimaria,
-            onPrimary = Color.Black,
+            onPrimary = corTextoBotao,
             primaryContainer = corPrimaria.copy(alpha = 0.2f),
             onPrimaryContainer = corPrimaria,
             background = corBg,
             surface = corSurf,
-            surfaceVariant = corSurf.copy(alpha = 0.85f),
-            onBackground = corLetra,
-            onSurface = corLetra,
-            onSurfaceVariant = corLetra.copy(alpha = 0.8f),
-            secondary = corLetra.copy(alpha = 0.65f)
+            surfaceVariant = corSurfVar,
+            onBackground = corTextoPrincipal,
+            onSurface = corTextoPrincipal,
+            onSurfaceVariant = corTextoPrincipal.copy(alpha = 0.85f),
+            secondary = corTextoSecundario,
+            outline = corTextoSecundario.copy(alpha = 0.25f),
+            outlineVariant = Color.White.copy(alpha = 0.08f)
         )
         else -> lightColorScheme(
             primary = corPrimaria,
-            onPrimary = Color.White,
-            primaryContainer = corPrimaria.copy(alpha = 0.2f),
+            onPrimary = corTextoBotao,
+            primaryContainer = corPrimaria.copy(alpha = 0.15f),
             onPrimaryContainer = corPrimaria,
             background = corBg,
             surface = corSurf,
-            surfaceVariant = corSurf,
-            onBackground = corLetra,
-            onSurface = corLetra,
-            onSurfaceVariant = corLetra.copy(alpha = 0.8f),
-            secondary = corLetra.copy(alpha = 0.65f)
+            surfaceVariant = corSurfVar,
+            onBackground = corTextoPrincipal,
+            onSurface = corTextoPrincipal,
+            onSurfaceVariant = corTextoPrincipal.copy(alpha = 0.85f),
+            secondary = corTextoSecundario,
+            outline = corTextoSecundario.copy(alpha = 0.3f),
+            outlineVariant = Color.Black.copy(alpha = 0.08f)
         )
     }
 

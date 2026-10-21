@@ -222,11 +222,11 @@ fun BottomSheetConfiguracoesFuturista(
                     )
 
                     val fundosDisponiveis = listOf(
-                        "Padrao" to ("Padrão" to Color(0xFF1E1E1E)),
+                        "Padrao" to ("Slate Cósmico" to Color(0xFF0D111A)),
                         "Amoled" to ("AMOLED Void" to Color(0xFF000000)),
-                        "AzulNoite" to ("Deep Space" to Color(0xFF0B132B)),
-                        "Grafite" to ("Titanium" to Color(0xFF181820)),
-                        "Claro" to ("Estelar" to Color(0xFFF5F5F7))
+                        "AzulNoite" to ("Deep Space" to Color(0xFF070C18)),
+                        "Grafite" to ("Titanium" to Color(0xFF121316)),
+                        "Claro" to ("Estelar (Claro)" to Color(0xFFF8FAFC))
                     )
 
                     Row(
@@ -290,7 +290,7 @@ fun BottomSheetConfiguracoesFuturista(
                 // Seletor de Cor de Destaque Neon
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Frequência Neon (Cor de Destaque)",
+                        text = "Identidade Visual & Destaques",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
@@ -299,9 +299,10 @@ fun BottomSheetConfiguracoesFuturista(
                     val temasDisponiveis = listOf(
                         "CineList" to ("Cine Gold" to Color(0xFFFFD700)),
                         "Netflix" to ("Cyber Red" to Color(0xFFE50914)),
-                        "Max" to ("Nebula" to Color(0xFF8A2BE2)),
-                        "Prime" to ("Holo Blue" to Color(0xFF38BDF8)),
-                        "Spotify" to ("Matrix" to Color(0xFF1DB954))
+                        "Max" to ("Nebula" to Color(0xFF8B5CF6)),
+                        "Prime" to ("Holo Cyan" to Color(0xFF00E5FF)),
+                        "Spotify" to ("Matrix Green" to Color(0xFF10B981)),
+                        "Rose" to ("Neon Rose" to Color(0xFFF43F5E))
                     )
 
                     Row(
@@ -361,22 +362,20 @@ fun BottomSheetConfiguracoesFuturista(
 
                 HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
 
-                // Seletor de Cor da Tipografia
+                // Seletor de Contraste e Legibilidade de Texto
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Luminescência da Letra",
+                        text = "Legibilidade da Tipografia",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
 
                     val letrasDisponiveis = listOf(
-                        "Padrao" to ("Padrão" to Color(0xFFE2E8F0)),
-                        "Branco" to ("Branco Puro" to Color(0xFFFFFFFF)),
-                        "Amarelo" to ("Solar" to Color(0xFFFFD700)),
-                        "Verde" to ("Neon Green" to Color(0xFF00FF7F)),
-                        "Ciano" to ("Quantum" to Color(0xFF00E5FF)),
-                        "Rosa" to ("Cyberpink" to Color(0xFFFF69B4))
+                        "Padrao" to ("Studio Suave" to Color(0xFFF1F5F9)),
+                        "Branco" to ("Alto Contraste" to Color(0xFFFFFFFF)),
+                        "Quente" to ("Solar Acolhedor" to Color(0xFFFBF7EE)),
+                        "Titanio" to ("Titânio Gelo" to Color(0xFFE2E8F0))
                     )
 
                     Row(
@@ -395,7 +394,7 @@ fun BottomSheetConfiguracoesFuturista(
                                     .background(Color.White.copy(alpha = if (selecionado) 0.14f else 0.05f))
                                     .border(
                                         width = if (selecionado) 1.5.dp else 1.dp,
-                                        color = if (selecionado) corHex else Color.White.copy(alpha = 0.1f),
+                                        color = if (selecionado) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.1f),
                                         shape = RoundedCornerShape(10.dp)
                                     )
                                     .clickable {
@@ -413,18 +412,19 @@ fun BottomSheetConfiguracoesFuturista(
                                             .size(14.dp)
                                             .clip(CircleShape)
                                             .background(corHex)
+                                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                                     )
                                     Text(
                                         text = rotulo,
                                         fontSize = 12.sp,
                                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal,
-                                        color = corHex
+                                        color = if (selecionado) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.9f)
                                     )
                                     if (selecionado) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = corHex,
+                                            tint = Color(0xFF00E5FF),
                                             modifier = Modifier.size(12.dp)
                                         )
                                     }
