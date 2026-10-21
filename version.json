@@ -1,6 +1,6 @@
 {
-  "versionCode": 63,
-  "versionName": "2.0.23",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.23/CineList-v2.0.23.apk",
-  "changelog": "Melhorias gerais e correções de desempenho."
+  "versionCode": 64,
+  "versionName": "2.0.24",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.24/CineList-v2.0.24.apk",
+  "changelog": "CineAI Assistente: recomendações inteligentes por humor/vibe e análises sem spoilers."
 }

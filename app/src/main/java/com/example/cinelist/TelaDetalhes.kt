@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -1482,6 +1483,55 @@ fun TelaDetalhes(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface)
                             )
+
+                            // 💡 ANÁLISE CINEAI (SEM SPOILERS)
+                            val notaParaAi = if (midiaSalva != null && midiaSalva.nota > 0) midiaSalva.nota.toDouble() else (detalhesApi?.mediaVotos ?: 0.0)
+                            val destaquesAi = remember(detalhesApi?.id, midiaSalva?.id) {
+                                CineAiManager.gerarDestaquesSemSpoiler(
+                                    titulo = if (midiaSalva != null) midiaSalva.titulo else (detalhesApi?.titulo ?: ""),
+                                    sinopse = sinopseDinamica,
+                                    nota = notaParaAi
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Análise CineAI (Sem Spoilers)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    destaquesAi.forEach { ponto ->
+                                        Text(
+                                            text = ponto,
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            lineHeight = 16.sp,
+                                            modifier = Modifier.padding(vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
 
                             // 🚀 MUDANÇA NAS RECOMENDAÇÕES (AGORA COM CARROSSEL ELEGANTE E ADIÇÃO RÁPIDA)
                             if (recomendacoesAtivas.isNotEmpty()) {

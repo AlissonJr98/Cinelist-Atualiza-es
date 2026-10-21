@@ -508,12 +508,16 @@ fun TelaPrincipal(
     }
 
     if (mostrarDialogoCineBot) {
-        DialogoCineBot(
+        DialogoCineAi(
             onDispensar = { mostrarDialogoCineBot = false },
             onAdicionarClique = { idTmdb, titulo, tipo, status, nota, sinopse, capa, genero, plataforma ->
                 onAdicionarClique(idTmdb, titulo, tipo, status, nota, sinopse, capa, genero, plataforma)
                 mostrarDialogoCineBot = false
                 mostrarSucesso("\"$titulo\" adicionado à sua lista! 🍿")
+            },
+            onVerDetalhes = { tmdbItem, tipo ->
+                mostrarDialogoCineBot = false
+                onTmdbItemClique(tmdbItem, tipo)
             }
         )
     }
@@ -1047,7 +1051,7 @@ fun TelaPrincipal(
                         }
                     }
                     IconeBouncyIconButton(onClick = { mostrarDialogoCineBot = true }) {
-                        Icon(Icons.Default.SmartToy, contentDescription = "CineBot IA", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.AutoAwesome, contentDescription = "CineAI Assistente", tint = MaterialTheme.colorScheme.primary)
                     }
                     IconeAnimadoRotacao(onClick = { mostrarDialogoSorteio = true }, anguloRotacaoTotal = 360f) {
                         Icon(Icons.Default.Casino, contentDescription = "O Que Assistir Hoje", tint = MaterialTheme.colorScheme.primary)

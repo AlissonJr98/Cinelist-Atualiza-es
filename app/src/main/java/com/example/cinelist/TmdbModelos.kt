@@ -17,11 +17,16 @@ data class TmdbFilme(
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
     @SerializedName("media_type") val mediaType: String? = null,
     @SerializedName("genre_ids") val generosIds: List<Int>? = emptyList(),
+    @SerializedName("vote_average") val mediaVotos: Double = 0.0,
+    @SerializedName(value = "release_date", alternate = ["first_air_date"]) val dataLancamento: String? = null,
     val generoTexto: String = "Geral",
     var plataformaDetectada: String = ""
 ) {
     val ehSerie: Boolean
         get() = mediaType.equals("tv", ignoreCase = true)
+
+    val anoLancamento: String
+        get() = dataLancamento?.take(4)?.takeIf { it.isNotBlank() } ?: ""
 }
 
 data class TmdbProximoEpisodio(

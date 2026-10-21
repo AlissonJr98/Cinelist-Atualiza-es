@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 63
-        versionName = "2.0.23"
+        versionCode = 64
+        versionName = "2.0.24"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -38,6 +38,11 @@ android {
             ?: System.getenv("TMDB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
             ?: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2MDI0NDJiZTA2MGIzZWI0NjM5ZWFlOTYyNmZkYTNmNSIsIm5iZiI6MTc3OTU2NzA0NS41MDU5OTk4LCJzdWIiOiI2YTEyMDljNTE2MDRkMmYxOTg0YjRjNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.T26K9YdHxxNUXOdHkUGsXZnzZAhLl2VmvnoPz4Cj8SQ"
         buildConfigField("String", "TMDB_TOKEN", "\"$tmdbToken\"")
+
+        val geminiKey = localProperties.getProperty("gemini.api.key")?.trim()?.takeIf { it.isNotBlank() }
+            ?: System.getenv("GEMINI_API_KEY")?.trim()?.takeIf { it.isNotBlank() }
+            ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
     }
 
     signingConfigs {
