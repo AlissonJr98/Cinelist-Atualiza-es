@@ -79,14 +79,15 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
             ?: "Você recebeu uma nova atualização no grupo."
 
         val tipo = remoteMessage.data["tipo"] ?: remoteMessage.data["tipoAcao"] ?: "GERAL"
+        val alvoId = remoteMessage.data["alvoId"] ?: remoteMessage.data["ALVO_ID"] ?: grupoId
 
-        if (tipo == "SOLICITACAO_AMIZADE") {
+        if (tipo == "SOLICITACAO_AMIZADE" || tipo == "AMIZADE_ACEITA") {
             NotificacaoHelper.dispararNotificacaoSolicitacaoAmizade(
                 context = applicationContext,
                 remetenteNome = if (autorNome.isNotBlank()) autorNome else "Um cinéfilo"
             )
         } else {
-            exibirNotificacaoSistema(titulo, mensagem, grupoId, tipo)
+            exibirNotificacaoSistema(titulo, mensagem, grupoId, tipo, alvoId)
         }
 
         // Salva a notificação localmente no banco para aparecer na aba Notificações
@@ -107,17 +108,27 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun exibirNotificacaoSistema(titulo: String, mensagem: String, grupoId: String, tipo: String) {
-        val canalId = "canal_salas_compartilhadas"
+    private fun exibirNotificacaoSistema(
+        titulo: String,
+        mensagem: String,
+        grupoId: String,
+        tipo: String,
+        alvoId: String = ""
+    ) {
+        val canalId = if (tipo == "SOLICITACAO_AMIZADE" || tipo == "AMIZADE_ACEITA") {
+            "canal_solicitacoes_amizade"
+        } else {
+            "canal_salas_compartilhadas"
+        }
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 canalId,
-                "Salas e Chat Compartilhados",
+                if (canalId == "canal_solicitacoes_amizade") "Solicitações de Amizade" else "Salas e Chat Compartilhados",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Avisos de mensagens e atividades nas salas do CineList"
+                description = "Avisos em tempo real do CineList"
                 enableLights(true)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 150, 300)
@@ -128,7 +139,11 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("GRUPO_ID", grupoId)
+            putExtra("grupoId", grupoId)
             putExtra("TIPO_ACAO", tipo)
+            putExtra("tipoAcao", tipo)
+            putExtra("ALVO_ID", alvoId)
+            putExtra("alvoId", alvoId)
         }
 
         val idNotif = Random.nextInt(1000, 999999)
@@ -145,7 +160,9 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(titulo)
             .setContentText(mensagem)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setSound(somPadrao)
             .setVibrate(longArrayOf(0, 300, 150, 300))

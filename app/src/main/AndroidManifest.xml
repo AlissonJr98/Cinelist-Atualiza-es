@@ -49,7 +49,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="canal_solicitacoes_amizade" />
+            android:value="canal_salas_compartilhadas" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

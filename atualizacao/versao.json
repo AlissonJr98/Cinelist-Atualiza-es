@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 66,
-  "versaoNome": "2.0.26",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.26/CineList-v2.0.26.apk"
+  "versaoCodigo": 67,
+  "versaoNome": "2.0.27",
+  "notas": "Correção definitiva das notificações em segundo plano e com o aplicativo fechado (FCM High Priority + Canais de Notificação priorizados).",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.27/CineList-v2.0.27.apk"
 }

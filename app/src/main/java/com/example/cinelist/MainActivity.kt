@@ -48,6 +48,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 fun agendarChecagemAtualizacaoSegundoPlano(context: Context) {
@@ -162,8 +163,17 @@ fun ConfiguracaoNavegacao() {
 
     val activity = contexto as? ComponentActivity
     val intentRecebida = activity?.intent
-    val tipoAcao = remember { intentRecebida?.getStringExtra("TIPO_ACAO") }
-    val alvoId = remember { intentRecebida?.getStringExtra("ALVO_ID") }
+    val tipoAcao = remember { 
+        intentRecebida?.getStringExtra("TIPO_ACAO") 
+            ?: intentRecebida?.getStringExtra("tipoAcao") 
+            ?: intentRecebida?.getStringExtra("tipo")
+    }
+    val alvoId = remember { 
+        intentRecebida?.getStringExtra("ALVO_ID") 
+            ?: intentRecebida?.getStringExtra("alvoId") 
+            ?: intentRecebida?.getStringExtra("GRUPO_ID")
+            ?: intentRecebida?.getStringExtra("grupoId")
+    }
 
     // 🚀 Pop-up automático quando há atualização no GitHub (igual ao LivennIA)
     val infoAtu = viewModel.infoAtualizacao
@@ -189,22 +199,47 @@ fun ConfiguracaoNavegacao() {
         }
     }
 
-    // 🚀 Subscreve automaticamente o utilizador logado no tópico privado do FCM
+    // 🚀 Subscreve automaticamente o utilizador logado no seu tópico privado e nas salas salvas
     LaunchedEffect(Unit) {
         val meuUid = FirebaseAuth.getInstance().currentUser?.uid
         if (!meuUid.isNullOrBlank()) {
             FirebaseMessaging.getInstance().subscribeToTopic("user_$meuUid")
         }
         viewModel.socialRepository.atualizarTokenFcm()
+
+        launch {
+            viewModel.gruposSalvos.collect { grupos ->
+                grupos.forEach { g ->
+                    if (g.grupoId.isNotBlank()) {
+                        FirebaseMessaging.getInstance().subscribeToTopic("grupo_${g.grupoId}")
+                    }
+                }
+            }
+        }
     }
 
     LaunchedEffect(tipoAcao, alvoId) {
         if (!tipoAcao.isNullOrBlank() && usuarioLogado) {
             intentRecebida?.removeExtra("TIPO_ACAO")
+            intentRecebida?.removeExtra("tipoAcao")
+            intentRecebida?.removeExtra("tipo")
 
             when (tipoAcao) {
-                "ABRIR_CHAT", "ABRIR_MINHA_LISTA" -> {
+                "ABRIR_CHAT", "ABRIR_MINHA_LISTA", "CHAT_GRUPO", "MIDIA_ADICIONADA", "ENQUETE_CRIADA" -> {
+                    if (!alvoId.isNullOrBlank()) {
+                        viewModel.selecionarGrupoAtivo(alvoId)
+                    }
                     navController.navigate("home") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+                "ABRIR_PERFIL", "SOLICITACAO_AMIZADE", "AMIZADE_ACEITA" -> {
+                    navController.navigate("perfil") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+                "ABRIR_CHAT_PRIVADO", "CHAT_PRIVADO" -> {
+                    navController.navigate("perfil") {
                         popUpTo("splash") { inclusive = true }
                     }
                 }
