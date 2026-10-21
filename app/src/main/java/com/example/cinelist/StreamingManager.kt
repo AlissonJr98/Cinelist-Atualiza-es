@@ -62,4 +62,21 @@ object StreamingManager {
             (nome == "apple tv+" && (plataformaLower.contains("apple")))
         }
     }
+
+    fun identificarServico(plataforma: String): ServicoStreaming? {
+        if (plataforma.isBlank() || plataforma.equals("Outros", ignoreCase = true)) return null
+        val lower = plataforma.lowercase()
+        return SERVICOS.firstOrNull { servico ->
+            val nomeLow = servico.nome.lowercase()
+            lower.contains(nomeLow) ||
+            (servico.id == 119 && (lower.contains("prime") || lower.contains("amazon"))) ||
+            (servico.id == 1899 && (lower.contains("max") || lower.contains("hbo"))) ||
+            (servico.id == 350 && lower.contains("apple")) ||
+            (servico.id == 283 && lower.contains("crunchy")) ||
+            (servico.id == 337 && lower.contains("disney")) ||
+            (servico.id == 8 && lower.contains("netflix")) ||
+            (servico.id == 307 && lower.contains("globo")) ||
+            (servico.id == 531 && lower.contains("paramount"))
+        }
+    }
 }

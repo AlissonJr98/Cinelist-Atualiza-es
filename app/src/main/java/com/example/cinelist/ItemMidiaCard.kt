@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -500,14 +501,38 @@ private fun ConteudoItemMidiaCard(
                         Spacer(modifier = Modifier.height(6.dp))
                     }
 
-                    Text(
-                        text = "🍿 $plataformaPrincipal",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    val servicoStreaming = remember(plataformaPrincipal) { StreamingManager.identificarServico(plataformaPrincipal) }
+                    if (servicoStreaming != null) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(servicoStreaming.corHex).copy(alpha = 0.16f),
+                            border = BorderStroke(1.dp, Color(servicoStreaming.corHex).copy(alpha = 0.65f)),
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(servicoStreaming.emoji, fontSize = 9.sp)
+                                Text(
+                                    text = servicoStreaming.nome,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(servicoStreaming.corHex)
+                                )
+                            }
+                        }
+                    } else if (plataformaPrincipal.isNotBlank() && !plataformaPrincipal.equals("Outros", ignoreCase = true)) {
+                        Text(
+                            text = "🍿 $plataformaPrincipal",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
                     if (statusEnum == StatusMidia.ASSISTINDO && midia.atualizadoEm > 0L) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -969,13 +994,40 @@ private fun ConteudoItemMidiaCardHorizontal(
                     }
 
                     Column {
-                        Text(
-                            text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero} • 🍿 $plataformaPrincipal" else "${midia.tipo} • 🍿 $plataformaPrincipal",
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero}" else midia.tipo,
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            val servico = remember(plataformaPrincipal) { StreamingManager.identificarServico(plataformaPrincipal) }
+                            if (servico != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(servico.corHex).copy(alpha = 0.16f),
+                                    border = BorderStroke(0.8.dp, Color(servico.corHex).copy(alpha = 0.6f))
+                                ) {
+                                    Text(
+                                        text = "${servico.emoji} ${servico.nome}",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(servico.corHex),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            } else if (plataformaPrincipal.isNotBlank() && !plataformaPrincipal.equals("Outros", ignoreCase = true)) {
+                                Text(
+                                    text = "• 🍿 $plataformaPrincipal",
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }                        
                         if (midia.isCasal && midia.adicionadoPor.isNotBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(

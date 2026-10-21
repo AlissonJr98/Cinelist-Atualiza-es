@@ -1,6 +1,7 @@
 package com.example.cinelist
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -52,6 +53,14 @@ fun DialogoCineAi(
 
     var mostrarConfigChave by remember { mutableStateOf(false) }
     var chaveInput by remember { mutableStateOf(CineAiManager.obterChaveGemini(context)) }
+    var mostrarQuiz by remember { mutableStateOf(false) }
+
+    if (mostrarQuiz) {
+        DialogoCineQuiz(
+            tema = vibeSelecionada?.titulo ?: "Cinema Geral",
+            onDispensar = { mostrarQuiz = false }
+        )
+    }
 
     Dialog(
         onDismissRequest = onDispensar,
@@ -228,6 +237,31 @@ fun DialogoCineAi(
                                 onClick = { filtroTipo = chave },
                                 label = { Text(rotulo, fontSize = 11.sp) }
                             )
+                        }
+                    }
+
+                    // BANNER CINEQUIZ TRIVIA
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF7C4DFF).copy(alpha = 0.15f),
+                        border = BorderStroke(1.2.dp, Color(0xFF7C4DFF).copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { mostrarQuiz = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("🎮", fontSize = 22.sp)
+                                Column {
+                                    Text("Desafio CineQuiz Trivia", fontWeight = FontWeight.Black, fontSize = 13.sp, color = Color.White)
+                                    Text("Teste seus conhecimentos de cinema com CineAI", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                                }
+                            }
+                            Text("Jogar ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF7C4DFF))
                         }
                     }
 

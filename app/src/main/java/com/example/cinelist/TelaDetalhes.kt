@@ -127,6 +127,8 @@ fun TelaDetalhes(
     var mostrarDialogFimTemporada by remember { mutableStateOf(false) }
     var temporadaConcluidaAlvo by remember { mutableIntStateOf(1) }
     var proximaTemporadaExiste by remember { mutableStateOf(false) }
+    var mostrarDialogoRadar by remember { mutableStateOf(false) }
+    var mostrarDialogoWatchParty by remember { mutableStateOf(false) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -380,6 +382,28 @@ fun TelaDetalhes(
                 viewModel.pararAssistirAgora()
             }
         }
+    }
+
+    if (mostrarDialogoRadar) {
+        val initCriterios = CriteriosAvaliacao.deStringSerializada(tagsInput) ?: CriteriosAvaliacao()
+        DialogoAvaliacaoCriterios(
+            criteriosIniciais = initCriterios,
+            tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
+            onSalvar = { novosCriterios ->
+                val serializado = novosCriterios.paraStringSerializada()
+                val outrasTags = tagsInput.split(";").filter { !it.startsWith("criterios:") }.joinToString(";")
+                tagsInput = if (outrasTags.isNotBlank()) "$outrasTags;$serializado" else serializado
+                nota = (novosCriterios.media() / 2f).toInt().coerceIn(1, 5)
+            },
+            onDispensar = { mostrarDialogoRadar = false }
+        )
+    }
+
+    if (mostrarDialogoWatchParty) {
+        DialogoWatchParty(
+            tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
+            onDispensar = { mostrarDialogoWatchParty = false }
+        )
     }
 
     if (mostrarDialogFimTemporada && midiaSalva != null) {
@@ -893,6 +917,40 @@ fun TelaDetalhes(
                                 }
                             }
 
+                            // Botão Adicionar Lembrete na Agenda / Calendário
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF1E293B),
+                                border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.6f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                                    .clickable {
+                                        try {
+                                            val t = detalhesApi?.titulo ?: midiaSalva?.titulo ?: "Cinema"
+                                            val s = detalhesApi?.sinopse ?: midiaSalva?.sinopse ?: ""
+                                            val intent = Intent(Intent.ACTION_INSERT)
+                                                .setData(android.provider.CalendarContract.Events.CONTENT_URI)
+                                                .putExtra(android.provider.CalendarContract.Events.TITLE, "Assistir: $t 🍿")
+                                                .putExtra(android.provider.CalendarContract.Events.DESCRIPTION, "Salvo pelo CineList: " + s)
+                                                .putExtra(android.provider.CalendarContract.Events.ALL_DAY, true)
+                                            contexto.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            Toast.makeText(contexto, "Não foi possível abrir a agenda.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Agendar na Agenda do Celular", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                                }
+                            }
+
                             if (provedoresFiltrados.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
@@ -1376,6 +1434,56 @@ fun TelaDetalhes(
                                             contentDescription = null,
                                             tint = if (estrelaAtiva) MaterialTheme.colorScheme.primary else Color.DarkGray,
                                             modifier = Modifier.size(36.dp).clickable { nota = index + 1 }
+                                        )
+                                    }
+                                }
+
+                                // Botões de Ação Avançada: DNA de Critérios (Radar) & CineParty
+                                val criteriosSalvos = remember(tagsInput) { CriteriosAvaliacao.deStringSerializada(tagsInput) }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable { mostrarDialogoRadar = true }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(16.dp))
+                                            Text("DNA por Critérios (Radar)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFFF007F).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFFFF007F).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable { mostrarDialogoWatchParty = true }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("🍿", fontSize = 12.sp)
+                                            Text("CineParty Ao Vivo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF007F))
+                                        }
+                                    }
+                                }
+
+                                if (criteriosSalvos != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        GraficoRadarCine(
+                                            criterios = criteriosSalvos,
+                                            modifier = Modifier.size(180.dp).padding(vertical = 4.dp)
                                         )
                                     }
                                 }

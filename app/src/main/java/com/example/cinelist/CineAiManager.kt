@@ -14,6 +14,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
+data class PerguntaQuiz(
+    val pergunta: String,
+    val opcoes: List<String>,
+    val respostaCorretaIndex: Int,
+    val curiosidade: String
+)
+
 /**
  * Representa uma Vibe ou Humor cinematográfico para o CineAI.
  */
@@ -433,5 +440,111 @@ object CineAiManager {
         pontos.add("✅ Veredito CineAI: Experiência recomendada que vale o seu tempo")
 
         return pontos
+    }
+
+    /**
+     * Gera 4 perguntas de trivia cinéfila com o Gemini (ou fallback offline de alta qualidade).
+     */
+    suspend fun gerarQuizCineAi(tema: String = "Cinema Geral"): List<PerguntaQuiz> = withContext(Dispatchers.IO) {
+        val apiKey = BuildConfig.GEMINI_API_KEY.trim()
+        if (apiKey.isBlank()) {
+            return@withContext obterQuizFallback(tema)
+        }
+
+        try {
+            val prompt = """
+                Você é um apresentador de quiz sobre cinema do CineList.
+                Gere exatamente 4 perguntas desafiadoras e divertidas sobre o tema: "$tema".
+                Responda APENAS em formato JSON estrito conforme o modelo:
+                {
+                  "perguntas": [
+                    {
+                      "pergunta": "Texto da pergunta?",
+                      "opcoes": ["Opção A", "Opção B", "Opção C", "Opção D"],
+                      "respostaCorretaIndex": 0,
+                      "curiosidade": "Curiosidade interessante sem spoilers sobre a resposta."
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            val jsonBody = JsonObject().apply {
+                val contentsArray = com.google.gson.JsonArray()
+                val contentObj = JsonObject()
+                val partsArray = com.google.gson.JsonArray()
+                val partObj = JsonObject()
+                partObj.addProperty("text", prompt)
+                partsArray.add(partObj)
+                contentObj.add("parts", partsArray)
+                contentsArray.add(contentObj)
+                add("contents", contentsArray)
+            }
+
+            val request = Request.Builder()
+                .url(url)
+                .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) return@withContext obterQuizFallback(tema)
+
+            val responseBody = response.body?.string().orEmpty()
+            val jsonResposta = gson.fromJson(responseBody, JsonObject::class.java)
+            val textoGerado = jsonResposta.getAsJsonArray("candidates")
+                ?.get(0)?.asJsonObject
+                ?.getAsJsonObject("content")
+                ?.getAsJsonArray("parts")
+                ?.get(0)?.asJsonObject
+                ?.get("text")?.asString.orEmpty()
+
+            val textoLimpo = textoGerado.replace("```json", "").replace("```", "").trim()
+            val parsed = gson.fromJson(textoLimpo, JsonObject::class.java)
+            val array = parsed.getAsJsonArray("perguntas") ?: return@withContext obterQuizFallback(tema)
+
+            val lista = array.mapNotNull { el ->
+                val obj = el.asJsonObject
+                val perg = obj.get("pergunta")?.asString ?: return@mapNotNull null
+                val ops = obj.getAsJsonArray("opcoes")?.map { it.asString } ?: return@mapNotNull null
+                val corr = obj.get("respostaCorretaIndex")?.asInt ?: 0
+                val cur = obj.get("curiosidade")?.asString ?: ""
+                PerguntaQuiz(perg, ops, corr, cur)
+            }
+
+            if (lista.isNotEmpty()) lista else obterQuizFallback(tema)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            obterQuizFallback(tema)
+        }
+    }
+
+    private fun obterQuizFallback(tema: String): List<PerguntaQuiz> {
+        val bancoDePerguntas = listOf(
+            PerguntaQuiz(
+                pergunta = "Qual foi o primeiro filme da história a ultrapassar US$ 2 bilhões em bilheteria mundial?",
+                opcoes = listOf("Titanic (1997)", "Avatar (2009)", "Vingadores: Ultimato (2019)", "Star Wars: O Despertar da Força (2015)"),
+                respostaCorretaIndex = 1,
+                curiosidade = "Avatar de James Cameron arrecadou mais de 2.7 bilhões de dólares em seu lançamento original!"
+            ),
+            PerguntaQuiz(
+                pergunta = "Qual clássico de ficção científica apresenta o computador assassino HAL 9000?",
+                opcoes = listOf("Blade Runner", "Alien, o Oitavo Passageiro", "2001: Uma Odisseia no Espaço", "Matrix"),
+                respostaCorretaIndex = 2,
+                curiosidade = "O diretor Stanley Kubrick usou efeitos práticos revolucionários que continuam impressionantes até hoje."
+            ),
+            PerguntaQuiz(
+                pergunta = "Quantos Oscars o clássico 'O Senhor dos Anéis: O Retorno do Rei' conquistou em 2004?",
+                opcoes = listOf("9 Oscars", "10 Oscars", "11 Oscars", "12 Oscars"),
+                respostaCorretaIndex = 2,
+                curiosidade = "O filme venceu TODAS as 11 categorias nas quais foi indicado, empatando o recorde histórico com Titanic e Ben-Hur."
+            ),
+            PerguntaQuiz(
+                pergunta = "Em 'Interestelar' (2014) de Christopher Nolan, qual é o nome do buraco negro supermassivo?",
+                opcoes = listOf("Gargantua", "Sagitário A*", "Cygnus X-1", "Behemoth"),
+                respostaCorretaIndex = 0,
+                curiosidade = "O físico ganhador do Nobel Kip Thorne ajudou a renderizar a física do Gargantua com precisão científica real."
+            )
+        )
+        return bancoDePerguntas.shuffled()
     }
 }
