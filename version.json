@@ -1,6 +1,6 @@
 {
-  "versionCode": 69,
-  "versionName": "2.0.29",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.29/CineList-v2.0.29.apk",
-  "changelog": "Melhorias gerais e correções de desempenho."
+  "versionCode": 70,
+  "versionName": "2.0.30",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.30/CineList-v2.0.30.apk",
+  "changelog": "Layout futurista e cyberpunk estendido para todas as abas (Minha Lista, Descobrir, Feed Social e Perfil) com HUD de busca e abas flutuantes."
 }

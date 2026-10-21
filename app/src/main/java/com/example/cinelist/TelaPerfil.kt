@@ -75,6 +75,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -1036,42 +1037,24 @@ fun TelaPerfil(
                     }
                 )
 
-                TabRow(
-                    selectedTabIndex = abaSelecionada,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[abaSelecionada]),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                ) {
-                    titulosAbas.forEachIndexed { index, titulo ->
-                        Tab(
-                            selected = abaSelecionada == index,
-                            onClick = {
-                                escopoTabs.launch { pagerState.animateScrollToPage(index) }
-                            },
-                            text = {
-                                val totalAvisosNotificacao = quantidadeNaoLidas + solicitacoesRecebidas.size
-                                if (index == 1 && solicitacoesRecebidas.isNotEmpty()) {
-                                    BadgedBox(badge = { Badge { Text(solicitacoesRecebidas.size.toString()) } }) {
-                                        Text(titulo, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                } else if (index == 2 && totalAvisosNotificacao > 0) {
-                                    BadgedBox(badge = { Badge { Text(totalAvisosNotificacao.toString()) } }) {
-                                        Text(titulo, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                } else {
-                                    Text(titulo, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            },
-                            selectedContentColor = MaterialTheme.colorScheme.primary,
-                            unselectedContentColor = MaterialTheme.colorScheme.secondary
-                        )
-                    }
+                val totalAvisosNotificacao = quantidadeNaoLidas + solicitacoesRecebidas.size
+                val cyberTabsPerfil = remember(solicitacoesRecebidas.size, totalAvisosNotificacao) {
+                    listOf(
+                        CyberTabItem(titulo = "Visão Geral", icone = Icons.Default.AccountCircle),
+                        CyberTabItem(titulo = "Amigos & Sala", icone = Icons.Default.Group, badgeCount = solicitacoesRecebidas.size),
+                        CyberTabItem(titulo = "Notificações", icone = Icons.Default.Notifications, badgeCount = totalAvisosNotificacao),
+                        CyberTabItem(titulo = "Estatísticas", icone = Icons.Default.BarChart),
+                        CyberTabItem(titulo = "Histórico", icone = Icons.Default.History)
+                    )
                 }
+
+                CyberScrollableSegmentedTabBar(
+                    tabs = cyberTabsPerfil,
+                    selectedIndex = abaSelecionada,
+                    onTabSelected = { index ->
+                        escopoTabs.launch { pagerState.animateScrollToPage(index) }
+                    }
+                )
             }
         },
         containerColor = MaterialTheme.colorScheme.background

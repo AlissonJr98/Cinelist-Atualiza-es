@@ -1183,27 +1183,7 @@ private fun CyberItemNavegacao(
     }
 }
 
-@Composable
-private fun PulsarPontoNeon(cor: Color) {
-    val transicao = rememberInfiniteTransition(label = "pulsar")
-    val alfa by transicao.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alfa"
-    )
 
-    Box(
-        modifier = Modifier
-            .size(10.dp)
-            .clip(CircleShape)
-            .background(cor.copy(alpha = alfa))
-            .border(1.5.dp, cor, CircleShape)
-    )
-}
 
 /**
  * Utilitários para medição e limpeza de cache

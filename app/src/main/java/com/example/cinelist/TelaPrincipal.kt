@@ -62,6 +62,9 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -1166,68 +1169,100 @@ fun TelaPrincipal(
             modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-            TabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Tab(selected = pagerState.currentPage == 0, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(0) } }, text = { Text("Minha Lista", fontWeight = FontWeight.Bold) })
-                Tab(selected = pagerState.currentPage == 1, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(1) } }, text = { Text("Descobrir", fontWeight = FontWeight.Bold) })
-                Tab(selected = pagerState.currentPage == 2, onClick = { focusManager.clearFocus(); coroutineScope.launch { pagerState.animateScrollToPage(2) } }, text = { Text("Feed Social", fontWeight = FontWeight.Bold) })
+            val cyberTabsPrincipal = remember {
+                listOf(
+                    CyberTabItem(titulo = "Minha Lista", icone = Icons.Default.VideoLibrary),
+                    CyberTabItem(titulo = "Descobrir", icone = Icons.Default.Explore),
+                    CyberTabItem(titulo = "Feed Social", icone = Icons.Default.DynamicFeed)
+                )
             }
 
+            CyberSegmentedTabBar(
+                tabs = cyberTabsPrincipal,
+                selectedIndex = pagerState.currentPage,
+                onTabSelected = { idx ->
+                    focusManager.clearFocus()
+                    coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                }
+            )
+
             if (isModoCompartilhado && membroAssistindo != null && pagerState.currentPage == 0) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Box(modifier = Modifier.size(42.dp).clip(CircleShape).background(Color(0xFF38BDF8).copy(alpha = 0.2f)), contentAlignment = Alignment.Center) { Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(24.dp)) }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF22C55E)))
-                                Text("${membroAssistindo.nome} está assistindo agora:", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Medium)
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("${membroAssistindo.assistindoAgoraTitulo} ${membroAssistindo.assistindoAgoraEpisodio}".trim(), fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
+                Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+                    CyberLiveRadarBanner(
+                        nomeMembro = membroAssistindo.nome,
+                        tituloMidia = membroAssistindo.assistindoAgoraTitulo,
+                        detalheEpisodio = membroAssistindo.assistindoAgoraEpisodio
+                    )
                 }
             }
 
             if (pagerState.currentPage != 2) {
-                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        TextField(
-                            value = textoPesquisa,
-                            onValueChange = { textoPesquisa = it },
-                            modifier = Modifier.fillMaxWidth().onFocusChanged { state -> searchFocused = state.isFocused },
-                            placeholder = { Text(if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp) },
-                            trailingIcon = { if (textoPesquisa.isNotBlank()) { IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus() }) { Icon(Icons.Default.Clear, contentDescription = "Limpar busca", tint = MaterialTheme.colorScheme.secondary) } } },
-                            colors = TextFieldDefaults.colors(focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surface, focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-                            singleLine = true,
-                            shape = RoundedCornerShape(if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) 12.dp else 28.dp)
+                        CyberSearchHUD(
+                            query = textoPesquisa,
+                            onQueryChange = { textoPesquisa = it },
+                            placeholder = if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...",
+                            isFocused = searchFocused,
+                            onClear = {
+                                textoPesquisa = ""
+                                focusManager.clearFocus()
+                            },
+                            modifier = Modifier.onFocusChanged { state -> searchFocused = state.isFocused }
                         )
 
                         if (searchFocused && textoPesquisa.isBlank() && historicoBuscas.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF0F1526).copy(alpha = 0.95f))
+                                    .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                    .padding(10.dp)
                             ) {
-                                Column(modifier = Modifier.padding(8.dp)) {
-                                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                        Text("Pesquisas Recentes", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                        TextButton(onClick = { historicoManager.limparHistorico(); historicoBuscas = emptyList(); focusManager.clearFocus() }, contentPadding = PaddingValues(0.dp)) { Text("Limpar histórico", fontSize = 10.sp, color = Color(0xFFFF5252)) }
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            PulsarPontoNeon(cor = Color(0xFF00E5FF), tamanho = 6.dp)
+                                            Text(
+                                                text = "HISTÓRICO DE BUSCAS // TELEMETRIA",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = Color(0xFF00E5FF),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        TextButton(
+                                            onClick = {
+                                                historicoManager.limparHistorico()
+                                                historicoBuscas = emptyList()
+                                                focusManager.clearFocus()
+                                            },
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("Limpar", fontSize = 10.sp, color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                     for (termo in historicoBuscas) {
-                                        Row(modifier = Modifier.fillMaxWidth().clickable { textoPesquisa = termo; focusManager.clearFocus() }.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                                            Text(termo, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    textoPesquisa = termo
+                                                    focusManager.clearFocus()
+                                                }
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.History, contentDescription = null, tint = Color(0xFF00E5FF).copy(alpha = 0.7f), modifier = Modifier.size(15.dp))
+                                            Text(termo, fontSize = 12.sp, color = Color.White)
                                         }
                                     }
                                 }

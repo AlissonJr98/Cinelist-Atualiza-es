@@ -2,6 +2,7 @@ package com.example.cinelist
 
 import android.text.format.DateUtils
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -56,34 +58,26 @@ fun FeedAtividadesScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Chip de Filtros
+        // Chip de Filtros Holográficos Sci-Fi
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val filtros = listOf("Todos", "Amigos", "Avaliações", "Assistidos")
             items(filtros) { filtro ->
                 val ativo = filtroSelecionado == filtro
-                FilterChip(
+                CyberFilterChip(
                     selected = ativo,
                     onClick = { filtroSelecionado = filtro },
-                    label = {
-                        Text(
-                            text = filtro,
-                            fontWeight = if (ativo) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    border = null
+                    label = filtro,
+                    icone = when (filtro) {
+                        "Amigos" -> Icons.Default.People
+                        "Avaliações" -> Icons.Default.Star
+                        "Assistidos" -> Icons.Default.CheckCircle
+                        else -> Icons.Default.Dashboard
+                    }
                 )
             }
         }
@@ -193,10 +187,17 @@ fun CardAtividadeSocial(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+            containerColor = Color(0xFF131826).copy(alpha = 0.88f)
         ),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+        border = BorderStroke(
+            width = 1.dp,
+            brush = Brush.linearGradient(
+                listOf(
+                    Color(0xFF00E5FF).copy(alpha = 0.35f),
+                    Color(0xFFFFD700).copy(alpha = 0.18f),
+                    Color.White.copy(alpha = 0.05f)
+                )
+            )
         )
     ) {
         Column(
