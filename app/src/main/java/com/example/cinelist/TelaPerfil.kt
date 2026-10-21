@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -156,6 +157,7 @@ fun TelaPerfil(
     val solicitacoesRecebidas by viewModel.solicitacoesRecebidas.collectAsState(initial = emptyList())
 
     var mostrarBottomSheetConfiguracoes by remember { mutableStateOf(false) }
+    var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
     var mostrarDialogoBloqueados by remember { mutableStateOf(false) }
     var mostrarDialogoSuporte by remember { mutableStateOf(false) }
 
@@ -174,6 +176,16 @@ fun TelaPerfil(
 
     var modoEdicaoBio by remember { mutableStateOf(false) }
     var novaBio by remember { mutableStateOf(biografia) }
+
+        if (mostrarDialogoMeusStreamings) {
+        DialogoMeusStreamings(
+            onDispensar = { mostrarDialogoMeusStreamings = false },
+            onSalvo = {
+                mostrarDialogoMeusStreamings = false
+                Toast.makeText(contexto, "Streamings salvos com sucesso!", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
 
     if (mostrarDialogoBloqueados) {
         DialogoUsuariosBloqueados(
@@ -1046,6 +1058,33 @@ fun TelaPerfil(
                             checkedTrackColor = MaterialTheme.colorScheme.background
                         )
                     )
+                }
+
+                // ===== MEUS STREAMINGS =====
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mostrarBottomSheetConfiguracoes = false
+                            mostrarDialogoMeusStreamings = true
+                        }
+                        .padding(vertical = CineListTokens.EspacoXXS),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS)) {
+                        Icon(imageVector = Icons.Default.Tv, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Column {
+                            Text(text = "Meus Serviços de Streaming", color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                            val totalStreamings = StreamingManager.obterMeusStreamingsIds(contexto).size
+                            Text(
+                                text = if (totalStreamings > 0) "$totalStreamings serviços configurados" else "Nenhum configurado (toque para escolher)",
+                                color = MaterialTheme.colorScheme.secondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                    Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                 }
 
                 Row(

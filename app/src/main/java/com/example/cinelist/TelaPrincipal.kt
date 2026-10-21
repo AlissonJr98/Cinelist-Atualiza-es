@@ -400,6 +400,8 @@ fun TelaPrincipal(
     var modoVisualizacaoDescobrir by rememberSaveable { mutableIntStateOf(0) }
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
     var mostrarDialogoCineBot by remember { mutableStateOf(false) }
+    var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
+    var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
@@ -505,6 +507,18 @@ fun TelaPrincipal(
 
     if (mostrarDialogoSorteio) {
         DialogoSorteio(listaDeMidias = listaDeMidias, onDispensar = { mostrarDialogoSorteio = false }, onSelecionarMidia = { m -> mostrarDialogoSorteio = false; onItemClique(m) })
+    }
+
+        if (mostrarDialogoMeusStreamings) {
+        DialogoMeusStreamings(
+            onDispensar = { mostrarDialogoMeusStreamings = false },
+            onSalvo = { ids ->
+                mostrarDialogoMeusStreamings = false
+                val q = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                viewModel.alternarFiltroMeusStreamings(q)
+                mostrarSucesso("Filtro atualizado com seus ${ids.size} streamings!")
+            }
+        )
     }
 
     if (mostrarDialogoCineBot) {
@@ -718,6 +732,27 @@ fun TelaPrincipal(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Meus Streamings:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                        TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    val meusStreamingsQueryML = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                    FilterChip(
+                        selected = filtroApenasMeusStreamingsMinhaLista,
+                        onClick = {
+                            if (meusStreamingsQueryML != null) {
+                                filtroApenasMeusStreamingsMinhaLista = !filtroApenasMeusStreamingsMinhaLista
+                            } else {
+                                mostrarDialogoMeusStreamings = true
+                            }
+                        },
+                        label = { Text(if (meusStreamingsQueryML != null) "📺 Apenas disponível nos meus streamings" else "📺 Configurar meus streamings", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                        leadingIcon = if (filtroApenasMeusStreamingsMinhaLista) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) } } else null
+                    )
+                }
                 if (streamingsFiltro.size > 1) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Plataforma:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = streamingsFiltro) { st -> FilterChip(selected = (filtroPlataforma == st), onClick = { filtroPlataforma = st }, label = { Text(st, fontSize = 12.sp) }) } } }
                 Button(onClick = { mostrarBottomSheetFiltrosMinhaLista = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros", fontWeight = FontWeight.Bold) }
             }
@@ -736,7 +771,29 @@ fun TelaPrincipal(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Tipo de Conteúdo:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = tiposDisponiveis) { tipo -> FilterChip(selected = (tipoPaginado == tipo), onClick = { viewModel.selecionarTipo(tipo) }, label = { Text(tipo, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoDescobrir.map { it.first }) { rotulo -> val chaveSort = opcoesOrdenacaoDescobrir.first { it.first == rotulo }.second; FilterChip(selected = (ordenacaoSelecionada == chaveSort), onClick = { viewModel.selecionarOrdenacao(chaveSort) }, label = { Text(rotulo, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Plataformas de Streaming:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = provedoresDisponiveis) { (nome, id) -> FilterChip(selected = (provedorSelecionadoId == id), onClick = { viewModel.selecionarProvedorStreaming(id) }, label = { Text(nome, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Plataformas de Streaming:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                        TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            Text("⚙️ Configurar Meus", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    val filtroMeusStreamingsAtivo by viewModel.filtroMeusStreamingsAtivo.collectAsState()
+                    val meusStreamingsQuery = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                    FilterChip(
+                        selected = filtroMeusStreamingsAtivo,
+                        onClick = {
+                            if (meusStreamingsQuery != null) {
+                                viewModel.alternarFiltroMeusStreamings(meusStreamingsQuery)
+                            } else {
+                                mostrarDialogoMeusStreamings = true
+                            }
+                        },
+                        label = { Text(if (meusStreamingsQuery != null) "📺 Disponível nos meus streamings" else "📺 Configurar meus streamings", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                        leadingIcon = if (filtroMeusStreamingsAtivo) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) } } else null
+                    )
+                    FlowRowWithSpacing(items = provedoresDisponiveis) { (nome, id) -> FilterChip(selected = (provedorSelecionadoId == id), onClick = { viewModel.selecionarProvedorStreaming(id) }, label = { Text(nome, fontSize = 12.sp) }) }
+                }
                 val listaGenerosExibir = if (tipoPaginado == "Série" || tipoPaginado == "Anime") generosSeries else generosFilmes
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Gêneros:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listaGenerosExibir) { (nome, id) -> FilterChip(selected = (generoSelecionadoId == id), onClick = { viewModel.selecionarGenero(id) }, label = { Text(nome, fontSize = 12.sp) }) } }
                 Button(onClick = { mostrarBottomSheetFiltrosDescobrir = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros", fontWeight = FontWeight.Bold) }
@@ -1156,7 +1213,8 @@ fun TelaPrincipal(
                             "Concluído" -> statusEnum == StatusMidia.CONCLUIDO
                             else -> true
                         }
-                        bateSugestao && bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus
+                        val bateMeusStreamings = if (!filtroApenasMeusStreamingsMinhaLista) true else StreamingManager.midiaDisponivelNosMeusStreamings(contextoLocal, midia.plataforma)
+                        bateSugestao && bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus && bateMeusStreamings
                     }.let { lista ->
                         when (ordenacaoMinhaLista) {
                             "Favoritos Primeiro" -> lista.sortedWith(compareByDescending<Midia> { it.favorito }.thenByDescending { it.obterStatusEnum() == StatusMidia.ASSISTINDO })

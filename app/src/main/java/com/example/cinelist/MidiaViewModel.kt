@@ -866,6 +866,12 @@ class MidiaViewModel @Inject constructor(
     private val _provedorSelecionadoId = MutableStateFlow<Int?>(null)
     val provedorSelecionadoId: StateFlow<Int?> = _provedorSelecionadoId
 
+    private val _provedorSelecionadoQuery = MutableStateFlow<String?>(null)
+    val provedorSelecionadoQuery: StateFlow<String?> = _provedorSelecionadoQuery
+
+    private val _filtroMeusStreamingsAtivo = MutableStateFlow(false)
+    val filtroMeusStreamingsAtivo: StateFlow<Boolean> = _filtroMeusStreamingsAtivo
+
     private val _generoSelecionadoId = MutableStateFlow<Int?>(null)
     val generoSelecionadoId: StateFlow<Int?> = _generoSelecionadoId
 
@@ -874,7 +880,7 @@ class MidiaViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val resultadosBuscaPaginadaApi: Flow<PagingData<TmdbFilme>> = combine(
-        _queryPaginada, _tipoPaginado, _provedorSelecionadoId, _generoSelecionadoId, _ordenacaoSelecionada
+        _queryPaginada, _tipoPaginado, _provedorSelecionadoQuery, _generoSelecionadoId, _ordenacaoSelecionada
     ) { query, tipo, provedor, genero, ordenacao ->
         repository.buscarNoTmdbPaginado(query, tipo, provedor, genero, ordenacao)
     }.flatMapLatest { flow -> flow }.cachedIn(viewModelScope)
@@ -885,7 +891,32 @@ class MidiaViewModel @Inject constructor(
     }
 
     fun selecionarProvedorStreaming(provedorId: Int?) {
-        _provedorSelecionadoId.value = if (_provedorSelecionadoId.value == provedorId) null else provedorId
+        _filtroMeusStreamingsAtivo.value = false
+        if (_provedorSelecionadoId.value == provedorId) {
+            _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = null
+        _filtroMeusStreamingsAtivo.value = false
+            _provedorSelecionadoQuery.value = null
+        } else {
+            _provedorSelecionadoId.value = provedorId
+            _provedorSelecionadoQuery.value = provedorId?.toString()
+        }
+    }
+
+    fun alternarFiltroMeusStreamings(queryPipe: String?) {
+        if (_filtroMeusStreamingsAtivo.value) {
+            _filtroMeusStreamingsAtivo.value = false
+            _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = null
+        _filtroMeusStreamingsAtivo.value = false
+            _provedorSelecionadoQuery.value = null
+        } else {
+            _filtroMeusStreamingsAtivo.value = true
+            _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = null
+        _filtroMeusStreamingsAtivo.value = false
+            _provedorSelecionadoQuery.value = queryPipe
+        }
     }
 
     fun selecionarGenero(generoId: Int?) {
@@ -900,6 +931,8 @@ class MidiaViewModel @Inject constructor(
         _queryPaginada.value = ""
         _tipoPaginado.value = "Todos"
         _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = null
+        _filtroMeusStreamingsAtivo.value = false
         _generoSelecionadoId.value = null
         _ordenacaoSelecionada.value = "popularity.desc"
     }

@@ -15,7 +15,7 @@ class TmdbPagingSource(
     private val apiService: TmdbApiService,
     private val query: String,
     private val tipo: String,
-    private val provedorId: Int?,
+    private val provedorId: String?,
     private val generoId: Int?,
     private val sortBy: String
 ) : PagingSource<Int, TmdbFilme>() {
@@ -54,38 +54,38 @@ class TmdbPagingSource(
 
                 when {
                     tipo.equals("Filme", ignoreCase = true) -> {
-                        val resp = apiService.descobrirFilmes(pagina = paginaAtual, provedores = provedorId?.toString(), generos = generoId?.toString(), sortBy = sortFilme)
+                        val resp = apiService.descobrirFilmes(pagina = paginaAtual, provedores = provedorId, generos = generoId?.toString(), sortBy = sortFilme)
                         listaBruta = resp.resultados.map { it.copy(mediaType = "movie") }
                         totalPaginas = resp.totalPaginas
                     }
                     tipo.equals("Série", ignoreCase = true) -> {
-                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId?.toString(), generos = generoId?.toString(), sortBy = sortSerie)
+                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId, generos = generoId?.toString(), sortBy = sortSerie)
                         listaBruta = resp.resultados.map { it.copy(mediaType = "tv") }
                         totalPaginas = resp.totalPaginas
                     }
                     tipo.equals("Anime", ignoreCase = true) -> {
                         // Animes usam ID de animação (16) e idioma original japonês (ja)
                         val genFinal = if (generoId != null) "$generoId,16" else "16"
-                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId?.toString(), generos = genFinal, idiomaOriginal = "ja", sortBy = sortSerie)
+                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId, generos = genFinal, idiomaOriginal = "ja", sortBy = sortSerie)
                         listaBruta = resp.resultados.map { it.copy(mediaType = "tv") }
                         totalPaginas = resp.totalPaginas
                     }
                     tipo.equals("Novela", ignoreCase = true) -> {
                         // Novelas no TMDB correspondem ao gênero de Soap Opera (10766)
                         val genFinal = if (generoId != null) "$generoId,10766" else "10766"
-                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId?.toString(), generos = genFinal, sortBy = sortSerie)
+                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId, generos = genFinal, sortBy = sortSerie)
                         listaBruta = resp.resultados.map { it.copy(mediaType = "tv") }
                         totalPaginas = resp.totalPaginas
                     }
                     tipo.equals("Dorama", ignoreCase = true) -> {
                         // Doramas usam idioma original coreano (ko)
-                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId?.toString(), generos = generoId?.toString(), idiomaOriginal = "ko", sortBy = sortSerie)
+                        val resp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId, generos = generoId?.toString(), idiomaOriginal = "ko", sortBy = sortSerie)
                         listaBruta = resp.resultados.map { it.copy(mediaType = "tv") }
                         totalPaginas = resp.totalPaginas
                     }
                     else -> {
-                        val filmesResp = apiService.descobrirFilmes(pagina = paginaAtual, provedores = provedorId?.toString(), generos = generoId?.toString(), sortBy = sortFilme)
-                        val seriesResp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId?.toString(), generos = generoId?.toString(), sortBy = sortSerie)
+                        val filmesResp = apiService.descobrirFilmes(pagina = paginaAtual, provedores = provedorId, generos = generoId?.toString(), sortBy = sortFilme)
+                        val seriesResp = apiService.descobrirSeries(pagina = paginaAtual, provedores = provedorId, generos = generoId?.toString(), sortBy = sortSerie)
 
                         val filmes = filmesResp.resultados.map { it.copy(mediaType = "movie") }
                         val series = seriesResp.resultados.map { it.copy(mediaType = "tv") }

@@ -956,7 +956,7 @@ class MidiaRepository @Inject constructor(
     fun buscarNoTmdbPaginado(
         query: String,
         tipo: String,
-        provedorId: Int?,
+        provedorId: String?,
         generoId: Int?,
         sortBy: String
     ): Flow<PagingData<TmdbFilme>> {
