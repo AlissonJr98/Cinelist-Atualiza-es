@@ -1561,4 +1561,33 @@ class MidiaViewModel @Inject constructor(
             _alertasRadarStreaming.value = RadarStreamingManager.sincronizarTodosAlertas(context)
         }
     }
+
+    // ==========================================
+    // 👥 CINEMATCH COLETIVO (SWIPE EM GRUPO NA SALA)
+    // ==========================================
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val sessaoMatchColetivoAtiva: Flow<MatchColetivoSessao?> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) kotlinx.coroutines.flow.flowOf(null)
+        else socialRepository.observarMatchColetivoSala(grupoId)
+    }
+
+    fun iniciarMatchColetivo(grupoId: String, filmes: List<FilmeCandidatoMatch>, onConcluido: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            val ok = socialRepository.iniciarMatchColetivo(grupoId, filmes)
+            onConcluido?.invoke(ok)
+        }
+    }
+
+    fun votarMatchColetivo(grupoId: String, idTmdb: Int, deuMatch: Boolean) {
+        viewModelScope.launch {
+            socialRepository.votarMatchColetivo(grupoId, idTmdb, deuMatch)
+        }
+    }
+
+    fun encerrarMatchColetivo(grupoId: String, onConcluido: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            socialRepository.encerrarMatchColetivo(grupoId)
+            onConcluido?.invoke()
+        }
+    }
 }

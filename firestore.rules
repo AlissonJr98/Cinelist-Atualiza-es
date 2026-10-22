@@ -55,6 +55,7 @@ service cloud.firestore {
     //   - enquetes/{enqueteId}: Group quick polls and votes
     //   - cineparty/{docId}: Group CineParty synchronized watch party session
     //   - cineblind/{blindId}: Group CineBlind secret movie session with cryptic clues
+    //   - match_coletivo/{sessaoId}: Group CineMatch collective movie swipe session
     //
     // Collection: chats/{chatId}/mensagens/{mensagemId}
     // Document ID: Formatted as uidA_uidB
@@ -130,6 +131,21 @@ service cloud.firestore {
     //   - sugestoes: map or list (anonymous suggestions with clues, <= 1000 items)
     //   - pistas: map or list (optional, clues, <= 1000 items)
     //   - votos: map or list (optional, user votes, <= 1000 items)
+    //   - timestamp: number or timestamp
+    //
+    // Collection: grupos/{grupoId}/match_coletivo/{sessaoId}
+    // Document ID: Session ID (<= 128 chars)
+    // Fields:
+    //   - id: string (optional, <= 128 chars)
+    //   - grupoId: string (optional, matches group id, <= 50 chars)
+    //   - criadorUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //   - criadorNome: string (optional, <= 100 chars)
+    //   - estado: string ('ATIVO' | 'MATCH' | 'FINALIZADO')
+    //   - filmes: list of maps (candidate movies, <= 100 items)
+    //   - votosSim: map or list (positive votes by tmdbId, <= 1000 items)
+    //   - vencedorIdTmdb: number (optional)
+    //   - vencedorTitulo: string (optional, <= 200 chars)
+    //   - vencedorPoster: string (optional, <= 2000 chars)
     //   - timestamp: number or timestamp
     //
     // Collection: usuarios/{uid}/radar_lancamentos/{alertaId}
@@ -340,6 +356,20 @@ service cloud.firestore {
         (!('timestamp' in data) || data.timestamp is number || data.timestamp is timestamp);
     }
 
+    function isValidMatchColetivo(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('grupoId' in data) || (data.grupoId is string && data.grupoId.size() <= 50)) &&
+        (!('criadorUid' in data) || (data.criadorUid is string && data.criadorUid.size() <= 128)) &&
+        (!('criadorNome' in data) || (data.criadorNome is string && data.criadorNome.size() <= 100)) &&
+        (!('estado' in data) || (data.estado is string && data.estado in ['ATIVO', 'MATCH', 'FINALIZADO'])) &&
+        (!('filmes' in data) || (data.filmes is list && data.filmes.size() <= 100)) &&
+        (!('votosSim' in data) || ((data.votosSim is map || data.votosSim is list) && data.votosSim.size() <= 1000)) &&
+        (!('vencedorIdTmdb' in data) || data.vencedorIdTmdb is number) &&
+        (!('vencedorTitulo' in data) || (data.vencedorTitulo is string && data.vencedorTitulo.size() <= 200)) &&
+        (!('vencedorPoster' in data) || (data.vencedorPoster is string && data.vencedorPoster.size() <= 2000)) &&
+        (!('timestamp' in data) || data.timestamp is number || data.timestamp is timestamp);
+    }
+
     // ===============================================================
     // Rules Definition
     // ===============================================================
@@ -490,6 +520,18 @@ service cloud.firestore {
           areImmutableFieldsUnchanged(['criadorUid', 'grupoId']);
         allow delete: if isAuthenticated() &&
           (isGroupAdmin(grupoId) || request.auth.uid == resource.data.get('criadorUid', ''));
+      }
+
+      match /match_coletivo/{sessaoId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.auth.uid == request.resource.data.criadorUid &&
+          isValidMatchColetivo(request.resource.data);
+        allow update: if isAuthenticated() &&
+          isValidMatchColetivo(request.resource.data) &&
+          areImmutableFieldsUnchanged(['criadorUid', 'grupoId']);
+        allow delete: if isAuthenticated() &&
+          (request.auth.uid == resource.data.criadorUid || isGroupAdmin(grupoId));
       }
     }
 

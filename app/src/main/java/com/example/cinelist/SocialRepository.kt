@@ -1585,4 +1585,116 @@ class SocialRepository @Inject constructor() {
             false
         }
     }
+
+    // ==========================================
+    // 👥 CINEMATCH COLETIVO (SWIPE EM GRUPO NA SALA)
+    // ==========================================
+    fun observarMatchColetivoSala(grupoId: String): Flow<MatchColetivoSessao?> = callbackFlow {
+        if (grupoId.isBlank()) {
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("grupos").document(grupoId)
+            .collection("match_coletivo").document("sessao_ativa")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(null)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    val data = snapshot.data ?: emptyMap()
+                    trySend(MatchColetivoSessao.fromMap(data))
+                } else {
+                    trySend(null)
+                }
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun iniciarMatchColetivo(grupoId: String, filmesCandidatos: List<FilmeCandidatoMatch>): Boolean = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: ""
+        val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
+        val sessaoId = "sessao_ativa"
+
+        val novaSessao = MatchColetivoSessao(
+            id = sessaoId,
+            grupoId = grupoId,
+            criadorUid = meuUid,
+            criadorNome = meuNome,
+            estado = "ATIVO",
+            filmes = filmesCandidatos,
+            votosSim = emptyMap(),
+            timestamp = System.currentTimeMillis()
+        )
+
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("match_coletivo").document(sessaoId)
+                .set(novaSessao.toMap())
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun votarMatchColetivo(grupoId: String, idTmdb: Int, deuMatch: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext false
+        val sessaoId = "sessao_ativa"
+        val docRef = firestore.collection("grupos").document(grupoId)
+            .collection("match_coletivo").document(sessaoId)
+
+        try {
+            firestore.runTransaction { tx ->
+                val snap = tx.get(docRef)
+                if (!snap.exists()) return@runTransaction
+
+                val sessao = MatchColetivoSessao.fromMap(snap.data ?: emptyMap())
+                val votos = sessao.votosSim.toMutableMap()
+                val chaveFilme = idTmdb.toString()
+                val votantes = (votos[chaveFilme] ?: emptyList()).toMutableList()
+
+                if (deuMatch) {
+                    if (!votantes.contains(meuUid)) votantes.add(meuUid)
+                } else {
+                    votantes.remove(meuUid)
+                }
+                votos[chaveFilme] = votantes
+
+                val updates = mutableMapOf<String, Any>("votosSim" to votos)
+                if (votantes.size >= 2 && sessao.estado == "ATIVO") {
+                    val filmeVencedor = sessao.filmes.firstOrNull { it.idTmdb == idTmdb }
+                    if (filmeVencedor != null) {
+                        updates["estado"] = "MATCH"
+                        updates["vencedorIdTmdb"] = filmeVencedor.idTmdb
+                        updates["vencedorTitulo"] = filmeVencedor.titulo
+                        updates["vencedorPoster"] = filmeVencedor.posterUrl
+                    }
+                }
+
+                tx.update(docRef, updates)
+            }.await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun encerrarMatchColetivo(grupoId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("match_coletivo").document("sessao_ativa")
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
