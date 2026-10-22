@@ -3883,44 +3883,82 @@ fun MuralCitacoesSection(sharedPreferences: android.content.SharedPreferences) {
 
 @Composable
 fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
-    val concluidos = remember(listaDeMidias) {
-        listaDeMidias.filter { it.obterStatusEnum() == StatusMidia.CONCLUIDO }
+    var mostrarPassaporte by remember { mutableStateOf(false) }
+    val statusPassaporte = remember(listaDeMidias) {
+        PassaporteCinefiloManager.calcularPassaporte(listaDeMidias)
     }
-    if (concluidos.isEmpty()) return
+
+    if (mostrarPassaporte) {
+        DialogoPassaporteCinefilo(
+            status = statusPassaporte,
+            onDispensar = { mostrarPassaporte = false }
+        )
+    }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { mostrarPassaporte = true },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("🌐 Cine-Globe: Origem dos Seus Filmes", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-            Text("Diversidade cultural nas suas maratonas:", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("🛂 Passaporte Cinéfilo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Surface(
+                        color = Color(0xFF38BDF8).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "${statusPassaporte.totalPaisesCarimbados} países",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF38BDF8),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Text("Ver Carimbos ➔", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
+            }
 
+            Text("Patente: ${statusPassaporte.patenteViajante}", fontSize = 12.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
+
+            // Linha com os carimbos mais representados
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Surface(color = Color(0xFF38BDF8).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🇺🇸 EUA", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("55%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                val carimbosDestaque = statusPassaporte.paisesCarimbados.take(4)
+                if (carimbosDestaque.isNotEmpty()) {
+                    carimbosDestaque.forEach { c ->
+                        Surface(
+                            color = Color(0xFF0F172A).copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.3f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(c.bandeira, fontSize = 18.sp)
+                                Text(c.nome.take(6), fontWeight = FontWeight.Bold, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                                Text("${c.totalObras} 🎟️", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
                     }
-                }
-                Surface(color = Color(0xFFFFD700).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🇰🇷 Coréia", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("20%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                Surface(color = Color(0xFF00FF7F).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🇧🇷 Brasil", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("15%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-                Surface(color = Color(0xFFFF69B4).copy(alpha = 0.2f), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🇯🇵 Japão", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("10%", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                } else {
+                    Surface(
+                        color = Color(0xFF0F172A).copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Conclua filmes e séries para carimbar novos países no seu passaporte!",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(10.dp)
+                        )
                     }
                 }
             }

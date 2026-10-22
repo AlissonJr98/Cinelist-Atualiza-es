@@ -129,6 +129,9 @@ fun TelaDetalhes(
     var proximaTemporadaExiste by remember { mutableStateOf(false) }
     var mostrarDialogoRadar by remember { mutableStateOf(false) }
     var mostrarDialogoWatchParty by remember { mutableStateOf(false) }
+    var mostrarDialogoPlaylists by remember { mutableStateOf(false) }
+    var mostrarDialogoAudio by remember { mutableStateOf(false) }
+    var audioReviewSalvo by remember { mutableStateOf<CineAudioReview?>(null) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -412,6 +415,23 @@ fun TelaDetalhes(
             salaIdInicial = "party_$midiaIdUnico",
             viewModel = viewModel,
             onDispensar = { mostrarDialogoWatchParty = false }
+        )
+    }
+
+    if (mostrarDialogoPlaylists) {
+        DialogoPlaylists(
+            midiaIdTmdbParaAdicionar = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0,
+            onDispensar = { mostrarDialogoPlaylists = false }
+        )
+    }
+
+    if (mostrarDialogoAudio) {
+        DialogoGravarCineAudio(
+            tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
+            onAudioGravado = { review ->
+                audioReviewSalvo = review
+            },
+            onDispensar = { mostrarDialogoAudio = false }
         )
     }
 
@@ -1526,6 +1546,79 @@ fun TelaDetalhes(
                                             )
                                         }
                                     }
+
+                                    // Botão Salvar na Playlist Temática
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF8B5CF6).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable { mostrarDialogoPlaylists = true }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("🏷️", fontSize = 12.sp)
+                                            Text("Playlist", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA))
+                                        }
+                                    }
+
+                                    // Botão Compartilhar no Story
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFEC4899).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFFEC4899).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable {
+                                            val t = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+                                            val tp = if (ehSerieOuAnime) "Série" else "Filme"
+                                            val an = detalhesApi?.dataLancamento?.take(4) ?: ""
+                                            val gen = detalhesApi?.generoTexto ?: midiaSalva?.genero ?: ""
+                                            val nt = if (nota > 0) nota else 8
+                                            val cmt = if (comentarioPessoalInput.isNotBlank()) comentarioPessoalInput else "Marcado como imperdível no CineList!"
+                                            InstagramShareHelper.compartilharCineCardStory(
+                                                context = contexto,
+                                                titulo = t,
+                                                tipo = tp,
+                                                ano = an,
+                                                genero = gen,
+                                                nota = nt,
+                                                comentario = cmt,
+                                                posterBitmap = null
+                                            )
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("✨", fontSize = 12.sp)
+                                            Text("Story", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
+                                        }
+                                    }
+
+                                    // Botão Gravar CineÁudio
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable { mostrarDialogoAudio = true }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("🎙️", fontSize = 12.sp)
+                                            Text("CineÁudio", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                                        }
+                                    }
+                                }
+
+                                if (audioReviewSalvo != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    CineAudioPlayerWidget(audioReviewSalvo!!)
                                 }
 
                                 if (criteriosSalvos != null) {
@@ -1582,7 +1675,7 @@ fun TelaDetalhes(
                                     )
                                 }
 
-                                // 🚀 CALCULADORA DE MARATONA (Para Séries/Animes)
+                                // 🚀 CALCULADORA DE MARATONA (Para Séries/Animes) + MODO MAIS UM E CAMA 🛌
                                 if (ehSerieOuAnime && detalhesApi != null) {
                                     val totalEps = (detalhesApi?.totalEpisodios ?: 1).coerceAtLeast(1)
                                     val duracao = (detalhesApi?.duracaoMinutos ?: 20).coerceAtLeast(20)
@@ -1590,18 +1683,38 @@ fun TelaDetalhes(
                                     val horasTotais = (epsFaltam * duracao) / 60
                                     val dias2Ep = (epsFaltam + 1) / 2
 
+                                    val calAgora = java.util.Calendar.getInstance()
+                                    val fmtHora = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                    val horaTermino1Ep = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao) }
+                                    val horaTermino2Ep = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao * 2) }
+
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Text("⏱️ Calculadora de Maratona", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text("⏱️ Calculadora de Maratona & 'Mais Um e Cama'", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                                             Text(
-                                                text = "Faltam $epsFaltam episódios (~${horasTotais}h de conteúdo).\nSe assistir 2 eps por dia, você conclui em $dias2Ep dias!",
+                                                text = "Faltam $epsFaltam episódios (~${horasTotais}h de conteúdo). Se assistir 2 eps por dia, você conclui em $dias2Ep dias!",
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 4.dp))
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Text("🛌", fontSize = 14.sp)
+                                                Text(
+                                                    text = "Mais 1 e cama: Se der play agora (${fmtHora.format(calAgora.time)}), você dorme às ${fmtHora.format(horaTermino1Ep.time)} (${duracao} min).",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color(0xFFFBBF24)
+                                                )
+                                            }
+                                            Text(
+                                                text = "🌙 Maratona de 2 episódios: término previsto para às ${fmtHora.format(horaTermino2Ep.time)}.",
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.secondary
                                             )
                                         }
                                     }

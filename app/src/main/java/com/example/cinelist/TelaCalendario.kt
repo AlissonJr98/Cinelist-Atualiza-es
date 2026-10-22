@@ -1,5 +1,9 @@
 package com.example.cinelist
 
+import android.content.Context
+import android.content.Intent
+import android.provider.CalendarContract
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,13 +13,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,7 +42,8 @@ data class ItemCalendario(
     val nomeEpisodio: String?,
     val dataExibicaoStr: String,
     val dataExibicaoMillis: Long,
-    val idTmdb: Int
+    val idTmdb: Int,
+    val tipoItem: String = "SERIE" // "SERIE" ou "FILME"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,21 +53,25 @@ fun TelaCalendario(
     onVoltar: () -> Unit,
     onMidiaClique: (Int, String) -> Unit
 ) {
+    val contexto = LocalContext.current
     var itensCalendario by remember { mutableStateOf<List<ItemCalendario>>(emptyList()) }
     var carregando by remember { mutableStateOf(true) }
+    var filtroSelecionado by remember { mutableStateOf("TODOS") } // "TODOS", "SERIE", "FILME"
 
     LaunchedEffect(listaDeMidias) {
         carregando = true
-        val seriesAssistindo = listaDeMidias.filter { midia ->
-            midia.status.equals("Assistindo", ignoreCase = true) &&
-                    !midia.tipo.equals("Filme", ignoreCase = true) &&
-                    midia.idTmdb > 0
-        }
-
-        val listaTemporaria = mutableListOf<ItemCalendario>()
         val formatoApi = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val listaTemporaria = mutableListOf<ItemCalendario>()
+        val hojeMillis = System.currentTimeMillis() - 86400000L // Permite estreias de hoje
 
         withContext(Dispatchers.IO) {
+            // 1. Processa Séries em "Assistindo"
+            val seriesAssistindo = listaDeMidias.filter { midia ->
+                midia.status.equals("Assistindo", ignoreCase = true) &&
+                        !midia.tipo.equals("Filme", ignoreCase = true) &&
+                        midia.idTmdb > 0
+            }
+
             for (serie in seriesAssistindo) {
                 try {
                     val detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(serie.idTmdb)
@@ -77,7 +90,42 @@ fun TelaCalendario(
                                 nomeEpisodio = proximoEp.nome,
                                 dataExibicaoStr = proximoEp.dataExibicao,
                                 dataExibicaoMillis = millis,
-                                idTmdb = serie.idTmdb
+                                idTmdb = serie.idTmdb,
+                                tipoItem = "SERIE"
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // 2. Processa Filmes em "Quero Assistir" / "Descobrir" com data de lançamento futura ou recente
+            val filmesPlanejados = listaDeMidias.filter { midia ->
+                midia.tipo.equals("Filme", ignoreCase = true) &&
+                        midia.obterStatusEnum() != StatusMidia.CONCLUIDO &&
+                        midia.dataLancamento.isNotBlank() &&
+                        midia.idTmdb > 0
+            }
+
+            for (filme in filmesPlanejados) {
+                try {
+                    val dataParseada = formatoApi.parse(filme.dataLancamento)
+                    val millis = dataParseada?.time ?: 0L
+
+                    // Inclui se a data for futura ou dos últimos 30 dias
+                    if (millis >= (hojeMillis - 2592000000L)) {
+                        listaTemporaria.add(
+                            ItemCalendario(
+                                serieTitulo = filme.titulo,
+                                capaUrl = filme.imagemCapa,
+                                numeroTemporada = 0,
+                                numeroEpisodio = 0,
+                                nomeEpisodio = "Estreia Oficial nos Cinemas / Streaming",
+                                dataExibicaoStr = filme.dataLancamento,
+                                dataExibicaoMillis = millis,
+                                idTmdb = filme.idTmdb,
+                                tipoItem = "FILME"
                             )
                         )
                     }
@@ -91,10 +139,18 @@ fun TelaCalendario(
         carregando = false
     }
 
+    val itensFiltrados = remember(itensCalendario, filtroSelecionado) {
+        when (filtroSelecionado) {
+            "SERIE" -> itensCalendario.filter { it.tipoItem == "SERIE" }
+            "FILME" -> itensCalendario.filter { it.tipoItem == "FILME" }
+            else -> itensCalendario
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Calendário de Lançamentos", fontWeight = FontWeight.Bold) },
+                title = { Text("Agenda do Cinéfilo", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
@@ -109,17 +165,40 @@ fun TelaCalendario(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Chips de Filtro
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = filtroSelecionado == "TODOS",
+                    onClick = { filtroSelecionado = "TODOS" },
+                    label = { Text("Todos (${itensCalendario.size})") }
+                )
+                FilterChip(
+                    selected = filtroSelecionado == "SERIE",
+                    onClick = { filtroSelecionado = "SERIE" },
+                    label = { Text("📺 Séries") }
+                )
+                FilterChip(
+                    selected = filtroSelecionado == "FILME",
+                    onClick = { filtroSelecionado = "FILME" },
+                    label = { Text("🎬 Filmes") }
+                )
+            }
+
             if (carregando) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            } else if (itensCalendario.isEmpty()) {
+            } else if (itensFiltrados.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
@@ -130,7 +209,7 @@ fun TelaCalendario(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Nenhum próximo episódio agendado para as séries que você está assistindo.",
+                            text = "Nenhum lançamento futuro encontrado para as mídias da sua lista.",
                             color = MaterialTheme.colorScheme.secondary,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(horizontal = 24.dp),
@@ -140,24 +219,24 @@ fun TelaCalendario(
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(itensCalendario) { item ->
+                    items(itensFiltrados) { item ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onMidiaClique(item.idTmdb, "Série") },
+                                .clickable { onMidiaClique(item.idTmdb, if (item.tipoItem == "FILME") "Filme" else "Série") },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(10.dp),
+                                    .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .width(60.dp)
-                                        .height(85.dp)
+                                        .width(64.dp)
+                                        .height(92.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
                                     contentAlignment = Alignment.Center
@@ -170,7 +249,11 @@ fun TelaCalendario(
                                             contentScale = ContentScale.Crop
                                         )
                                     } else {
-                                        Icon(imageVector = Icons.Default.Tv, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                        Icon(
+                                            imageVector = if (item.tipoItem == "FILME") Icons.Default.Movie else Icons.Default.Tv,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
                                     }
                                 }
 
@@ -186,12 +269,21 @@ fun TelaCalendario(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Temporada ${item.numeroTemporada} • Episódio ${item.numeroEpisodio}",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    if (item.tipoItem == "SERIE") {
+                                        Text(
+                                            text = "Temporada ${item.numeroTemporada} • Episódio ${item.numeroEpisodio}",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "🎬 Lançamento de Filme",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFFF59E0B)
+                                        )
+                                    }
                                     if (!item.nomeEpisodio.isNullOrBlank()) {
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
@@ -204,9 +296,22 @@ fun TelaCalendario(
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Estreia: ${item.dataExibicaoStr}",
+                                        text = "📅 Data: ${item.dataExibicaoStr}",
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+
+                                // Botão Adicionar ao Calendário do Sistema
+                                IconButton(
+                                    onClick = {
+                                        adicionarAoGoogleAgenda(contexto, item)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Event,
+                                        contentDescription = "Agendar Lembrete",
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -215,5 +320,35 @@ fun TelaCalendario(
                 }
             }
         }
+    }
+}
+
+/**
+ * Dispara uma Intent nativa para adicionar o evento ao Google Calendar / Calendário padrão do Android.
+ */
+private fun adicionarAoGoogleAgenda(context: Context, item: ItemCalendario) {
+    try {
+        val tituloEvento = if (item.tipoItem == "SERIE") {
+            "Lançamento: ${item.serieTitulo} (T${item.numeroTemporada}E${item.numeroEpisodio})"
+        } else {
+            "Estreia do Filme: ${item.serieTitulo}"
+        }
+
+        val descricao = item.nomeEpisodio ?: "Lembrete sincronizado pelo CineList"
+
+        val dataMillis = if (item.dataExibicaoMillis > 0) item.dataExibicaoMillis else System.currentTimeMillis()
+
+        val intent = Intent(Intent.ACTION_INSERT).apply {
+            data = CalendarContract.Events.CONTENT_URI
+            putExtra(CalendarContract.Events.TITLE, tituloEvento)
+            putExtra(CalendarContract.Events.DESCRIPTION, descricao)
+            putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dataMillis + 20 * 3600 * 1000L) // 20:00 do dia
+            putExtra(CalendarContract.EXTRA_EVENT_END_TIME, dataMillis + 22 * 3600 * 1000L) // 22:00
+            putExtra(CalendarContract.Events.ALL_DAY, true)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Não foi possível abrir o aplicativo de calendário.", Toast.LENGTH_SHORT).show()
     }
 }

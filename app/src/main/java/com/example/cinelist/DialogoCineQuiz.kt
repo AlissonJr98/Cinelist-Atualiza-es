@@ -47,9 +47,10 @@ fun DialogoCineQuiz(
     var opcaoSelecionada by remember { mutableStateOf<Int?>(null) }
     var acertos by remember { mutableIntStateOf(0) }
     var quizFinalizado by remember { mutableStateOf(false) }
+    var modoQuiz by remember { mutableStateOf("TRIVIA") } // "TRIVIA" ou "CITACOES"
 
     // Carrega o quiz ao abrir
-    fun carregarPerguntas() {
+    fun carregarPerguntas(novoModo: String = modoQuiz) {
         carregando = true
         quizFinalizado = false
         indicePerguntaAtual = 0
@@ -57,9 +58,14 @@ fun DialogoCineQuiz(
         acertos = 0
 
         escopo.launch {
-            val perguntas = CineAiManager.gerarQuizCineAi(contexto, tema)
-            listaPerguntas = perguntas
-            carregando = false
+            if (novoModo == "CITACOES") {
+                listaPerguntas = CineAiManager.gerarQuizCitacoes()
+                carregando = false
+            } else {
+                val perguntas = CineAiManager.gerarQuizCineAi(contexto, tema)
+                listaPerguntas = perguntas
+                carregando = false
+            }
         }
     }
 

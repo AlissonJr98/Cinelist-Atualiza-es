@@ -1,6 +1,7 @@
 package com.example.cinelist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -71,16 +72,21 @@ fun SecaoConquistasPerfil(listaDeMidias: List<Midia>) {
             }
         }
 
-        // Card de Bingo Cinéfilo / Desafios do Mês
-        val terrorProgresso = remember(listaDeMidias) {
-            listaDeMidias.count { (it.genero.contains("Terror", true) || it.genero.contains("Suspense", true)) && it.obterStatusEnum() == StatusMidia.CONCLUIDO }
-        }
-        val epsProgresso = remember(listaDeMidias) {
-            listaDeMidias.sumOf { if (!it.tipo.equals("Filme", true)) it.episodioAtual else 0 }
+        // Card de CineClube / Desafios do Mês Dinâmicos
+        var mostrarDialogoCineClube by remember { mutableStateOf(false) }
+        val statusClube = remember(listaDeMidias) { CineClubeManager.obterStatusClube(listaDeMidias) }
+
+        if (mostrarDialogoCineClube) {
+            DialogoCineClube(
+                status = statusClube,
+                onDispensar = { mostrarDialogoCineClube = false }
+            )
         }
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { mostrarDialogoCineClube = true },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -91,30 +97,32 @@ fun SecaoConquistasPerfil(listaDeMidias: List<Midia>) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("🎯 Bingo Cinéfilo (Desafios do Mês)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
-                    Text("Outubro 🎃", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    Text("🍿 CineClube (${statusClube.mesNome})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("${statusClube.totalConcluidos}/${statusClube.desafios.size} Concluídos ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        color = if (terrorProgresso >= 2) Color(0xFF2E7D32).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("👻 Especial Halloween", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("2 Filmes de Terror ($terrorProgresso/2)", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier.weight(1f),
-                        color = if (epsProgresso >= 5) Color(0xFF2E7D32).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("📺 Fim de Semana", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Avançar 5 Eps ($epsProgresso/5)", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                    statusClube.desafios.take(2).forEach { desafio ->
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            color = if (desafio.concluido) Color(0xFF2E7D32).copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = "${desafio.icone} ${desafio.titulo}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = if (desafio.concluido) "✅ Completo (+${desafio.recompensaXp} XP)" else "${desafio.progressoAtual}/${desafio.metaTotal} (${desafio.descricao})",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }

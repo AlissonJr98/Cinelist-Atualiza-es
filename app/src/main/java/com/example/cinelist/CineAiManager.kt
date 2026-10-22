@@ -737,4 +737,66 @@ object CineAiManager {
 
         return pontos
     }
+
+    /**
+     * Gera perguntas especiais do minigame "Quem Disse Essa Frase? / Citações Clássicas".
+     */
+    fun gerarQuizCitacoes(): List<PerguntaQuiz> {
+        val bancoCitacoes = listOf(
+            PerguntaQuiz(
+                pergunta = "“Que a Força esteja com você.” — De qual lendária saga pertence esta citação?",
+                opcoes = listOf("Star Wars", "Star Trek", "Duna", "Guardiões da Galáxia"),
+                respostaCorretaIndex = 0,
+                curiosidade = "A frase foi dita pela primeira vez pelo General Dodonna em 'Uma Nova Esperança' (1977)."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Hasta la vista, baby.” — Qual clássico imortalizou esta frase de ação?",
+                opcoes = listOf("O Exterminador do Futuro 2", "Predador", "RoboCop", "Rambo II"),
+                respostaCorretaIndex = 0,
+                curiosidade = "Arnold Schwarzenegger aprendeu a expressão com o jovem John Connor no roteiro de James Cameron."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Eu vejo pessoas mortas.” — Em qual marcante suspense esta frase é dita?",
+                opcoes = listOf("O Sexto Sentido (1999)", "Os Outros (2001)", "Invocação do Mal (2013)", "Poltergeist (1982)"),
+                respostaCorretaIndex = 0,
+                curiosidade = "O jovem Haley Joel Osment gravou essa icônica cena tremendo de frio sob cobertores de verdade no set."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Vou fazer uma oferta que ele não poderá recusar.” — Qual marco do cinema imortalizou esse diálogo?",
+                opcoes = listOf("O Poderoso Chefão (1972)", "Os Bons Companheiros (1990)", "Scarface (1983)", "Cassino (1995)"),
+                respostaCorretaIndex = 0,
+                curiosidade = "A frase foi eleita a segunda citação cinematográfica mais marcante pelo American Film Institute (AFI)."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Ao infinito e além!” — Qual herói dos cinemas repete com orgulho este lema?",
+                opcoes = listOf("Buzz Lightyear (Toy Story)", "Woody (Toy Story)", "Homem de Ferro", "Wall-E"),
+                respostaCorretaIndex = 0,
+                curiosidade = "A frase foi sugerida por animadores da Pixar inspirados no livro de matemática de um dos produtores."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Por que tão sério?” (Why so serious?) — Dita por qual memorável vilão?",
+                opcoes = listOf("Coringa (O Cavaleiro das Trevas)", "Bane (O Cavaleiro das Trevas Ressurge)", "Loki (Vingadores)", "Duende Verde (Homem-Aranha)"),
+                respostaCorretaIndex = 0,
+                curiosidade = "Heath Ledger improvisou várias pausas e lambidas nos lábios que tornaram a cena assustadoramente viva."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Nunca desista dos seus sonhos, não importa o quão difícil seja.” — Em 'À Procura da Felicidade', quem ensina isso ao filho?",
+                opcoes = listOf("Chris Gardner (Will Smith)", "Forrest Gump", "Guido Orefice", "Coach Carter"),
+                respostaCorretaIndex = 0,
+                curiosidade = "O menino que interpreta o filho de Chris Gardner é Jaden Smith, filho real de Will Smith."
+            ),
+            PerguntaQuiz(
+                pergunta = "“Pede pra sair!” — Qual filme brasileiro gerou esse célebre bordão da cultura pop?",
+                opcoes = listOf("Tropa de Elite (2007)", "Cidade de Deus (2002)", "Carandiru (2003)", "O Auto da Compadecida (2000)"),
+                respostaCorretaIndex = 0,
+                curiosidade = "A cena da granada e o interrogatório com Capitão Nascimento foram gravadas com preparação policial autêntica."
+            )
+        )
+
+        val selecionadas = bancoCitacoes.shuffled().take(4)
+        return selecionadas.map { p ->
+            embaralharOpcoes(p.pergunta, p.opcoes, p.respostaCorretaIndex, p.curiosidade)
+        }
+    }
 }
+

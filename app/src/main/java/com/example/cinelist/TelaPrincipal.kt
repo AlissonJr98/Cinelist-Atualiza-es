@@ -408,6 +408,7 @@ fun TelaPrincipal(
     var mostrarCinePartySala by remember { mutableStateOf(false) }
     var mostrarCineBlindSala by remember { mutableStateOf(false) }
     var mostrarDialogoRadarEstreias by remember { mutableStateOf(false) }
+    var mostrarDialogoPlaylistsPrincipal by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
     val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal" else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
@@ -581,6 +582,22 @@ fun TelaPrincipal(
         DialogoRadarStreaming(
             viewModel = viewModel,
             onDispensar = { mostrarDialogoRadarEstreias = false }
+        )
+    }
+
+    if (mostrarDialogoPlaylistsPrincipal) {
+        DialogoPlaylists(
+            listaDeMidias = listaDeMidias,
+            onMidiaClique = { id, tipo ->
+                mostrarDialogoPlaylistsPrincipal = false
+                val m = listaDeMidias.firstOrNull { it.idTmdb == id }
+                if (m != null) {
+                    onItemClique(m)
+                } else {
+                    onTmdbItemClique(TmdbFilme(idTmdb = id, titulo = "", mediaType = if (tipo.equals("Filme", true)) "movie" else "tv"), tipo)
+                }
+            },
+            onDispensar = { mostrarDialogoPlaylistsPrincipal = false }
         )
     }
 
@@ -784,6 +801,9 @@ fun TelaPrincipal(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Meus Streamings:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = { mostrarDialogoPlaylistsPrincipal = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text("🏷️ Playlists", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA))
+                            }
                             TextButton(onClick = { mostrarDialogoRadarEstreias = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                                 Text("🔔 Radar Estreias", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
                             }
