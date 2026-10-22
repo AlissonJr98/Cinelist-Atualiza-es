@@ -1797,6 +1797,8 @@ fun ModalPerfilAmigo(
     var mostrarConfirmacaoRemover by remember { mutableStateOf(false) }
     var mostrarConfirmacaoBloquear by remember { mutableStateOf(false) }
     var processandoAcao by remember { mutableStateOf(false) }
+    var mostrarDuelo by remember { mutableStateOf(false) }
+    var mostrarCineParty by remember { mutableStateOf(false) }
 
     val estaOnline = amigo.estaRealmenteOnline
 
@@ -1806,6 +1808,27 @@ fun ModalPerfilAmigo(
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    if (mostrarDuelo) {
+        DialogoComparacaoAmigo(
+            amigo = amigo,
+            minhaLista = minhasMidias,
+            listaDoAmigo = midiasAmigo,
+            onDispensar = { mostrarDuelo = false }
+        )
+    }
+
+    if (mostrarCineParty) {
+        val meuUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val salaIdAmigo = if (meuUid < amigo.uid) "party_${meuUid}_${amigo.uid}" else "party_${amigo.uid}_${meuUid}"
+        DialogoWatchParty(
+            tituloMidia = "Sessão com ${amigo.nome}",
+            posterMidia = "",
+            salaIdInicial = salaIdAmigo,
+            viewModel = viewModel,
+            onDispensar = { mostrarCineParty = false }
+        )
     }
 
     if (mostrarConfirmacaoRemover) {
@@ -1945,6 +1968,95 @@ fun ModalPerfilAmigo(
             }
         }
 
+        if (amigo.bio.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = amigo.bio,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // Redes Sociais do Amigo
+        if (amigo.instagram.isNotBlank() || amigo.twitter.isNotBlank() || amigo.letterboxd.isNotBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (amigo.instagram.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "@${amigo.instagram.removePrefix("@")}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                if (amigo.letterboxd.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "LB: ${amigo.letterboxd}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = Color(0xFF00E5FF)
+                        )
+                    }
+                }
+                if (amigo.twitter.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = "X: @${amigo.twitter.removePrefix("@")}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Atalhos de Interação Social (CineParty & Duelo)
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { mostrarCineParty = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("🍿", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("CineParty Ao Vivo", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+            }
+
+            OutlinedButton(
+                onClick = { mostrarDuelo = true },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Duelo de Maratonistas", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
+        }
+
         Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
         ScrollableTabRow(selectedTabIndex = abaAmigoSelecionada, edgePadding = 0.dp) {
@@ -1980,7 +2092,7 @@ fun ModalPerfilAmigo(
                         verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(midiasAmigo, key = { it.uuid.ifBlank { it.id.toString() } }) { midia ->
+                        itemsIndexed(midiasAmigo, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_${midia.idTmdb}_$index" }) { _, midia ->
                             ItemMidiaCard(midia = midia, onClick = { onMidiaClique?.invoke(midia) })
                         }
                     }
@@ -1998,7 +2110,7 @@ fun ModalPerfilAmigo(
                         verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(midiasEmComum, key = { it.uuid.ifBlank { it.id.toString() } }) { midiaComum ->
+                        itemsIndexed(midiasEmComum, key = { index, midiaComum -> "${midiaComum.uuid.ifBlank { midiaComum.id.toString() }}_${midiaComum.idTmdb}_$index" }) { _, midiaComum ->
                             ItemMidiaCard(midia = midiaComum, onClick = { onMidiaClique?.invoke(midiaComum) })
                         }
                     }

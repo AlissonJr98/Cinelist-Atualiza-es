@@ -1397,4 +1397,68 @@ class MidiaViewModel @Inject constructor(
             socialRepository.editarComentarioPublico(tmdbId, comentarioId, novoTexto)
         }
     }
+
+    // =========================================================================
+    // CINEPARTY SINCRONIZADO EM TEMPO REAL (ESTILO SALA / DISCORD)
+    // =========================================================================
+
+    private val _sessaoCinePartyAtiva = MutableStateFlow<CinePartySessao?>(null)
+    val sessaoCinePartyAtiva: StateFlow<CinePartySessao?> = _sessaoCinePartyAtiva.asStateFlow()
+
+    private var jobObservarCineParty: Job? = null
+
+    fun conectarCineParty(salaId: String) {
+        if (salaId.isBlank()) return
+        jobObservarCineParty?.cancel()
+        jobObservarCineParty = viewModelScope.launch {
+            socialRepository.observarSessaoCineParty(salaId).collect { sessao ->
+                _sessaoCinePartyAtiva.value = sessao
+            }
+        }
+    }
+
+    fun desconectarCineParty(salaId: String) {
+        jobObservarCineParty?.cancel()
+        jobObservarCineParty = null
+        viewModelScope.launch {
+            socialRepository.sairCineParty(salaId)
+            _sessaoCinePartyAtiva.value = null
+        }
+    }
+
+    fun iniciarOuEntrarCineParty(salaId: String, tituloMidia: String, posterMidia: String, onConcluido: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            val res = socialRepository.iniciarOuEntrarCineParty(salaId, tituloMidia, posterMidia)
+            if (res.isSuccess) {
+                conectarCineParty(salaId)
+                onConcluido?.invoke(true)
+            } else {
+                onConcluido?.invoke(false)
+            }
+        }
+    }
+
+    fun dispararContagemCineParty(salaId: String) {
+        viewModelScope.launch {
+            socialRepository.dispararContagemCineParty(salaId)
+        }
+    }
+
+    fun atualizarContagemPassoCineParty(salaId: String, numero: Int) {
+        viewModelScope.launch {
+            socialRepository.atualizarContagemPassoCineParty(salaId, numero)
+        }
+    }
+
+    fun alternarPauseCineParty(salaId: String, pausar: Boolean, segundosAtuais: Int) {
+        viewModelScope.launch {
+            socialRepository.alternarPauseCineParty(salaId, pausar, segundosAtuais)
+        }
+    }
+
+    fun enviarReacaoCineParty(salaId: String, emoji: String) {
+        viewModelScope.launch {
+            socialRepository.enviarReacaoCineParty(salaId, emoji)
+        }
+    }
 }

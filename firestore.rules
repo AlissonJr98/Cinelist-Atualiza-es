@@ -12,7 +12,7 @@ service cloud.firestore {
     //   - ultimoGrupoAtivo: string (optional, <= 50 chars)
     //   - ultimoNomeGrupo: string (optional, <= 100 chars)
     // Subcollections:
-    //   - midias/{midiaDoc}: Midia entity synced from local Room database
+    //   - midias/{midiaDoc}: Midia entity synced from local Room database (read: authenticated users, write: owner)
     //   - amigos/{amigoUid}: Friendship relationship ('pendente' | 'aceito')
     //   - solicitacoes/{remetenteUid}: Friend requests sent by other users
     //   - bloqueados/{bloqueadoUid}: Blocked users list
@@ -52,6 +52,7 @@ service cloud.firestore {
     //   - chat_mensagens/{mensagemId}: Group chat messages
     //   - matches/{matchDoc}: Group movie roulette matches
     //   - enquetes/{enqueteId}: Group quick polls and votes
+    //   - cineparty/{docId}: Group CineParty synchronized watch party session
     //
     // Collection: chats/{chatId}/mensagens/{mensagemId}
     // Document ID: Formatted as uidA_uidB
@@ -95,6 +96,27 @@ service cloud.firestore {
     //   - comentario: string (optional, <= 2000 chars)
     //   - timestamp: number
     //   - reacoes: map or list (reactions/likes, <= 1000 items)
+    //
+    // Collection: cineparty_salas/{salaId}
+    // Document ID: Room / Session ID (<= 128 chars)
+    // Fields:
+    //   - id: string (optional, <= 128 chars)
+    //   - salaId: string (optional, <= 128 chars)
+    //   - tituloMidia: string (optional, <= 200 chars)
+    //   - posterMidia: string (optional, <= 2000 chars)
+    //   - anfitriaoUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //   - anfitriaoNome: string (optional, <= 100 chars)
+    //   - emContagem: bool (optional)
+    //   - contagemNumero: number (optional)
+    //   - contagemIniciadaEm: number (optional)
+    //   - estadoReproducao: string ('PARADO' | 'CONTAGEM' | 'REPRODUZINDO' | 'PAUSADO')
+    //   - tempoReproducaoSegundos: number (optional)
+    //   - ultimaAtualizacaoTimestamp: number (optional)
+    //   - participantes: map (active participants map, <= 1000 items)
+    //   - ultimaReacaoEmoji: string (optional, <= 20 chars)
+    //   - ultimaReacaoAutor: string (optional, <= 100 chars)
+    //   - ultimaReacaoTimestamp: number (optional)
+    //   - canalVozAtivo: bool (optional)
     //
     // ===============================================================
 
@@ -260,6 +282,26 @@ service cloud.firestore {
         (!('expiraEm' in data) || data.expiraEm is number);
     }
 
+    function isValidCineParty(data) {
+      return data.anfitriaoUid is string && data.anfitriaoUid.size() <= 128 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('salaId' in data) || (data.salaId is string && data.salaId.size() <= 128)) &&
+        (!('tituloMidia' in data) || (data.tituloMidia is string && data.tituloMidia.size() <= 200)) &&
+        (!('posterMidia' in data) || (data.posterMidia is string && data.posterMidia.size() <= 2000)) &&
+        (!('anfitriaoNome' in data) || (data.anfitriaoNome is string && data.anfitriaoNome.size() <= 100)) &&
+        (!('emContagem' in data) || data.emContagem is bool) &&
+        (!('contagemNumero' in data) || data.contagemNumero is number) &&
+        (!('contagemIniciadaEm' in data) || data.contagemIniciadaEm is number) &&
+        (!('estadoReproducao' in data) || (data.estadoReproducao is string && data.estadoReproducao in ['PARADO', 'CONTAGEM', 'REPRODUZINDO', 'PAUSADO'])) &&
+        (!('tempoReproducaoSegundos' in data) || data.tempoReproducaoSegundos is number) &&
+        (!('ultimaAtualizacaoTimestamp' in data) || data.ultimaAtualizacaoTimestamp is number) &&
+        (!('participantes' in data) || (data.participantes is map && data.participantes.size() <= 1000)) &&
+        (!('ultimaReacaoEmoji' in data) || (data.ultimaReacaoEmoji is string && data.ultimaReacaoEmoji.size() <= 20)) &&
+        (!('ultimaReacaoAutor' in data) || (data.ultimaReacaoAutor is string && data.ultimaReacaoAutor.size() <= 100)) &&
+        (!('ultimaReacaoTimestamp' in data) || data.ultimaReacaoTimestamp is number) &&
+        (!('canalVozAtivo' in data) || data.canalVozAtivo is bool);
+    }
+
     // ===============================================================
     // Rules Definition
     // ===============================================================
@@ -269,7 +311,8 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
 
       match /midias/{midiaDoc} {
-        allow read, write: if isOwner(uid);
+        allow read: if isAuthenticated();
+        allow write: if isOwner(uid);
       }
 
       match /amigos/{amigoUid} {
@@ -375,6 +418,23 @@ service cloud.firestore {
         allow delete: if isAuthenticated() &&
           (request.auth.uid == resource.data.criadorUid || isGroupAdmin(grupoId));
       }
+
+      match /cineparty/{docId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          (isGroupMember(grupoId) || request.auth.uid == request.resource.data.anfitriaoUid) &&
+          request.auth.uid == request.resource.data.anfitriaoUid &&
+          isValidCineParty(request.resource.data);
+        allow update: if isAuthenticated() &&
+          (isGroupMember(grupoId) ||
+           request.auth.uid == resource.data.get('anfitriaoUid', '') ||
+           ('participantes' in resource.data && request.auth.uid in resource.data.participantes) ||
+           ('participantes' in request.resource.data && request.auth.uid in request.resource.data.participantes)) &&
+          isValidCineParty(request.resource.data) &&
+          areImmutableFieldsUnchanged(['anfitriaoUid']);
+        allow delete: if isAuthenticated() &&
+          (isGroupAdmin(grupoId) || request.auth.uid == resource.data.get('anfitriaoUid', ''));
+      }
     }
 
     // 4. CHATS PRIVADOS / DIRECT ENTRE AMIGOS
@@ -436,6 +496,19 @@ service cloud.firestore {
       );
       allow delete: if isAuthenticated() &&
         request.auth.uid == resource.data.autorUid;
+    }
+
+    // 7. SESSÕES CINEPARTY / WATCH PARTY AO VIVO
+    match /cineparty_salas/{salaId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.anfitriaoUid &&
+        isValidCineParty(request.resource.data);
+      allow update: if isAuthenticated() &&
+        isValidCineParty(request.resource.data) &&
+        areImmutableFieldsUnchanged(['anfitriaoUid']);
+      allow delete: if isAuthenticated() &&
+        (request.auth.uid == resource.data.anfitriaoUid || request.auth.uid == resource.data.get('anfitriaoUid', ''));
     }
   }
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ fun DialogoCineQuiz(
     tema: String = "Cinema Geral",
     onDispensar: () -> Unit
 ) {
+    val contexto = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val escopo = rememberCoroutineScope()
 
@@ -55,7 +57,7 @@ fun DialogoCineQuiz(
         acertos = 0
 
         escopo.launch {
-            val perguntas = CineAiManager.gerarQuizCineAi(tema)
+            val perguntas = CineAiManager.gerarQuizCineAi(contexto, tema)
             listaPerguntas = perguntas
             carregando = false
         }

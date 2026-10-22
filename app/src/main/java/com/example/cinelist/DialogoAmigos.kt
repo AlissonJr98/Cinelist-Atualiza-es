@@ -40,6 +40,7 @@ fun DialogoAmigos(
     var termoPesquisa by remember { mutableStateOf("") }
     var amigoVisualizando by remember { mutableStateOf<AmigoPerfil?>(null) }
     var mostrarDuelo by remember { mutableStateOf(false) }
+    var mostrarCineParty by remember { mutableStateOf(false) }
     var mostrarDialogoQrCode by remember { mutableStateOf(false) }
 
     // Atualiza o perfil público do usuário atual ao abrir o diálogo para garantir que ele seja encontrado
@@ -56,6 +57,19 @@ fun DialogoAmigos(
             minhaLista = minhaLista,
             listaDoAmigo = listaAmigoSelecionado,
             onDispensar = { mostrarDuelo = false }
+        )
+    }
+
+    if (mostrarCineParty && amigoVisualizando != null) {
+        val meuUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val amigoUid = amigoVisualizando!!.uid
+        val salaIdAmigo = if (meuUid < amigoUid) "party_${meuUid}_${amigoUid}" else "party_${amigoUid}_${meuUid}"
+        DialogoWatchParty(
+            tituloMidia = "Sessão com ${amigoVisualizando!!.nome}",
+            posterMidia = "",
+            salaIdInicial = salaIdAmigo,
+            viewModel = viewModel,
+            onDispensar = { mostrarCineParty = false }
         )
     }
 
@@ -115,13 +129,24 @@ fun DialogoAmigos(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
-                        onClick = { mostrarDuelo = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Comparar Duelo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { mostrarCineParty = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF))
+                        ) {
+                            Text("🍿", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("CineParty", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Black)
+                        }
+
+                        Button(
+                            onClick = { mostrarDuelo = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Duelo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
 
                     TextButton(onClick = { amigoVisualizando = null }) {

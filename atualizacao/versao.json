@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 74,
-  "versaoNome": "2.0.34",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.34/CineList-v2.0.34.apk"
+  "versaoCodigo": 75,
+  "versaoNome": "2.0.35",
+  "notas": "CineParty em tempo real com contagem ao vivo (3, 2, 1... PLAY!) sincronizada via Firestore, Palco Discord de presença/voz e reações flutuantes com o autor; CineIA inteligente com recomendações reais por filme parecido ('parecido com interestelar') e sinopse; CineQuiz renovado com IA dinâmica e banco variado de 50+ perguntas; Correção no perfil de amigos com Duelo de Maratonistas e redes sociais.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.35/CineList-v2.0.35.apk"
 }

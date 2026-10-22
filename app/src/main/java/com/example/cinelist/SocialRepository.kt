@@ -1104,4 +1104,210 @@ class SocialRepository @Inject constructor() {
             e.printStackTrace()
         }
     }
+
+    // =========================================================================
+    // CINEPARTY SINCRONIZADO EM TEMPO REAL (ESTILO SALA / DISCORD)
+    // =========================================================================
+
+    fun observarSessaoCineParty(salaId: String): Flow<CinePartySessao?> = callbackFlow {
+        if (salaId.isBlank()) {
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+
+        val ref = firestore.collection("cineparty_salas").document(salaId)
+        val listener = ref.addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null || !snapshot.exists()) {
+                trySend(null)
+                return@addSnapshotListener
+            }
+            try {
+                val sessao = snapshot.toObject(CinePartySessao::class.java)?.copy(id = snapshot.id)
+                trySend(sessao)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                trySend(null)
+            }
+        }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun iniciarOuEntrarCineParty(
+        salaId: String,
+        tituloMidia: String,
+        posterMidia: String
+    ): Result<CinePartySessao> = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext Result.failure(Exception("Não autenticado"))
+        if (salaId.isBlank()) return@withContext Result.failure(Exception("Código de sala inválido"))
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val meuNome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
+            val minhaFoto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            val snapshot = docRef.get().await()
+
+            val meuParticipante = mapOf(
+                "uid" to user.uid,
+                "nome" to meuNome,
+                "fotoUrl" to minhaFoto,
+                "online" to true,
+                "isAnfitriao" to (!snapshot.exists() || snapshot.getString("anfitriaoUid") == user.uid),
+                "statusVoz" to "MUTADO",
+                "entrouEm" to System.currentTimeMillis()
+            )
+
+            if (!snapshot.exists()) {
+                val novaSessao = CinePartySessao(
+                    id = salaId,
+                    salaId = salaId,
+                    tituloMidia = tituloMidia,
+                    posterMidia = posterMidia,
+                    anfitriaoUid = user.uid,
+                    anfitriaoNome = meuNome,
+                    emContagem = false,
+                    contagemNumero = 3,
+                    contagemIniciadaEm = 0L,
+                    estadoReproducao = "PARADO",
+                    tempoReproducaoSegundos = 0,
+                    ultimaAtualizacaoTimestamp = System.currentTimeMillis(),
+                    participantes = mapOf(user.uid to meuParticipante),
+                    canalVozAtivo = false
+                )
+                docRef.set(novaSessao).await()
+                Result.success(novaSessao)
+            } else {
+                docRef.update(
+                    mapOf(
+                        "participantes.${user.uid}" to meuParticipante,
+                        "ultimaAtualizacaoTimestamp" to System.currentTimeMillis()
+                    )
+                ).await()
+                val sessaoAtualizada = docRef.get().await().toObject(CinePartySessao::class.java)!!
+                Result.success(sessaoAtualizada)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun dispararContagemCineParty(salaId: String) = withContext(Dispatchers.IO) {
+        if (salaId.isBlank()) return@withContext
+        try {
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            docRef.update(
+                mapOf(
+                    "emContagem" to true,
+                    "contagemNumero" to 3,
+                    "contagemIniciadaEm" to System.currentTimeMillis(),
+                    "estadoReproducao" to "CONTAGEM"
+                )
+            ).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun atualizarContagemPassoCineParty(salaId: String, numero: Int) = withContext(Dispatchers.IO) {
+        if (salaId.isBlank()) return@withContext
+        try {
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            if (numero <= 0) {
+                docRef.update(
+                    mapOf(
+                        "emContagem" to false,
+                        "contagemNumero" to 0,
+                        "estadoReproducao" to "REPRODUZINDO",
+                        "tempoReproducaoSegundos" to 0,
+                        "ultimaAtualizacaoTimestamp" to System.currentTimeMillis()
+                    )
+                ).await()
+            } else {
+                docRef.update(
+                    mapOf(
+                        "contagemNumero" to numero
+                    )
+                ).await()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun alternarPauseCineParty(salaId: String, pausar: Boolean, segundosAtuais: Int) = withContext(Dispatchers.IO) {
+        if (salaId.isBlank()) return@withContext
+        try {
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            docRef.update(
+                mapOf(
+                    "estadoReproducao" to if (pausar) "PAUSADO" else "REPRODUZINDO",
+                    "tempoReproducaoSegundos" to segundosAtuais,
+                    "ultimaAtualizacaoTimestamp" to System.currentTimeMillis()
+                )
+            ).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun enviarReacaoCineParty(salaId: String, emoji: String) = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext
+        if (salaId.isBlank() || emoji.isBlank()) return@withContext
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val meuNome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
+
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            docRef.update(
+                mapOf(
+                    "ultimaReacaoEmoji" to emoji,
+                    "ultimaReacaoAutor" to meuNome,
+                    "ultimaReacaoTimestamp" to System.currentTimeMillis()
+                )
+            ).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun sairCineParty(salaId: String) = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext
+        if (salaId.isBlank()) return@withContext
+        try {
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            val snap = docRef.get().await()
+            if (!snap.exists()) return@withContext
+
+            val sessao = snap.toObject(CinePartySessao::class.java)
+            if (sessao?.anfitriaoUid == uid) {
+                val participantes = sessao.obterParticipantesMapeados().filter { it.uid != uid }
+                if (participantes.isEmpty()) {
+                    docRef.delete().await()
+                    return@withContext
+                } else {
+                    val novoAnf = participantes.first()
+                    docRef.update(
+                        mapOf(
+                            "anfitriaoUid" to novoAnf.uid,
+                            "anfitriaoNome" to novoAnf.nome,
+                            "participantes.$uid" to com.google.firebase.firestore.FieldValue.delete()
+                        )
+                    ).await()
+                    return@withContext
+                }
+            }
+
+            docRef.update(
+                mapOf(
+                    "participantes.$uid" to com.google.firebase.firestore.FieldValue.delete()
+                )
+            ).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

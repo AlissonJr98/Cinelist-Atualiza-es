@@ -405,8 +405,10 @@ fun TelaPrincipal(
     var mostrarDialogoCineBot by remember { mutableStateOf(false) }
     var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
     var mostrarDialogoEnquetes by remember { mutableStateOf(false) }
+    var mostrarCinePartySala by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
+    val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal" else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val membroAssistindo = remember(membrosSala, meuUid) {
@@ -545,6 +547,17 @@ fun TelaPrincipal(
             viewModel = viewModel,
             listaDeMidiasSala = listaDeMidias,
             onDispensar = { mostrarDialogoEnquetes = false }
+        )
+    }
+
+    if (mostrarCinePartySala) {
+        val grupoId = viewModel.casalIdAtivo.value
+        DialogoWatchParty(
+            tituloMidia = "CineParty: $nomeListaAtiva",
+            posterMidia = "",
+            salaIdInicial = "sala_${grupoId.ifBlank { nomeListaAtiva.filter { it.isLetterOrDigit() } }}",
+            viewModel = viewModel,
+            onDispensar = { mostrarCinePartySala = false }
         )
     }
 
@@ -813,8 +826,7 @@ fun TelaPrincipal(
         }
     }
 
-    val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal" else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
-
+    
     // ========================================================
     // 🚀 BOTTOM SHEET DO CHAT DE GRUPO
     // ========================================================
@@ -869,6 +881,9 @@ fun TelaPrincipal(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { mostrarCinePartySala = true }) {
+                            Text("🍿", fontSize = 18.sp)
+                        }
                         IconButton(onClick = { mostrarDialogoEnquetes = true }) {
                             Icon(
                                 imageVector = Icons.Default.Poll,

@@ -400,8 +400,12 @@ fun TelaDetalhes(
     }
 
     if (mostrarDialogoWatchParty) {
+        val midiaIdUnico = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 1
         DialogoWatchParty(
             tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
+            posterMidia = midiaSalva?.imagemCapa ?: detalhesApi?.caminhoPoster ?: "",
+            salaIdInicial = "party_$midiaIdUnico",
+            viewModel = viewModel,
             onDispensar = { mostrarDialogoWatchParty = false }
         )
     }
