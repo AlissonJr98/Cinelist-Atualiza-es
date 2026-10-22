@@ -2,5 +2,5 @@
   "versionCode": 78,
   "versionName": "2.0.38",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.38/CineList-v2.0.38.apk",
-  "changelog": "Gráfico de Curva de Qualidade por Temporada (estilo IMDb); CineWidget para Área de Trabalho com fixação direta; CineMatch Coletivo em tempo real nas salas compartilhadas; Checklist dos Mestres do Cinema (Nolan, Tarantino, etc.); Guia Parental e Alerta de Gatilhos brasileiro; Ajuste no botão Rastrear Estreia."
+  "changelog": "Melhorias gerais e correções de desempenho."
 }
