@@ -1,6 +1,6 @@
 {
-  "versionCode": 75,
-  "versionName": "2.0.35",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.35/CineList-v2.0.35.apk",
-  "changelog": "Melhorias gerais e correções de desempenho."
+  "versionCode": 76,
+  "versionName": "2.0.36",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.36/CineList-v2.0.36.apk",
+  "changelog": "Leaderboard & Ranking Semanal de Maratonas entre amigos com Pódio dinâmico (1º 🥇, 2º 🥈, 3º 🥉); CineBlind (sessão secreta com pistas misteriosas e votação na sala); Radar de Estreias nos Streamings Brasileiros com alertas automáticos quando títulos monitorados chegarem à Netflix, Prime Video, Max, etc."
 }

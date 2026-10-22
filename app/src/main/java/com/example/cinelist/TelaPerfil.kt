@@ -269,6 +269,7 @@ fun TelaPerfil(
 
     var mostrarConfirmacaoSair by remember { mutableStateOf(false) }
     var mostrarConfirmacaoReset by remember { mutableStateOf(false) }
+    var mostrarDialogoRanking by remember { mutableStateOf(false) }
     var midiaParaExcluirHistorico by remember { mutableStateOf<Midia?>(null) }
     var midiaParaReabrirHistorico by remember { mutableStateOf<Midia?>(null) }
 
@@ -473,6 +474,14 @@ fun TelaPerfil(
             onFechar = { exibindoWrapped = false }
         )
         return
+    }
+
+    if (mostrarDialogoRanking) {
+        DialogoRankingAmigos(
+            viewModel = viewModel,
+            minhasMidias = midiasContextoAtual,
+            onDispensar = { mostrarDialogoRanking = false }
+        )
     }
 
     amigoSelecionadoParaVer?.let { amigo ->
@@ -1366,7 +1375,8 @@ fun TelaPerfil(
                                 viewModel.carregarListaDoAmigo(amigo.uid)
                                 amigoSelecionadoParaVer = amigo
                             },
-                            onGerenciarBloqueados = { mostrarDialogoBloqueados = true }
+                            onGerenciarBloqueados = { mostrarDialogoBloqueados = true },
+                            onVerRanking = { mostrarDialogoRanking = true }
                         )
                     }
                 }
@@ -2920,7 +2930,8 @@ fun AbaAmigosPerfil(
     viewModel: MidiaViewModel,
     paddingValues: PaddingValues,
     onAmigoClique: (AmigoPerfil) -> Unit,
-    onGerenciarBloqueados: () -> Unit = {}
+    onGerenciarBloqueados: () -> Unit = {},
+    onVerRanking: () -> Unit = {}
 ) {
     val contexto = LocalContext.current
     val amigos by viewModel.amigosConectados.collectAsState(initial = emptyList())
@@ -2971,6 +2982,44 @@ fun AbaAmigosPerfil(
                 .fillMaxSize()
                 .padding(CineListTokens.EspacoM)
         ) {
+            // BANNER RANKING SEMANAL DE AMIGOS
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF1E293B),
+                border = BorderStroke(1.2.dp, Color(0xFFF59E0B)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onVerRanking() }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("🏆", fontSize = 26.sp)
+                        Column {
+                            Text(
+                                text = "RANKING SEMANAL DE MARATONAS",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp,
+                                color = Color(0xFFF59E0B)
+                            )
+                            Text(
+                                text = "Veja o pódio e dispute o 1º lugar com seus amigos!",
+                                fontSize = 11.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+                    Text("Ver 🥇", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF59E0B))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

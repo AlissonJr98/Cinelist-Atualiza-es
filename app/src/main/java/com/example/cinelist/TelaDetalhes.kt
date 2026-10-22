@@ -215,6 +215,11 @@ fun TelaDetalhes(
     var statusAtual by remember { mutableStateOf(StatusMidia.QUERO_ASSISTIR) }
     var rewatchContador by remember { mutableIntStateOf(0) }
     var tagsInput by remember { mutableStateOf("") }
+    var estaNoRadar by remember(midiaSalva?.idTmdb, detalhesApi?.id) {
+        mutableStateOf(
+            RadarStreamingManager.isMonitorado(contexto, midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0)
+        )
+    }
     var ehPrivadoState by remember { mutableStateOf(false) }
 
     val provedoresFiltrados = remember(provedoresStreaming) {
@@ -1478,6 +1483,47 @@ fun TelaDetalhes(
                                         ) {
                                             Text("🍿", fontSize = 12.sp)
                                             Text("CineParty Ao Vivo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF007F))
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (estaNoRadar) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFF00E5FF).copy(alpha = 0.12f),
+                                        border = BorderStroke(1.dp, if (estaNoRadar) Color(0xFF10B981) else Color(0xFF00E5FF).copy(alpha = 0.6f)),
+                                        modifier = Modifier.clickable {
+                                            val alerta = AlertaRadarStreaming(
+                                                idTmdb = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0,
+                                                titulo = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
+                                                posterUrl = midiaSalva?.imagemCapa ?: detalhesApi?.caminhoPoster ?: "",
+                                                tipo = if (ehSerieOuAnime) "Série" else "Filme",
+                                                anoLancamento = detalhesApi?.dataLancamento?.take(4) ?: ""
+                                            )
+                                            viewModel.alternarAlertaRadar(contexto, alerta) { adicionou ->
+                                                estaNoRadar = adicionou
+                                                android.widget.Toast.makeText(
+                                                    contexto,
+                                                    if (adicionou) "🔔 Título adicionado ao Radar! Você será avisado quando estrear nos streamings."
+                                                    else "🔔 Removido do Radar de Estreias.",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = if (estaNoRadar) "🔔" else "📡",
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = if (estaNoRadar) "No Radar 🔔" else "Rastrear Estreia",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (estaNoRadar) Color(0xFF10B981) else Color(0xFF00E5FF)
+                                            )
                                         }
                                     }
                                 }

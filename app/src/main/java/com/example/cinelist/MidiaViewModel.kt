@@ -1461,4 +1461,104 @@ class MidiaViewModel @Inject constructor(
             socialRepository.enviarReacaoCineParty(salaId, emoji)
         }
     }
+
+    // ==========================================
+    // 🏆 RANKING SEMANAL DE AMIGOS
+    // ==========================================
+    private val _rankingSemanal = MutableStateFlow<List<ItemLeaderboard>>(emptyList())
+    val rankingSemanal: StateFlow<List<ItemLeaderboard>> = _rankingSemanal.asStateFlow()
+    private val _carregandoRanking = MutableStateFlow(false)
+    val carregandoRanking: StateFlow<Boolean> = _carregandoRanking.asStateFlow()
+
+    fun carregarRankingSemanal(minhasMidias: List<Midia>) {
+        viewModelScope.launch {
+            _carregandoRanking.value = true
+            try {
+                _rankingSemanal.value = socialRepository.obterRankingSemanal(minhasMidias)
+            } finally {
+                _carregandoRanking.value = false
+            }
+        }
+    }
+
+    // ==========================================
+    // 🕵️ CINEBLIND (AMIGO OCULTO DE FILMES NA SALA)
+    // ==========================================
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val sessaoCineBlindAtiva: Flow<CineBlindSessao?> = _casalIdAtivo.flatMapLatest { grupoId ->
+        if (grupoId.isBlank()) kotlinx.coroutines.flow.flowOf(null)
+        else socialRepository.observarCineBlindSala(grupoId)
+    }
+
+    fun iniciarCineBlind(grupoId: String, onConcluido: ((String) -> Unit)? = null) {
+        viewModelScope.launch {
+            val id = socialRepository.iniciarCineBlind(grupoId)
+            onConcluido?.invoke(id)
+        }
+    }
+
+    fun adicionarSugestaoBlind(
+        grupoId: String,
+        sessaoId: String,
+        tituloReal: String,
+        posterReal: String,
+        idTmdb: Int,
+        genero: String,
+        ano: String,
+        pistas: List<String>,
+        onConcluido: ((Boolean) -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            val res = socialRepository.adicionarSugestaoBlind(
+                grupoId, sessaoId, tituloReal, posterReal, idTmdb, genero, ano, pistas
+            )
+            onConcluido?.invoke(res)
+        }
+    }
+
+    fun avancarParaVotacaoCineBlind(grupoId: String, sessaoId: String) {
+        viewModelScope.launch {
+            socialRepository.avancarParaVotacaoCineBlind(grupoId, sessaoId)
+        }
+    }
+
+    fun votarCineBlind(grupoId: String, sessaoId: String, sugestaoId: String) {
+        viewModelScope.launch {
+            socialRepository.votarCineBlind(grupoId, sessaoId, sugestaoId)
+        }
+    }
+
+    fun revelarVencedorCineBlind(grupoId: String, sessaoId: String) {
+        viewModelScope.launch {
+            socialRepository.revelarVencedorCineBlind(grupoId, sessaoId)
+        }
+    }
+
+    fun encerrarCineBlind(grupoId: String, sessaoId: String) {
+        viewModelScope.launch {
+            socialRepository.encerrarCineBlind(grupoId, sessaoId)
+        }
+    }
+
+    // ==========================================
+    // 🔔 RADAR DE ESTREIAS NOS STREAMINGS
+    // ==========================================
+    private val _alertasRadarStreaming = MutableStateFlow<List<AlertaRadarStreaming>>(emptyList())
+    val alertasRadarStreaming: StateFlow<List<AlertaRadarStreaming>> = _alertasRadarStreaming.asStateFlow()
+
+    fun carregarAlertasRadar(context: Context) {
+        _alertasRadarStreaming.value = RadarStreamingManager.obterAlertas(context)
+    }
+
+    fun alternarAlertaRadar(context: Context, alerta: AlertaRadarStreaming, onResultado: (Boolean) -> Unit) {
+        val adicionou = RadarStreamingManager.alternarAlerta(context, alerta)
+        _alertasRadarStreaming.value = RadarStreamingManager.obterAlertas(context)
+        onResultado(adicionou)
+    }
+
+    fun sincronizarAlertasRadar(context: Context) {
+        viewModelScope.launch {
+            _alertasRadarStreaming.value = RadarStreamingManager.sincronizarTodosAlertas(context)
+        }
+    }
 }

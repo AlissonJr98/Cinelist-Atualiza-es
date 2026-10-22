@@ -1310,4 +1310,279 @@ class SocialRepository @Inject constructor() {
             e.printStackTrace()
         }
     }
+
+    // ==========================================
+    // 🏆 RANKING SEMANAL & PÓDIO ENTRE AMIGOS
+    // ==========================================
+    suspend fun obterRankingSemanal(minhasMidias: List<Midia>): List<ItemLeaderboard> = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: ""
+        val meuNome = auth.currentUser?.displayName?.ifBlank { "Você" } ?: "Você"
+        val minhaFoto = auth.currentUser?.photoUrl?.toString() ?: ""
+
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY)
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        val inicioSemana = cal.timeInMillis
+
+        // Pontos do usuário atual
+        val meusConcluidosSemana = minhasMidias.filter {
+            it.status == "Concluído" && (it.dataConclusao >= inicioSemana || it.atualizadoEm >= inicioSemana)
+        }
+        val meusFilmes = meusConcluidosSemana.count { it.tipo.equals("Filme", ignoreCase = true) }
+        val minhasSeries = meusConcluidosSemana.size - meusFilmes
+        val meusPontos = (meusFilmes * 50) + (minhasSeries * 30) + (minhasMidias.count { it.status == "Concluído" } * 5).coerceAtLeast(15)
+        val minhasHoras = (meusFilmes * 2.0) + (minhasSeries * 1.5)
+
+        val listaRanking = mutableListOf<ItemLeaderboard>()
+        listaRanking.add(
+            ItemLeaderboard(
+                uid = meuUid,
+                nome = meuNome,
+                fotoUrl = minhaFoto,
+                pontos = meusPontos,
+                titulosConcluidos = meusConcluidosSemana.size.coerceAtLeast(minhasMidias.count { it.status == "Concluído" }),
+                horasEstimadas = minhasHoras,
+                souEu = true
+            )
+        )
+
+        // Carrega amigos
+        try {
+            val snapAmigos = firestore.collection("usuarios").document(meuUid).collection("amigos").get().await()
+            val amigosUids = snapAmigos.documents.map { it.id }
+
+            for (amigoUid in amigosUids.take(15)) {
+                try {
+                    val perfilSnap = firestore.collection("usuarios_publicos").document(amigoUid).get().await()
+                    val nomeAmigo = perfilSnap.getString("nome") ?: "Amigo"
+                    val fotoAmigo = perfilSnap.getString("fotoUrl") ?: ""
+
+                    val midiasSnap = firestore.collection("usuarios").document(amigoUid).collection("midias").get().await()
+                    val midiasAmigo = midiasSnap.documents.mapNotNull { it.toObject(Midia::class.java) }
+                    val concluidosAmigoSemana = midiasAmigo.filter {
+                        it.status == "Concluído" && (it.dataConclusao >= inicioSemana || it.atualizadoEm >= inicioSemana)
+                    }
+                    val filmesAmigo = concluidosAmigoSemana.count { it.tipo.equals("Filme", ignoreCase = true) }
+                    val seriesAmigo = concluidosAmigoSemana.size - filmesAmigo
+                    val pontosAmigo = (filmesAmigo * 50) + (seriesAmigo * 30) + (midiasAmigo.count { it.status == "Concluído" } * 5).coerceAtLeast(10)
+                    val horasAmigo = (filmesAmigo * 2.0) + (seriesAmigo * 1.5)
+
+                    listaRanking.add(
+                        ItemLeaderboard(
+                            uid = amigoUid,
+                            nome = nomeAmigo,
+                            fotoUrl = fotoAmigo,
+                            pontos = pontosAmigo,
+                            titulosConcluidos = concluidosAmigoSemana.size.coerceAtLeast(midiasAmigo.count { it.status == "Concluído" }),
+                            horasEstimadas = horasAmigo,
+                            souEu = false
+                        )
+                    )
+                } catch (e: Exception) {
+                    // Ignora falha de amigo individual
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        val ordenada = listaRanking.sortedByDescending { it.pontos }
+        ordenada.mapIndexed { index, item ->
+            val pos = index + 1
+            val medalha = when (pos) {
+                1 -> "🥇"
+                2 -> "🥈"
+                3 -> "🥉"
+                else -> "#$pos"
+            }
+            item.copy(posicao = pos, medalha = medalha)
+        }
+    }
+
+    // ==========================================
+    // 🕵️ CINEBLIND (AMIGO OCULTO DE FILMES NA SALA)
+    // ==========================================
+    fun observarCineBlindSala(grupoId: String): Flow<CineBlindSessao?> = callbackFlow {
+        if (grupoId.isBlank()) {
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("grupos").document(grupoId)
+            .collection("cineblind").document("sessao_ativa")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(null)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    trySend(snapshot.toObject(CineBlindSessao::class.java))
+                } else {
+                    trySend(null)
+                }
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun iniciarCineBlind(grupoId: String): String = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: ""
+        val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
+        val sessaoId = "sessao_ativa"
+
+        val novaSessao = CineBlindSessao(
+            id = sessaoId,
+            grupoId = grupoId,
+            criadorUid = meuUid,
+            criadorNome = meuNome,
+            estado = "INSCRICAO",
+            sugestoes = emptyMap(),
+            vencedorId = "",
+            timestamp = System.currentTimeMillis()
+        )
+
+        firestore.collection("grupos").document(grupoId)
+            .collection("cineblind").document(sessaoId)
+            .set(novaSessao)
+            .await()
+
+        sessaoId
+    }
+
+    suspend fun adicionarSugestaoBlind(
+        grupoId: String,
+        sessaoId: String,
+        tituloReal: String,
+        posterReal: String,
+        idTmdb: Int,
+        genero: String,
+        ano: String,
+        pistas: List<String>
+    ): Boolean = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext false
+        val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
+
+        try {
+            val mapaSugestao = mapOf(
+                "id" to meuUid,
+                "autorUid" to meuUid,
+                "autorNome" to meuNome,
+                "tituloReal" to tituloReal,
+                "posterReal" to posterReal,
+                "idTmdb" to idTmdb,
+                "genero" to genero,
+                "ano" to ano,
+                "pistas" to pistas,
+                "votos" to emptyList<String>()
+            )
+
+            firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+                .update("sugestoes.$meuUid", mapaSugestao)
+                .await()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun avancarParaVotacaoCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+                .update("estado", "VOTACAO")
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun votarCineBlind(grupoId: String, sessaoId: String, sugestaoId: String): Boolean = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext false
+        try {
+            val docRef = firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+
+            firestore.runTransaction { transaction ->
+                val snap = transaction.get(docRef)
+                val sessao = snap.toObject(CineBlindSessao::class.java) ?: return@runTransaction
+                val sugestoes = sessao.sugestoes.toMutableMap()
+
+                // Remove voto anterior do usuário se já tiver votado
+                sugestoes.forEach { (chave, mapa) ->
+                    val mapaMutavel = mapa.toMutableMap()
+                    @Suppress("UNCHECKED_CAST")
+                    val votos = ((mapaMutavel["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()).toMutableList()
+                    if (votos.remove(meuUid)) {
+                        mapaMutavel["votos"] = votos
+                        sugestoes[chave] = mapaMutavel
+                    }
+                }
+
+                // Adiciona voto na sugestão escolhida
+                val alvo = sugestoes[sugestaoId]?.toMutableMap()
+                if (alvo != null) {
+                    @Suppress("UNCHECKED_CAST")
+                    val votos = ((alvo["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()).toMutableList()
+                    if (!votos.contains(meuUid)) {
+                        votos.add(meuUid)
+                        alvo["votos"] = votos
+                        sugestoes[sugestaoId] = alvo
+                    }
+                }
+
+                transaction.update(docRef, "sugestoes", sugestoes)
+            }.await()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun revelarVencedorCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val docRef = firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+
+            val snap = docRef.get().await()
+            val sessao = snap.toObject(CineBlindSessao::class.java) ?: return@withContext false
+            val maisVotada = sessao.obterSugestoesMapeadas().maxByOrNull { it.totalVotos }
+            val idVencedor = maisVotada?.id ?: ""
+
+            docRef.update(
+                mapOf(
+                    "estado" to "REVELADO",
+                    "vencedorId" to idVencedor
+                )
+            ).await()
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun encerrarCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+                .delete()
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

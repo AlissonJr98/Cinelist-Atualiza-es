@@ -19,6 +19,7 @@ service cloud.firestore {
     //   - minhas_salas/{grupoId}: Rooms/groups user participates in
     //   - notificacoes_chat/{remetenteUid}: In-app chat notifications
     //   - notificacoes/{notificacaoId}: System and group notifications
+    //   - radar_lancamentos/{alertaId}: Streaming launch radar and premiere alerts
     //
     // Collection: usuarios_publicos/{uid}
     // Document ID: Firebase Auth UID
@@ -53,6 +54,7 @@ service cloud.firestore {
     //   - matches/{matchDoc}: Group movie roulette matches
     //   - enquetes/{enqueteId}: Group quick polls and votes
     //   - cineparty/{docId}: Group CineParty synchronized watch party session
+    //   - cineblind/{blindId}: Group CineBlind secret movie session with cryptic clues
     //
     // Collection: chats/{chatId}/mensagens/{mensagemId}
     // Document ID: Formatted as uidA_uidB
@@ -117,6 +119,31 @@ service cloud.firestore {
     //   - ultimaReacaoAutor: string (optional, <= 100 chars)
     //   - ultimaReacaoTimestamp: number (optional)
     //   - canalVozAtivo: bool (optional)
+    //
+    // Collection: grupos/{grupoId}/cineblind/{blindId}
+    // Document ID: Blind session ID (<= 128 chars)
+    // Fields:
+    //   - id: string (optional, <= 128 chars)
+    //   - grupoId: string (optional, matches group id, <= 50 chars)
+    //   - criadorUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //   - estado: string ('INSCRICAO' | 'VOTACAO' | 'REVELADO')
+    //   - sugestoes: map or list (anonymous suggestions with clues, <= 1000 items)
+    //   - pistas: map or list (optional, clues, <= 1000 items)
+    //   - votos: map or list (optional, user votes, <= 1000 items)
+    //   - timestamp: number or timestamp
+    //
+    // Collection: usuarios/{uid}/radar_lancamentos/{alertaId}
+    // Document ID: Launch alert ID (<= 128 chars)
+    // Fields:
+    //   - id: string (optional, <= 128 chars)
+    //   - tmdbId: number or string (optional, <= 50 chars)
+    //   - titulo: string (optional, <= 200 chars)
+    //   - tipoMidia: string (optional, <= 50 chars)
+    //   - streaming: string or list (optional)
+    //   - dataEstreia: string or number or timestamp (optional)
+    //   - posterPath: string (optional, <= 2000 chars)
+    //   - notificado: bool (optional)
+    //   - criadoEm: number or timestamp (optional)
     //
     // ===============================================================
 
@@ -302,6 +329,17 @@ service cloud.firestore {
         (!('canalVozAtivo' in data) || data.canalVozAtivo is bool);
     }
 
+    function isValidCineBlind(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('grupoId' in data) || (data.grupoId is string && data.grupoId.size() <= 50)) &&
+        (!('criadorUid' in data) || (data.criadorUid is string && data.criadorUid.size() <= 128)) &&
+        (!('estado' in data) || (data.estado is string && data.estado in ['INSCRICAO', 'VOTACAO', 'REVELADO'])) &&
+        (!('sugestoes' in data) || ((data.sugestoes is map || data.sugestoes is list) && data.sugestoes.size() <= 1000)) &&
+        (!('pistas' in data) || ((data.pistas is map || data.pistas is list) && data.pistas.size() <= 1000)) &&
+        (!('votos' in data) || ((data.votos is map || data.votos is list) && data.votos.size() <= 1000)) &&
+        (!('timestamp' in data) || data.timestamp is number || data.timestamp is timestamp);
+    }
+
     // ===============================================================
     // Rules Definition
     // ===============================================================
@@ -343,6 +381,10 @@ service cloud.firestore {
       }
 
       match /notificacoes/{notificacaoId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /radar_lancamentos/{alertaId} {
         allow read, write: if isOwner(uid);
       }
     }
@@ -434,6 +476,20 @@ service cloud.firestore {
           areImmutableFieldsUnchanged(['anfitriaoUid']);
         allow delete: if isAuthenticated() &&
           (isGroupAdmin(grupoId) || request.auth.uid == resource.data.get('anfitriaoUid', ''));
+      }
+
+      match /cineblind/{blindId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          (isGroupMember(grupoId) || isAuthenticated()) &&
+          (!('criadorUid' in request.resource.data) || request.resource.data.criadorUid == request.auth.uid) &&
+          isValidCineBlind(request.resource.data);
+        allow update: if isAuthenticated() &&
+          (isGroupMember(grupoId) || isAuthenticated()) &&
+          isValidCineBlind(request.resource.data) &&
+          areImmutableFieldsUnchanged(['criadorUid', 'grupoId']);
+        allow delete: if isAuthenticated() &&
+          (isGroupAdmin(grupoId) || request.auth.uid == resource.data.get('criadorUid', ''));
       }
     }
 

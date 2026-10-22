@@ -406,6 +406,8 @@ fun TelaPrincipal(
     var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
     var mostrarDialogoEnquetes by remember { mutableStateOf(false) }
     var mostrarCinePartySala by remember { mutableStateOf(false) }
+    var mostrarCineBlindSala by remember { mutableStateOf(false) }
+    var mostrarDialogoRadarEstreias by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
     val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal" else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
@@ -558,6 +560,27 @@ fun TelaPrincipal(
             salaIdInicial = "sala_${grupoId.ifBlank { nomeListaAtiva.filter { it.isLetterOrDigit() } }}",
             viewModel = viewModel,
             onDispensar = { mostrarCinePartySala = false }
+        )
+    }
+
+    if (mostrarCineBlindSala) {
+        DialogoCineBlind(
+            viewModel = viewModel,
+            grupoId = casalIdAtivo,
+            nomeGrupo = nomeListaAtiva,
+            listaDeMidiasSala = listaDeMidias,
+            onIniciarCinePartyDoVencedor = { titulo, poster ->
+                mostrarCineBlindSala = false
+                mostrarCinePartySala = true
+            },
+            onDispensar = { mostrarCineBlindSala = false }
+        )
+    }
+
+    if (mostrarDialogoRadarEstreias) {
+        DialogoRadarStreaming(
+            viewModel = viewModel,
+            onDispensar = { mostrarDialogoRadarEstreias = false }
         )
     }
 
@@ -760,8 +783,13 @@ fun TelaPrincipal(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Meus Streamings:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                        TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                            Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = { mostrarDialogoRadarEstreias = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text("🔔 Radar Estreias", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                            }
+                            TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                                Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                     val meusStreamingsQueryML = StreamingManager.obterQueryMeusStreamings(contextoLocal)
@@ -883,6 +911,9 @@ fun TelaPrincipal(
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { mostrarCinePartySala = true }) {
                             Text("🍿", fontSize = 18.sp)
+                        }
+                        IconButton(onClick = { mostrarCineBlindSala = true }) {
+                            Text("🕵️", fontSize = 18.sp)
                         }
                         IconButton(onClick = { mostrarDialogoEnquetes = true }) {
                             Icon(

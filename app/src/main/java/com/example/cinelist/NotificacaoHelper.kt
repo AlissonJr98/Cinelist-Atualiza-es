@@ -15,6 +15,7 @@ object NotificacaoHelper {
 
     private const val CANAL_GRUPO_ID = "canal_salas_compartilhadas"
     private const val CANAL_SOLICITACOES_ID = "canal_solicitacoes_amizade"
+    private const val CANAL_ESTREIAS_ID = "canal_estreias_streaming"
 
     fun dispararNotificacaoGrupo(context: Context, titulo: String, autor: String, midiaTitulo: String, idRef: Int) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -157,6 +158,52 @@ object NotificacaoHelper {
                 "⚠️ Você foi removido da sala pelo Administrador.",
                 Toast.LENGTH_LONG
             ).show()
+        }
+    }
+
+    fun dispararNotificacaoEstreiaStreaming(context: Context, tituloMidia: String, provedorNome: String, idRef: Int) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                CANAL_ESTREIAS_ID,
+                "Radar de Estreias nos Streamings",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc."
+                enableLights(true)
+                lightColor = Color.CYAN
+                enableVibration(true)
+            }
+            notificationManager.createNotificationChannel(canal)
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            idRef,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificacao = NotificationCompat.Builder(context, CANAL_ESTREIAS_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("🎉 Chegou no Streaming: $provedorNome!")
+            .setContentText("\"$tituloMidia\" já está disponível para assistir!")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Boas notícias! O título \"$tituloMidia\" que você estava monitorando no Radar agora está disponível no catálogo do $provedorNome! 🍿"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(idRef, notificacao)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
         }
     }
 }
