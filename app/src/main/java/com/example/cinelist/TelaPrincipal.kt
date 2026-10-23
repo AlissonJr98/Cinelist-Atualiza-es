@@ -554,12 +554,86 @@ fun TelaPrincipal(
         )
     }
 
+    val sessaoMatchColetivoGlobal by viewModel.sessaoMatchColetivoAtiva.collectAsState(initial = null)
+    var conviteMatchDispensadoId by remember { mutableStateOf("") }
+
+    // Alerta ao vivo quando outro membro da sala inicia o CineMatch Coletivo
+    if (sessaoMatchColetivoGlobal?.estado == "ATIVO" &&
+        sessaoMatchColetivoGlobal?.criadorUid.isNullOrBlank() == false &&
+        sessaoMatchColetivoGlobal?.criadorUid != meuUid &&
+        conviteMatchDispensadoId != sessaoMatchColetivoGlobal?.id &&
+        !mostrarMatchColetivoSala
+    ) {
+        val autorMatch = sessaoMatchColetivoGlobal?.criadorNome?.ifBlank { "Um amigo" } ?: "Um amigo"
+        AlertDialog(
+            onDismissRequest = { conviteMatchDispensadoId = sessaoMatchColetivoGlobal?.id ?: "" },
+            icon = { Text("👥", fontSize = 32.sp) },
+            title = { Text("CineMatch Coletivo! 🍿") },
+            text = {
+                Text("$autorMatch chamou a galera da sala '$nomeListaAtiva' para o CineMatch Coletivo! Vamos votar nos filmes agora?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        conviteMatchDispensadoId = sessaoMatchColetivoGlobal?.id ?: ""
+                        mostrarMatchColetivoSala = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899))
+                ) {
+                    Text("Votar Agora 🚀", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { conviteMatchDispensadoId = sessaoMatchColetivoGlobal?.id ?: "" }) {
+                    Text("Depois", color = Color(0xFF94A3B8))
+                }
+            }
+        )
+    }
+
+    // Alerta de chamada CineParty recebida de outro membro da sala
+    val ultimaMsgSala = mensagensSala.lastOrNull()
+    var ultimaChamadaProcessadaId by remember { mutableStateOf("") }
+    if (ultimaMsgSala?.tipoMensagem == "CINEPARTY_CHAMADA" &&
+        ultimaMsgSala.autorUid != meuUid &&
+        ultimaChamadaProcessadaId != ultimaMsgSala.id &&
+        !mostrarCinePartySala &&
+        (System.currentTimeMillis() - ultimaMsgSala.timestamp < 120_000L)
+    ) {
+        AlertDialog(
+            onDismissRequest = { ultimaChamadaProcessadaId = ultimaMsgSala.id },
+            icon = { Text("📞", fontSize = 32.sp) },
+            title = { Text("Chamada CineParty Recebida! 🍿") },
+            text = {
+                Text("${ultimaMsgSala.autorNome} está te chamando para assistir juntos no CineParty da sala '$nomeListaAtiva'!")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        ultimaChamadaProcessadaId = ultimaMsgSala.id
+                        mostrarCinePartySala = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
+                ) {
+                    Text("Atender e Entrar 🍿", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ultimaChamadaProcessadaId = ultimaMsgSala.id }) {
+                    Text("Recusar", color = Color(0xFF94A3B8))
+                }
+            }
+        )
+    }
+
     if (mostrarCinePartySala) {
         val grupoId = viewModel.casalIdAtivo.value
         DialogoWatchParty(
             tituloMidia = "CineParty: $nomeListaAtiva",
             posterMidia = "",
             salaIdInicial = "sala_${grupoId.ifBlank { nomeListaAtiva.filter { it.isLetterOrDigit() } }}",
+            membrosSala = membrosSala,
+            grupoId = casalIdAtivo,
             viewModel = viewModel,
             onDispensar = { mostrarCinePartySala = false }
         )
@@ -584,6 +658,7 @@ fun TelaPrincipal(
             grupoId = casalIdAtivo,
             nomeGrupo = nomeListaAtiva,
             midiasGrupo = listaDeMidias,
+            membrosSala = membrosSala,
             viewModel = viewModel,
             onIniciarCineParty = { titulo, poster ->
                 mostrarMatchColetivoSala = false
@@ -812,19 +887,57 @@ fun TelaPrincipal(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt, fontSize = 12.sp) }) } }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Coleções & Maratonas Temáticas:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF8B5CF6).copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.6f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { mostrarDialogoPlaylistsPrincipal = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("🏷️", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Playlists Temáticas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1)
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF00E5FF).copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { mostrarDialogoRadarEstreias = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("🔔", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Radar de Estreias", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF), maxLines = 1)
+                            }
+                        }
+                    }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Meus Streamings:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(onClick = { mostrarDialogoPlaylistsPrincipal = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text("🏷️ Playlists", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA))
-                            }
-                            TextButton(onClick = { mostrarDialogoRadarEstreias = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text("🔔 Radar Estreias", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
-                            }
-                            TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                                Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            }
+                        TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
+                            Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     val meusStreamingsQueryML = StreamingManager.obterQueryMeusStreamings(contextoLocal)

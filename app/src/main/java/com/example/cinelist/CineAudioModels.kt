@@ -1,5 +1,14 @@
 package com.example.cinelist
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,18 +27,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
+import java.io.File
+import java.util.UUID
 
 data class CineAudioReview(
-    val id: String,
+    val id: String = UUID.randomUUID().toString(),
     val autorNome: String,
     val autorFoto: String = "",
     val tituloMidia: String,
     val duracaoSegundos: Int = 28,
+    val caminhoArquivo: String = "",
     val criadoEm: Long = System.currentTimeMillis()
 )
 
@@ -38,19 +52,76 @@ fun CineAudioPlayerWidget(
     review: CineAudioReview,
     modifier: Modifier = Modifier
 ) {
+    val contexto = LocalContext.current
     var tocando by remember { mutableStateOf(false) }
     var progresso by remember { mutableFloatStateOf(0f) }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
+    DisposableEffect(review.caminhoArquivo) {
+        onDispose {
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            } catch (_: Exception) {}
+            mediaPlayer = null
+        }
+    }
+
+    // Atualiza progresso da reprodução real
     LaunchedEffect(tocando) {
         if (tocando) {
-            while (progresso < 1f && tocando) {
-                delay(300)
-                progresso += 0.035f
+            val mp = mediaPlayer
+            if (mp != null) {
+                while (tocando && mp.isPlaying) {
+                    val dur = mp.duration
+                    if (dur > 0) {
+                        progresso = (mp.currentPosition.toFloat() / dur.toFloat()).coerceIn(0f, 1f)
+                    }
+                    delay(100L)
+                }
+            } else {
+                // Fallback suave caso sem arquivo físico
+                while (progresso < 1f && tocando) {
+                    delay(200L)
+                    progresso += 0.02f
+                }
+                if (progresso >= 1f) {
+                    tocando = false
+                    progresso = 0f
+                }
             }
-            if (progresso >= 1f) {
+        }
+    }
+
+    fun alternarReproducao() {
+        try {
+            if (tocando) {
+                mediaPlayer?.pause()
                 tocando = false
-                progresso = 0f
+            } else {
+                val arquivo = if (review.caminhoArquivo.isNotBlank()) File(review.caminhoArquivo) else null
+                if (arquivo != null && arquivo.exists() && arquivo.length() > 0) {
+                    if (mediaPlayer == null) {
+                        mediaPlayer = MediaPlayer().apply {
+                            setDataSource(arquivo.absolutePath)
+                            prepare()
+                            setOnCompletionListener {
+                                tocando = false
+                                progresso = 0f
+                            }
+                        }
+                    }
+                    mediaPlayer?.start()
+                    tocando = true
+                } else {
+                    // Sem arquivo local válido, anima barras como demonstração
+                    tocando = true
+                }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(contexto, "Falha ao reproduzir áudio gravado.", Toast.LENGTH_SHORT).show()
+            tocando = false
         }
     }
 
@@ -68,7 +139,7 @@ fun CineAudioPlayerWidget(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             IconButton(
-                onClick = { tocando = !tocando },
+                onClick = { alternarReproducao() },
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
@@ -76,7 +147,7 @@ fun CineAudioPlayerWidget(
             ) {
                 Icon(
                     imageVector = if (tocando) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = null,
+                    contentDescription = if (tocando) "Pausar" else "Reproduzir",
                     tint = Color(0xFF00E5FF)
                 )
             }
@@ -101,7 +172,7 @@ fun CineAudioPlayerWidget(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Simulador de ondas de áudio com barras
+                // Ondas de áudio dinâmicas
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -148,25 +219,109 @@ fun DialogoGravarCineAudio(
     onAudioGravado: (CineAudioReview) -> Unit,
     onDispensar: () -> Unit
 ) {
+    val contexto = LocalContext.current
     var gravando by remember { mutableStateOf(false) }
     var segundos by remember { mutableIntStateOf(0) }
     var concluido by remember { mutableStateOf(false) }
 
+    var mediaRecorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var arquivoGravado by remember { mutableStateOf<File?>(null) }
+
+    // Launcher para pedir permissão de microfone de forma reativa
+    val permissaoAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        if (concedida) {
+            Toast.makeText(contexto, "Permissão concedida! Toque para gravar.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(contexto, "Permissão de microfone necessária para gravar CineÁudio.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun pararGravacao(salvar: Boolean) {
+        try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        mediaRecorder = null
+        gravando = false
+        if (salvar && segundos > 0) {
+            concluido = true
+        }
+    }
+
+    fun iniciarGravacao() {
+        val temPermissao = ContextCompat.checkSelfPermission(
+            contexto,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!temPermissao) {
+            permissaoAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+
+        try {
+            val diretorioAudios = File(contexto.filesDir, "cine_audios").apply { if (!exists()) mkdirs() }
+            val novoArquivo = File(diretorioAudios, "audio_${System.currentTimeMillis()}.m4a")
+            arquivoGravado = novoArquivo
+
+            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(contexto)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+
+            recorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(128000)
+                setAudioSamplingRate(44100)
+                setOutputFile(novoArquivo.absolutePath)
+                prepare()
+                start()
+            }
+
+            mediaRecorder = recorder
+            gravando = true
+            concluido = false
+            segundos = 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(contexto, "Erro ao iniciar microfone: ${e.message}", Toast.LENGTH_LONG).show()
+            gravando = false
+        }
+    }
+
+    // Cronômetro da gravação
     LaunchedEffect(gravando) {
         if (gravando) {
-            segundos = 0
             while (gravando && segundos < 45) {
-                delay(1000)
+                delay(1000L)
                 segundos++
             }
             if (segundos >= 45) {
-                gravando = false
-                concluido = true
+                pararGravacao(salvar = true)
             }
         }
     }
 
-    Dialog(onDismissRequest = onDispensar) {
+    DisposableEffect(Unit) {
+        onDispose {
+            if (gravando) {
+                pararGravacao(salvar = false)
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = {
+        if (gravando) pararGravacao(salvar = false)
+        onDispensar()
+    }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color(0xFF0F172A),
@@ -188,7 +343,7 @@ fun DialogoGravarCineAudio(
                 )
 
                 Text(
-                    text = "Grave uma micro-crítica ou comentário de voz de até 45s sobre '$tituloMidia'",
+                    text = "Grave sua voz e comentários de até 45s sobre '$tituloMidia'",
                     fontSize = 12.sp,
                     color = Color(0xFF94A3B8),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -219,11 +374,9 @@ fun DialogoGravarCineAudio(
                     IconButton(
                         onClick = {
                             if (!gravando) {
-                                gravando = true
-                                concluido = false
+                                iniciarGravacao()
                             } else {
-                                gravando = false
-                                concluido = true
+                                pararGravacao(salvar = true)
                             }
                         },
                         modifier = Modifier
@@ -233,7 +386,7 @@ fun DialogoGravarCineAudio(
                     ) {
                         Icon(
                             imageVector = if (gravando) Icons.Default.Stop else Icons.Default.Mic,
-                            contentDescription = "Gravar",
+                            contentDescription = if (gravando) "Parar" else "Gravar",
                             tint = Color.Black,
                             modifier = Modifier.size(34.dp)
                         )
@@ -241,9 +394,9 @@ fun DialogoGravarCineAudio(
                 }
 
                 Text(
-                    text = if (gravando) "Gravando... 00:${segundos.toString().padStart(2, '0')}"
-                    else if (concluido) "Gravação concluída (${segundos}s)!"
-                    else "Toque no microfone para começar",
+                    text = if (gravando) "Gravando sua voz... 00:${segundos.toString().padStart(2, '0')}"
+                    else if (concluido) "Gravação concluída (${segundos}s)! Voz gravada com sucesso."
+                    else "Toque no microfone para falar",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (gravando) Color(0xFFEF4444) else Color.White
@@ -253,25 +406,30 @@ fun DialogoGravarCineAudio(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    TextButton(onClick = onDispensar) {
+                    TextButton(onClick = {
+                        if (gravando) pararGravacao(salvar = false)
+                        onDispensar()
+                    }) {
                         Text("Cancelar", color = Color(0xFF94A3B8))
                     }
 
                     Button(
                         onClick = {
+                            if (gravando) pararGravacao(salvar = true)
                             val review = CineAudioReview(
-                                id = java.util.UUID.randomUUID().toString(),
+                                id = UUID.randomUUID().toString(),
                                 autorNome = "Você",
                                 tituloMidia = tituloMidia,
-                                duracaoSegundos = if (segundos > 0) segundos else 18
+                                duracaoSegundos = if (segundos > 0) segundos else 1,
+                                caminhoArquivo = arquivoGravado?.absolutePath ?: ""
                             )
                             onAudioGravado(review)
                             onDispensar()
                         },
-                        enabled = concluido || segundos > 2,
+                        enabled = (concluido && arquivoGravado?.exists() == true) || segundos > 1,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                     ) {
-                        Text("Anexar CineÁudio")
+                        Text("Salvar CineÁudio")
                     }
                 }
             }

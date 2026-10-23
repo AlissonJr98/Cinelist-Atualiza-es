@@ -40,6 +40,7 @@ fun DialogoCineMatchColetivo(
     grupoId: String,
     nomeGrupo: String,
     midiasGrupo: List<Midia> = emptyList(),
+    membrosSala: List<MembroGrupo> = emptyList(),
     viewModel: MidiaViewModel,
     onIniciarCineParty: ((String, String) -> Unit)? = null,
     onDispensar: () -> Unit
@@ -106,8 +107,8 @@ fun DialogoCineMatchColetivo(
                     }
                 }
 
-                // Estado 1: Nenhuma sessão ativa na sala
-                if (sessaoAtiva == null || sessaoAtiva?.estado == "FINALIZADO") {
+                // Validação de Sala Selecionada
+                if (grupoId.isBlank()) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -115,6 +116,100 @@ fun DialogoCineMatchColetivo(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Text("👥", fontSize = 44.sp)
+                        Text(
+                            text = "Sala Compartilhada Necessária",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "O CineMatch Coletivo funciona exclusivamente em Salas Compartilhadas com amigos. Selecione ou crie uma sala primeiro!",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        Button(
+                            onClick = onDispensar,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Text("Entendi", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                // Estado 1: Nenhuma sessão ativa na sala
+                else if (sessaoAtiva == null || sessaoAtiva?.estado == "FINALIZADO") {
+                    val amigosOnline = remember(membrosSala) {
+                        membrosSala.filter { it.uid != meuUid && it.estaRealmenteOnline }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "🍿",
+                            fontSize = 44.sp
+                        )
+                        Text(
+                            text = "Nenhuma rodada de CineMatch ativa no momento.",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Para iniciar o CineMatch Coletivo, pelo menos um amigo precisa estar online na sala com você!",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+
+                        // Status dos amigos online
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (amigosOnline.isNotEmpty()) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFFEF4444).copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, if (amigosOnline.isNotEmpty()) Color(0xFF10B981) else Color(0xFFEF4444).copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(if (amigosOnline.isNotEmpty()) "🟢" else "🔴", fontSize = 12.sp)
+                                Text(
+                                    text = if (amigosOnline.isNotEmpty())
+                                        "Amigos online na sala: ${amigosOnline.joinToString { it.nome }}"
+                                    else
+                                        "Nenhum amigo está online nesta sala agora.",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (amigosOnline.isNotEmpty()) Color(0xFF10B981) else Color(0xFFFCA5A5)
+                                )
+                            }
+                        }
+
+                        if (amigosOnline.isEmpty()) {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.enviarMensagemParaSala("📢 Galera, entrem no CineList para jogarmos CineMatch Coletivo!")
+                                    android.widget.Toast.makeText(contexto, "Aviso enviado no chat da sala!", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("📢 Chamar Amigos no Chat da Sala")
+                            }
+                        }
                         Text(
                             text = "🍿",
                             fontSize = 44.sp
@@ -136,6 +231,10 @@ fun DialogoCineMatchColetivo(
 
                         Button(
                             onClick = {
+                                if (amigosOnline.isEmpty()) {
+                                    android.widget.Toast.makeText(contexto, "⚠️ Pelo menos 1 amigo precisa estar online na sala para iniciar o CineMatch!", android.widget.Toast.LENGTH_LONG).show()
+                                    return@Button
+                                }
                                 val candidatos = if (midiasGrupo.isNotEmpty()) {
                                     midiasGrupo.take(10).map {
                                         FilmeCandidatoMatch(
@@ -157,6 +256,11 @@ fun DialogoCineMatchColetivo(
                                     )
                                 }
                                 viewModel.iniciarMatchColetivo(grupoId, candidatos)
+                                viewModel.enviarMensagemParaSala(
+                                    texto = "👥 Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!",
+                                    tipoMensagem = "CINEMATCH_CONVITE"
+                                )
+                                android.widget.Toast.makeText(contexto, "Rodada iniciada! Convite enviado para a sala.", android.widget.Toast.LENGTH_SHORT).show()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
                             shape = RoundedCornerShape(12.dp),

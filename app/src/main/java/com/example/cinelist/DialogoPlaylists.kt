@@ -99,6 +99,28 @@ fun DialogoPlaylists(
                     }
                 }
 
+                // Card explicativo do propósito das playlists
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFF1E1B4B).copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text("💡", fontSize = 20.sp)
+                        Text(
+                            text = "As Playlists organizam maratonas temáticas (ex: 'Finais Que Explodem a Cabeça', 'Para Assistir Comendo Pipoca'). Adicione títulos aqui ou toque em '+ Playlist' na tela de detalhes!",
+                            fontSize = 11.sp,
+                            color = Color(0xFFE9D5FF),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
                 // Botão de Criar Nova Playlist
                 if (!criandoNova) {
                     Button(

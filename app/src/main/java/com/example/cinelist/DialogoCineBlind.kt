@@ -144,7 +144,41 @@ fun DialogoCineBlind(
                 }
 
                 // CONTEÚDO BASEADO NO ESTADO DA SESSÃO
-                if (sessaoBlind == null) {
+                if (grupoId.isBlank()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("👥", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Sala Compartilhada Necessária",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "O CineBlind é um amigo secreto de filmes feito para ser jogado em uma Sala Compartilhada com amigos. Selecione ou crie uma sala para abrir as pistas!",
+                            fontSize = 12.sp,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = onDispensar,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        ) {
+                            Text("Entendi", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                } else if (sessaoBlind == null) {
                     // Sem sessão iniciada: convite para abrir rodada
                     Column(
                         modifier = Modifier
@@ -232,7 +266,7 @@ fun DialogoCineBlind(
                                         .weight(1f),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    items(sugestoes, key = { it.id }) { sug ->
+                                    items(sugestoes, key = { it.id.ifBlank { "${it.autorUid}_${it.tituloReal}_${it.idTmdb}" } }) { sug ->
                                         val souEu = sug.autorUid == meuUid
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
@@ -345,7 +379,7 @@ fun DialogoCineBlind(
                                         .weight(1f),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    items(sugestoes, key = { it.id }) { sug ->
+                                    items(sugestoes, key = { it.id.ifBlank { "${it.autorUid}_${it.tituloReal}_${it.idTmdb}" } }) { sug ->
                                         val jaVoteiNessa = sug.votos.contains(meuUid)
                                         Surface(
                                             shape = RoundedCornerShape(16.dp),

@@ -27,6 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 
@@ -37,9 +41,17 @@ fun FeedAtividadesScreen(
     onMidiaClick: (Int, String, String) -> Unit, // idTmdb, titulo, tipo
     onAdicionarAmigoClick: () -> Unit
 ) {
+    val contexto = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val feed by viewModel.feedAtividades.collectAsState(initial = emptyList())
     val amigos by viewModel.amigosConectados.collectAsState(initial = emptyList())
+    val midiasPessoais by viewModel.midiasPessoais.collectAsState(initial = emptyList())
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+
+    var mostrarDialogoIndicar by remember { mutableStateOf(false) }
+    var inputTituloIndicar by remember { mutableStateOf("") }
+    var inputComentarioIndicar by remember { mutableStateOf("") }
+    var inputTipoIndicar by remember { mutableStateOf("Filme") }
 
     var filtroSelecionado by remember { mutableStateOf("Todos") }
     val uidsAmigos = remember(amigos) { amigos.map { it.uid }.toSet() }
@@ -58,6 +70,47 @@ fun FeedAtividadesScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Barra de Indicação Rápida para o Feed
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = Color(0xFF1E293B),
+            border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .clickable { mostrarDialogoIndicar = true }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF00E5FF).copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("✨", fontSize = 16.sp)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Indicar Filme ou Série no Feed",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Toque para recomendar uma obra aos amigos!",
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                }
+                Icon(Icons.Default.AddCircle, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(24.dp))
+            }
+        }
+
         // Chip de Filtros Holográficos Sci-Fi
         LazyRow(
             modifier = Modifier
@@ -131,11 +184,32 @@ fun FeedAtividadesScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 items(feedFiltrado, key = { it.id.ifBlank { "${it.autorUid}_${it.timestamp}" } }) { atividade ->
+                    val jaTenhoSalvo = remember(midiasPessoais, atividade.tmdbId, atividade.tituloMidia) {
+                        midiasPessoais.any {
+                            (atividade.tmdbId != 0 && it.idTmdb == atividade.tmdbId) ||
+                            it.titulo.equals(atividade.tituloMidia, ignoreCase = true)
+                        }
+                    }
+
                     CardAtividadeSocial(
                         atividade = atividade,
                         meuUid = meuUid,
+                        estaNaMinhaLista = jaTenhoSalvo,
                         onMidiaClick = {
                             onMidiaClick(atividade.tmdbId, atividade.tituloMidia, atividade.tipoMidia)
+                        },
+                        onQueroAssistirTambem = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            val nova = Midia(
+                                idTmdb = atividade.tmdbId,
+                                titulo = atividade.tituloMidia,
+                                tipo = atividade.tipoMidia.ifBlank { "Filme" },
+                                imagemCapa = atividade.posterPath,
+                                status = StatusMidia.QUERO_ASSISTIR.valor,
+                                isCasal = false
+                            )
+                            viewModel.inserir(nova)
+                            Toast.makeText(contexto, "'${atividade.tituloMidia}' adicionado à sua lista!", Toast.LENGTH_SHORT).show()
                         },
                         onReagir = { emoji ->
                             viewModel.alternarReacaoAtividade(atividade.id, emoji)
@@ -147,6 +221,69 @@ fun FeedAtividadesScreen(
                 }
             }
         }
+
+        if (mostrarDialogoIndicar) {
+            AlertDialog(
+                onDismissRequest = { mostrarDialogoIndicar = false },
+                title = { Text("Indicar para os Amigos ✨") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Recomende um título incrível para todos os seus amigos no feed:")
+                        OutlinedTextField(
+                            value = inputTituloIndicar,
+                            onValueChange = { inputTituloIndicar = it },
+                            label = { Text("Título da Obra (ex: Interestelar)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("Filme", "Série", "Anime").forEach { tipo ->
+                                FilterChip(
+                                    selected = inputTipoIndicar == tipo,
+                                    onClick = { inputTipoIndicar = tipo },
+                                    label = { Text(tipo) }
+                                )
+                            }
+                        }
+                        OutlinedTextField(
+                            value = inputComentarioIndicar,
+                            onValueChange = { inputComentarioIndicar = it },
+                            label = { Text("Seu comentário ou dica (ex: 'Roteiro genial!')") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val titulo = inputTituloIndicar.trim()
+                            if (titulo.isNotBlank()) {
+                                viewModel.publicarAtividade(
+                                    tipo = "RECOMENDACAO",
+                                    tmdbId = 0,
+                                    tituloMidia = titulo,
+                                    posterPath = "",
+                                    tipoMidia = inputTipoIndicar,
+                                    comentario = inputComentarioIndicar.trim()
+                                )
+                                Toast.makeText(contexto, "Indicação publicada no feed!", Toast.LENGTH_SHORT).show()
+                                inputTituloIndicar = ""
+                                inputComentarioIndicar = ""
+                                mostrarDialogoIndicar = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
+                    ) {
+                        Text("Publicar", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarDialogoIndicar = false }) {
+                        Text("Cancelar", color = Color.Gray)
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -154,7 +291,9 @@ fun FeedAtividadesScreen(
 fun CardAtividadeSocial(
     atividade: AtividadeSocial,
     meuUid: String,
+    estaNaMinhaLista: Boolean = false,
     onMidiaClick: () -> Unit,
+    onQueroAssistirTambem: () -> Unit = {},
     onReagir: (String) -> Unit,
     onDeletar: () -> Unit
 ) {
@@ -445,7 +584,43 @@ fun CardAtividadeSocial(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Botão de Ação Direta: Quero Assistir Também
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (estaNaMinhaLista) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(13.dp))
+                            Text("Na Minha Lista", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = onQueroAssistirTambem,
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                        modifier = Modifier.height(30.dp),
+                        border = BorderStroke(1.dp, Color(0xFF00E5FF))
+                    ) {
+                        Icon(Icons.Default.BookmarkAdd, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Quero Assistir Também", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Linha de Reações
             Row(

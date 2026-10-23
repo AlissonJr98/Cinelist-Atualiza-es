@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 79
-        versionName = "2.0.39"
+        versionCode = 80
+        versionName = "2.0.40"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

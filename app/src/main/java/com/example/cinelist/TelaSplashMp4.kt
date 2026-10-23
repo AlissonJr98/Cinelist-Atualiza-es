@@ -7,12 +7,15 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 
@@ -32,7 +35,7 @@ fun TelaSplashMp4(
     // 🛡️ TIMEOUT DE SEGURANÇA: Garante que NENHUM celular (Motorola, Xiaomi, Samsung)
     // fique preso na splash caso o decoder de vídeo do hardware falhe ou demore
     LaunchedEffect(Unit) {
-        delay(2200)
+        delay(2200L)
         finalizarSplash()
     }
 
@@ -43,6 +46,23 @@ fun TelaSplashMp4(
             .clickable { finalizarSplash() }, // Permite saltar ao tocar na tela
         contentAlignment = Alignment.Center
     ) {
+        // Fallback visual elegante caso o codec de vídeo do hardware falhe ou não responda
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("🎬", fontSize = 64.sp)
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "CINELIST",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF00E5FF),
+                letterSpacing = 4.sp
+            )
+        }
+
+        // Vídeo animado em TextureView com decodificação defensiva
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -59,8 +79,21 @@ fun TelaSplashMp4(
                     override fun onSurfaceTextureAvailable(surfaceTexture: android.graphics.SurfaceTexture, width: Int, height: Int) {
                         try {
                             mediaPlayer = MediaPlayer().apply {
-                                val uri = Uri.parse("android.resource://${ctx.packageName}/raw/splash_animada")
-                                setDataSource(ctx, uri)
+                                try {
+                                    val afd = ctx.resources.openRawResourceFd(R.raw.splash_animada)
+                                    if (afd != null) {
+                                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                                        afd.close()
+                                    } else {
+                                        val uri = Uri.parse("android.resource://${ctx.packageName}/raw/splash_animada")
+                                        setDataSource(ctx, uri)
+                                    }
+                                } catch (eFd: Throwable) {
+                                    android.util.Log.w("TelaSplashMp4", "Fallback de splash raw: ${eFd.message}")
+                                    val uri = Uri.parse("android.resource://${ctx.packageName}/raw/splash_animada")
+                                    setDataSource(ctx, uri)
+                                }
+
                                 setSurface(Surface(surfaceTexture))
                                 isLooping = false
 

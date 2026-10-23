@@ -1430,6 +1430,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun iniciarCineBlind(grupoId: String): String = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank()) return@withContext ""
         val meuUid = auth.currentUser?.uid ?: ""
         val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
         val sessaoId = "sessao_ativa"
@@ -1463,6 +1464,7 @@ class SocialRepository @Inject constructor() {
         ano: String,
         pistas: List<String>
     ): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || sessaoId.isBlank()) return@withContext false
         val meuUid = auth.currentUser?.uid ?: return@withContext false
         val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
 
@@ -1493,6 +1495,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun avancarParaVotacaoCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || sessaoId.isBlank()) return@withContext false
         try {
             firestore.collection("grupos").document(grupoId)
                 .collection("cineblind").document(sessaoId)
@@ -1506,6 +1509,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun votarCineBlind(grupoId: String, sessaoId: String, sugestaoId: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || sessaoId.isBlank() || sugestaoId.isBlank()) return@withContext false
         val meuUid = auth.currentUser?.uid ?: return@withContext false
         try {
             val docRef = firestore.collection("grupos").document(grupoId)
@@ -1550,6 +1554,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun revelarVencedorCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || sessaoId.isBlank()) return@withContext false
         try {
             val docRef = firestore.collection("grupos").document(grupoId)
                 .collection("cineblind").document(sessaoId)
@@ -1574,6 +1579,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun encerrarCineBlind(grupoId: String, sessaoId: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank() || sessaoId.isBlank()) return@withContext false
         try {
             firestore.collection("grupos").document(grupoId)
                 .collection("cineblind").document(sessaoId)
@@ -1615,6 +1621,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun iniciarMatchColetivo(grupoId: String, filmesCandidatos: List<FilmeCandidatoMatch>): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank()) return@withContext false
         val meuUid = auth.currentUser?.uid ?: ""
         val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
         val sessaoId = "sessao_ativa"
@@ -1643,6 +1650,7 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun votarMatchColetivo(grupoId: String, idTmdb: Int, deuMatch: Boolean): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank()) return@withContext false
         val meuUid = auth.currentUser?.uid ?: return@withContext false
         val sessaoId = "sessao_ativa"
         val docRef = firestore.collection("grupos").document(grupoId)

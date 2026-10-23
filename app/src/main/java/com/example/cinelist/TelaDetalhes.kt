@@ -407,12 +407,17 @@ fun TelaDetalhes(
         )
     }
 
+    val membrosSalaDetalhes by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
+
     if (mostrarDialogoWatchParty) {
         val midiaIdUnico = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 1
+        val salaCanonical = if (isModoCasal) "party_${casalIdAtivo}_$midiaIdUnico" else "party_$midiaIdUnico"
         DialogoWatchParty(
             tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
             posterMidia = midiaSalva?.imagemCapa ?: detalhesApi?.caminhoPoster ?: "",
-            salaIdInicial = "party_$midiaIdUnico",
+            salaIdInicial = salaCanonical,
+            membrosSala = membrosSalaDetalhes,
+            grupoId = casalIdAtivo,
             viewModel = viewModel,
             onDispensar = { mostrarDialogoWatchParty = false }
         )
@@ -1588,16 +1593,39 @@ fun TelaDetalhes(
                                             val gen = detalhesApi?.generoTexto ?: midiaSalva?.genero ?: ""
                                             val nt = if (nota > 0) nota else 8
                                             val cmt = if (comentarioPessoalInput.isNotBlank()) comentarioPessoalInput else "Marcado como imperdível no CineList!"
-                                            InstagramShareHelper.compartilharCineCardStory(
-                                                context = contexto,
-                                                titulo = t,
-                                                tipo = tp,
-                                                ano = an,
-                                                genero = gen,
-                                                nota = nt,
-                                                comentario = cmt,
-                                                posterBitmap = null
-                                            )
+                                            coroutineScope.launch {
+                                                android.widget.Toast.makeText(contexto, "Gerando CineCard com poster...", android.widget.Toast.LENGTH_SHORT).show()
+                                                val urlPoster = midiaSalva?.imagemCapa?.ifBlank { null }
+                                                    ?: detalhesApi?.caminhoPoster?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
+                                                    ?: detalhesApi?.caminhoBackdrop?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
+
+                                                var posterBitmap: android.graphics.Bitmap? = null
+                                                if (!urlPoster.isNullOrBlank()) {
+                                                    try {
+                                                        val req = coil.request.ImageRequest.Builder(contexto)
+                                                            .data(urlPoster)
+                                                            .allowHardware(false)
+                                                            .build()
+                                                        val result = coil.ImageLoader(contexto).execute(req)
+                                                        if (result is coil.request.SuccessResult) {
+                                                            posterBitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        e.printStackTrace()
+                                                    }
+                                                }
+
+                                                InstagramShareHelper.compartilharCineCardStory(
+                                                    context = contexto,
+                                                    titulo = t,
+                                                    tipo = tp,
+                                                    ano = an,
+                                                    genero = gen,
+                                                    nota = nt,
+                                                    comentario = cmt,
+                                                    posterBitmap = posterBitmap
+                                                )
+                                            }
                                         }
                                     ) {
                                         Row(

@@ -56,6 +56,8 @@ fun DialogoWatchParty(
     tituloMidia: String,
     posterMidia: String = "",
     salaIdInicial: String = "",
+    membrosSala: List<MembroGrupo> = emptyList(),
+    grupoId: String = "",
     viewModel: MidiaViewModel? = null,
     onDispensar: () -> Unit
 ) {
@@ -73,6 +75,9 @@ fun DialogoWatchParty(
             else "cineparty_${(tituloMidia.filter { it.isLetterOrDigit() }.take(12).ifBlank { "sessao" })}_${System.currentTimeMillis() % 10000}"
         )
     }
+
+    var mostrarDialogoTrocarCodigo by remember { mutableStateOf(false) }
+    var inputCodigoSala by remember { mutableStateOf("") }
 
     // Coleta o estado em tempo real da sessão do Firestore caso viewModel esteja presente
     val sessaoAtiva by viewModel?.sessaoCinePartyAtiva?.collectAsState() ?: remember { mutableStateOf<CinePartySessao?>(null) }
@@ -173,33 +178,32 @@ fun DialogoWatchParty(
         }
     }
 
-    // Iniciar contagem regressiva síncrona (3, 2, 1... PLAY!)
+    // Dispara contagem sincronizada para todos os dispositivos
     fun iniciarContagemSincronizada() {
         if (viewModel != null && salaId.isNotBlank()) {
             viewModel.dispararContagemCineParty(salaId)
-            escopo.launch {
-                for (passo in 3 downTo 1) {
-                    viewModel.atualizarContagemPassoCineParty(salaId, passo)
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    delay(1000L)
-                }
-                viewModel.atualizarContagemPassoCineParty(salaId, 0)
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                delay(700L)
-            }
         } else {
             emContagemLocal = true
             contagemRegressivaLocal = 3
-            escopo.launch {
-                while (contagemRegressivaLocal > 0) {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    delay(1000L)
-                    contagemRegressivaLocal--
-                }
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                delay(700L)
-                emContagemLocal = false
-                assistindoSincronizadoLocal = true
+        }
+    }
+
+    // Ticker síncrono local que roda em simultâneo no celular de todos os participantes
+    LaunchedEffect(estaEmContagem) {
+        if (estaEmContagem) {
+            contagemRegressivaLocal = 3
+            emContagemLocal = true
+            while (contagemRegressivaLocal > 0) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                delay(1000L)
+                contagemRegressivaLocal--
+            }
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            delay(500L)
+            emContagemLocal = false
+            assistindoSincronizadoLocal = true
+            if (souAnfitriao && viewModel != null && salaId.isNotBlank()) {
+                viewModel.atualizarContagemPassoCineParty(salaId, 0)
             }
         }
     }
@@ -214,57 +218,6 @@ fun DialogoWatchParty(
                 .background(Color(0xE6050811)),
             contentAlignment = Alignment.Center
         ) {
-            // EMOJIS FLUTUANTES SINCRONIZADOS NA TELA
-            emojisFlutuando.forEach { item ->
-                var animOffsetY by remember { mutableFloatStateOf(0f) }
-                var animAlpha by remember { mutableFloatStateOf(1f) }
-
-                LaunchedEffect(item.id) {
-                    val tempoInicio = System.currentTimeMillis()
-                    while (System.currentTimeMillis() - tempoInicio < 2200L) {
-                        val progresso = (System.currentTimeMillis() - tempoInicio) / 2200f
-                        animOffsetY = -progresso * 680f
-                        animAlpha = (1f - progresso).coerceIn(0f, 1f)
-                        delay(16L)
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = (item.xOffsetFraction * 320).dp, bottom = 120.dp),
-                    contentAlignment = Alignment.BottomStart
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.graphicsLayer {
-                            translationY = animOffsetY
-                            alpha = animAlpha
-                        }
-                    ) {
-                        if (item.autor.isNotBlank() && item.autor != "Você") {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xCC1E293B),
-                                border = BorderStroke(0.8.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
-                            ) {
-                                Text(
-                                    text = item.autor,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF00E5FF),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = item.emoji,
-                            fontSize = 38.sp
-                        )
-                    }
-                }
-            }
-
             // CONTAINER DO COMPANHEIRO DE SESSÃO
             Surface(
                 shape = RoundedCornerShape(28.dp),
@@ -364,6 +317,15 @@ fun DialogoWatchParty(
                             }
 
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(
+                                    onClick = {
+                                        mostrarDialogoTrocarCodigo = true
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Key, contentDescription = "Entrar com Código", tint = Color(0xFFA78BFA), modifier = Modifier.size(16.dp))
+                                }
+
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(salaId))
@@ -531,6 +493,84 @@ fun DialogoWatchParty(
                                             overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Center
                                         )
+                                    }
+                                }
+                            }
+
+                            // Lista de amigos online na sala compartilhada para chamar instantaneamente
+                            val ausentesOnline = remember(membrosSala, participantesLista) {
+                                membrosSala.filter { m ->
+                                    m.uid != meuUid && m.estaRealmenteOnline && participantesLista.none { p -> p.uid == m.uid }
+                                }
+                            }
+
+                            if (ausentesOnline.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Amigos online na sala (${ausentesOnline.size}):",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF00E5FF)
+                                    )
+                                    ausentesOnline.forEach { amigo ->
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = Color(0xFF151D30),
+                                            border = BorderStroke(1.dp, Color(0xFF1E293B)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(8.dp)
+                                                            .clip(CircleShape)
+                                                            .background(Color(0xFF10B981))
+                                                    )
+                                                    Text(
+                                                        text = amigo.nome,
+                                                        color = Color.White,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                }
+
+                                                Button(
+                                                    onClick = {
+                                                        if (viewModel != null && grupoId.isNotBlank()) {
+                                                            viewModel.enviarMensagemParaSala(
+                                                                texto = "🍿 Chamando ${amigo.nome} para a chamada CineParty de '$tituloMidia'!",
+                                                                tipoMensagem = "CINEPARTY_CHAMADA",
+                                                                mediaUrl = salaId
+                                                            )
+                                                            Toast.makeText(contexto, "Chamando ${amigo.nome} para a chamada...", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(28.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "Chamar 📞",
+                                                        color = Color.Black,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -741,6 +781,96 @@ fun DialogoWatchParty(
                         }
                     }
                 }
+            }
+
+            // EMOJIS FLUTUANTES SINCRONIZADOS NA TELA
+            emojisFlutuando.forEach { item ->
+                var animOffsetY by remember { mutableFloatStateOf(0f) }
+                var animAlpha by remember { mutableFloatStateOf(1f) }
+
+                LaunchedEffect(item.id) {
+                    val tempoInicio = System.currentTimeMillis()
+                    while (System.currentTimeMillis() - tempoInicio < 2200L) {
+                        val progresso = (System.currentTimeMillis() - tempoInicio) / 2200f
+                        animOffsetY = -progresso * 680f
+                        animAlpha = (1f - progresso).coerceIn(0f, 1f)
+                        delay(16L)
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = (item.xOffsetFraction * 320).dp, bottom = 120.dp),
+                    contentAlignment = Alignment.BottomStart
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.graphicsLayer {
+                            translationY = animOffsetY
+                            alpha = animAlpha
+                        }
+                    ) {
+                        if (item.autor.isNotBlank() && item.autor != "Você") {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xCC1E293B),
+                                border = BorderStroke(0.8.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
+                            ) {
+                                Text(
+                                    text = item.autor,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF00E5FF),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = item.emoji,
+                            fontSize = 38.sp
+                        )
+                    }
+                }
+            }
+
+            if (mostrarDialogoTrocarCodigo) {
+                AlertDialog(
+                    onDismissRequest = { mostrarDialogoTrocarCodigo = false },
+                    title = { Text("Entrar em Outra Sala CineParty") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Digite ou cole o código da sala de CineParty fornecido pelo seu amigo:")
+                            OutlinedTextField(
+                                value = inputCodigoSala,
+                                onValueChange = { inputCodigoSala = it },
+                                label = { Text("Código da Sala") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val novoCodigo = inputCodigoSala.trim()
+                                if (novoCodigo.isNotBlank()) {
+                                    salaId = novoCodigo
+                                    mostrarDialogoTrocarCodigo = false
+                                    Toast.makeText(contexto, "Conectando à sala $novoCodigo...", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
+                        ) {
+                            Text("Entrar na Sala", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { mostrarDialogoTrocarCodigo = false }) {
+                            Text("Cancelar", color = Color.Gray)
+                        }
+                    }
+                )
             }
         }
     }
