@@ -89,7 +89,10 @@ service cloud.firestore {
     //   - autorFoto: string (optional, <= 2000 chars)
     //   - autorFotoUrl: string (optional, <= 2000 chars)
     //   - tipo: string (activity type, <= 50 chars)
+    //   - categoria: string (forum category, optional, <= 100 chars)
+    //   - topicoTitulo: string (forum topic title, optional, <= 200 chars)
     //   - tituloMidia: string (media title, <= 200 chars)
+    //   - tipoMidia: string (media type, optional, <= 50 chars)
     //   - midiaId: string or number (optional)
     //   - tmdbId: number or string (optional)
     //   - posterPath: string (optional, <= 2000 chars)
@@ -97,8 +100,22 @@ service cloud.firestore {
     //   - nota: number (optional)
     //   - texto: string (optional, <= 2000 chars)
     //   - comentario: string (optional, <= 2000 chars)
+    //   - contemSpoiler: bool (optional)
+    //   - totalComentarios: number (optional)
     //   - timestamp: number
     //   - reacoes: map or list (reactions/likes, <= 1000 items)
+    //   - curtidasUids: list of strings (<= 1000 items)
+    // Subcollections:
+    //   - comentarios/{comentarioId}: Subcollection for comments/replies on social feed & forum topics
+    //     - id: string (comment id, optional, <= 128 chars)
+    //     - atividadeId: string (parent activity id, optional, <= 128 chars)
+    //     - autorUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //     - autorNome: string (optional, <= 100 chars)
+    //     - autorFoto: string (optional, <= 2000 chars)
+    //     - autorFotoUrl: string (optional, <= 2000 chars)
+    //     - texto: string (comment text, <= 2000 chars)
+    //     - timestamp: number
+    //     - curtidasUids: list of strings (<= 1000 items)
     //
     // Collection: cineparty_salas/{salaId}
     // Document ID: Room / Session ID (<= 128 chars)
@@ -298,7 +315,10 @@ service cloud.firestore {
         (!('autorFoto' in data) || (data.autorFoto is string && data.autorFoto.size() <= 2000)) &&
         (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
         (!('tipo' in data) || (data.tipo is string && data.tipo.size() <= 50)) &&
+        (!('categoria' in data) || (data.categoria is string && data.categoria.size() <= 100)) &&
+        (!('topicoTitulo' in data) || (data.topicoTitulo is string && data.topicoTitulo.size() <= 200)) &&
         (!('tituloMidia' in data) || (data.tituloMidia is string && data.tituloMidia.size() <= 200)) &&
+        (!('tipoMidia' in data) || (data.tipoMidia is string && data.tipoMidia.size() <= 50)) &&
         (!('midiaId' in data) || (data.midiaId is string && data.midiaId.size() <= 128) || data.midiaId is number) &&
         (!('tmdbId' in data) || data.tmdbId is number || (data.tmdbId is string && data.tmdbId.size() <= 50)) &&
         (!('posterPath' in data) || (data.posterPath is string && data.posterPath.size() <= 2000)) &&
@@ -306,8 +326,23 @@ service cloud.firestore {
         (!('nota' in data) || data.nota is number) &&
         (!('texto' in data) || (data.texto is string && data.texto.size() <= 2000)) &&
         (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000)) &&
+        (!('contemSpoiler' in data) || data.contemSpoiler is bool) &&
+        (!('totalComentarios' in data) || data.totalComentarios is number) &&
+        (!('curtidasUids' in data) || (data.curtidasUids is list && data.curtidasUids.size() <= 1000)) &&
         (!('timestamp' in data) || data.timestamp is number) &&
         (!('reacoes' in data) || (data.reacoes is map && data.reacoes.size() <= 1000) || (data.reacoes is list && data.reacoes.size() <= 1000));
+    }
+
+    function isValidComentarioForum(data) {
+      return data.autorUid is string && data.autorUid.size() <= 128 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('atividadeId' in data) || (data.atividadeId is string && data.atividadeId.size() <= 128)) &&
+        (!('autorNome' in data) || (data.autorNome is string && data.autorNome.size() <= 100)) &&
+        (!('autorFoto' in data) || (data.autorFoto is string && data.autorFoto.size() <= 2000)) &&
+        (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
+        (!('texto' in data) || (data.texto is string && data.texto.size() <= 2000)) &&
+        (!('timestamp' in data) || data.timestamp is number) &&
+        (!('curtidasUids' in data) || (data.curtidasUids is list && data.curtidasUids.size() <= 1000));
     }
 
     function isValidEnquete(data) {
@@ -576,24 +611,46 @@ service cloud.firestore {
       }
     }
 
-    // 6. FEED SOCIAL DE ATIVIDADES
+    // 6. FEED SOCIAL DE ATIVIDADES E FÓRUM INTERATIVO
     match /atividades_sociais/{atividadeId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() &&
         request.auth.uid == request.resource.data.autorUid &&
         isValidAtividadeSocial(request.resource.data);
-      allow update: if isAuthenticated() && (
-        // O próprio autor atualizando sua atividade
-        (request.auth.uid == resource.data.autorUid &&
-         isValidAtividadeSocial(request.resource.data) &&
-         areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
-        // Qualquer usuário autenticado atualizando apenas o campo de reações ('reacoes') para curtir/reagir
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacoes']) &&
-         isValidAtividadeSocial(request.resource.data) &&
-         areImmutableFieldsUnchanged(['autorUid', 'autorNome', 'tipo', 'tituloMidia', 'timestamp', 'id']))
-      );
+      allow update: if isAuthenticated() &&
+        isValidAtividadeSocial(request.resource.data) && (
+          // a) O próprio autor atualizando sua atividade
+          (request.auth.uid == resource.data.autorUid &&
+           areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
+          // b) Qualquer usuário autenticado atualizando campos de interação social: reações, curtidas ('curtidasUids') ou contador de comentários ('totalComentarios')
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacoes', 'curtidasUids', 'totalComentarios']) &&
+           areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp']))
+        );
       allow delete: if isAuthenticated() &&
         request.auth.uid == resource.data.autorUid;
+
+      // Subcoleção de comentários e respostas nos tópicos do fórum/feed social
+      match /comentarios/{comentarioId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.auth.uid == request.resource.data.autorUid &&
+          isValidComentarioForum(request.resource.data);
+        allow update: if isAuthenticated() &&
+          isValidComentarioForum(request.resource.data) && (
+            // O próprio autor da resposta
+            (request.auth.uid == resource.data.autorUid &&
+             areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
+            // Qualquer usuário autenticado atualizando apenas as curtidas do comentário ('curtidasUids')
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidasUids']) &&
+             areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp']))
+          );
+        allow delete: if isAuthenticated() && (
+          // O próprio autor do comentário OU o autor do tópico pai
+          request.auth.uid == resource.data.autorUid ||
+          (exists(/databases/$(database)/documents/atividades_sociais/$(atividadeId)) &&
+           request.auth.uid == get(/databases/$(database)/documents/atividades_sociais/$(atividadeId)).data.autorUid)
+        );
+      }
     }
 
     // 7. SESSÕES CINEPARTY / WATCH PARTY AO VIVO

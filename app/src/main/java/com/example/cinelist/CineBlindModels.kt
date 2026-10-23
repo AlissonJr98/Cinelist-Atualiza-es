@@ -33,33 +33,36 @@ data class CineBlindSessao(
     val criadorUid: String = "",
     val criadorNome: String = "",
     val estado: String = "INSCRICAO", // "INSCRICAO", "VOTACAO", "REVELADO"
-    val sugestoes: Map<String, Map<String, Any>> = emptyMap(),
+    val sugestoes: Map<String, Any> = emptyMap(),
     val vencedorId: String = "",
     val timestamp: Long = System.currentTimeMillis()
 ) {
     fun obterSugestoesMapeadas(): List<SugestaoBlind> {
         val lista = mutableListOf<SugestaoBlind>()
-        sugestoes.forEach { (id, mapa) ->
+        sugestoes.forEach { (chaveId, valor) ->
             try {
-                @Suppress("UNCHECKED_CAST")
-                val pistasLista = (mapa["pistas"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
-                @Suppress("UNCHECKED_CAST")
-                val votosLista = (mapa["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                if (valor is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    val pistasLista = (valor["pistas"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+                    @Suppress("UNCHECKED_CAST")
+                    val votosLista = (valor["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
 
-                lista.add(
-                    SugestaoBlind(
-                        id = id,
-                        autorUid = mapa["autorUid"] as? String ?: "",
-                        autorNome = mapa["autorNome"] as? String ?: "Cinéfilo",
-                        tituloReal = mapa["tituloReal"] as? String ?: "",
-                        posterReal = mapa["posterReal"] as? String ?: "",
-                        idTmdb = (mapa["idTmdb"] as? Number)?.toInt() ?: 0,
-                        genero = mapa["genero"] as? String ?: "Cinema",
-                        ano = mapa["ano"] as? String ?: "",
-                        pistas = pistasLista,
-                        votos = votosLista
+                    val idFinal = (valor["id"] as? String)?.ifBlank { chaveId } ?: chaveId
+                    lista.add(
+                        SugestaoBlind(
+                            id = idFinal,
+                            autorUid = valor["autorUid"] as? String ?: "",
+                            autorNome = valor["autorNome"] as? String ?: "Cinéfilo",
+                            tituloReal = valor["tituloReal"] as? String ?: "",
+                            posterReal = valor["posterReal"] as? String ?: "",
+                            idTmdb = (valor["idTmdb"] as? Number)?.toInt() ?: 0,
+                            genero = valor["genero"] as? String ?: "Cinema",
+                            ano = valor["ano"] as? String ?: "",
+                            pistas = pistasLista,
+                            votos = votosLista
+                        )
                     )
-                )
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

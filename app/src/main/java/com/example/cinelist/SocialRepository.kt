@@ -2,6 +2,7 @@ package com.example.cinelist
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
@@ -960,6 +961,222 @@ class SocialRepository @Inject constructor() {
     }
 
     // =========================================================================
+    // 💬 CINEFÓRUM & DISCUSSÕES INTERATIVAS NO FEED SOCIAL
+    // =========================================================================
+
+    suspend fun publicarTopicoForum(
+        topicoTitulo: String,
+        categoria: String,
+        texto: String,
+        tituloMidia: String = "",
+        tmdbId: Int = 0,
+        posterPath: String = "",
+        tipoMidia: String = "Filme",
+        contemSpoiler: Boolean = false
+    ): Boolean = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext false
+        if (texto.isBlank() && topicoTitulo.isBlank()) return@withContext false
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
+            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+
+            val ref = firestore.collection("atividades_sociais").document()
+            val atividade = AtividadeSocial(
+                id = ref.id,
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFotoUrl = foto,
+                tipo = if (categoria == "Teorias & Enigmas") "TEORIA" else if (categoria == "Crítica / Review") "AVALIOU" else "DISCUSSAO",
+                categoria = categoria.ifBlank { "Discussão Geral" },
+                topicoTitulo = topicoTitulo.trim(),
+                tmdbId = tmdbId,
+                tituloMidia = tituloMidia.trim(),
+                posterPath = posterPath,
+                tipoMidia = tipoMidia,
+                nota = 0f,
+                comentario = texto.trim(),
+                contemSpoiler = contemSpoiler,
+                totalComentarios = 0,
+                timestamp = System.currentTimeMillis(),
+                reacoes = emptyMap(),
+                curtidasUids = emptyList()
+            )
+            ref.set(atividade).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun alternarLikeAtividade(atividadeId: String): Boolean = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext false
+        if (atividadeId.isBlank()) return@withContext false
+
+        try {
+            val ref = firestore.collection("atividades_sociais").document(atividadeId)
+            val doc = ref.get().await()
+            if (!doc.exists()) return@withContext false
+
+            val curtidas = (doc.get("curtidasUids") as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList() ?: mutableListOf()
+            if (curtidas.contains(uid)) {
+                curtidas.remove(uid)
+            } else {
+                curtidas.add(uid)
+            }
+
+            // Também sincroniza com reacoes["❤️"]
+            val mapaRaw = doc.get("reacoes") as? Map<*, *> ?: emptyMap<String, List<String>>()
+            val mapaAtual = mutableMapOf<String, List<String>>()
+            mapaRaw.forEach { (k, v) ->
+                if (k is String && v is List<*>) {
+                    mapaAtual[k] = v.filterIsInstance<String>()
+                }
+            }
+            if (curtidas.contains(uid)) {
+                val reacoesCoracao = (mapaAtual["❤️"] ?: emptyList()).toMutableList()
+                if (!reacoesCoracao.contains(uid)) reacoesCoracao.add(uid)
+                mapaAtual["❤️"] = reacoesCoracao
+            } else {
+                val reacoesCoracao = (mapaAtual["❤️"] ?: emptyList()).toMutableList()
+                reacoesCoracao.remove(uid)
+                if (reacoesCoracao.isEmpty()) mapaAtual.remove("❤️") else mapaAtual["❤️"] = reacoesCoracao
+            }
+
+            ref.update(
+                mapOf(
+                    "curtidasUids" to curtidas,
+                    "reacoes" to mapaAtual
+                )
+            ).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun observarComentariosAtividade(atividadeId: String): Flow<List<ComentarioForum>> = callbackFlow {
+        if (atividadeId.isBlank()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("atividades_sociais").document(atividadeId)
+            .collection("comentarios")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val lista = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        val c = doc.toObject(ComentarioForum::class.java)
+                        c?.copy(id = doc.id, atividadeId = atividadeId)
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+                trySend(lista)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun adicionarComentarioAtividade(atividadeId: String, texto: String): Boolean = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext false
+        if (atividadeId.isBlank() || texto.isBlank()) return@withContext false
+
+        try {
+            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
+            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+
+            val refAtividade = firestore.collection("atividades_sociais").document(atividadeId)
+            val refComentario = refAtividade.collection("comentarios").document()
+
+            val comentario = ComentarioForum(
+                id = refComentario.id,
+                atividadeId = atividadeId,
+                autorUid = user.uid,
+                autorNome = nome,
+                autorFotoUrl = foto,
+                texto = texto.trim(),
+                timestamp = System.currentTimeMillis(),
+                curtidasUids = emptyList()
+            )
+
+            refComentario.set(comentario).await()
+
+            try {
+                refAtividade.update("totalComentarios", FieldValue.increment(1)).await()
+            } catch (eInc: Exception) {
+                // Silencioso se não tiver permissão
+            }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun alternarCurtidaComentarioAtividade(atividadeId: String, comentarioId: String): Boolean = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext false
+        if (atividadeId.isBlank() || comentarioId.isBlank()) return@withContext false
+
+        try {
+            val ref = firestore.collection("atividades_sociais").document(atividadeId)
+                .collection("comentarios").document(comentarioId)
+            val doc = ref.get().await()
+            if (!doc.exists()) return@withContext false
+
+            val curtidas = (doc.get("curtidasUids") as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList() ?: mutableListOf()
+            if (curtidas.contains(uid)) {
+                curtidas.remove(uid)
+            } else {
+                curtidas.add(uid)
+            }
+
+            ref.update("curtidasUids", curtidas).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun deletarComentarioAtividade(atividadeId: String, comentarioId: String): Boolean = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext false
+        if (atividadeId.isBlank() || comentarioId.isBlank()) return@withContext false
+
+        try {
+            val refAtividade = firestore.collection("atividades_sociais").document(atividadeId)
+            val refComentario = refAtividade.collection("comentarios").document(comentarioId)
+            val doc = refComentario.get().await()
+            if (!doc.exists()) return@withContext false
+
+            val autorUid = doc.getString("autorUid") ?: ""
+            if (autorUid == uid) {
+                refComentario.delete().await()
+                try {
+                    refAtividade.update("totalComentarios", FieldValue.increment(-1)).await()
+                } catch (e: Exception) {}
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    // =========================================================================
     // ENQUETES RÁPIDAS NAS SALAS / GRUPOS
     // =========================================================================
 
@@ -1419,9 +1636,15 @@ class SocialRepository @Inject constructor() {
                     trySend(null)
                     return@addSnapshotListener
                 }
-                if (snapshot != null && snapshot.exists()) {
-                    trySend(snapshot.toObject(CineBlindSessao::class.java))
-                } else {
+                try {
+                    if (snapshot != null && snapshot.exists()) {
+                        val sessao = snapshot.toObject(CineBlindSessao::class.java)?.copy(id = snapshot.id)
+                        trySend(sessao)
+                    } else {
+                        trySend(null)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                     trySend(null)
                 }
             }
@@ -1435,23 +1658,28 @@ class SocialRepository @Inject constructor() {
         val meuNome = auth.currentUser?.displayName ?: "Cinéfilo"
         val sessaoId = "sessao_ativa"
 
-        val novaSessao = CineBlindSessao(
-            id = sessaoId,
-            grupoId = grupoId,
-            criadorUid = meuUid,
-            criadorNome = meuNome,
-            estado = "INSCRICAO",
-            sugestoes = emptyMap(),
-            vencedorId = "",
-            timestamp = System.currentTimeMillis()
-        )
+        try {
+            val novaSessao = CineBlindSessao(
+                id = sessaoId,
+                grupoId = grupoId,
+                criadorUid = meuUid,
+                criadorNome = meuNome,
+                estado = "INSCRICAO",
+                sugestoes = emptyMap(),
+                vencedorId = "",
+                timestamp = System.currentTimeMillis()
+            )
 
-        firestore.collection("grupos").document(grupoId)
-            .collection("cineblind").document(sessaoId)
-            .set(novaSessao)
-            .await()
+            firestore.collection("grupos").document(grupoId)
+                .collection("cineblind").document(sessaoId)
+                .set(novaSessao)
+                .await()
 
-        sessaoId
+            sessaoId
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
     }
 
     suspend fun adicionarSugestaoBlind(
@@ -1517,12 +1745,12 @@ class SocialRepository @Inject constructor() {
 
             firestore.runTransaction { transaction ->
                 val snap = transaction.get(docRef)
-                val sessao = snap.toObject(CineBlindSessao::class.java) ?: return@runTransaction
+                val sessao = try { snap.toObject(CineBlindSessao::class.java) } catch (e: Exception) { null } ?: return@runTransaction
                 val sugestoes = sessao.sugestoes.toMutableMap()
 
                 // Remove voto anterior do usuário se já tiver votado
-                sugestoes.forEach { (chave, mapa) ->
-                    val mapaMutavel = mapa.toMutableMap()
+                sugestoes.forEach { (chave, dado) ->
+                    val mapaMutavel = (dado as? Map<*, *>)?.toMutableMap() ?: return@forEach
                     @Suppress("UNCHECKED_CAST")
                     val votos = ((mapaMutavel["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()).toMutableList()
                     if (votos.remove(meuUid)) {
@@ -1532,7 +1760,7 @@ class SocialRepository @Inject constructor() {
                 }
 
                 // Adiciona voto na sugestão escolhida
-                val alvo = sugestoes[sugestaoId]?.toMutableMap()
+                val alvo = (sugestoes[sugestaoId] as? Map<*, *>)?.toMutableMap()
                 if (alvo != null) {
                     @Suppress("UNCHECKED_CAST")
                     val votos = ((alvo["votos"] as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()).toMutableList()
@@ -1560,7 +1788,7 @@ class SocialRepository @Inject constructor() {
                 .collection("cineblind").document(sessaoId)
 
             val snap = docRef.get().await()
-            val sessao = snap.toObject(CineBlindSessao::class.java) ?: return@withContext false
+            val sessao = try { snap.toObject(CineBlindSessao::class.java) } catch (e: Exception) { null } ?: return@withContext false
             val maisVotada = sessao.obterSugestoesMapeadas().maxByOrNull { it.totalVotos }
             val idVencedor = maisVotada?.id ?: ""
 

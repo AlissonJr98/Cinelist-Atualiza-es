@@ -15,6 +15,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -133,8 +137,11 @@ fun BottomSheetConfiguracoesFuturista(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = 640.dp)
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 24.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -562,7 +569,7 @@ fun BottomSheetConfiguracoesFuturista(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(42.dp),
+                        .defaultMinSize(minHeight = 44.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                     border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f))
@@ -668,7 +675,7 @@ fun BottomSheetConfiguracoesFuturista(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .defaultMinSize(minHeight = 44.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB388FF).copy(alpha = 0.2f)),
                     border = BorderStroke(1.dp, Color(0xFFB388FF))
@@ -687,25 +694,27 @@ fun BottomSheetConfiguracoesFuturista(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { exportarJsonLauncher.launch("cinelist_backup_${System.currentTimeMillis()}.json") },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Exportar JSON", fontSize = 11.sp, color = Color.White)
+                        Text("Exportar JSON", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     Button(
                         onClick = { importarJsonLauncher.launch(arrayOf("application/json")) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.25f)),
                         border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
                     ) {
                         Icon(Icons.Default.FileUpload, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Restaurar JSON", fontSize = 11.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+                        Text("Restaurar JSON", fontSize = 11.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
@@ -713,21 +722,23 @@ fun BottomSheetConfiguracoesFuturista(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { exportarCsvLauncher.launch("cinelist_${System.currentTimeMillis()}.csv") },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
-                        Text("Exportar CSV", fontSize = 11.sp, color = Color.White)
+                        Text("Exportar CSV", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     Button(
                         onClick = { importarCsvLauncher.launch(arrayOf("text/*", "application/*")) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).defaultMinSize(minHeight = 40.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
-                        Text("Importar CSV", fontSize = 11.sp, color = Color.White)
+                        Text("Importar CSV", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -866,7 +877,7 @@ fun BottomSheetConfiguracoesFuturista(
                         onDismiss()
                         onConfirmarReset()
                     },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 44.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = CineListTokens.CorErro),
                     border = BorderStroke(1.dp, CineListTokens.CorErro.copy(alpha = 0.4f))
@@ -884,7 +895,7 @@ fun BottomSheetConfiguracoesFuturista(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .defaultMinSize(minHeight = 48.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CineListTokens.CorErro)
                 ) {
@@ -1122,14 +1133,14 @@ private fun CyberSwitchItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Icon(icone, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
             Column {
-                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f))
+                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
 
@@ -1164,14 +1175,14 @@ private fun CyberItemNavegacao(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Icon(icone, contentDescription = null, tint = corIcone, modifier = Modifier.size(18.dp))
             Column {
-                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f))
+                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         Icon(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,6 +52,7 @@ fun DialogoCineBlind(
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
 
     val sessaoBlind by viewModel.sessaoCineBlindAtiva.collectAsState(initial = null)
+    val gruposSalvos by viewModel.gruposSalvos.collectAsState(initial = emptyList())
 
     var mostrarModalAdicionarSugestao by remember { mutableStateOf(false) }
     var inputTitulo by remember { mutableStateOf("") }
@@ -153,8 +155,8 @@ fun DialogoCineBlind(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text("👥", fontSize = 48.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("👥", fontSize = 44.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Sala Compartilhada Necessária",
                             fontWeight = FontWeight.Bold,
@@ -163,19 +165,50 @@ fun DialogoCineBlind(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "O CineBlind é um amigo secreto de filmes feito para ser jogado em uma Sala Compartilhada com amigos. Selecione ou crie uma sala para abrir as pistas!",
+                            text = "O CineBlind é um amigo secreto de filmes jogado entre amigos na Sala Compartilhada. Escolha uma de suas salas abaixo:",
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = onDispensar,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
-                        ) {
-                            Text("Entendi", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        if (gruposSalvos.isNotEmpty()) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(gruposSalvos, key = { it.grupoId }) { g ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color(0xFF1E293B),
+                                        border = BorderStroke(1.dp, Color(0xFFA855F7).copy(alpha = 0.5f)),
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            viewModel.selecionarGrupoAtivo(g.grupoId)
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column {
+                                                Text(g.nomeGrupo.ifBlank { "Sala Compartilhada" }, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
+                                                Text("Toque para ativar esta sala", fontSize = 11.sp, color = Color(0xFFA855F7))
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFA855F7))
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = onDispensar,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                            ) {
+                                Text("Entendi / Criar Sala", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
                         }
                     }
                 } else if (sessaoBlind == null) {
@@ -266,7 +299,7 @@ fun DialogoCineBlind(
                                         .weight(1f),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    items(sugestoes, key = { it.id.ifBlank { "${it.autorUid}_${it.tituloReal}_${it.idTmdb}" } }) { sug ->
+                                    itemsIndexed(sugestoes, key = { index, sug -> "${sug.id.ifBlank { sug.autorUid }}_${sug.idTmdb}_$index" }) { _, sug ->
                                         val souEu = sug.autorUid == meuUid
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
@@ -379,7 +412,7 @@ fun DialogoCineBlind(
                                         .weight(1f),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    items(sugestoes, key = { it.id.ifBlank { "${it.autorUid}_${it.tituloReal}_${it.idTmdb}" } }) { sug ->
+                                    itemsIndexed(sugestoes, key = { index, sug -> "${sug.id.ifBlank { sug.autorUid }}_${sug.idTmdb}_$index" }) { _, sug ->
                                         val jaVoteiNessa = sug.votos.contains(meuUid)
                                         Surface(
                                             shape = RoundedCornerShape(16.dp),
@@ -546,6 +579,8 @@ fun DialogoCineBlind(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text("Iniciar CineParty Deste Filme Agora!", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 13.sp)
                                     }
+                                } else {
+                                    Text("Nenhuma sugestão computada para desvendar nesta rodada.", fontSize = 13.sp, color = Color(0xFF94A3B8), textAlign = TextAlign.Center)
                                 }
 
                                 OutlinedButton(
@@ -557,6 +592,32 @@ fun DialogoCineBlind(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text("Fechar Rodada / Iniciar Outra", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                                }
+                            }
+                        }
+                        else -> {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("🎭", fontSize = 48.sp)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text("Rodada Concluída ou Inativa", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Abra uma nova rodada do CineBlind para jogar com a sala!", fontSize = 12.sp, color = Color(0xFF94A3B8), textAlign = TextAlign.Center)
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Button(
+                                    onClick = {
+                                        viewModel.iniciarCineBlind(grupoId) {
+                                            Toast.makeText(contexto, "Nova rodada iniciada!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                                ) {
+                                    Text("Abrir Nova Rodada 🎲", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 }
                             }
                         }
