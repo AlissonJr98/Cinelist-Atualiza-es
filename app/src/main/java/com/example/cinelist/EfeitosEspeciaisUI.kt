@@ -1,5 +1,9 @@
 package com.example.cinelist
 
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.ExperimentalFoundationApi
+
 import android.os.Build
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -615,6 +619,7 @@ fun CyberSegmentedTabBar(
 /**
  * Tab Bar Segmentada com Rolagem Horizontal (perfeita para telas com muitas abas como Perfil).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CyberScrollableSegmentedTabBar(
     tabs: List<CyberTabItem>,
@@ -623,6 +628,15 @@ fun CyberScrollableSegmentedTabBar(
     modifier: Modifier = Modifier,
     corDestaque: Color = Color(0xFF00E5FF)
 ) {
+    val scrollState = rememberScrollState()
+    val bringIntoViewRequesters = remember(tabs.size) { List(tabs.size) { BringIntoViewRequester() } }
+
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex in tabs.indices) {
+            bringIntoViewRequesters[selectedIndex].bringIntoView()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -645,7 +659,7 @@ fun CyberScrollableSegmentedTabBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(scrollState),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -672,6 +686,7 @@ fun CyberScrollableSegmentedTabBar(
 
                 Box(
                     modifier = Modifier
+                        .bringIntoViewRequester(bringIntoViewRequesters[index])
                         .then(backgroundModifier)
                         .bounceOnClick { onTabSelected(index) }
                         .padding(vertical = 8.dp, horizontal = 12.dp),

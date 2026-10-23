@@ -24,7 +24,11 @@ object StreamingManager {
         ServicoStreaming(id = 350, nome = "Apple TV+", pacoteAndroid = "com.apple.atv.android.appletv", corHex = 0xFF333333, emoji = "🍏"),
         ServicoStreaming(id = 531, nome = "Paramount+", pacoteAndroid = "com.cbs.app", corHex = 0xFF0064FF, emoji = "🏔️"),
         ServicoStreaming(id = 283, nome = "Crunchyroll", pacoteAndroid = "com.crunchyroll.crunchyroid", corHex = 0xFFF47521, emoji = "🍥"),
-        ServicoStreaming(id = 307, nome = "Globoplay", pacoteAndroid = "com.globo.globotv", corHex = 0xFFFF0033, emoji = "🌐")
+        ServicoStreaming(id = 307, nome = "Globoplay", pacoteAndroid = "com.globo.globotv", corHex = 0xFFFF0033, emoji = "🌐"),
+        ServicoStreaming(id = 47, nome = "Looke", pacoteAndroid = "com.looke", corHex = 0xFF00A3E0, emoji = "🎬"),
+        ServicoStreaming(id = 11, nome = "MUBI", pacoteAndroid = "com.mubi", corHex = 0xFF002244, emoji = "🎞️"),
+        ServicoStreaming(id = 484, nome = "Claro tv+", pacoteAndroid = "com.claro.clarotvmais", corHex = 0xFFD82424, emoji = "🔴"),
+        ServicoStreaming(id = 227, nome = "Telecine", pacoteAndroid = "br.com.telecine.android", corHex = 0xFFCC0000, emoji = "🍿")
     )
 
     private fun getPrefs(context: Context): SharedPreferences {

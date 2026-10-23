@@ -72,6 +72,7 @@ fun BottomSheetConfiguracoesFuturista(
     usuarioAtual: FirebaseUser?,
     midiasContextoAtual: List<Midia>,
     onAbrirMeusStreamings: () -> Unit,
+    onAbrirGenerosFavoritos: () -> Unit = {},
     onAbrirBloqueados: () -> Unit,
     onAbrirSuporte: () -> Unit,
     onConfirmarReset: () -> Unit,
@@ -604,6 +605,21 @@ fun BottomSheetConfiguracoesFuturista(
                     onClick = {
                         onDismiss()
                         onAbrirMeusStreamings()
+                    }
+                )
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
+
+                // Gêneros Favoritos
+                val totalGeneros = GeneroPreferencesManager.obterGenerosFavoritosIds(contexto).size
+                CyberItemNavegacao(
+                    titulo = "Gêneros Favoritos (Explorar)",
+                    subtitulo = if (totalGeneros > 0) "$totalGeneros gêneros selecionados" else "Personalize as vitrines da aba Descobrir",
+                    icone = Icons.Default.Category,
+                    corIcone = Color(0xFFFFD700),
+                    onClick = {
+                        onDismiss()
+                        onAbrirGenerosFavoritos()
                     }
                 )
 

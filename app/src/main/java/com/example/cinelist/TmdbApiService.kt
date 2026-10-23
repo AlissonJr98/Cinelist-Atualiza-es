@@ -142,4 +142,16 @@ interface TmdbApiService {
         @Path("collection_id") idColecao: Int,
         @Query("language") idioma: String = "pt-BR"
     ): TmdbFranquiaColecaoDetalhes
+
+    @GET("person/{person_id}")
+    suspend fun obterDetalhesPessoa(
+        @Path("person_id") idPessoa: Int,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbPessoaDetalhes
+
+    @GET("person/{person_id}/combined_credits")
+    suspend fun obterCreditosPessoa(
+        @Path("person_id") idPessoa: Int,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbPessoaCreditosResposta
 }

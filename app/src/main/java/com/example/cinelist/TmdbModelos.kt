@@ -205,3 +205,60 @@ data class TmdbKeywordItem(
     @SerializedName("id") val id: Int = 0,
     @SerializedName("name") val nome: String = ""
 )
+
+data class TmdbPessoaDetalhes(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("biography") val biografia: String = "",
+    @SerializedName("birthday") val dataNascimento: String? = null,
+    @SerializedName("place_of_birth") val localNascimento: String? = null,
+    @SerializedName("profile_path") val fotoPerfil: String? = null,
+    @SerializedName("known_for_department") val departamento: String? = null
+) {
+    val urlFotoPerfil: String
+        get() = if (!fotoPerfil.isNullOrBlank()) "https://image.tmdb.org/t/p/w500$fotoPerfil" else ""
+
+    val dataNascimentoFormatada: String
+        get() {
+            if (dataNascimento.isNullOrBlank()) return "Não informada"
+            return try {
+                val partes = dataNascimento.split("-")
+                if (partes.size == 3) {
+                    val meses = listOf("", "jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez.")
+                    val mesIndex = partes[1].toIntOrNull() ?: 0
+                    val mesNome = if (mesIndex in 1..12) meses[mesIndex] else partes[1]
+                    "${partes[2]} de $mesNome de ${partes[0]}"
+                } else dataNascimento
+            } catch (e: Exception) {
+                dataNascimento
+            }
+        }
+}
+
+data class TmdbPessoaCreditosResposta(
+    @SerializedName("cast") val atuacoes: List<TmdbCreditoItem>? = emptyList()
+)
+
+data class TmdbCreditoItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
+    @SerializedName("overview") val sinopse: String = "",
+    @SerializedName("poster_path") val caminhoPoster: String? = null,
+    @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
+    @SerializedName("media_type") val mediaType: String? = "movie",
+    @SerializedName("vote_average") val mediaVotos: Double = 0.0,
+    @SerializedName(value = "release_date", alternate = ["first_air_date"]) val dataLancamento: String? = null,
+    @SerializedName("character") val personagem: String? = null
+) {
+    val ehSerie: Boolean
+        get() = mediaType.equals("tv", ignoreCase = true)
+
+    val anoLancamento: String
+        get() = dataLancamento?.take(4)?.takeIf { it.isNotBlank() } ?: ""
+
+    val urlPoster: String
+        get() = if (!caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500$caminhoPoster" else ""
+
+    val urlBackdrop: String
+        get() = if (!caminhoBackdrop.isNullOrBlank()) "https://image.tmdb.org/t/p/w780$caminhoBackdrop" else ""
+}

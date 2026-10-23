@@ -58,6 +58,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 
@@ -926,6 +928,12 @@ class MidiaViewModel @Inject constructor(
 
 
 
+    private val _secoesLancamentosStreaming = MutableStateFlow<List<StreamingLancamentosSecao>>(emptyList())
+    val secoesLancamentosStreaming: StateFlow<List<StreamingLancamentosSecao>> = _secoesLancamentosStreaming
+
+    private val _carrosseisGenerosFavoritos = MutableStateFlow<List<Pair<GeneroInfo, List<TmdbFilme>>>>(emptyList())
+    val carrosseisGenerosFavoritos: StateFlow<List<Pair<GeneroInfo, List<TmdbFilme>>>> = _carrosseisGenerosFavoritos
+
     private val _carregandoCarrosseis = MutableStateFlow(false)
 
 
@@ -1209,6 +1217,99 @@ class MidiaViewModel @Inject constructor(
 
 
 
+
+    fun carregarNovidadesPorStreaming(context: Context, forcar: Boolean = false) {
+        if (!forcar && _secoesLancamentosStreaming.value.isNotEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val meusIds = StreamingManager.obterMeusStreamingsIds(context)
+                    val servicosAlvo = if (meusIds.isNotEmpty()) {
+                        StreamingManager.SERVICOS.filter { it.id in meusIds }
+                    } else {
+                        StreamingManager.SERVICOS.filter { it.id in listOf(8, 119, 337, 1899) }
+                    }
+
+                    val resultadoSecoes = mutableListOf<StreamingLancamentosSecao>()
+
+                    for (servico in servicosAlvo.take(6)) {
+                        try {
+                            val seriesResp = runCatching {
+                                RetrofitClient.apiService.descobrirSeries(
+                                    pagina = 1,
+                                    provedores = servico.id.toString(),
+                                    regiao = "BR",
+                                    sortBy = "first_air_date.desc"
+                                ).resultados.map { it.copy(mediaType = "tv", plataformaDetectada = servico.nome) }
+                            }.getOrDefault(emptyList())
+
+                            val filmesResp = runCatching {
+                                RetrofitClient.apiService.descobrirFilmes(
+                                    pagina = 1,
+                                    provedores = servico.id.toString(),
+                                    regiao = "BR",
+                                    sortBy = "popularity.desc"
+                                ).resultados.map { it.copy(mediaType = "movie", plataformaDetectada = servico.nome) }
+                            }.getOrDefault(emptyList())
+
+                            val combinados = (seriesResp.take(8) + filmesResp.take(8))
+                                .filter { !it.caminhoPoster.isNullOrBlank() }
+                                .shuffled()
+
+                            if (combinados.isNotEmpty()) {
+                                resultadoSecoes.add(
+                                    StreamingLancamentosSecao(
+                                        servico = servico,
+                                        titulos = combinados,
+                                        totalTitulos = combinados.size
+                                    )
+                                )
+                            }
+                        } catch (e: Exception) {
+                            // Silencioso por plataforma
+                        }
+                    }
+
+                    _secoesLancamentosStreaming.value = resultadoSecoes
+                }
+            } catch (e: Exception) {
+                // Silencioso
+            }
+        }
+    }
+
+    fun carregarCarrosseisGenerosFavoritos(context: Context) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val idsGeneros = GeneroPreferencesManager.obterGenerosFavoritosIds(context)
+                    if (idsGeneros.isEmpty()) return@withContext
+
+                    val generosAlvo = GeneroPreferencesManager.GENEROS.filter { it.id in idsGeneros }
+                    val listaPares = mutableListOf<Pair<GeneroInfo, List<TmdbFilme>>>()
+
+                    for (gen in generosAlvo.take(4)) {
+                        val filmesGen = runCatching {
+                            RetrofitClient.apiService.descobrirFilmes(
+                                pagina = 1,
+                                generos = gen.id.toString(),
+                                sortBy = "popularity.desc"
+                            ).resultados.map { it.copy(mediaType = "movie", generoTexto = gen.nome) }
+                        }.getOrDefault(emptyList())
+
+                        if (filmesGen.isNotEmpty()) {
+                            listaPares.add(Pair(gen, filmesGen.filter { !it.caminhoPoster.isNullOrBlank() }))
+                        }
+                    }
+
+                    _carrosseisGenerosFavoritos.value = listaPares
+                }
+            } catch (e: Exception) {
+                // Silencioso
+            }
+        }
+    }
 
     fun carregarFilmesEmCartaz() {
 

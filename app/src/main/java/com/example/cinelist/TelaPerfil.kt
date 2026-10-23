@@ -321,6 +321,7 @@ fun TelaPerfil(
     var mostrarBottomSheetConfiguracoes by remember { mutableStateOf(false) }
 
     var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
+    var mostrarDialogoGenerosFavoritos by remember { mutableStateOf(false) }
 
     var mostrarDialogoBloqueados by remember { mutableStateOf(false) }
 
@@ -376,6 +377,17 @@ fun TelaPerfil(
 
         )
 
+    }
+
+    if (mostrarDialogoGenerosFavoritos) {
+        DialogoGenerosFavoritos(
+            onDispensar = { mostrarDialogoGenerosFavoritos = false },
+            onSalvo = {
+                mostrarDialogoGenerosFavoritos = false
+                viewModel.carregarCarrosseisGenerosFavoritos(contexto)
+                Toast.makeText(contexto, "Gêneros favoritos atualizados!", Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
 
@@ -2001,6 +2013,7 @@ fun TelaPerfil(
             midiasContextoAtual = midiasContextoAtual,
 
             onAbrirMeusStreamings = { mostrarDialogoMeusStreamings = true },
+            onAbrirGenerosFavoritos = { mostrarDialogoGenerosFavoritos = true },
 
             onAbrirBloqueados = { mostrarDialogoBloqueados = true },
 
