@@ -14,16 +14,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.delay
 
 @Composable
 fun TelaSplashMp4(
     onSplashConcluida: () -> Unit
 ) {
+    var jaConcluiu by remember { mutableStateOf(false) }
+
+    fun finalizarSplash() {
+        if (!jaConcluiu) {
+            jaConcluiu = true
+            onSplashConcluida()
+        }
+    }
+
+    // 🛡️ TIMEOUT DE SEGURANÇA: Garante que NENHUM celular (Motorola, Xiaomi, Samsung)
+    // fique preso na splash caso o decoder de vídeo do hardware falhe ou demore
+    LaunchedEffect(Unit) {
+        delay(2200)
+        finalizarSplash()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF070B12))
-            .clickable { onSplashConcluida() }, // Permite saltar ao tocar na tela
+            .clickable { finalizarSplash() }, // Permite saltar ao tocar na tela
         contentAlignment = Alignment.Center
     ) {
         AndroidView(
@@ -47,53 +64,69 @@ fun TelaSplashMp4(
                                 setSurface(Surface(surfaceTexture))
                                 isLooping = false
 
+                                setOnErrorListener { _, what, extra ->
+                                    android.util.Log.w("TelaSplashMp4", "Aviso de reprodução de vídeo ($what, $extra), avançando para o app...")
+                                    finalizarSplash()
+                                    true
+                                }
+
                                 setOnPreparedListener { mp ->
-                                    // Ajuste dinâmico de escala (Center Crop perfeito sem cortes indesejados)
-                                    val videoWidth = mp.videoWidth.toFloat()
-                                    val videoHeight = mp.videoHeight.toFloat()
+                                    try {
+                                        // Ajuste dinâmico de escala (Center Crop perfeito sem distorções)
+                                        val videoWidth = mp.videoWidth.toFloat()
+                                        val videoHeight = mp.videoHeight.toFloat()
 
-                                    if (videoWidth > 0 && videoHeight > 0 && width > 0 && height > 0) {
-                                        val viewRatio = width.toFloat() / height.toFloat()
-                                        val videoRatio = videoWidth / videoHeight
+                                        if (videoWidth > 0 && videoHeight > 0 && width > 0 && height > 0) {
+                                            val viewRatio = width.toFloat() / height.toFloat()
+                                            val videoRatio = videoWidth / videoHeight
 
-                                        val scaleX: Float
-                                        val scaleY: Float
+                                            val scaleX: Float
+                                            val scaleY: Float
 
-                                        if (viewRatio > videoRatio) {
-                                            scaleX = 1f
-                                            scaleY = viewRatio / videoRatio
-                                        } else {
-                                            scaleX = videoRatio / viewRatio
-                                            scaleY = 1f
+                                            if (viewRatio > videoRatio) {
+                                                scaleX = 1f
+                                                scaleY = viewRatio / videoRatio
+                                            } else {
+                                                scaleX = videoRatio / viewRatio
+                                                scaleY = 1f
+                                            }
+
+                                            val matrix = android.graphics.Matrix().apply {
+                                                setScale(scaleX, scaleY, width / 2f, height / 2f)
+                                            }
+                                            textureView.setTransform(matrix)
                                         }
 
-                                        val matrix = android.graphics.Matrix().apply {
-                                            setScale(scaleX, scaleY, width / 2f, height / 2f)
-                                        }
-                                        textureView.setTransform(matrix)
+                                        mp.start()
+                                    } catch (e: Throwable) {
+                                        e.printStackTrace()
+                                        finalizarSplash()
                                     }
-
-                                    mp.start()
                                 }
 
                                 setOnCompletionListener {
-                                    onSplashConcluida()
+                                    finalizarSplash()
                                 }
 
                                 prepareAsync()
                             }
-                        } catch (e: Exception) {
+                        } catch (e: Throwable) {
                             e.printStackTrace()
-                            onSplashConcluida()
+                            finalizarSplash()
                         }
                     }
 
                     override fun onSurfaceTextureSizeChanged(surface: android.graphics.SurfaceTexture, width: Int, height: Int) {}
+
                     override fun onSurfaceTextureDestroyed(surface: android.graphics.SurfaceTexture): Boolean {
-                        mediaPlayer?.release()
+                        try {
+                            mediaPlayer?.stop()
+                            mediaPlayer?.release()
+                        } catch (_: Throwable) {}
                         mediaPlayer = null
                         return true
                     }
+
                     override fun onSurfaceTextureUpdated(surface: android.graphics.SurfaceTexture) {}
                 }
 

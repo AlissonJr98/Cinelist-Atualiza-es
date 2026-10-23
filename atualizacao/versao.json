@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 78,
-  "versaoNome": "2.0.38",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.38/CineList-v2.0.38.apk"
+  "versaoCodigo": 79,
+  "versaoNome": "2.0.39",
+  "notas": "Correção de compatibilidade universal para inicialização em múltiplos aparelhos (Motorola, Samsung, Xiaomi); Resolução de ClassCastException no tema ao abrir; Proteção e timeout resiliente na tela de Splash; Blindagem contra falhas de WorkManager e serviços do sistema.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.39/CineList-v2.0.39.apk"
 }
