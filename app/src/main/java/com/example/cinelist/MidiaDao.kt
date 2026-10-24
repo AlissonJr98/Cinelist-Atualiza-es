@@ -153,4 +153,16 @@ interface MidiaDao {
      */
     @Delete
     suspend fun deletarGrupo(grupo: GrupoEntity)
+
+    /**
+     * Limpa todas as mídias salvas localmente no aparelho (chamado no logout para isolamento estrito de contas).
+     */
+    @Query("DELETE FROM midias")
+    suspend fun limparTodasAsMidias()
+
+    /**
+     * Limpa todos os grupos salvos localmente no aparelho (chamado no logout).
+     */
+    @Query("DELETE FROM grupos_compartilhados")
+    suspend fun limparTodosOsGrupos()
 }

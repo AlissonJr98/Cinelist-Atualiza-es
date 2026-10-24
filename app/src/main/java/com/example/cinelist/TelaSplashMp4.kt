@@ -46,22 +46,6 @@ fun TelaSplashMp4(
             .clickable { finalizarSplash() }, // Permite saltar ao tocar na tela
         contentAlignment = Alignment.Center
     ) {
-        // Fallback visual elegante caso o codec de vídeo do hardware falhe ou não responda
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("🎬", fontSize = 64.sp)
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = "CINELIST",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF00E5FF),
-                letterSpacing = 4.sp
-            )
-        }
-
         // Vídeo animado em TextureView com decodificação defensiva
         AndroidView(
             modifier = Modifier.fillMaxSize(),

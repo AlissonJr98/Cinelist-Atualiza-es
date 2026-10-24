@@ -29,6 +29,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.BorderStroke
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
@@ -46,7 +49,13 @@ fun TelaCadastro(
     var senhaVisivel by remember { mutableStateOf(false) }
     var erroMensagem by remember { mutableStateOf("") }
     var carregando by remember { mutableStateOf(false) }
+    var aguardandoConfirmacaoEmail by remember { mutableStateOf(false) }
+    var emailCadastrado by remember { mutableStateOf("") }
+    var verificandoConfirmacao by remember { mutableStateOf(false) }
+    var reenviandoConfirmacao by remember { mutableStateOf(false) }
+    var mensagemStatusConfirmacao by remember { mutableStateOf("") }
 
+    val contexto = LocalContext.current
     val firebaseAuth = FirebaseAuth.getInstance()
 
     MeshBackground3D {
@@ -64,6 +73,134 @@ fun TelaCadastro(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (aguardandoConfirmacaoEmail) {
+                    // TELA DE CONFIRMAÇÃO DE E-MAIL
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1526)),
+                        border = BorderStroke(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.7f))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00E5FF).copy(alpha = 0.15f))
+                                    .border(1.5.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("✉️", fontSize = 38.sp)
+                            }
+
+                            Text(
+                                text = "CONFIRME SEU E-MAIL",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF00E5FF),
+                                letterSpacing = 1.sp
+                            )
+
+                            Text(
+                                text = "Enviamos um link de confirmação para:\n$emailCadastrado\n\nAbra sua caixa de entrada (ou pasta de spam/lixeira) e clique no link para ativar sua conta no CineList.",
+                                fontSize = 13.sp,
+                                lineHeight = 20.sp,
+                                color = Color(0xFFCBD5E1),
+                                textAlign = TextAlign.Center
+                            )
+
+                            if (mensagemStatusConfirmacao.isNotBlank()) {
+                                Surface(
+                                    color = Color(0xFFFF5252).copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f))
+                                ) {
+                                    Text(
+                                        text = mensagemStatusConfirmacao,
+                                        color = Color(0xFFFF5252),
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    verificandoConfirmacao = true
+                                    mensagemStatusConfirmacao = ""
+                                    val currentUser = firebaseAuth.currentUser
+                                    if (currentUser != null) {
+                                        currentUser.reload().addOnCompleteListener {
+                                            verificandoConfirmacao = false
+                                            if (currentUser.isEmailVerified) {
+                                                Toast.makeText(contexto, "E-mail confirmado com sucesso! Bem-vindo ao CineList!", Toast.LENGTH_LONG).show()
+                                                onCadastroSucesso()
+                                            } else {
+                                                mensagemStatusConfirmacao = "Seu e-mail ainda não consta como confirmado. Por favor, clique no link recebido e tente novamente."
+                                            }
+                                        }
+                                    } else {
+                                        verificandoConfirmacao = false
+                                        onVoltarParaLogin()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                                enabled = !verificandoConfirmacao
+                            ) {
+                                if (verificandoConfirmacao) {
+                                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(20.dp))
+                                } else {
+                                    Text(
+                                        "JÁ CONFIRMEI MEU E-MAIL (ENTRAR)",
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    reenviandoConfirmacao = true
+                                    firebaseAuth.currentUser?.sendEmailVerification()?.addOnCompleteListener { t ->
+                                        reenviandoConfirmacao = false
+                                        if (t.isSuccessful) {
+                                            Toast.makeText(contexto, "Novo link de confirmação enviado para o e-mail!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            mensagemStatusConfirmacao = "Erro ao reenviar: ${t.exception?.localizedMessage}"
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f)),
+                                enabled = !reenviandoConfirmacao
+                            ) {
+                                if (reenviandoConfirmacao) {
+                                    CircularProgressIndicator(color = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
+                                } else {
+                                    Text("Reenviar e-mail de confirmação", color = Color(0xFF00E5FF), fontSize = 12.sp)
+                                }
+                            }
+
+                            TextButton(onClick = onVoltarParaLogin) {
+                                Text("Voltar para o Login", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                            }
+                        }
+                    }
+                } else {
 
                 // LOGÓTIPO OFICIAL COM ANEL HOLOGRÁFICO
                 Box(contentAlignment = Alignment.Center) {
@@ -372,8 +509,14 @@ fun TelaCadastro(
                                                                         .document(uid)
                                                                         .set(dadosPublicos, SetOptions.merge())
                                                                         .addOnCompleteListener {
+                                                                            try {
+                                                                                usuario.sendEmailVerification()
+                                                                            } catch (e: Exception) {
+                                                                                e.printStackTrace()
+                                                                            }
                                                                             carregando = false
-                                                                            onCadastroSucesso()
+                                                                            emailCadastrado = email.trim()
+                                                                            aguardandoConfirmacaoEmail = true
                                                                         }
                                                                 }
                                                         } else {
@@ -433,27 +576,31 @@ fun TelaCadastro(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                } // Fim do else (aguardandoConfirmacaoEmail)
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable(enabled = !carregando) { onVoltarParaLogin() }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = "Já possui uma conta? ",
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 13.sp
-                    )
-                    Text(
-                        text = "Entre aqui",
-                        color = Color(0xFF00E5FF),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black
-                    )
+                if (!aguardandoConfirmacaoEmail) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable(enabled = !carregando) { onVoltarParaLogin() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Já possui uma conta? ",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 13.sp
+                        )
+                        Text(
+                            text = "Entre aqui",
+                            color = Color(0xFF00E5FF),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

@@ -1071,7 +1071,8 @@ fun TelaPrincipal(
                             Icon(
                                 imageVector = if (salaMutada) Icons.Default.NotificationsOff else Icons.Default.NotificationsActive,
                                 contentDescription = "Silenciar Sala",
-                                tint = if (salaMutada) Color.Gray else MaterialTheme.colorScheme.primary
+                                tint = if (salaMutada) Color.Gray else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         IconButton(onClick = { mostrarChatSala = false }) {

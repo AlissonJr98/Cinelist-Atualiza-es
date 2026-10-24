@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
@@ -52,6 +53,8 @@ fun TelaLogin(
     var senhaVisivel by remember { mutableStateOf(false) }
     var erroMensagem by remember { mutableStateOf("") }
     var carregando by remember { mutableStateOf(false) }
+    var mostrarBotaoReenviarVerificacao by remember { mutableStateOf(false) }
+    var reenviandoEmailLogin by remember { mutableStateOf(false) }
 
     var mostrarDialogoRecuperacao by remember { mutableStateOf(false) }
     var emailRecuperacao by remember { mutableStateOf("") }
@@ -455,7 +458,18 @@ fun TelaLogin(
                                         firebaseAuth.signInWithEmailAndPassword(email.trim(), senha.trim())
                                             .addOnCompleteListener { t ->
                                                 carregando = false
-                                                if (t.isSuccessful) onLoginSucesso() else erroMensagem = "E-mail ou senha incorretos."
+                                                if (t.isSuccessful) {
+                                                    val u = firebaseAuth.currentUser
+                                                    if (u != null && !u.isEmailVerified) {
+                                                        erroMensagem = "Seu e-mail ainda não foi confirmado. Por favor, confirme o link enviado para ${u.email} antes de acessar."
+                                                        mostrarBotaoReenviarVerificacao = true
+                                                    } else {
+                                                        onLoginSucesso()
+                                                    }
+                                                } else {
+                                                    erroMensagem = "E-mail ou senha incorretos."
+                                                    mostrarBotaoReenviarVerificacao = false
+                                                }
                                             }
                                     } else {
                                         erroMensagem = "Por favor, preencha todos os campos."

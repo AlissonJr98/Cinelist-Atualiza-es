@@ -130,8 +130,7 @@ fun TelaDetalhes(
     var mostrarDialogoRadar by remember { mutableStateOf(false) }
     var mostrarDialogoWatchParty by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylists by remember { mutableStateOf(false) }
-    var mostrarDialogoAudio by remember { mutableStateOf(false) }
-    var audioReviewSalvo by remember { mutableStateOf<CineAudioReview?>(null) }
+
     var atorSelecionadoParaPerfil by remember { mutableStateOf<TmdbAtor?>(null) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
@@ -431,15 +430,7 @@ fun TelaDetalhes(
         )
     }
 
-    if (mostrarDialogoAudio) {
-        DialogoGravarCineAudio(
-            tituloMidia = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "",
-            onAudioGravado = { review ->
-                audioReviewSalvo = review
-            },
-            onDispensar = { mostrarDialogoAudio = false }
-        )
-    }
+
 
     atorSelecionadoParaPerfil?.let { ator ->
         DialogoPerfilAtor(
@@ -449,7 +440,9 @@ fun TelaDetalhes(
             onDispensar = { atorSelecionadoParaPerfil = null },
             onMidiaSelecionada = { idTmdb, _, tipo ->
                 atorSelecionadoParaPerfil = null
-                onRecomendacaoClique(idTmdb, tipo)
+                if (idTmdb > 0) {
+                    onRecomendacaoClique(idTmdb, tipo)
+                }
             }
         )
     }
@@ -850,10 +843,13 @@ fun TelaDetalhes(
                             }
 
                             // 🚀 SELO DE STATUS DA SÉRIE (CANCELADA / FINALIZADA)
-                            if (ehSerieOuAnime && detalhesApi?.statusSeloTexto?.isNotBlank() == true) {
+                            val statusTextoSelado = detalhesApi?.statusSeloTexto
+                            val statusApiStr = detalhesApi?.statusSerieApi.orEmpty()
+                            val ehCanceladaSerie = statusApiStr.equals("Canceled", ignoreCase = true)
+                            if (ehSerieOuAnime && !statusTextoSelado.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Surface(
-                                    color = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Color(0xFFFF4C4C).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                    color = if (ehCanceladaSerie) Color(0xFFFF4C4C).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -863,13 +859,13 @@ fun TelaDetalhes(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Icon(
-                                            imageVector = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Icons.Default.Warning else Icons.Default.CheckCircle,
+                                            imageVector = if (ehCanceladaSerie) Icons.Default.Warning else Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = if (detalhesApi!!.statusSerieApi.equals("Canceled", ignoreCase = true)) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
+                                            tint = if (ehCanceladaSerie) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = detalhesApi!!.statusSeloTexto,
+                                            text = statusTextoSelado,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -1179,10 +1175,11 @@ fun TelaDetalhes(
                                 }
                             }
 
-                            if (colecaoFranquiaDetalhes != null && !colecaoFranquiaDetalhes!!.partes.isNullOrEmpty()) {
+                            val colecaoDetalhes = colecaoFranquiaDetalhes
+                            if (colecaoDetalhes != null && !colecaoDetalhes.partes.isNullOrEmpty()) {
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
-                                    text = "🍿 Saga / Franquia: ${colecaoFranquiaDetalhes!!.nome}",
+                                    text = "🍿 Saga / Franquia: ${colecaoDetalhes.nome}",
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
@@ -1191,7 +1188,7 @@ fun TelaDetalhes(
                                 LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    items(colecaoFranquiaDetalhes!!.partes ?: emptyList()) { filmeFranquia ->
+                                    items(colecaoDetalhes.partes ?: emptyList()) { filmeFranquia ->
                                         val posterFranquia = if (!filmeFranquia.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${filmeFranquia.caminhoPoster}" else ""
                                         val jaEstaNaMinhaLista = listaAtualBanco.any { it.idTmdb != 0 && it.idTmdb == filmeFranquia.idTmdb }
 
@@ -1655,27 +1652,6 @@ fun TelaDetalhes(
                                         }
                                     }
 
-                                    // Botão Gravar CineÁudio
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFF00E5FF).copy(alpha = 0.12f),
-                                        border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
-                                        modifier = Modifier.clickable { mostrarDialogoAudio = true }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text("🎙️", fontSize = 12.sp)
-                                            Text("CineÁudio", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
-                                        }
-                                    }
-                                }
-
-                                if (audioReviewSalvo != null) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    CineAudioPlayerWidget(audioReviewSalvo!!)
                                 }
 
                                 if (criteriosSalvos != null) {
@@ -1778,8 +1754,9 @@ fun TelaDetalhes(
                                 }
 
                                 // 🚀 DETECTOR DE FRANQUIAS / COLEÇÃO
-                                if (detalhesApi?.colecaoFranquia != null) {
-                                    val franquia = detalhesApi!!.colecaoFranquia!!
+                                val franquiaObj = detalhesApi?.colecaoFranquia
+                                if (franquiaObj != null) {
+                                    val franquia = franquiaObj
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
@@ -2023,11 +2000,32 @@ fun TelaDetalhes(
                                     tmdbId = idRealBuscaApi,
                                     comentariosPublicos = comentariosPublicos,
                                     uidLogado = uidLogado,
-                                    onEnviarComentario = { texto -> viewModel.enviarComentarioPublico(idRealBuscaApi, texto) },
+                                    onEnviarComentario = { texto ->
+                                        val mod = ModeracaoConteudoHelper.validarTexto(texto)
+                                        if (!mod.aprovado) {
+                                            Toast.makeText(contexto, mod.motivoBloqueio, Toast.LENGTH_LONG).show()
+                                        } else {
+                                            viewModel.enviarComentarioPublico(idRealBuscaApi, ModeracaoConteudoHelper.sanitizarTexto(texto))
+                                        }
+                                    },
                                     onCurtirComentario = { idComentario, curtiu -> viewModel.curtirComentarioPublico(idRealBuscaApi, idComentario, curtiu) },
-                                    onResponderComentario = { idComentario, resposta -> viewModel.responderComentarioPublico(idRealBuscaApi, idComentario, resposta) },
+                                    onResponderComentario = { idComentario, resposta ->
+                                        val mod = ModeracaoConteudoHelper.validarTexto(resposta)
+                                        if (!mod.aprovado) {
+                                            Toast.makeText(contexto, mod.motivoBloqueio, Toast.LENGTH_LONG).show()
+                                        } else {
+                                            viewModel.responderComentarioPublico(idRealBuscaApi, idComentario, ModeracaoConteudoHelper.sanitizarTexto(resposta))
+                                        }
+                                    },
                                     onDeletarComentario = { idComentario -> viewModel.deletarComentarioPublico(idRealBuscaApi, idComentario) },
-                                    onEditarComentario = { idComentario, novoTexto -> viewModel.editarComentarioPublico(idRealBuscaApi, idComentario, novoTexto) }
+                                    onEditarComentario = { idComentario, novoTexto ->
+                                        val mod = ModeracaoConteudoHelper.validarTexto(novoTexto)
+                                        if (!mod.aprovado) {
+                                            Toast.makeText(contexto, mod.motivoBloqueio, Toast.LENGTH_LONG).show()
+                                        } else {
+                                            viewModel.editarComentarioPublico(idRealBuscaApi, idComentario, ModeracaoConteudoHelper.sanitizarTexto(novoTexto))
+                                        }
+                                    }
                                 )
                             }
 
@@ -2335,6 +2333,7 @@ fun ItemComentarioSocial(
     onDeletarComentario: () -> Unit,
     onEditarComentario: (String) -> Unit
 ) {
+    val contexto = LocalContext.current
     val jaCurtiu = comentario.curtidasUids.contains(uidLogado)
     var mostrarDialogExclusao by remember { mutableStateOf(false) }
 
@@ -2414,6 +2413,22 @@ fun ItemComentarioSocial(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
+                    }
+                } else {
+                    IconButton(
+                        onClick = {
+                            ModeracaoConteudoHelper.denunciarConteudo(
+                                tipoConteudo = "comentario_midia",
+                                idConteudo = comentario.id,
+                                autorConteudoUid = comentario.autorUid,
+                                textoConteudo = comentario.texto,
+                                motivo = "Comentário impróprio ou spam no título",
+                                contexto = contexto
+                            )
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Text("🚩", fontSize = 13.sp)
                     }
                 }
             }

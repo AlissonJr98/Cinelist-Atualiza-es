@@ -1627,13 +1627,14 @@ onVoltar = { navController.popBackStack() },
 
 
 onRecomendacaoClique = { novoId, novoTipo ->
-
-
-
-navController.navigate("detalhes/$novoId/$novoTipo")
-
-
-
+    if (novoId > 0) {
+        val tipoSanitizado = if (novoTipo.contains("serie", ignoreCase = true) || novoTipo.contains("série", ignoreCase = true) || novoTipo.contains("tv", ignoreCase = true)) "Serie" else "Filme"
+        try {
+            navController.navigate("detalhes/$novoId/$tipoSanitizado")
+        } catch (e: Exception) {
+            android.util.Log.e("CineListNav", "Erro ao navegar para detalhes: ${e.message}")
+        }
+    }
 }
 
 

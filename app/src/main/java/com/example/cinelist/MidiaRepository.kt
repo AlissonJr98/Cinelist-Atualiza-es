@@ -799,6 +799,20 @@ class MidiaRepository @Inject constructor(
         uidSincronizado = null
     }
 
+    /**
+     * Limpa completamente as tabelas locais do Room ao deslogar para garantir
+     * que uma nova conta cadastrada ou conectada nunca herde dados da conta anterior.
+     */
+    suspend fun limparDadosLocaisAoDeslogar() = withContext(Dispatchers.IO) {
+        uidSincronizado = null
+        try {
+            midiaDao.limparTodasAsMidias()
+            midiaDao.limparTodosOsGrupos()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private suspend fun executarSincronizacao() = withContext(Dispatchers.IO) {
         try {
             val colecao = obterColecaoUsuario()

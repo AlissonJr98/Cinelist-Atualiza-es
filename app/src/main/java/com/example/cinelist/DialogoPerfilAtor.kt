@@ -374,14 +374,17 @@ fun DialogoPerfilAtor(
                             }
                         } else {
                             items(creditosFiltrados, key = { "ator_obra_${it.id}_${it.mediaType}" }) { obra ->
-                                val tipoObra = if (obra.ehSerie) "Série" else "Filme"
+                                val tipoObra = if (obra.ehSerie) "Serie" else "Filme"
 
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 6.dp)
                                         .clickable {
-                                            onMidiaSelecionada(obra.id, obra.titulo, tipoObra)
+                                            if (obra.id > 0) {
+                                                onDispensar()
+                                                onMidiaSelecionada(obra.id, obra.titulo, tipoObra)
+                                            }
                                         },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),

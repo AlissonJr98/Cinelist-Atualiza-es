@@ -178,6 +178,19 @@ service cloud.firestore {
     //   - notificado: bool (optional)
     //   - criadoEm: number or timestamp (optional)
     //
+    // Collection: denuncias_comentarios/{denunciaId}
+    // Document ID: Denuncia ID (<= 128 chars)
+    // Fields:
+    //   - id: string (<= 128 chars)
+    //   - tipoConteudo: string (<= 50 chars, ex: 'comentario_forum', 'topico_forum', 'comentario_midia')
+    //   - idConteudo: string (<= 128 chars)
+    //   - autorConteudoUid: string (<= 128 chars)
+    //   - textoConteudo: string (<= 1000 chars)
+    //   - motivo: string (<= 200 chars)
+    //   - denuncianteUid: string (matches auth.uid on create, immutable, <= 128 chars)
+    //   - denuncianteEmail: string (optional, <= 150 chars)
+    //   - timestamp: number
+    //
     // ===============================================================
 
     // Default deny for any unhandled path
@@ -403,6 +416,18 @@ service cloud.firestore {
         (!('vencedorTitulo' in data) || (data.vencedorTitulo is string && data.vencedorTitulo.size() <= 200)) &&
         (!('vencedorPoster' in data) || (data.vencedorPoster is string && data.vencedorPoster.size() <= 2000)) &&
         (!('timestamp' in data) || data.timestamp is number || data.timestamp is timestamp);
+    }
+
+    function isValidDenuncia(data) {
+      return data.denuncianteUid is string && data.denuncianteUid.size() <= 128 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('tipoConteudo' in data) || (data.tipoConteudo is string && data.tipoConteudo.size() <= 50)) &&
+        (!('idConteudo' in data) || (data.idConteudo is string && data.idConteudo.size() <= 128)) &&
+        (!('autorConteudoUid' in data) || (data.autorConteudoUid is string && data.autorConteudoUid.size() <= 128)) &&
+        (!('textoConteudo' in data) || (data.textoConteudo is string && data.textoConteudo.size() <= 1000)) &&
+        (!('motivo' in data) || (data.motivo is string && data.motivo.size() <= 200)) &&
+        (!('denuncianteEmail' in data) || (data.denuncianteEmail is string && data.denuncianteEmail.size() <= 150)) &&
+        (!('timestamp' in data) || data.timestamp is number);
     }
 
     // ===============================================================
@@ -665,5 +690,16 @@ service cloud.firestore {
       allow delete: if isAuthenticated() &&
         (request.auth.uid == resource.data.anfitriaoUid || request.auth.uid == resource.data.get('anfitriaoUid', ''));
     }
+
+    // 8. DENÚNCIAS DE MODERAÇÃO E AUDITORIA DE CONTEÚDO
+    match /denuncias_comentarios/{denunciaId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.denuncianteUid;
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.denuncianteUid &&
+        isValidDenuncia(request.resource.data);
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }
+

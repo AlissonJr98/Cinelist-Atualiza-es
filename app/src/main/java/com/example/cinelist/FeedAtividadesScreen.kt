@@ -412,6 +412,7 @@ fun CardTopicoForum(
     onAbrirComentarios: () -> Unit,
     onDeletar: () -> Unit
 ) {
+    val contexto = LocalContext.current
     var mostrarMenuOpcoes by remember { mutableStateOf(false) }
     var mostrarSeletorReacoes by remember { mutableStateOf(false) }
     var spoilerRevelado by remember { mutableStateOf(!atividade.contemSpoiler) }
@@ -532,21 +533,37 @@ fun CardTopicoForum(
                     }
                 }
 
-                if (atividade.autorUid == meuUid) {
-                    Box {
-                        IconButton(onClick = { mostrarMenuOpcoes = true }, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Opções", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
-                        }
-                        DropdownMenu(
-                            expanded = mostrarMenuOpcoes,
-                            onDismissRequest = { mostrarMenuOpcoes = false }
-                        ) {
+                Box {
+                    IconButton(onClick = { mostrarMenuOpcoes = true }, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opções", tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
+                    }
+                    DropdownMenu(
+                        expanded = mostrarMenuOpcoes,
+                        onDismissRequest = { mostrarMenuOpcoes = false }
+                    ) {
+                        if (atividade.autorUid == meuUid) {
                             DropdownMenuItem(
                                 text = { Text("Excluir publicação", color = Color(0xFFFF5252)) },
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF5252)) },
                                 onClick = {
                                     mostrarMenuOpcoes = false
                                     onDeletar()
+                                }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Denunciar publicação", color = Color.White) },
+                                leadingIcon = { Text("🚩", fontSize = 14.sp) },
+                                onClick = {
+                                    mostrarMenuOpcoes = false
+                                    ModeracaoConteudoHelper.denunciarConteudo(
+                                        tipoConteudo = "topico_forum",
+                                        idConteudo = atividade.id,
+                                        autorConteudoUid = atividade.autorUid,
+                                        textoConteudo = atividade.topicoTitulo + " " + atividade.comentario,
+                                        motivo = "Publicação com conteúdo impróprio ou ofensivo",
+                                        contexto = contexto
+                                    )
                                 }
                             )
                         }
@@ -997,6 +1014,22 @@ fun DialogoThreadDiscussao(
                                             ) {
                                                 Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFFF5252), modifier = Modifier.size(14.dp))
                                             }
+                                        } else {
+                                            IconButton(
+                                                onClick = {
+                                                    ModeracaoConteudoHelper.denunciarConteudo(
+                                                        tipoConteudo = "comentario_forum",
+                                                        idConteudo = c.id,
+                                                        autorConteudoUid = c.autorUid,
+                                                        textoConteudo = c.texto,
+                                                        motivo = "Comentário impróprio ou spam",
+                                                        contexto = contexto
+                                                    )
+                                                },
+                                                modifier = Modifier.size(20.dp)
+                                            ) {
+                                                Text("🚩", fontSize = 12.sp)
+                                            }
                                         }
                                     }
 
@@ -1061,10 +1094,19 @@ fun DialogoThreadDiscussao(
                     IconButton(
                         onClick = {
                             val texto = inputComentario.trim()
-                            if (texto.isNotBlank() && !enviando) {
+                            if (texto.isBlank()) return@IconButton
+
+                            val validacao = ModeracaoConteudoHelper.validarTexto(texto)
+                            if (!validacao.aprovado) {
+                                Toast.makeText(contexto, validacao.motivoBloqueio, Toast.LENGTH_LONG).show()
+                                return@IconButton
+                            }
+
+                            if (!enviando) {
                                 enviando = true
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.adicionarComentarioAtividade(atividade.id, texto) { sucesso ->
+                                val textoSanitizado = ModeracaoConteudoHelper.sanitizarTexto(texto)
+                                viewModel.adicionarComentarioAtividade(atividade.id, textoSanitizado) { sucesso ->
                                     enviando = false
                                     if (sucesso) {
                                         inputComentario = ""
@@ -1108,6 +1150,7 @@ fun DialogoCriarTopicoForum(
         spoiler: Boolean
     ) -> Unit
 ) {
+    val contexto = LocalContext.current
     var tituloTopicoInput by remember { mutableStateOf("") }
     var categoriaInput by remember { mutableStateOf("Discussão Geral") }
     var textoInput by remember { mutableStateOf("") }
@@ -1319,11 +1362,30 @@ fun DialogoCriarTopicoForum(
                 // Botão Publicar
                 Button(
                     onClick = {
-                        if (tituloTopicoInput.isBlank() && textoInput.isBlank()) return@Button
+                        val tituloLimpo = tituloTopicoInput.trim()
+                        val textoLimpo = textoInput.trim()
+                        if (tituloLimpo.isBlank() && textoLimpo.isBlank()) return@Button
+
+                        if (tituloLimpo.isNotBlank()) {
+                            val valTitulo = ModeracaoConteudoHelper.validarTexto(tituloLimpo)
+                            if (!valTitulo.aprovado) {
+                                Toast.makeText(contexto, "Título: ${valTitulo.motivoBloqueio}", Toast.LENGTH_LONG).show()
+                                return@Button
+                            }
+                        }
+
+                        if (textoLimpo.isNotBlank()) {
+                            val valTexto = ModeracaoConteudoHelper.validarTexto(textoLimpo)
+                            if (!valTexto.aprovado) {
+                                Toast.makeText(contexto, "Texto: ${valTexto.motivoBloqueio}", Toast.LENGTH_LONG).show()
+                                return@Button
+                            }
+                        }
+
                         onPublicar(
-                            tituloTopicoInput.trim(),
+                            ModeracaoConteudoHelper.sanitizarTexto(tituloLimpo),
                             categoriaInput,
-                            textoInput.trim(),
+                            ModeracaoConteudoHelper.sanitizarTexto(textoLimpo),
                             obraTituloInput.trim(),
                             tmdbIdInput,
                             posterInput,

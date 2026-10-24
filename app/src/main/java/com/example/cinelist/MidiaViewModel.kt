@@ -3967,25 +3967,36 @@ class MidiaViewModel @Inject constructor(
 
 
     fun limparEstadoSincronizacao() {
-
-
-
         repository.limparEstadoSincronizacao()
-
-
-
         _casalIdAtivo.value = ""
-
-
-
         _isAdministradorSala.value = false
-
-
-
         _salaMutada.value = false
+    }
 
-
-
+    /**
+     * Efetua o logout seguro da conta:
+     * 1. Limpa todas as tabelas Room locais (mídias, grupos) para evitar que a próxima conta herde dados antigos.
+     * 2. Desconecta o Firebase Auth.
+     * 3. Reseta estados da ViewModel.
+     */
+    fun deslogar(contexto: android.content.Context? = null, onConcluido: () -> Unit = {}) {
+        viewModelScope.launch {
+            limparEstadoSincronizacao()
+            withContext(Dispatchers.IO) {
+                repository.limparDadosLocaisAoDeslogar()
+            }
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            _casalIdAtivo.value = ""
+            _isAdministradorSala.value = false
+            _salaMutada.value = false
+            withContext(Dispatchers.Main) {
+                onConcluido()
+            }
+        }
     }
 
 

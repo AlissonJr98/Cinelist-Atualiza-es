@@ -598,11 +598,11 @@ fun TelaPerfil(
 
                         mostrarConfirmacaoSair = false
 
-                        viewModel.limparEstadoSincronizacao()
+                        viewModel.deslogar(contexto = contexto) {
 
-                        firebaseAuth.signOut()
+                            onLogout()
 
-                        onLogout()
+                        }
 
                     },
 
@@ -700,11 +700,13 @@ fun TelaPerfil(
 
                                 mostrarConfirmacaoExclusaoConta = false
 
-                                viewModel.limparEstadoSincronizacao()
+                                viewModel.deslogar(contexto = contexto) {
 
-                                onLogout()
+                                    onLogout()
 
-                                Toast.makeText(contexto, "Sua conta foi excluída com sucesso.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(contexto, "Sua conta foi excluída com sucesso.", Toast.LENGTH_LONG).show()
+
+                                }
 
                             } else {
 
