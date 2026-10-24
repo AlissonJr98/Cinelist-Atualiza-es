@@ -977,6 +977,18 @@ class SocialRepository @Inject constructor() {
         val user = auth.currentUser ?: return@withContext false
         if (texto.isBlank() && topicoTitulo.isBlank()) return@withContext false
 
+        val tituloValidado = if (topicoTitulo.isNotBlank()) {
+            val v = ModeracaoConteudoHelper.validarTexto(topicoTitulo)
+            if (!v.aprovado) return@withContext false
+            ModeracaoConteudoHelper.sanitizarTexto(topicoTitulo)
+        } else ""
+
+        val textoValidado = if (texto.isNotBlank()) {
+            val v = ModeracaoConteudoHelper.validarTexto(texto)
+            if (!v.aprovado) return@withContext false
+            ModeracaoConteudoHelper.sanitizarTexto(texto)
+        } else ""
+
         try {
             val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
             val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
@@ -990,13 +1002,13 @@ class SocialRepository @Inject constructor() {
                 autorFotoUrl = foto,
                 tipo = if (categoria == "Teorias & Enigmas") "TEORIA" else if (categoria == "Crítica / Review") "AVALIOU" else "DISCUSSAO",
                 categoria = categoria.ifBlank { "Discussão Geral" },
-                topicoTitulo = topicoTitulo.trim(),
+                topicoTitulo = tituloValidado,
                 tmdbId = tmdbId,
                 tituloMidia = tituloMidia.trim(),
                 posterPath = posterPath,
                 tipoMidia = tipoMidia,
                 nota = 0f,
-                comentario = texto.trim(),
+                comentario = textoValidado,
                 contemSpoiler = contemSpoiler,
                 totalComentarios = 0,
                 timestamp = System.currentTimeMillis(),
@@ -1091,6 +1103,9 @@ class SocialRepository @Inject constructor() {
         val user = auth.currentUser ?: return@withContext false
         if (atividadeId.isBlank() || texto.isBlank()) return@withContext false
 
+        val validacao = ModeracaoConteudoHelper.validarTexto(texto)
+        if (!validacao.aprovado) return@withContext false
+
         try {
             val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
             val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
@@ -1105,7 +1120,7 @@ class SocialRepository @Inject constructor() {
                 autorUid = user.uid,
                 autorNome = nome,
                 autorFotoUrl = foto,
-                texto = texto.trim(),
+                texto = ModeracaoConteudoHelper.sanitizarTexto(texto),
                 timestamp = System.currentTimeMillis(),
                 curtidasUids = emptyList()
             )

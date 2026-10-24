@@ -27,14 +27,31 @@ object ModeracaoConteudoHelper {
         "arrombado", "arrombada", "babaca", "bastardo", "bicha", "biscate", "boiola", "bosta",
         "buceta", "burro", "burra", "cadela", "canalha", "caralho", "chifrudo", "corno", "cornudo",
         "cretino", "cuzão", "cuzao", "escroto", "escrota", "fdp", "fela da puta", "filho da puta",
-        "filha da puta", "foda", "foder", "fudido", "fudida", "idiota", "imbecil", "lacaio",
+        "filha da puta", "foda", "foder", "fodase", "foda-se", "fudido", "fudida", "idiota", "imbecil", "lacaio",
         "macaco", "macaca", "merda", "merdinha", "otario", "otaria", "otário", "otária", "palhaço",
         "panaca", "parasita", "piranha", "porra", "prostituta", "puta", "puto", "quenga",
         "safado", "safada", "sapatão", "sapatao", "tarado", "trouxa", "vabundo", "vadia",
-        "vagabundo", "vagabunda", "veado", "viado", "viadinho", "xoxota",
+        "vagabundo", "vagabunda", "veado", "viado", "viadinho", "xoxota", "viado", "bicha", "boiola",
+        "desgraçado", "desgraçada", "filhadaputa", "vsf", "vai se foder", "vai tomar no cu",
         // English common profanities
         "asshole", "bitch", "bastard", "cunt", "dick", "faggot", "fuck", "fucker", "motherfucker",
-        "nigger", "nigga", "pussy", "retard", "shit", "slut", "whore"
+        "nigger", "nigga", "pussy", "retard", "shit", "slut", "whore", "cocksucker", "asswipe"
+    )
+
+    // Termos relacionados a política, religião e temas sensíveis para ambiente familiar
+    private val TERMOS_SENSIVEIS_FAMILIA = setOf(
+        // Política
+        "bolsonaro", "lula", "pt", "psdb", "mdb", "eleição", "eleicoes", "presidente", "governo",
+        "comunista", "comunismo", "fascista", "fascismo", "nazista", "nazismo", "esquerda", "direita",
+        "socialista", "capitalista", "impeachment", "urna", "voto", "partido", "deputado", "senador",
+        "corrupto", "corrupção", "petista", "bolsonarista", "lulista",
+        // Religião e temas sectários
+        "ateu", "ateismo", "cristão", "cristao", "evangélico", "evangelico", "católico", "catolico",
+        "islam", "muçulmano", "muculmano", "judeu", "judaísmo", "judaismo", "igreja", "pastor",
+        "padre", "bíblia", "biblia", "koran", "torah", "deus", "jesus", "allahu", "allah",
+        "protestante", "espírita", "espirita", "umbanda", "candomblé", "candomble",
+        // Outros temas sensíveis
+        "aborto", "drogas", "maconha", "cocaína", "cocaina", "heroína", "heroina", "tráfico", "trafico"
     )
 
     // Domínios conhecidos de spam, phishing e encurtadores maliciosos
@@ -72,6 +89,7 @@ object ModeracaoConteudoHelper {
 
     /**
      * Valida um texto contra ofensas, besteiras, xingamentos e padrões de spam.
+     * Também filtra conteúdo político, religioso e temas sensíveis para manter o app familiar.
      */
     fun validarTexto(texto: String): ResultadoModeracao {
         val limpo = texto.trim()
@@ -131,6 +149,17 @@ object ModeracaoConteudoHelper {
                 return ResultadoModeracao(
                     false,
                     "O conteúdo contém expressões impróprias ou ofensivas."
+                )
+            }
+        }
+
+        // 5. Verificação de temas políticos, religiosos e sensíveis para ambiente familiar
+        for (sensivel in TERMOS_SENSIVEIS_FAMILIA) {
+            val sensivelNormalizado = normalizarTexto(sensivel)
+            if (tokens.contains(sensivelNormalizado) || (sensivelNormalizado.length >= 4 && textoNormalizado.contains(sensivelNormalizado))) {
+                return ResultadoModeracao(
+                    false,
+                    "Para manter o app familiar, não é permitido discutir política, religião ou temas sensíveis neste fórum."
                 )
             }
         }
