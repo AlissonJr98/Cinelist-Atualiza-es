@@ -1,5 +1,7 @@
 package com.example.cinelist
 
+import com.google.firebase.firestore.Exclude
+
 /**
  * Representa um post ou tópico no Fórum Social / Feed Compartilhado do CineList.
  * Pode ser um tópico de discussão, crítica/review, teoria, dúvida, recomendação ou registro de mídia assistida/avaliada.
@@ -24,6 +26,7 @@ data class AtividadeSocial(
     val reacoes: Map<String, List<String>> = emptyMap(), // ex: {"❤️": ["uid1"], "🔥": ["uid2"]}
     val curtidasUids: List<String> = emptyList() // Likes diretos
 ) {
+    @get:Exclude
     val totalLikes: Int
         get() {
             val likesLista = curtidasUids.size
@@ -50,6 +53,7 @@ data class ComentarioForum(
     val timestamp: Long = System.currentTimeMillis(),
     val curtidasUids: List<String> = emptyList()
 ) {
+    @get:Exclude
     val totalLikes: Int
         get() = curtidasUids.size
 

@@ -369,12 +369,12 @@ fun FeedAtividadesScreen(
                     posterPath = poster,
                     tipoMidia = tipoMidia,
                     contemSpoiler = spoiler
-                ) { sucesso ->
+                ) { sucesso, mensagem ->
                     if (sucesso) {
-                        Toast.makeText(contexto, "Tópico publicado no CineFórum! 🚀", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(contexto, mensagem.ifBlank { "Tópico publicado no CineFórum! 🚀" }, Toast.LENGTH_SHORT).show()
                         mostrarModalCriarTopico = false
                     } else {
-                        Toast.makeText(contexto, "Erro ao publicar no fórum.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(contexto, mensagem.ifBlank { "Erro ao publicar no fórum." }, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -927,20 +927,37 @@ fun DialogoThreadDiscussao(
                     color = Color(0xFF1E293B),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    var spoilerNoHeaderRevelado by remember { mutableStateOf(!atividade.contemSpoiler) }
+                    Column(
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .clickable(enabled = atividade.contemSpoiler && !spoilerNoHeaderRevelado) {
+                                spoilerNoHeaderRevelado = true
+                            },
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
                             text = "Por ${atividade.autorNome}:",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFD700)
                         )
-                        Text(
-                            text = atividade.comentario.ifBlank { atividade.topicoTitulo },
-                            fontSize = 12.sp,
-                            color = Color(0xFFCBD5E1),
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (atividade.contemSpoiler && !spoilerNoHeaderRevelado) {
+                            Text(
+                                text = "⚠️ Contém SPOILERS (Toque para revelar o texto)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF5252)
+                            )
+                        } else {
+                            Text(
+                                text = atividade.comentario.ifBlank { atividade.topicoTitulo },
+                                fontSize = 12.sp,
+                                color = Color(0xFFCBD5E1),
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
 
@@ -1106,12 +1123,12 @@ fun DialogoThreadDiscussao(
                                 enviando = true
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 val textoSanitizado = ModeracaoConteudoHelper.sanitizarTexto(texto)
-                                viewModel.adicionarComentarioAtividade(atividade.id, textoSanitizado) { sucesso ->
+                                viewModel.adicionarComentarioAtividade(atividade.id, textoSanitizado) { sucesso, mensagem ->
                                     enviando = false
                                     if (sucesso) {
                                         inputComentario = ""
                                     } else {
-                                        Toast.makeText(contexto, "Falha ao enviar resposta.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(contexto, mensagem.ifBlank { "Falha ao enviar resposta." }, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -1382,15 +1399,21 @@ fun DialogoCriarTopicoForum(
                             }
                         }
 
+                        val temSpoilerAuto = ModeracaoConteudoHelper.detectarPossivelSpoiler("$tituloLimpo $textoLimpo")
+                        val spoilerFinal = contemSpoilerInput || temSpoilerAuto
+                        if (temSpoilerAuto && !contemSpoilerInput) {
+                            Toast.makeText(contexto, "Detectamos possíveis detalhes do enredo e ativamos a proteção contra spoilers ⚠️", Toast.LENGTH_SHORT).show()
+                        }
+
                         onPublicar(
-                            ModeracaoConteudoHelper.sanitizarTexto(tituloLimpo),
+                            tituloLimpo,
                             categoriaInput,
-                            ModeracaoConteudoHelper.sanitizarTexto(textoLimpo),
+                            textoLimpo,
                             obraTituloInput.trim(),
                             tmdbIdInput,
                             posterInput,
                             tipoMidiaInput,
-                            contemSpoilerInput
+                            spoilerFinal
                         )
                     },
                     modifier = Modifier

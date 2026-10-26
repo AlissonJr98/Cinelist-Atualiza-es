@@ -8,7 +8,7 @@ import java.text.Normalizer
 import java.util.UUID
 
 /**
- * Resultado da moderação preventiva de texto.
+ * Resultado da moderação preventiva de conteúdo familiar e comunitário.
  */
 data class ResultadoModeracao(
     val aprovado: Boolean,
@@ -16,60 +16,101 @@ data class ResultadoModeracao(
 )
 
 /**
- * Utilitário central de moderação de conteúdo, filtro anti-spam, detecção de ofensas
- * e sistema de denúncia para o CineList.
+ * Utilitário central de moderação de conteúdo, proteção anti-spoiler, filtro anti-spam,
+ * detecção de ofensas, política, religião e sistema de denúncia para o CineList (App para Família).
  */
 object ModeracaoConteudoHelper {
 
-    // Lista abrangente de termos impróprios, ofensas, xingamentos e palavras de baixo calão (PT/EN)
-    private val TERMOS_PROIBIDOS = setOf(
-        // Ofensas e xingamentos graves
-        "arrombado", "arrombada", "babaca", "bastardo", "bicha", "biscate", "boiola", "bosta",
-        "buceta", "burro", "burra", "cadela", "canalha", "caralho", "chifrudo", "corno", "cornudo",
-        "cretino", "cuzão", "cuzao", "escroto", "escrota", "fdp", "fela da puta", "filho da puta",
-        "filha da puta", "foda", "foder", "fodase", "foda-se", "fudido", "fudida", "idiota", "imbecil", "lacaio",
-        "macaco", "macaca", "merda", "merdinha", "otario", "otaria", "otário", "otária", "palhaço",
-        "panaca", "parasita", "piranha", "porra", "prostituta", "puta", "puto", "quenga",
-        "safado", "safada", "sapatão", "sapatao", "tarado", "trouxa", "vabundo", "vadia",
-        "vagabundo", "vagabunda", "veado", "viado", "viadinho", "xoxota", "viado", "bicha", "boiola",
-        "desgraçado", "desgraçada", "filhadaputa", "vsf", "vai se foder", "vai tomar no cu",
+    // Palavras e ofensas proibidas (match exato em tokens isolados)
+    private val TERMOS_PROIBIDOS_TOKENS = setOf(
+        // Ofensas e xingamentos graves em Português
+        "arrombado", "arrombada", "arrombados", "arrombadas",
+        "babaca", "babacas", "bastardo", "bastarda", "biscate", "biscates",
+        "boiola", "boiolas", "bosta", "bostas", "buceta", "bucetas", "bucetinha",
+        "canalha", "canalhas", "caralho", "caralhos", "caralhada",
+        "chifrudo", "chifruda", "corno", "cornos", "cornudo", "cretino", "cretina",
+        "cuzao", "cuzaos", "cuzudo", "escroto", "escrota", "escrotos", "escrotas",
+        "fdp", "foda", "foder", "fodeu", "fudido", "fudida", "fudidos", "fudidas",
+        "fodase", "fodasse", "fodam-se", "foda-se",
+        "imbecil", "imbecis", "merda", "merdas", "merdinha", "merdinhas",
+        "otario", "otaria", "otarios", "otarias",
+        "panaca", "panacas", "parasita", "piranha", "piranhas",
+        "porra", "porras", "prostituta", "prostitutas",
+        "puta", "putas", "putaria", "putarias", "puto", "putos",
+        "quenga", "quengas", "safado", "safada", "safados", "safadas",
+        "tarado", "tarada", "tarados", "taradas",
+        "trouxa", "trouxas", "vagabundo", "vagabunda", "vagabundos", "vagabundas",
+        "viado", "viados", "viadinho", "viadinhos", "xoxota", "xoxotas",
+        "desgracado", "desgracada", "desgracados", "desgracadas",
+        "vsf", "vtnc",
         // English common profanities
-        "asshole", "bitch", "bastard", "cunt", "dick", "faggot", "fuck", "fucker", "motherfucker",
-        "nigger", "nigga", "pussy", "retard", "shit", "slut", "whore", "cocksucker", "asswipe"
+        "asshole", "bitch", "bitches", "bastard", "cunt", "cunts", "dick", "dicks",
+        "faggot", "fuck", "fucker", "fucking", "motherfucker", "nigger", "nigga",
+        "pussy", "retard", "shit", "slut", "sluts", "whore", "whores", "cocksucker"
     )
 
-    // Termos relacionados a política, religião e temas sensíveis para ambiente familiar
-    private val TERMOS_SENSIVEIS_FAMILIA = setOf(
-        // Política
-        "bolsonaro", "lula", "pt", "psdb", "mdb", "eleição", "eleicoes", "presidente", "governo",
-        "comunista", "comunismo", "fascista", "fascismo", "nazista", "nazismo", "esquerda", "direita",
-        "socialista", "capitalista", "impeachment", "urna", "voto", "partido", "deputado", "senador",
-        "corrupto", "corrupção", "petista", "bolsonarista", "lulista",
-        // Religião e temas sectários
-        "ateu", "ateismo", "cristão", "cristao", "evangélico", "evangelico", "católico", "catolico",
-        "islam", "muçulmano", "muculmano", "judeu", "judaísmo", "judaismo", "igreja", "pastor",
-        "padre", "bíblia", "biblia", "koran", "torah", "deus", "jesus", "allahu", "allah",
-        "protestante", "espírita", "espirita", "umbanda", "candomblé", "candomble",
-        // Outros temas sensíveis
-        "aborto", "drogas", "maconha", "cocaína", "cocaina", "heroína", "heroina", "tráfico", "trafico"
+    // Expressões proibidas compostas ou concatenadas
+    private val EXPRESSOES_PROIBIDAS_COMPOSTAS = listOf(
+        "filho da puta", "filha da puta", "filhodaputa", "filhadaputa", "fela da puta",
+        "vai se foder", "vaisefoder", "vai tomar no cu", "vaitomarnocu",
+        "vai se fuder", "vaisefuder", "pra puta que pariu", "puta que pariu", "pqp"
     )
 
-    // Domínios conhecidos de spam, phishing e encurtadores maliciosos
+    // Termos e figuras de disputa política partidária para ambiente familiar
+    private val TERMOS_POLITICA_TOKENS = setOf(
+        "bolsonaro", "bolsonarista", "bolsonaristas", "bolsonarismo",
+        "lula", "lulista", "lulistas", "lulismo", "lulopetismo",
+        "petista", "petistas", "petralha", "petralhas",
+        "bolsominion", "bolsominions",
+        "esquerdalha", "direitralha",
+        "marcal", "tarcisio", "haddad", "boulos",
+        "comunista", "comunismo", "fascista", "fascismo", "nazista", "nazismo"
+    )
+
+    // Expressões políticas compostas
+    private val EXPRESSOES_POLITICA_COMPOSTAS = listOf(
+        "faz o l", "faz o 22", "mito 22", "lula livre",
+        "urna eletronica", "voto impresso", "fraude nas urnas", "fraude na urna",
+        "intervencao militar", "patriota do quartel", "stf vergonha",
+        "eleicoes 2026", "eleicao 2026", "partido dos trabalhadores"
+    )
+
+    // Expressões de intolerância ou disputa religiosa (evita banir filmes como Cidade de Deus ou O Auto da Compadecida)
+    private val EXPRESSOES_RELIGIAO_OFENSIVAS = listOf(
+        "crente safado", "crente lixo", "ateu de merda", "religiao lixo", "seita maldita",
+        "chuta que e macumba", "padre pedofilo", "pastor ladrao", "bancada evangelica",
+        "intolerancia religiosa", "vai pro inferno pecador", "convertei-vos", "aceite jesus ou queime",
+        "malditos cristaos", "malditos evangelicos", "malditos catolicos", "malditos ateus"
+    )
+
+    // Padrões de spoiler em filmes e séries
+    private val PADROES_SPOILER = listOf(
+        "morre no final", "morreu no final", "quem morre", "quem morreu", "acaba morrendo", "termina morrendo",
+        "o assassino e", "o assassino era", "a assassina e", "a assassina era", "o culpado e", "o traidor e",
+        "o vilao e", "a vila e", "o monstro e na verdade",
+        "final do filme", "no final do filme", "no fim do filme", "o final e que", "o desfecho do filme",
+        "no final ele morre", "no final ela morre", "no final eles morrem",
+        "plot twist", "plottwist", "reviravolta no final", "cena pos creditos", "pos creditos", "pos-creditos",
+        "revela que ele e", "revela que ela e", "revelou que o pai", "descobre que e filho",
+        "descobre que o pai", "descobre que a mae", "sobrevive no final", "ninguem sobrevive",
+        "todos morrem no final", "todo mundo morre"
+    )
+
+    // Domínios conhecidos de spam, phishing e links externos
     private val DOMINIOS_SPAM = listOf(
         "bit.ly", "tinyurl.com", "t.me/", "wa.me/", "goo.gl", "cutt.ly",
         "is.gd", "rb.gy", "shorturl.at", "t.co", "chat.whatsapp.com"
     )
 
     /**
-     * Normaliza a string para facilitar a verificação:
+     * Normaliza a string para verificação:
      * - Converte para minúsculas
-     * - Remove acentos (ç -> c, é -> e)
-     * - Converte leetspeak comum (4 -> a, 3 -> e, 1 -> i, 0 -> o, $ -> s, @ -> a)
-     * - Remove pontuações repetidas entre letras (ex: p.o.r.r.a -> porra)
+     * - Remove acentos
+     * - Converte leetspeak comum (4/@ -> a, 3 -> e, 1/! -> i, 0 -> o, $/5 -> s, 7 -> t)
      */
-    private fun normalizarTexto(texto: String): String {
+    fun normalizarTexto(texto: String): String {
         var t = texto.lowercase()
-        // Leetspeak mapping
+        // Substituição inteligente de leetspeak
         t = t.replace('4', 'a')
             .replace('@', 'a')
             .replace('3', 'e')
@@ -88,8 +129,23 @@ object ModeracaoConteudoHelper {
     }
 
     /**
-     * Valida um texto contra ofensas, besteiras, xingamentos e padrões de spam.
-     * Também filtra conteúdo político, religioso e temas sensíveis para manter o app familiar.
+     * Identifica automaticamente se o texto contém frases clássicas de spoilers sobre enredo ou final da obra.
+     */
+    fun detectarPossivelSpoiler(texto: String): Boolean {
+        if (texto.isBlank()) return false
+        val norm = normalizarTexto(texto)
+        for (padrao in PADROES_SPOILER) {
+            if (norm.contains(padrao)) return true
+        }
+        return false
+    }
+
+    /**
+     * Valida um texto para comunidade familiar:
+     * - Filtra ofensas, palavrões e xingamentos
+     * - Filtra debates partidários e figuras políticas
+     * - Filtra intolerância religiosa
+     * - Filtra spam e links externos
      */
     fun validarTexto(texto: String): ResultadoModeracao {
         val limpo = texto.trim()
@@ -103,63 +159,81 @@ object ModeracaoConteudoHelper {
         }
 
         if (limpo.length > 2500) {
-            return ResultadoModeracao(false, "O texto excede o limite máximo permitido.")
+            return ResultadoModeracao(false, "O texto excede o limite máximo de 2.500 caracteres.")
         }
 
-        // 1. Verificação de Caracteres Repetidos Excessivos (ex: aaaaaaaa, kkkkkkkkkkkkkk de 20 letras)
+        // 1. Verificação de Caracteres Repetidos Excessivos (anti-spam)
         if (Regex("([a-zA-Z0-9])\\1{8,}").containsMatchIn(limpo)) {
             return ResultadoModeracao(false, "Conteúdo identificado como spam (repetição excessiva de caracteres).")
         }
 
-        // 2. Verificação de Palavras Repetidas em Excesso (ex: spam spam spam spam)
-        val palavras = limpo.split(Regex("\\s+")).filter { it.isNotBlank() }
-        if (palavras.size >= 4) {
-            val mapaContagem = palavras.groupingBy { it.lowercase() }.eachCount()
+        // 2. Verificação de Palavras Repetidas em Excesso
+        val palavrasOriginais = limpo.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (palavrasOriginais.size >= 4) {
+            val mapaContagem = palavrasOriginais.groupingBy { it.lowercase() }.eachCount()
             val maxRepeticao = mapaContagem.values.maxOrNull() ?: 0
-            if (maxRepeticao > 8 || (palavras.size >= 6 && maxRepeticao.toFloat() / palavras.size > 0.6f)) {
+            if (maxRepeticao > 8 || (palavrasOriginais.size >= 6 && maxRepeticao.toFloat() / palavrasOriginais.size > 0.6f)) {
                 return ResultadoModeracao(false, "Conteúdo identificado como spam (repetição de palavras).")
             }
         }
 
-        // 3. Verificação de Links e Domínios Suspeitos de Spam / Phishing
+        // 3. Verificação de Links e Phishing
         val textoLower = limpo.lowercase()
         for (dom in DOMINIOS_SPAM) {
             if (textoLower.contains(dom)) {
-                return ResultadoModeracao(false, "Não é permitido divulgar links ou grupos externos nos comentários.")
+                return ResultadoModeracao(false, "Não é permitido divulgar links ou grupos externos no fórum.")
             }
         }
 
-        // 4. Verificação de Palavras de Baixo Calão e Ofensas
         val textoNormalizado = normalizarTexto(limpo)
-        // Separa tanto por espaços quanto por pontuações
+
+        // 4. Verificação de Expressões Ofensivas Compostas
+        for (expr in EXPRESSOES_PROIBIDAS_COMPOSTAS) {
+            if (textoNormalizado.contains(expr)) {
+                return ResultadoModeracao(
+                    false,
+                    "Para manter o CineList seguro para toda a família, palavras de baixo calão e ofensas não são permitidas."
+                )
+            }
+        }
+
+        // 5. Verificação de Expressões Políticas Compostas
+        for (expr in EXPRESSOES_POLITICA_COMPOSTAS) {
+            if (textoNormalizado.contains(expr)) {
+                return ResultadoModeracao(
+                    false,
+                    "Para manter o foco em filmes e preservar o ambiente familiar, discussões e termos políticos não são permitidos."
+                )
+            }
+        }
+
+        // 6. Verificação de Ataques Religiosos Compostos
+        for (expr in EXPRESSOES_RELIGIAO_OFENSIVAS) {
+            if (textoNormalizado.contains(expr)) {
+                return ResultadoModeracao(
+                    false,
+                    "Para manter a harmonia familiar, discussões ou intolerância religiosa não são permitidas."
+                )
+            }
+        }
+
+        // 7. Verificação de Palavras Proibidas e Política via Tokens Isolados (evita falsos positivos como computador/disputa/Cidade de Deus)
         val tokens = textoNormalizado.split(Regex("[^a-z0-9]+")).filter { it.isNotBlank() }
-
         for (token in tokens) {
-            if (TERMOS_PROIBIDOS.contains(token)) {
+            // Colapsa repetição de letras no token (ex: puuuuutaaaa -> puta)
+            val tokenColapsado = Regex("(.)\\1{2,}").replace(token, "$1")
+
+            if (TERMOS_PROIBIDOS_TOKENS.contains(token) || TERMOS_PROIBIDOS_TOKENS.contains(tokenColapsado)) {
                 return ResultadoModeracao(
                     false,
-                    "O conteúdo contém palavras ofensivas ou inapropriadas para a comunidade."
+                    "Para manter o CineList seguro para toda a família, palavras de baixo calão e ofensas não são permitidas."
                 )
             }
-        }
 
-        // Checagem de palavras proibidas concatenadas sem espaço
-        for (proibida in TERMOS_PROIBIDOS) {
-            if (proibida.length >= 4 && textoNormalizado.contains(proibida)) {
+            if (TERMOS_POLITICA_TOKENS.contains(token) || TERMOS_POLITICA_TOKENS.contains(tokenColapsado)) {
                 return ResultadoModeracao(
                     false,
-                    "O conteúdo contém expressões impróprias ou ofensivas."
-                )
-            }
-        }
-
-        // 5. Verificação de temas políticos, religiosos e sensíveis para ambiente familiar
-        for (sensivel in TERMOS_SENSIVEIS_FAMILIA) {
-            val sensivelNormalizado = normalizarTexto(sensivel)
-            if (tokens.contains(sensivelNormalizado) || (sensivelNormalizado.length >= 4 && textoNormalizado.contains(sensivelNormalizado))) {
-                return ResultadoModeracao(
-                    false,
-                    "Para manter o app familiar, não é permitido discutir política, religião ou temas sensíveis neste fórum."
+                    "Para manter o foco em filmes e preservar o ambiente familiar, discussões e termos políticos não são permitidos."
                 )
             }
         }

@@ -862,9 +862,17 @@ class SocialRepository @Inject constructor() {
         if (tituloMidia.isBlank()) return@withContext
 
         try {
-            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
-            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
-            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+            var nome = user.displayName?.takeIf { it.isNotBlank() } ?: "Cinéfilo"
+            var foto = user.photoUrl?.toString() ?: ""
+            try {
+                val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+                if (docUsuario.exists()) {
+                    docUsuario.getString("nome")?.takeIf { it.isNotBlank() }?.let { nome = it }
+                    docUsuario.getString("fotoUrl")?.takeIf { it.isNotBlank() }?.let { foto = it }
+                }
+            } catch (_: Exception) {
+                // Continua com dados do FirebaseUser
+            }
 
             val ref = firestore.collection("atividades_sociais").document()
             val atividade = AtividadeSocial(
@@ -973,53 +981,82 @@ class SocialRepository @Inject constructor() {
         posterPath: String = "",
         tipoMidia: String = "Filme",
         contemSpoiler: Boolean = false
-    ): Boolean = withContext(Dispatchers.IO) {
-        val user = auth.currentUser ?: return@withContext false
-        if (texto.isBlank() && topicoTitulo.isBlank()) return@withContext false
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext Pair(false, "Faça login para participar do fórum.")
+        if (texto.isBlank() && topicoTitulo.isBlank()) {
+            return@withContext Pair(false, "Preencha o título ou o texto do post.")
+        }
 
-        val tituloValidado = if (topicoTitulo.isNotBlank()) {
-            val v = ModeracaoConteudoHelper.validarTexto(topicoTitulo)
-            if (!v.aprovado) return@withContext false
-            ModeracaoConteudoHelper.sanitizarTexto(topicoTitulo)
-        } else ""
+        val tituloLimpo = topicoTitulo.trim()
+        val textoLimpo = texto.trim()
 
-        val textoValidado = if (texto.isNotBlank()) {
-            val v = ModeracaoConteudoHelper.validarTexto(texto)
-            if (!v.aprovado) return@withContext false
-            ModeracaoConteudoHelper.sanitizarTexto(texto)
-        } else ""
+        if (tituloLimpo.isNotBlank()) {
+            val v = ModeracaoConteudoHelper.validarTexto(tituloLimpo)
+            if (!v.aprovado) return@withContext Pair(false, "Título: ${v.motivoBloqueio}")
+        }
+
+        if (textoLimpo.isNotBlank()) {
+            val v = ModeracaoConteudoHelper.validarTexto(textoLimpo)
+            if (!v.aprovado) return@withContext Pair(false, "Texto: ${v.motivoBloqueio}")
+        }
+
+        val spoilerAuto = ModeracaoConteudoHelper.detectarPossivelSpoiler("$tituloLimpo $textoLimpo")
+        val spoilerFinal = contemSpoiler || spoilerAuto
+
+        val tituloSanitizado = ModeracaoConteudoHelper.sanitizarTexto(tituloLimpo).take(200)
+        val textoSanitizado = ModeracaoConteudoHelper.sanitizarTexto(textoLimpo).take(2000)
 
         try {
-            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
-            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
-            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+            var nome = user.displayName?.takeIf { it.isNotBlank() } ?: "Cinéfilo"
+            var foto = user.photoUrl?.toString() ?: ""
+            try {
+                val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+                if (docUsuario.exists()) {
+                    docUsuario.getString("nome")?.takeIf { it.isNotBlank() }?.let { nome = it }
+                    docUsuario.getString("fotoUrl")?.takeIf { it.isNotBlank() }?.let { foto = it }
+                }
+            } catch (_: Exception) {
+                // Continua com dados do FirebaseUser
+            }
 
             val ref = firestore.collection("atividades_sociais").document()
             val atividade = AtividadeSocial(
                 id = ref.id,
                 autorUid = user.uid,
-                autorNome = nome,
-                autorFotoUrl = foto,
+                autorNome = nome.take(100),
+                autorFotoUrl = foto.take(2000),
                 tipo = if (categoria == "Teorias & Enigmas") "TEORIA" else if (categoria == "Crítica / Review") "AVALIOU" else "DISCUSSAO",
-                categoria = categoria.ifBlank { "Discussão Geral" },
-                topicoTitulo = tituloValidado,
+                categoria = categoria.ifBlank { "Discussão Geral" }.take(100),
+                topicoTitulo = tituloSanitizado,
                 tmdbId = tmdbId,
-                tituloMidia = tituloMidia.trim(),
-                posterPath = posterPath,
-                tipoMidia = tipoMidia,
+                tituloMidia = tituloMidia.trim().take(200),
+                posterPath = posterPath.take(2000),
+                tipoMidia = tipoMidia.take(50),
                 nota = 0f,
-                comentario = textoValidado,
-                contemSpoiler = contemSpoiler,
+                comentario = textoSanitizado,
+                contemSpoiler = spoilerFinal,
                 totalComentarios = 0,
                 timestamp = System.currentTimeMillis(),
                 reacoes = emptyMap(),
                 curtidasUids = emptyList()
             )
             ref.set(atividade).await()
-            true
+            val msgSucesso = if (spoilerAuto && !contemSpoiler) {
+                "Publicado no CineFórum! Marcamos como spoiler para proteger a comunidade ⚠️"
+            } else {
+                "Tópico publicado no CineFórum! 🚀"
+            }
+            Pair(true, msgSucesso)
         } catch (e: Exception) {
             e.printStackTrace()
-            false
+            val msgErro = when {
+                e.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true ->
+                    "Permissão negada no servidor. Verifique sua conexão e conta."
+                e.message?.contains("UNAVAILABLE", ignoreCase = true) == true ->
+                    "Servidor temporariamente indisponível. Tente novamente em instantes."
+                else -> "Erro ao publicar: ${e.localizedMessage ?: "Tente novamente"}"
+            }
+            Pair(false, msgErro)
         }
     }
 
@@ -1099,17 +1136,25 @@ class SocialRepository @Inject constructor() {
         awaitClose { listener.remove() }
     }
 
-    suspend fun adicionarComentarioAtividade(atividadeId: String, texto: String): Boolean = withContext(Dispatchers.IO) {
-        val user = auth.currentUser ?: return@withContext false
-        if (atividadeId.isBlank() || texto.isBlank()) return@withContext false
+    suspend fun adicionarComentarioAtividade(atividadeId: String, texto: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val user = auth.currentUser ?: return@withContext Pair(false, "Faça login para responder.")
+        if (atividadeId.isBlank() || texto.isBlank()) return@withContext Pair(false, "A resposta não pode ser vazia.")
 
         val validacao = ModeracaoConteudoHelper.validarTexto(texto)
-        if (!validacao.aprovado) return@withContext false
+        if (!validacao.aprovado) return@withContext Pair(false, validacao.motivoBloqueio)
 
         try {
-            val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
-            val nome = docUsuario.getString("nome") ?: user.displayName ?: "Cinéfilo"
-            val foto = docUsuario.getString("fotoUrl") ?: user.photoUrl?.toString() ?: ""
+            var nome = user.displayName?.takeIf { it.isNotBlank() } ?: "Cinéfilo"
+            var foto = user.photoUrl?.toString() ?: ""
+            try {
+                val docUsuario = firestore.collection("usuarios_publicos").document(user.uid).get().await()
+                if (docUsuario.exists()) {
+                    docUsuario.getString("nome")?.takeIf { it.isNotBlank() }?.let { nome = it }
+                    docUsuario.getString("fotoUrl")?.takeIf { it.isNotBlank() }?.let { foto = it }
+                }
+            } catch (_: Exception) {
+                // Continua com dados do FirebaseUser
+            }
 
             val refAtividade = firestore.collection("atividades_sociais").document(atividadeId)
             val refComentario = refAtividade.collection("comentarios").document()
@@ -1118,9 +1163,9 @@ class SocialRepository @Inject constructor() {
                 id = refComentario.id,
                 atividadeId = atividadeId,
                 autorUid = user.uid,
-                autorNome = nome,
-                autorFotoUrl = foto,
-                texto = ModeracaoConteudoHelper.sanitizarTexto(texto),
+                autorNome = nome.take(100),
+                autorFotoUrl = foto.take(2000),
+                texto = ModeracaoConteudoHelper.sanitizarTexto(texto).take(2000),
                 timestamp = System.currentTimeMillis(),
                 curtidasUids = emptyList()
             )
@@ -1133,10 +1178,15 @@ class SocialRepository @Inject constructor() {
                 // Silencioso se não tiver permissão
             }
 
-            true
+            Pair(true, "Resposta enviada!")
         } catch (e: Exception) {
             e.printStackTrace()
-            false
+            val msgErro = when {
+                e.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true ->
+                    "Permissão negada para comentar."
+                else -> "Falha ao enviar resposta: ${e.localizedMessage ?: "Tente novamente"}"
+            }
+            Pair(false, msgErro)
         }
     }
 

@@ -2608,10 +2608,10 @@ class MidiaViewModel @Inject constructor(
         posterPath: String = "",
         tipoMidia: String = "Filme",
         contemSpoiler: Boolean = false,
-        onConcluido: ((Boolean) -> Unit)? = null
+        onConcluido: ((Boolean, String) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            val sucesso = socialRepository.publicarTopicoForum(
+            val resultado = socialRepository.publicarTopicoForum(
                 topicoTitulo = topicoTitulo,
                 categoria = categoria,
                 texto = texto,
@@ -2621,7 +2621,7 @@ class MidiaViewModel @Inject constructor(
                 tipoMidia = tipoMidia,
                 contemSpoiler = contemSpoiler
             )
-            onConcluido?.invoke(sucesso)
+            onConcluido?.invoke(resultado.first, resultado.second)
         }
     }
 
@@ -2632,11 +2632,11 @@ class MidiaViewModel @Inject constructor(
     fun adicionarComentarioAtividade(
         atividadeId: String,
         texto: String,
-        onConcluido: ((Boolean) -> Unit)? = null
+        onConcluido: ((Boolean, String) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            val sucesso = socialRepository.adicionarComentarioAtividade(atividadeId, texto)
-            onConcluido?.invoke(sucesso)
+            val resultado = socialRepository.adicionarComentarioAtividade(atividadeId, texto)
+            onConcluido?.invoke(resultado.first, resultado.second)
         }
     }
 

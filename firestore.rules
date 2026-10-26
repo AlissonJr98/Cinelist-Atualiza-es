@@ -102,6 +102,7 @@ service cloud.firestore {
     //   - comentario: string (optional, <= 2000 chars)
     //   - contemSpoiler: bool (optional)
     //   - totalComentarios: number (optional)
+    //   - totalLikes: number (optional)
     //   - timestamp: number
     //   - reacoes: map or list (reactions/likes, <= 1000 items)
     //   - curtidasUids: list of strings (<= 1000 items)
@@ -114,6 +115,7 @@ service cloud.firestore {
     //     - autorFoto: string (optional, <= 2000 chars)
     //     - autorFotoUrl: string (optional, <= 2000 chars)
     //     - texto: string (comment text, <= 2000 chars)
+    //     - totalLikes: number (optional)
     //     - timestamp: number
     //     - curtidasUids: list of strings (<= 1000 items)
     //
@@ -341,6 +343,7 @@ service cloud.firestore {
         (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000)) &&
         (!('contemSpoiler' in data) || data.contemSpoiler is bool) &&
         (!('totalComentarios' in data) || data.totalComentarios is number) &&
+        (!('totalLikes' in data) || data.totalLikes is number) &&
         (!('curtidasUids' in data) || (data.curtidasUids is list && data.curtidasUids.size() <= 1000)) &&
         (!('timestamp' in data) || data.timestamp is number) &&
         (!('reacoes' in data) || (data.reacoes is map && data.reacoes.size() <= 1000) || (data.reacoes is list && data.reacoes.size() <= 1000));
@@ -354,6 +357,7 @@ service cloud.firestore {
         (!('autorFoto' in data) || (data.autorFoto is string && data.autorFoto.size() <= 2000)) &&
         (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
         (!('texto' in data) || (data.texto is string && data.texto.size() <= 2000)) &&
+        (!('totalLikes' in data) || data.totalLikes is number) &&
         (!('timestamp' in data) || data.timestamp is number) &&
         (!('curtidasUids' in data) || (data.curtidasUids is list && data.curtidasUids.size() <= 1000));
     }
@@ -647,12 +651,12 @@ service cloud.firestore {
           // a) O próprio autor atualizando sua atividade
           (request.auth.uid == resource.data.autorUid &&
            areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
-          // b) Qualquer usuário autenticado atualizando campos de interação social: reações, curtidas ('curtidasUids') ou contador de comentários ('totalComentarios')
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacoes', 'curtidasUids', 'totalComentarios']) &&
+          // b) Qualquer usuário autenticado atualizando campos de interação social: reações, curtidas ('curtidasUids'), contador de comentários ('totalComentarios') ou total de likes ('totalLikes')
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reacoes', 'curtidasUids', 'totalComentarios', 'totalLikes']) &&
            areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp']))
         );
       allow delete: if isAuthenticated() &&
-        request.auth.uid == resource.data.autorUid;
+        (request.auth.uid == resource.data.autorUid || request.auth.uid == resource.data.get('autorUid', ''));
 
       // Subcoleção de comentários e respostas nos tópicos do fórum/feed social
       match /comentarios/{comentarioId} {
@@ -665,15 +669,16 @@ service cloud.firestore {
             // O próprio autor da resposta
             (request.auth.uid == resource.data.autorUid &&
              areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp'])) ||
-            // Qualquer usuário autenticado atualizando apenas as curtidas do comentário ('curtidasUids')
-            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidasUids']) &&
+            // Qualquer usuário autenticado atualizando apenas as curtidas do comentário ('curtidasUids') ou total de likes ('totalLikes')
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidasUids', 'totalLikes']) &&
              areImmutableFieldsUnchanged(['autorUid', 'id', 'timestamp']))
           );
         allow delete: if isAuthenticated() && (
           // O próprio autor do comentário OU o autor do tópico pai
           request.auth.uid == resource.data.autorUid ||
+          request.auth.uid == resource.data.get('autorUid', '') ||
           (exists(/databases/$(database)/documents/atividades_sociais/$(atividadeId)) &&
-           request.auth.uid == get(/databases/$(database)/documents/atividades_sociais/$(atividadeId)).data.autorUid)
+           request.auth.uid == get(/databases/$(database)/documents/atividades_sociais/$(atividadeId)).data.get('autorUid', ''))
         );
       }
     }
