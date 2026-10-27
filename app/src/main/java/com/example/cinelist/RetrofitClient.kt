@@ -26,6 +26,18 @@ object RetrofitClient {
 
     private val TOKEN_AUTENTICACAO: String = "Bearer $tokenBruto"
 
+    /** Idioma atual ativo nas consultas ao TMDB (inicializado conforme o dispositivo ou preferência). */
+    @Volatile
+    var idiomaAtual: String = "pt-BR"
+        private set
+
+    fun atualizarIdioma(novoIdioma: String) {
+        if (novoIdioma.isNotBlank()) {
+            idiomaAtual = novoIdioma
+            Log.d(TAG, "Idioma do TMDB atualizado para: $novoIdioma")
+        }
+    }
+
     /** Lê o corpo da resposta em caso de erro sem consumir a stream (usando peekBody). */
     private class LoggingInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
@@ -52,8 +64,17 @@ object RetrofitClient {
             .retryOnConnectionFailure(true)
             .addInterceptor { chain ->
                 val requestOriginal = chain.request()
-                // Injeta o token de segurança em cada chamada automaticamente
+                val urlOriginal = requestOriginal.url
+
+                // Injeta automaticamente o idioma configurado quando a requisição usar o idioma padrão ou não tiver definido
+                val paramIdioma = urlOriginal.queryParameter("language")
+                val urlBuilder = urlOriginal.newBuilder()
+                if (paramIdioma == null || paramIdioma == "pt-BR") {
+                    urlBuilder.setQueryParameter("language", idiomaAtual)
+                }
+
                 val novaRequest = requestOriginal.newBuilder()
+                    .url(urlBuilder.build())
                     .header("Authorization", TOKEN_AUTENTICACAO)
                     .header("accept", "application/json")
                     .build()

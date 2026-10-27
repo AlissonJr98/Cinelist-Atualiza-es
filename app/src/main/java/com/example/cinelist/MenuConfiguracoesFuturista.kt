@@ -95,6 +95,7 @@ fun BottomSheetConfiguracoesFuturista(
 
     // Estados de Tema & Preferências
     var modoEscuro by remember { mutableStateOf(sharedPreferences.getBoolean("modo_escuro", true)) }
+    var idiomaSelecionado by remember { mutableStateOf(IdiomaAppManager.obterChaveConfigurada(contexto)) }
     var fundoAtual by remember { mutableStateOf(sharedPreferences.getString("cor_fundo", "Padrao") ?: "Padrao") }
     var temaAtual by remember { mutableStateOf(sharedPreferences.getString("cor_tema", "CineList") ?: "CineList") }
     var letraAtual by remember { mutableStateOf(sharedPreferences.getString("cor_texto", "Padrao") ?: "Padrao") }
@@ -491,6 +492,148 @@ fun BottomSheetConfiguracoesFuturista(
                                         menuGeneroExpandido = false
                                     }
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ========================================================
+            // SEÇÃO: IDIOMA & LOCALIZAÇÃO (RECONHECIMENTO AUTOMÁTICO DO DISPOSITIVO)
+            // ========================================================
+            CyberCardSecao(
+                titulo = "IDIOMA & LOCALIZAÇÃO",
+                subtitulo = "Reconhecimento do celular e catálogo do TMDB",
+                icone = Icons.Default.Language,
+                corDestaque = Color(0xFF00FF7F)
+            ) {
+                // Banner informativo com a língua detectada no celular
+                val idiomaDetectadoNome = remember { IdiomaAppManager.obterNomeAmigavelIdiomaDispositivo() }
+                val tagEfetiva = remember(idiomaSelecionado) { IdiomaAppManager.obterTagTmdbEfetiva(contexto) }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF00FF7F).copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, Color(0xFF00FF7F).copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF00FF7F).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("📱", fontSize = 18.sp)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Língua Padrão do Celular",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00FF7F)
+                            )
+                            Text(
+                                text = idiomaDetectadoNome,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = if (idiomaSelecionado == "SISTEMA") "Usando automaticamente a língua do dispositivo" else "Personalizado manualmente para $tagEfetiva",
+                                fontSize = 10.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Selecione o idioma de exibição e busca:",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+
+                // Lista de Idiomas Disponíveis
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    IdiomaAppManager.IDIOMAS_DISPONIVEIS.forEach { opcao ->
+                        val selecionado = idiomaSelecionado == opcao.codigo
+                        val cor = if (selecionado) Color(0xFF00FF7F) else Color.White.copy(alpha = 0.08f)
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    if (idiomaSelecionado != opcao.codigo) {
+                                        idiomaSelecionado = opcao.codigo
+                                        IdiomaAppManager.salvarPreferencia(contexto, opcao.codigo)
+                                        viewModel.carregarCarrosseisDescobrir(forcar = true)
+                                        Toast.makeText(
+                                            contexto,
+                                            "Idioma definido: ${opcao.bandeiraEmoji} ${opcao.nome}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selecionado) Color(0xFF00FF7F).copy(alpha = 0.14f) else Color(0xFF131B2E),
+                            border = BorderStroke(
+                                width = if (selecionado) 1.5.dp else 1.dp,
+                                color = cor
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
+                                    Column {
+                                        Text(
+                                            text = opcao.nome,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (selecionado) FontWeight.ExtraBold else FontWeight.Medium,
+                                            color = if (selecionado) Color(0xFF00FF7F) else Color.White
+                                        )
+                                        if (opcao.codigo == "SISTEMA") {
+                                            Text(
+                                                text = "Reconhece automaticamente o sistema ($idiomaDetectadoNome)",
+                                                fontSize = 10.sp,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "Código TMDB: ${opcao.tagTmdb}",
+                                                fontSize = 10.sp,
+                                                color = Color(0xFF64748B)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (selecionado) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Selecionado",
+                                        tint = Color(0xFF00FF7F),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }

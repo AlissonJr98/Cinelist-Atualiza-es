@@ -502,7 +502,7 @@ fun TelaAberturaApp(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Login,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
