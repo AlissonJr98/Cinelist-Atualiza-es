@@ -1199,137 +1199,56 @@ TelaSplashMp4(
 
 
 onSplashConcluida = {
-
-
-
-val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
-
-
-
-val onboardingConcluido = prefsOnboarding.getBoolean("onboarding_concluido", false)
-
-
-
-val destinoFinal = when {
-
-
-
-!onboardingConcluido -> "onboarding"
-
-
-
-usuarioLogado -> "home"
-
-
-
-else -> "login"
-
-
-
+    val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+    val aberturaApresentada = prefsOnboarding.getBoolean("abertura_apresentada", false)
+    val destinoFinal = when {
+        usuarioLogado -> "home"
+        !aberturaApresentada -> "abertura"
+        else -> "login"
+    }
+    navController.navigate(destinoFinal) {
+        popUpTo("splash") { inclusive = true }
+    }
 }
-
-
-
-navController.navigate(destinoFinal) {
-
-
-
-popUpTo("splash") { inclusive = true }
-
-
-
-}
-
-
-
-}
-
-
-
 )
-
-
-
 }
 
-
+composable("abertura") {
+    TelaAberturaApp(
+        onNavegarParaLogin = {
+            val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+            prefsOnboarding.edit().putBoolean("abertura_apresentada", true).apply()
+            navController.navigate("login") { popUpTo("abertura") { inclusive = true } }
+        },
+        onNavegarParaCadastro = {
+            val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+            prefsOnboarding.edit().putBoolean("abertura_apresentada", true).apply()
+            navController.navigate("cadastro")
+        }
+    )
+}
 
 composable("onboarding") {
-
-
-
-TelaOnboarding(
-
-
-
-onConcluir = {
-
-
-
-val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
-
-
-
-prefsOnboarding.edit().putBoolean("onboarding_concluido", true).apply()
-
-
-
-val destino = if (usuarioLogado) "home" else "login"
-
-
-
-navController.navigate(destino) {
-
-
-
-popUpTo("onboarding") { inclusive = true }
-
-
-
+    TelaOnboarding(
+        onConcluir = {
+            val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
+            prefsOnboarding.edit().putBoolean("onboarding_concluido", true).apply()
+            val destino = if (usuarioLogado) "home" else "login"
+            navController.navigate(destino) {
+                popUpTo("onboarding") { inclusive = true }
+            }
+        }
+    )
 }
-
-
-
-}
-
-
-
-)
-
-
-
-}
-
-
 
 composable("login") {
-
-
-
-TelaLogin(
-
-
-
-onLoginSucesso = {
-
-
-
-navController.navigate("home") { popUpTo("login") { inclusive = true } }
-
-
-
-},
-
-
-
-onNavegarParaCadastro = { navController.navigate("cadastro") }
-
-
-
-)
-
-
-
+    TelaLogin(
+        onLoginSucesso = {
+            navController.navigate("home") { popUpTo("login") { inclusive = true } }
+        },
+        onNavegarParaCadastro = { navController.navigate("cadastro") },
+        onNavegarParaAbertura = { navController.navigate("abertura") }
+    )
 }
 
 

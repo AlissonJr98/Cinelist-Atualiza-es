@@ -839,10 +839,6 @@ fun TelaPrincipal(
     LaunchedEffect(textoPesquisa) {
         delay(400)
         viewModel.atualizarQueryEFiltrarPaginado(textoPesquisa, tipoPaginado)
-        if (textoPesquisa.isNotBlank()) {
-            historicoManager.adicionarTermo(textoPesquisa)
-            historicoBuscas = historicoManager.obterHistorico()
-        }
     }
 
     if (mostrarDialogoGerenciarColecoes) {
@@ -1433,6 +1429,15 @@ fun TelaPrincipal(
                                 textoPesquisa = ""
                                 focusManager.clearFocus()
                             },
+                            onSearch = { termo ->
+                                val termoLimpo = termo.trim()
+                                if (termoLimpo.isNotBlank()) {
+                                    historicoManager.adicionarTermo(termoLimpo)
+                                    historicoBuscas = historicoManager.obterHistorico()
+                                    viewModel.atualizarQueryEFiltrarPaginado(termoLimpo, tipoPaginado)
+                                    focusManager.clearFocus()
+                                }
+                            },
                             modifier = Modifier.onFocusChanged { state -> searchFocused = state.isFocused }
                         )
 
@@ -1480,6 +1485,9 @@ fun TelaPrincipal(
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .clickable {
                                                     textoPesquisa = termo
+                                                    historicoManager.adicionarTermo(termo)
+                                                    historicoBuscas = historicoManager.obterHistorico()
+                                                    viewModel.atualizarQueryEFiltrarPaginado(termo, tipoPaginado)
                                                     focusManager.clearFocus()
                                                 }
                                                 .padding(horizontal = 10.dp, vertical = 8.dp),

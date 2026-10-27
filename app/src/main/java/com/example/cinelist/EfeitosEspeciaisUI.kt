@@ -19,6 +19,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -753,7 +756,8 @@ fun CyberSearchHUD(
     modifier: Modifier = Modifier,
     isFocused: Boolean = false,
     corDestaque: Color = Color(0xFF00E5FF),
-    onClear: () -> Unit = {}
+    onClear: () -> Unit = {},
+    onSearch: ((String) -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -787,12 +791,22 @@ fun CyberSearchHUD(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Buscar",
-                tint = if (isFocused) corDestaque else Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.size(19.dp)
-            )
+            IconeBouncyIconButton(
+                onClick = {
+                    val termo = query.trim()
+                    if (termo.isNotBlank()) {
+                        onSearch?.invoke(termo)
+                    }
+                },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Buscar",
+                    tint = if (isFocused || query.isNotBlank()) corDestaque else Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(19.dp)
+                )
+            }
 
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
@@ -814,6 +828,17 @@ fun CyberSearchHUD(
                         fontWeight = FontWeight.Medium
                     ),
                     cursorBrush = SolidColor(corDestaque),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Search
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            val termo = query.trim()
+                            if (termo.isNotBlank()) {
+                                onSearch?.invoke(termo)
+                            }
+                        }
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
             }

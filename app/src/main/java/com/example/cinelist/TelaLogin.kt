@@ -46,7 +46,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 @Composable
 fun TelaLogin(
     onLoginSucesso: () -> Unit,
-    onNavegarParaCadastro: () -> Unit
+    onNavegarParaCadastro: () -> Unit,
+    onNavegarParaAbertura: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
@@ -619,6 +620,32 @@ fun TelaLogin(
                         color = Color(0xFF00E5FF),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // LINK PARA O TOUR / ABERTURA ANIMADA
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(enabled = !carregando) { onNavegarParaAbertura() }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD700),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Conheça como o CineList funciona ✨",
+                        color = Color(0xFFFFD700),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
