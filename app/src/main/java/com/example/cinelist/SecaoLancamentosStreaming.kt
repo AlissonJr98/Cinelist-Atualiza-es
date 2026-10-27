@@ -63,14 +63,14 @@ fun SecaoLancamentosStreaming(
         ) {
             Column {
                 Text(
-                    text = "🆕 LANÇAMENTOS POR STREAMING",
+                    text = "🆕 LANÇAMENTOS POR STREAMING".t(),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 1.sp
                 )
                 Text(
-                    text = "Novas temporadas e filmes nas suas plataformas",
+                    text = "Novas temporadas e filmes nas suas plataformas".t(),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.secondary
                 )

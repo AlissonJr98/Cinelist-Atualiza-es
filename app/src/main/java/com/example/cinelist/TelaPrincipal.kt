@@ -1383,17 +1383,17 @@ fun TelaPrincipal(
             modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-            val cyberTabsPrincipal = remember(isModoCompartilhado) {
+            val cyberTabsPrincipal = remember(isModoCompartilhado, I18n.idiomaAtivo) {
                 if (isModoCompartilhado) {
                     listOf(
-                        CyberTabItem(titulo = "Lista da Sala", icone = Icons.Default.VideoLibrary),
-                        CyberTabItem(titulo = "Descobrir", icone = Icons.Default.Explore)
+                        CyberTabItem(titulo = "Lista da Sala".t(), icone = Icons.Default.VideoLibrary),
+                        CyberTabItem(titulo = "Descobrir".t(), icone = Icons.Default.Explore)
                     )
                 } else {
                     listOf(
-                        CyberTabItem(titulo = "Minha Lista", icone = Icons.Default.VideoLibrary),
-                        CyberTabItem(titulo = "Descobrir", icone = Icons.Default.Explore),
-                        CyberTabItem(titulo = "Feed Social", icone = Icons.Default.DynamicFeed)
+                        CyberTabItem(titulo = "Minha Lista".t(), icone = Icons.Default.VideoLibrary),
+                        CyberTabItem(titulo = "Descobrir".t(), icone = Icons.Default.Explore),
+                        CyberTabItem(titulo = "Feed Social".t(), icone = Icons.Default.DynamicFeed)
                     )
                 }
             }
@@ -1423,7 +1423,7 @@ fun TelaPrincipal(
                         CyberSearchHUD(
                             query = textoPesquisa,
                             onQueryChange = { textoPesquisa = it },
-                            placeholder = if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming..." else "Buscar online no TMDB...",
+                            placeholder = if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming...".t() else "Buscar online no TMDB...".t(),
                             isFocused = searchFocused,
                             onClear = {
                                 textoPesquisa = ""
@@ -1917,10 +1917,10 @@ fun TelaPrincipal(
                                             }
                                         }
 
-                                        item { CarrosselSessao(titulo = "🎬 Filmes Populares", listaTmdb = listaPopularesEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
-                                        item { CarrosselSessao(titulo = "🔥 Séries em Alta", listaTmdb = listaSeriesAltaEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
-                                        item { CarrosselSessao(titulo = "😂 Top Comédias", listaTmdb = listaComediasEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
-                                        item { CarrosselSessao(titulo = "💥 Adrenalina Pura", listaTmdb = listaAcaoEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
+                                        item { CarrosselSessao(titulo = "🎬 Filmes Populares".t(), listaTmdb = listaPopularesEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
+                                        item { CarrosselSessao(titulo = "🔥 Séries em Alta".t(), listaTmdb = listaSeriesAltaEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
+                                        item { CarrosselSessao(titulo = "😂 Top Comédias".t(), listaTmdb = listaComediasEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
+                                        item { CarrosselSessao(titulo = "💥 Adrenalina Pura".t(), listaTmdb = listaAcaoEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
                                     }
                                     } // fecha o else dos estados de erro/vazio
                                 }

@@ -1504,7 +1504,7 @@ fun TelaPerfil(
 
 
 
-    val titulosAbas = listOf("Visão Geral", "Amigos & Sala", "Notificações", "Estatísticas", "Histórico")
+    val titulosAbas = listOf("Visão Geral".t(), "Amigos & Sala".t(), "Notificações".t(), "Estatísticas".t(), "Histórico".t())
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { titulosAbas.size })
 
@@ -2117,15 +2117,15 @@ fun TelaPerfil(
 
                     listOf(
 
-                        CyberTabItem(titulo = "Visão Geral", icone = Icons.Default.AccountCircle),
+                        CyberTabItem(titulo = "Visão Geral".t(), icone = Icons.Default.AccountCircle),
 
-                        CyberTabItem(titulo = "Amigos & Sala", icone = Icons.Default.Group, badgeCount = solicitacoesRecebidas.size),
+                        CyberTabItem(titulo = "Amigos & Sala".t(), icone = Icons.Default.Group, badgeCount = solicitacoesRecebidas.size),
 
-                        CyberTabItem(titulo = "Notificações", icone = Icons.Default.Notifications, badgeCount = totalAvisosNotificacao),
+                        CyberTabItem(titulo = "Notificações".t(), icone = Icons.Default.Notifications, badgeCount = totalAvisosNotificacao),
 
-                        CyberTabItem(titulo = "Estatísticas", icone = Icons.Default.BarChart),
+                        CyberTabItem(titulo = "Estatísticas".t(), icone = Icons.Default.BarChart),
 
-                        CyberTabItem(titulo = "Histórico", icone = Icons.Default.History)
+                        CyberTabItem(titulo = "Histórico".t(), icone = Icons.Default.History)
 
                     )
 

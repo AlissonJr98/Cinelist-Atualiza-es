@@ -1,6 +1,9 @@
 package com.example.cinelist
 
 import android.content.Context
+import android.content.res.Configuration
+import android.os.Build
+import android.os.LocaleList
 import java.util.Locale
 
 /**
@@ -16,7 +19,7 @@ data class IdiomaOpcao(
 /**
  * Gerenciador central de idiomas e localização do CineList.
  * Reconhece a língua padrão do dispositivo móvel como principal e permite
- * customização manual no menu de configurações.
+ * customização manual no menu de configurações com aplicação em todo o aplicativo.
  */
 object IdiomaAppManager {
 
@@ -127,7 +130,7 @@ object IdiomaAppManager {
     }
 
     /**
-     * Retorna a tag do TMDB efetivamente em uso ("pt-BR", "en-US", etc.).
+     * Retorna a tag do TMDB e Locale efetivamente em uso ("pt-BR", "en-US", etc.).
      */
     fun obterTagTmdbEfetiva(context: Context): String {
         val chave = obterChaveConfigurada(context)
@@ -139,9 +142,26 @@ object IdiomaAppManager {
     }
 
     /**
-     * Salva a preferência escolhida pelo usuário e sincroniza com o cliente HTTP do TMDB e Locale do app.
+     * Converte tag BCP47 ("pt-BR", "en-US", "es") em objeto Locale do Java.
      */
-    fun salvarPreferencia(context: Context, codigoEscolhido: String) {
+    fun tagParaLocale(tag: String): Locale {
+        return try {
+            if (tag.contains("-")) {
+                val partes = tag.split("-")
+                Locale(partes[0], partes[1])
+            } else {
+                Locale(tag)
+            }
+        } catch (_: Exception) {
+            Locale.getDefault()
+        }
+    }
+
+    /**
+     * Salva a preferência escolhida pelo usuário e sincroniza com Retrofit (TMDB),
+     * motor i18n do CineList e configurações do sistema Android.
+     */
+    fun salvarPreferenciaEAplicar(context: Context, codigoEscolhido: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(CHAVE_PREFERENCIA_IDIOMA, codigoEscolhido).apply()
 
@@ -151,8 +171,65 @@ object IdiomaAppManager {
             codigoEscolhido
         }
 
-        // Atualiza o cliente Retrofit em tempo real
+        // 1. Atualiza o motor i18n Compose
+        I18n.definirIdioma(tagEfetiva)
+
+        // 2. Atualiza o cliente Retrofit do TMDB
         RetrofitClient.atualizarIdioma(tagEfetiva)
+
+        // 3. Aplica o Locale global na JVM e nos Resources do Context
+        aplicarLocaleGlobal(context, tagEfetiva)
+    }
+
+    /**
+     * Aplica o Locale nos Resources e na JVM.
+     */
+    fun aplicarLocaleGlobal(context: Context, tag: String) {
+        try {
+            val locale = tagParaLocale(tag)
+            Locale.setDefault(locale)
+
+            val resources = context.resources
+            val config = Configuration(resources.configuration)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                config.setLocales(LocaleList(locale))
+            } else {
+                @Suppress("DEPRECATION")
+                config.locale = locale
+            }
+            @Suppress("DEPRECATION")
+            resources.updateConfiguration(config, resources.displayMetrics)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Cria e retorna um novo contexto configurado com a linguagem selecionada (útil em attachBaseContext).
+     */
+    fun aplicarContextLocale(baseContext: Context): Context {
+        return try {
+            val tag = obterTagTmdbEfetiva(baseContext)
+            I18n.definirIdioma(tag)
+            RetrofitClient.atualizarIdioma(tag)
+
+            val locale = tagParaLocale(tag)
+            Locale.setDefault(locale)
+
+            val config = Configuration(baseContext.resources.configuration)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                config.setLocales(LocaleList(locale))
+                baseContext.createConfigurationContext(config)
+            } else {
+                @Suppress("DEPRECATION")
+                config.locale = locale
+                @Suppress("DEPRECATION")
+                baseContext.resources.updateConfiguration(config, baseContext.resources.displayMetrics)
+                baseContext
+            }
+        } catch (_: Exception) {
+            baseContext
+        }
     }
 
     /**
@@ -160,6 +237,8 @@ object IdiomaAppManager {
      */
     fun inicializar(context: Context) {
         val tagEfetiva = obterTagTmdbEfetiva(context)
+        I18n.definirIdioma(tagEfetiva)
         RetrofitClient.atualizarIdioma(tagEfetiva)
+        aplicarLocaleGlobal(context, tagEfetiva)
     }
 }

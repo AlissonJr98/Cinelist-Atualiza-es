@@ -360,7 +360,10 @@ e.printStackTrace()
 
 class MainActivity : ComponentActivity() {
 
-
+override fun attachBaseContext(newBase: Context) {
+    val contextComLocale = IdiomaAppManager.aplicarContextLocale(newBase)
+    super.attachBaseContext(contextComLocale)
+}
 
 override fun onCreate(savedInstanceState: Bundle?) {
 super.onCreate(savedInstanceState)

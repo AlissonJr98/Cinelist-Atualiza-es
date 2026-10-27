@@ -159,14 +159,14 @@ fun BottomSheetConfiguracoesFuturista(
                     PulsarPontoNeon(cor = Color(0xFF00FF7F))
                     Column {
                         Text(
-                            text = "CONSOLE DO SISTEMA",
+                            text = "CONSOLE DO SISTEMA".t(),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 1.sp,
                             color = Color.White
                         )
                         Text(
-                            text = "CINELINK OS • NÚCLEO ATIVO",
+                            text = "CINELINK OS • NÚCLEO ATIVO".t(),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
@@ -502,8 +502,8 @@ fun BottomSheetConfiguracoesFuturista(
             // SEÇÃO: IDIOMA & LOCALIZAÇÃO (RECONHECIMENTO AUTOMÁTICO DO DISPOSITIVO)
             // ========================================================
             CyberCardSecao(
-                titulo = "IDIOMA & LOCALIZAÇÃO",
-                subtitulo = "Reconhecimento do celular e catálogo do TMDB",
+                titulo = "IDIOMA & LOCALIZAÇÃO".t(),
+                subtitulo = "Reconhecimento do celular e catálogo do TMDB".t(),
                 icone = Icons.Default.Language,
                 corDestaque = Color(0xFF00FF7F)
             ) {
@@ -533,7 +533,7 @@ fun BottomSheetConfiguracoesFuturista(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Língua Padrão do Celular",
+                                text = "Língua Padrão do Celular".t(),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF00FF7F)
@@ -545,7 +545,7 @@ fun BottomSheetConfiguracoesFuturista(
                                 color = Color.White
                             )
                             Text(
-                                text = if (idiomaSelecionado == "SISTEMA") "Usando automaticamente a língua do dispositivo" else "Personalizado manualmente para $tagEfetiva",
+                                text = if (idiomaSelecionado == "SISTEMA") "Usando automaticamente a língua do dispositivo".t() else "${"Personalizado manualmente para".t()} $tagEfetiva",
                                 fontSize = 10.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -556,85 +556,137 @@ fun BottomSheetConfiguracoesFuturista(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Selecione o idioma de exibição e busca:",
+                    text = "Selecione o idioma de exibição e busca:".t(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = Color.White.copy(alpha = 0.85f)
                 )
 
-                // Lista de Idiomas Disponíveis
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    IdiomaAppManager.IDIOMAS_DISPONIVEIS.forEach { opcao ->
-                        val selecionado = idiomaSelecionado == opcao.codigo
-                        val cor = if (selecionado) Color(0xFF00FF7F) else Color.White.copy(alpha = 0.08f)
+                var menuIdiomaExpandido by remember { mutableStateOf(false) }
+                val opcaoSelecionada = remember(idiomaSelecionado) {
+                    IdiomaAppManager.IDIOMAS_DISPONIVEIS.find { it.codigo == idiomaSelecionado }
+                        ?: IdiomaAppManager.IDIOMAS_DISPONIVEIS.first()
+                }
 
-                        Surface(
+                // ========================================================
+                // CAIXA DE SELEÇÃO DE IDIOMA (SPINNER / DROPDOWN FUTURISTA)
+                // ========================================================
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { menuIdiomaExpandido = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF131B2E),
+                        border = BorderStroke(
+                            width = 1.5.dp,
+                            color = if (menuIdiomaExpandido) Color(0xFF00FF7F) else Color(0xFF00FF7F).copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    if (idiomaSelecionado != opcao.codigo) {
-                                        idiomaSelecionado = opcao.codigo
-                                        IdiomaAppManager.salvarPreferencia(contexto, opcao.codigo)
-                                        viewModel.carregarCarrosseisDescobrir(forcar = true)
-                                        Toast.makeText(
-                                            contexto,
-                                            "Idioma definido: ${opcao.bandeiraEmoji} ${opcao.nome}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (selecionado) Color(0xFF00FF7F).copy(alpha = 0.14f) else Color(0xFF131B2E),
-                            border = BorderStroke(
-                                width = if (selecionado) 1.5.dp else 1.dp,
-                                color = cor
-                            )
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
-                                    Column {
-                                        Text(
-                                            text = opcao.nome,
-                                            fontSize = 13.sp,
-                                            fontWeight = if (selecionado) FontWeight.ExtraBold else FontWeight.Medium,
-                                            color = if (selecionado) Color(0xFF00FF7F) else Color.White
-                                        )
-                                        if (opcao.codigo == "SISTEMA") {
-                                            Text(
-                                                text = "Reconhece automaticamente o sistema ($idiomaDetectadoNome)",
-                                                fontSize = 10.sp,
-                                                color = Color(0xFF94A3B8)
-                                            )
-                                        } else {
-                                            Text(
-                                                text = "Código TMDB: ${opcao.tagTmdb}",
-                                                fontSize = 10.sp,
-                                                color = Color(0xFF64748B)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (selecionado) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Selecionado",
-                                        tint = Color(0xFF00FF7F),
-                                        modifier = Modifier.size(18.dp)
+                                Text(text = opcaoSelecionada.bandeiraEmoji, fontSize = 24.sp)
+                                Column {
+                                    Text(
+                                        text = opcaoSelecionada.nome,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFF00FF7F)
+                                    )
+                                    Text(
+                                        text = if (opcaoSelecionada.codigo == "SISTEMA") "Automático ($idiomaDetectadoNome)" else "Código TMDB: ${opcaoSelecionada.tagTmdb}",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF94A3B8)
                                     )
                                 }
                             }
+                            Icon(
+                                imageVector = if (menuIdiomaExpandido) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = "Abrir caixa de seleção de idioma",
+                                tint = Color(0xFF00FF7F),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = menuIdiomaExpandido,
+                        onDismissRequest = { menuIdiomaExpandido = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .background(Color(0xFF0C101B))
+                            .border(1.dp, Color(0xFF00FF7F).copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                    ) {
+                        IdiomaAppManager.IDIOMAS_DISPONIVEIS.forEach { opcao ->
+                            val isAtivo = opcao.codigo == idiomaSelecionado
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = opcao.nome,
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isAtivo) FontWeight.ExtraBold else FontWeight.Medium,
+                                                color = if (isAtivo) Color(0xFF00FF7F) else Color.White
+                                            )
+                                            if (opcao.codigo == "SISTEMA") {
+                                                Text(
+                                                    text = "Automático ($idiomaDetectadoNome)",
+                                                    fontSize = 10.sp,
+                                                    color = Color(0xFF94A3B8)
+                                                )
+                                            } else {
+                                                Text(
+                                                    text = "Código TMDB: ${opcao.tagTmdb}",
+                                                    fontSize = 10.sp,
+                                                    color = Color(0xFF64748B)
+                                                )
+                                            }
+                                        }
+                                        if (isAtivo) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = "Selecionado",
+                                                tint = Color(0xFF00FF7F),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    menuIdiomaExpandido = false
+                                    if (idiomaSelecionado != opcao.codigo) {
+                                        idiomaSelecionado = opcao.codigo
+                                        IdiomaAppManager.salvarPreferenciaEAplicar(contexto, opcao.codigo)
+                                        viewModel.carregarCarrosseisDescobrir(forcar = true)
+                                        viewModel.carregarFilmesEmCartaz()
+                                        viewModel.carregarNovidadesPorStreaming(contexto, forcar = true)
+                                        viewModel.carregarCarrosseisGenerosFavoritos(contexto)
+                                        Toast.makeText(
+                                            contexto,
+                                            "Idioma: ${opcao.bandeiraEmoji} ${opcao.nome}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        (contexto as? android.app.Activity)?.recreate()
+                                    }
+                                }
+                            )
                         }
                     }
                 }
@@ -1258,14 +1310,14 @@ private fun CyberCardSecao(
 
             Column {
                 Text(
-                    text = titulo,
+                    text = titulo.t(),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp,
                     color = Color.White
                 )
                 Text(
-                    text = subtitulo,
+                    text = subtitulo.t(),
                     fontSize = 11.sp,
                     color = Color.White.copy(alpha = 0.6f)
                 )
@@ -1298,8 +1350,8 @@ private fun CyberSwitchItem(
         ) {
             Icon(icone, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
             Column {
-                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text = titulo.t(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = subtitulo.t(), fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
 
@@ -1340,8 +1392,8 @@ private fun CyberItemNavegacao(
         ) {
             Icon(icone, contentDescription = null, tint = corIcone, modifier = Modifier.size(18.dp))
             Column {
-                Text(text = titulo, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(text = subtitulo, fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(text = titulo.t(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = subtitulo.t(), fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         Icon(
