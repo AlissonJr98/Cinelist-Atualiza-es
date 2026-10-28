@@ -1504,7 +1504,7 @@ fun TelaPerfil(
 
 
 
-    val titulosAbas = listOf("Visão Geral".t(), "Amigos & Sala".t(), "Notificações".t(), "Estatísticas".t(), "Histórico".t())
+    val titulosAbas = remember(I18n.idiomaAtivo) { listOf("Visão Geral".t(), "Amigos & Sala".t(), "Notificações".t(), "Estatísticas".t(), "Histórico".t()) }
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { titulosAbas.size })
 
@@ -2113,7 +2113,7 @@ fun TelaPerfil(
 
                 val totalAvisosNotificacao = quantidadeNaoLidas + solicitacoesRecebidas.size
 
-                val cyberTabsPerfil = remember(solicitacoesRecebidas.size, totalAvisosNotificacao) {
+                val cyberTabsPerfil = remember(solicitacoesRecebidas.size, totalAvisosNotificacao, I18n.idiomaAtivo) {
 
                     listOf(
 

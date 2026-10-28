@@ -23,6 +23,157 @@ object I18n {
         // INGLÊS (en-US / en)
         // ==========================================
         "en" to mapOf(
+            "Rir até doer" to "Laugh out loud",
+            "Explodir a mente" to "Mind-bending",
+            "Chorar de emoção" to "Tearjerker",
+            "Pipoca & Ação" to "Popcorn & Action",
+            "Ficção & Fantasia" to "Sci-Fi & Fantasy",
+            "Direto ao Ponto (< 95 min)" to "Straight to the Point (< 95 min)",
+            "Sessão a Dois" to "Date Night",
+            "Frio na Espinha" to "Spine-chilling",
+            "Comédias leves e divertidas" to "Light and fun comedies",
+            "Plot twists e enigmas psicológicos" to "Plot twists and psychological puzzles",
+            "Dramas tocantes e superação" to "Touching dramas and inspiring triumphs",
+            "Ritmo acelerado e aventura" to "Fast-paced thrills and adventure",
+            "Viagem no tempo, espaço e magia" to "Time travel, outer space, and magic",
+            "Histórias ágeis para quem tem pouco tempo" to "Quick watches when you're short on time",
+            "Romance envolvente e comédia romântica" to "Engaging romance and rom-coms",
+            "Terror psicológico e suspense sombrio" to "Psychological horror and dark suspense",
+            "Qual é a sua vibe agora?" to "What's your vibe right now?",
+            "Desafio CineQuiz Trivia" to "CineQuiz Trivia Challenge",
+            "Teste seus conhecimentos de cinema com CineAI" to "Test your movie knowledge with CineAI",
+            "Jogar ➔" to "Play ➔",
+            "Sugestões de busca rápida:" to "Quick search suggestions:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "Or describe in your own words (e.g. snowy thriller with a twist)...",
+            "Consultando CineAI..." to "Consulting CineAI...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "No recommendations found for these terms. Try another vibe above or simplify the description.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 Handpicked Recommendations for You:",
+            "Chave Gemini AI" to "Gemini AI Key",
+            "Salvar Chave" to "Save Key",
+            "Remover / Usar Motor Híbrido" to "Remove / Use Hybrid Engine",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI works smoothly without a key using heuristic curation. If you have a free Google AI Studio key (Gemini 2.5 Flash), paste it below to enable deep generative intelligence:",
+            "Curadoria inteligente por humor e vibe" to "Smart curation by mood and vibe",
+            "Configurar Chave Gemini" to "Configure Gemini Key",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "PENDING",
+            "RECUSADO" to "DECLINED",
+            "Parceiro(a) recusou" to "Partner declined",
+            "Reabrir Título" to "Reopen Title",
+            "Marcar como Concluído" to "Mark as Completed",
+            "Padrão (Assistindo primeiro)" to "Default (Watching first)",
+            "Favoritos Primeiro" to "Favorites First",
+            "Melhor Avaliados" to "Top Rated",
+            "Ordem Alfabética (A-Z)" to "Alphabetical (A-Z)",
+            "Adicionados Recentemente" to "Recently Added",
+            "Geral" to "General",
+            "Apenas disponível nos meus streamings" to "Only available on my streamings",
+            "Configurar meus streamings" to "Configure my streamings",
+            "Meus Streamings" to "My Streamings",
+            "Exibir Status" to "Show Status",
+            "Coleção Temática" to "Thematic Collection",
+            "Categoria" to "Category",
+            "Ordenar por" to "Sort by",
+            "Filme" to "Movie",
+            "Filmes" to "Movies",
+            "Série" to "Series",
+            "Séries" to "Series",
+            "Anime" to "Anime",
+            "Animes" to "Anime",
+            "Novela" to "Soap Opera",
+            "Novelas" to "Soap Operas",
+            "Dorama" to "K-Drama",
+            "Doramas" to "K-Dramas",
+            "Todas" to "All",
+            "Ação" to "Action",
+            "Aventura" to "Adventure",
+            "Animação" to "Animation",
+            "Comédia" to "Comedy",
+            "Crime" to "Crime",
+            "Documentário" to "Documentary",
+            "Drama" to "Drama",
+            "Família" to "Family",
+            "Fantasia" to "Fantasy",
+            "Terror" to "Horror",
+            "Ficção científica" to "Science Fiction",
+            "Ficção Científica" to "Science Fiction",
+            "Suspense" to "Thriller",
+            "Romance" to "Romance",
+            "Mistério" to "Mystery",
+            "Guerra" to "War",
+            "Música" to "Music",
+            "Faroeste" to "Western",
+            "Cinema TV" to "TV Movie",
+            "Ação & Aventura" to "Action & Adventure",
+            "Sci-Fi & Fantasy" to "Sci-Fi & Fantasy",
+            "Kids" to "Kids",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "Post-Credits Scenes: Stay until the end of the credits!",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "No post-credits scenes — You can turn off the TV!",
+            "Esta série foi cancelada" to "This series was canceled",
+            "Série finalizada (Todas temporadas disponíveis)" to "Series finished (All seasons available)",
+            "Em exibição (Novas temporadas em produção)" to "Currently airing (New seasons in production)",
+            "Consultar Sessões e Ingressos 🎟️" to "Check Showtimes & Tickets 🎟️",
+            "Duração Real" to "Runtime",
+            "Média Crítica" to "Critic Score",
+            "Lançamento" to "Release",
+            "Sua Avaliação" to "Your Rating",
+            "Comentário (Opcional)" to "Comment (Optional)",
+            "Contém Spoiler" to "Contains Spoiler",
+            "Contém Spoilers" to "Contains Spoilers",
+            "ENVIAR AVALIAÇÃO" to "SUBMIT REVIEW",
+            "Avaliações da Sala" to "Room Reviews",
+            "Nenhuma avaliação ainda." to "No reviews yet.",
+            "Indicação enviada no Chat da Sala! 🍿" to "Recommendation sent to Room Chat! 🍿",
+            "Avançar Temporada" to "Next Season",
+            "Marcar Concluída" to "Mark as Completed",
+            "Fim da Temporada" to "End of Season",
+            "Deseja realmente remover" to "Do you really want to remove",
+            "Cinema / Streaming" to "Cinema / Streaming",
+            "Outros" to "Others",
+            "Tanto faz" to "Any format",
+            "Filme Curto (< 90m)" to "Short Movie (< 90m)",
+            "Terror / Medo Real" to "True Horror / Fear",
+            "Gerar Novas Recomendações 🎲" to "Generate New Recommendations 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "Discover Perfect Titles ✨",
+            "Suspense com reviravolta" to "Thriller with a twist",
+            "Parecido com Interestelar" to "Similar to Interstellar",
+            "Sci-fi dos anos 90" to "90s Sci-Fi",
+            "Comédia leve para relaxar" to "Light comedy to relax",
+            "Terror psicológico tenso" to "Tense psychological horror",
+            "Elogiado pela crítica e público com ótima recepção geral" to "Praised by critics and audience with great reception",
+            "Avaliação sólida" to "Solid rating",
+            "perfeito para uma sessão descontraída" to "perfect for a casual watch",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "Investigative plot with engaging pacing and puzzles",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "Strong emotional appeal and captivating chemistry",
+            "Exploração de conceitos fascinantes e visual imersivo" to "Fascinating concept exploration and immersive visuals",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "Great character development and dynamic conflicts",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "CineAI Verdict: Recommended experience worth your time",
+            "Iniciar Debate ✍️" to "Start Debate ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "Search debates, movies or cinephiles...",
+            "Excluir publicação" to "Delete post",
+            "Denunciar publicação" to "Report post",
+            "Escreva uma resposta..." to "Write a reply...",
+            "NOVA DISCUSSÃO" to "NEW DISCUSSION",
+            "Publique um debate para a comunidade" to "Post a debate for the community",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "Topic Title (e.g. 'Ending of Interstellar explained')",
+            "Categoria da Publicação:" to "Post Category:",
+            "Obra relacionada (filme / série opcional):" to "Related title (movie / series optional):",
+            "Nome da Obra" to "Title Name",
+            "Escreva seus argumentos, resenha ou teoria..." to "Write your thoughts, review or theory...",
+            "Esconde o texto por padrão com aviso" to "Hides text by default with a spoiler warning",
+            "Publicar no CineFórum 🚀" to "Post to CineForum 🚀",
+            "Gênero Predileto" to "Favorite Genre",
+            "Personaliza recomendações do CineBot IA" to "Personalizes CineBot AI recommendations",
+            "Exportar JSON" to "Export JSON",
+            "Restaurar JSON" to "Restore JSON",
+            "Exportar CSV" to "Export CSV",
+            "Importar CSV" to "Import CSV",
+            "Limpar Todos os Dados Locais" to "Clear All Local Data",
+            "DESCONECTAR DA CONTA" to "LOG OUT OF ACCOUNT",
+            "ID copiado para a área de transferência! 📋" to "ID copied to clipboard! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "Test notification sent! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "BROADCASTS & NOTIFICATIONS",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "Direct high-priority delivery (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "My Personal List",
             "Sala Compartilhada" to "Shared Room",
@@ -378,6 +529,157 @@ object I18n {
         // ESPANHOL (es-ES / es)
         // ==========================================
         "es" to mapOf(
+            "Rir até doer" to "Reír a carcajadas",
+            "Explodir a mente" to "Volar la mente",
+            "Chorar de emoção" to "Llorar de emoción",
+            "Pipoca & Ação" to "Palomitas y Acción",
+            "Ficção & Fantasia" to "Ciencia Ficción y Fantasía",
+            "Direto ao Ponto (< 95 min)" to "Directo al Grano (< 95 min)",
+            "Sessão a Dois" to "Sesión en Pareja",
+            "Frio na Espinha" to "Escalofríos",
+            "Comédias leves e divertidas" to "Comedias ligeras y divertidas",
+            "Plot twists e enigmas psicológicos" to "Giros de trama y enigmas psicológicos",
+            "Dramas tocantes e superação" to "Dramas conmovedores y superación",
+            "Ritmo acelerado e aventura" to "Ritmo trepidante y aventura",
+            "Viagem no tempo, espaço e magia" to "Viajes en el tiempo, espacio e magia",
+            "Histórias ágeis para quem tem pouco tempo" to "Historias ágiles para cuando tienes poco tiempo",
+            "Romance envolvente e comédia romântica" to "Romance cautivador y comedia romántica",
+            "Terror psicológico e suspense sombrio" to "Terror psicológico y suspense sombrío",
+            "Qual é a sua vibe agora?" to "¿Cuál es tu vibra ahora?",
+            "Desafio CineQuiz Trivia" to "Desafío CineQuiz Trivia",
+            "Teste seus conhecimentos de cinema com CineAI" to "Pon a prueba tus conocimientos de cine con CineAI",
+            "Jogar ➔" to "Jugar ➔",
+            "Sugestões de busca rápida:" to "Sugerencias de búsqueda rápida:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "O describe con tus palabras (ej: suspenso en la nieve con giros)...",
+            "Consultando CineAI..." to "Consultando a CineAI...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "No se encontraron recomendaciones para estos términos. Intenta con otra vibra o simplifica la descripción.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 Recomendaciones Seleccionadas para Ti:",
+            "Chave Gemini AI" to "Clave Gemini AI",
+            "Salvar Chave" to "Guardar Clave",
+            "Remover / Usar Motor Híbrido" to "Eliminar / Usar Motor Híbrido",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI funciona perfectamente sin clave gracias a la curaduría heurística. Si tienes una clave gratuita de Google AI Studio (Gemini 2.5 Flash), pégala a continuación para activar la inteligencia generativa profunda:",
+            "Curadoria inteligente por humor e vibe" to "Curaduría inteligente por humor y vibra",
+            "Configurar Chave Gemini" to "Configure Clave Gemini",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "PENDIENTE",
+            "RECUSADO" to "RECHAZADO",
+            "Parceiro(a) recusou" to "La pareja rechazó",
+            "Reabrir Título" to "Reabrir Título",
+            "Marcar como Concluído" to "Marcar como Completado",
+            "Padrão (Assistindo primeiro)" to "Predeterminado (Viendo primero)",
+            "Favoritos Primeiro" to "Favoritos Primero",
+            "Melhor Avaliados" to "Mejor Calificados",
+            "Ordem Alfabética (A-Z)" to "Orden Alfabético (A-Z)",
+            "Adicionados Recentemente" to "Agregados Recientemente",
+            "Geral" to "General",
+            "Apenas disponível nos meus streamings" to "Solo disponible en mis streamings",
+            "Configurar meus streamings" to "Configurar mis streamings",
+            "Meus Streamings" to "Mis Streamings",
+            "Exibir Status" to "Mostrar Estado",
+            "Coleção Temática" to "Colección Temática",
+            "Categoria" to "Categoría",
+            "Ordenar por" to "Ordenar por",
+            "Filme" to "Película",
+            "Filmes" to "Películas",
+            "Série" to "Serie",
+            "Séries" to "Series",
+            "Anime" to "Anime",
+            "Animes" to "Anime",
+            "Novela" to "Telenovela",
+            "Novelas" to "Telenovelas",
+            "Dorama" to "Dorama",
+            "Doramas" to "Doramas",
+            "Todas" to "Todas",
+            "Ação" to "Acción",
+            "Aventura" to "Aventura",
+            "Animação" to "Animación",
+            "Comédia" to "Comedia",
+            "Crime" to "Crimen",
+            "Documentário" to "Documental",
+            "Drama" to "Drama",
+            "Família" to "Familia",
+            "Fantasia" to "Fantasía",
+            "Terror" to "Terror",
+            "Ficção científica" to "Ciencia Ficción",
+            "Ficção Científica" to "Ciencia Ficción",
+            "Suspense" to "Suspenso",
+            "Romance" to "Romance",
+            "Mistério" to "Misterio",
+            "Guerra" to "Bélica",
+            "Música" to "Música",
+            "Faroeste" to "Western",
+            "Cinema TV" to "Película de TV",
+            "Ação & Aventura" to "Acción y Aventura",
+            "Sci-Fi & Fantasy" to "Ciencia Ficción y Fantasía",
+            "Kids" to "Infantil",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "Escenas Post-Créditos: ¡Quédate hasta el final de los créditos!",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "Sin escenas post-créditos — ¡Puedes apagar la TV!",
+            "Esta série foi cancelada" to "Esta serie fue cancelada",
+            "Série finalizada (Todas temporadas disponíveis)" to "Serie finalizada (Todas las temporadas disponibles)",
+            "Em exibição (Novas temporadas em produção)" to "En emisión (Nuevas temporadas en producción)",
+            "Consultar Sessões e Ingressos 🎟️" to "Consultar Funciones y Boletos 🎟️",
+            "Duração Real" to "Duración",
+            "Média Crítica" to "Puntaje Crítico",
+            "Lançamento" to "Estreno",
+            "Sua Avaliação" to "Tu Calificación",
+            "Comentário (Opcional)" to "Comentario (Opcional)",
+            "Contém Spoiler" to "Contiene Spoiler",
+            "Contém Spoilers" to "Contiene Spoilers",
+            "ENVIAR AVALIAÇÃO" to "ENVIAR CALIFICACIÓN",
+            "Avaliações da Sala" to "Calificaciones de la Sala",
+            "Nenhuma avaliação ainda." to "Aún no hay calificaciones.",
+            "Indicação enviada no Chat da Sala! 🍿" to "¡Recomendación enviada al Chat de la Sala! 🍿",
+            "Avançar Temporada" to "Siguiente Temporada",
+            "Marcar Concluída" to "Marcar Completada",
+            "Fim da Temporada" to "Fin de Temporada",
+            "Deseja realmente remover" to "¿Realmente deseas eliminar",
+            "Cinema / Streaming" to "Cine / Streaming",
+            "Outros" to "Otros",
+            "Tanto faz" to "Cualquiera",
+            "Filme Curto (< 90m)" to "Película Corta (< 90m)",
+            "Terror / Medo Real" to "Terror Real",
+            "Gerar Novas Recomendações 🎲" to "Generar Nuevas Recomendaciones 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "Descubrir Títulos Perfectos ✨",
+            "Suspense com reviravolta" to "Suspenso con giro inesperado",
+            "Parecido com Interestelar" to "Similar a Interstellar",
+            "Sci-fi dos anos 90" to "Ciencia ficción de los 90",
+            "Comédia leve para relaxar" to "Comedia ligera para relajarse",
+            "Terror psicológico tenso" to "Terror psicológico tenso",
+            "Elogiado pela crítica e público com ótima recepção geral" to "Elogiado por la crítica y el público con gran recepción",
+            "Avaliação sólida" to "Calificación sólida",
+            "perfeito para uma sessão descontraída" to "perfecto para relajarse",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "Trama investigativa con ritmo atrapante",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "Fuerte carga emocional y gran química",
+            "Exploração de conceitos fascinantes e visual imersivo" to "Conceptos fascinantes y visuales inmersivos",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "Gran desarrollo de personajes",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "Veredicto CineAI: Recomendada que vale tu tiempo",
+            "Iniciar Debate ✍️" to "Iniciar Debate ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "Buscar debates, películas o cinéfilos...",
+            "Excluir publicação" to "Eliminar publicación",
+            "Denunciar publicação" to "Denunciar publicación",
+            "Escreva uma resposta..." to "Escribe una respuesta...",
+            "NOVA DISCUSSÃO" to "NUEVA DISCUSIÓN",
+            "Publique um debate para a comunidade" to "Publica un debate para la comunidad",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "Título del Tema (ej: 'El final de Interestelar explicado')",
+            "Categoria da Publicação:" to "Categoría de la Publicación:",
+            "Obra relacionada (filme / série opcional):" to "Título relacionado (película / serie opcional):",
+            "Nome da Obra" to "Nombre de la Obra",
+            "Escreva seus argumentos, resenha ou teoria..." to "Escribe tus argumentos, reseña o teoría...",
+            "Esconde o texto por padrão com aviso" to "Oculta el texto por defecto con aviso de spoiler",
+            "Publicar no CineFórum 🚀" to "Publicar en CineForo 🚀",
+            "Gênero Predileto" to "Género Favorito",
+            "Personaliza recomendações do CineBot IA" to "Personaliza recomendaciones de CineBot IA",
+            "Exportar JSON" to "Exportar JSON",
+            "Restaurar JSON" to "Restaurar JSON",
+            "Exportar CSV" to "Exportar CSV",
+            "Importar CSV" to "Importar CSV",
+            "Limpar Todos os Dados Locais" to "Borrar Todos los Datos Locales",
+            "DESCONECTAR DA CONTA" to "CERRAR SESIÓN DE LA CUENTA",
+            "ID copiado para a área de transferência! 📋" to "¡ID copiado al portapapeles! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "¡Notificación de prueba enviada! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "TRANSMISIONES Y NOTIFICACIONES",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "Entrega directa de alta prioridad (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "Mi Lista Personal",
             "Sala Compartilhada" to "Sala Compartida",
@@ -718,6 +1020,157 @@ object I18n {
         // FRANCÊS (fr-FR / fr)
         // ==========================================
         "fr" to mapOf(
+            "Rir até doer" to "Rire aux éclats",
+            "Explodir a mente" to "Retournement de cerveau",
+            "Chorar de emoção" to "Pleurer d'émotion",
+            "Pipoca & Ação" to "Pop-corn et Action",
+            "Ficção & Fantasia" to "Science-Fiction et Fantastique",
+            "Direto ao Ponto (< 95 min)" to "Droit au but (< 95 min)",
+            "Sessão a Dois" to "Soirée en amoureux",
+            "Frio na Espinha" to "Frissons garantis",
+            "Comédias leves e divertidas" to "Comédies légères et divertissantes",
+            "Plot twists e enigmas psicológicos" to "Rebondissements et énigmes psychologiques",
+            "Dramas tocantes e superação" to "Drames touchants et résilience",
+            "Ritmo acelerado e aventura" to "Rythme effréné et aventure",
+            "Viagem no tempo, espaço e magia" to "Voyage dans le temps, espace et magie",
+            "Histórias ágeis para quem tem pouco tempo" to "Histoires rapides quand le temps presse",
+            "Romance envolvente e comédia romântica" to "Romance captivante et comédies romantiques",
+            "Terror psicológico e suspense sombrio" to "Horreur psychologique et suspense sombre",
+            "Qual é a sua vibe agora?" to "Quelle est votre humeur actuelle ?",
+            "Desafio CineQuiz Trivia" to "Défi CineQuiz Trivia",
+            "Teste seus conhecimentos de cinema com CineAI" to "Testez vos connaissances en cinéma avec CineAI",
+            "Jogar ➔" to "Jouer ➔",
+            "Sugestões de busca rápida:" to "Suggestions de recherche rapide :",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "Ou décrivez avec vos propres mots (ex : thriller enneigé à rebondissements)...",
+            "Consultando CineAI..." to "Consultation de CineAI...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "Aucune recommandation trouvée pour ces termes. Essayez une autre humeur ou simplifiez la description.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 Recommandations sélectionnées pour vous :",
+            "Chave Gemini AI" to "Clé Gemini AI",
+            "Salvar Chave" to "Enregistrer la clé",
+            "Remover / Usar Motor Híbrido" to "Supprimer / Utiliser le moteur hybride",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI fonctionne sans clé grâce à la sélection heuristique. Si vous possédez une clé gratuite Google AI Studio (Gemini 2.5 Flash), collez-la ci-dessous pour débloquer l'IA générative avancée :",
+            "Curadoria inteligente por humor e vibe" to "Sélection intelligente selon l'humeur et l'ambiance",
+            "Configurar Chave Gemini" to "Configurer la clé Gemini",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "EN ATTENTE",
+            "RECUSADO" to "REFUSÉ",
+            "Parceiro(a) recusou" to "Le partenaire a refusé",
+            "Reabrir Título" to "Rouvrir le Titre",
+            "Marcar como Concluído" to "Marquer comme Terminé",
+            "Padrão (Assistindo primeiro)" to "Par défaut (En cours d'abord)",
+            "Favoritos Primeiro" to "Favoris en premier",
+            "Melhor Avaliados" to "Mieux notés",
+            "Ordem Alfabética (A-Z)" to "Ordre alphabétique (A-Z)",
+            "Adicionados Recentemente" to "Récemment ajoutés",
+            "Geral" to "Général",
+            "Apenas disponível nos meus streamings" to "Uniquement sur mes services de streaming",
+            "Configurar meus streamings" to "Configurer mes plateformes",
+            "Meus Streamings" to "Mes Plateformes",
+            "Exibir Status" to "Statut",
+            "Coleção Temática" to "Collection Thématique",
+            "Categoria" to "Catégorie",
+            "Ordenar por" to "Trier par",
+            "Filme" to "Film",
+            "Filmes" to "Films",
+            "Série" to "Série",
+            "Séries" to "Séries",
+            "Anime" to "Animé",
+            "Animes" to "Animés",
+            "Novela" to "Feuilleton",
+            "Novelas" to "Feuilletons",
+            "Dorama" to "Drama asiatique",
+            "Doramas" to "Dramas asiatiques",
+            "Todas" to "Toutes",
+            "Ação" to "Action",
+            "Aventura" to "Aventure",
+            "Animação" to "Animation",
+            "Comédia" to "Comédie",
+            "Crime" to "Crime",
+            "Documentário" to "Documentaire",
+            "Drama" to "Drame",
+            "Família" to "Famille",
+            "Fantasia" to "Fantastique",
+            "Terror" to "Horreur",
+            "Ficção científica" to "Science-Fiction",
+            "Ficção Científica" to "Science-Fiction",
+            "Suspense" to "Thriller",
+            "Romance" to "Romance",
+            "Mistério" to "Mystère",
+            "Guerra" to "Guerre",
+            "Música" to "Musique",
+            "Faroeste" to "Western",
+            "Cinema TV" to "Téléfilm",
+            "Ação & Aventura" to "Action & Aventure",
+            "Sci-Fi & Fantasy" to "Sci-Fi & Fantastique",
+            "Kids" to "Enfants",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "Scènes Post-Générique : Restez jusqu'à la fin !",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "Pas de scène post-générique — Éteignez la télé !",
+            "Esta série foi cancelada" to "Cette série a été annulée",
+            "Série finalizada (Todas temporadas disponíveis)" to "Série terminée (Toutes les saisons disponibles)",
+            "Em exibição (Novas temporadas em produção)" to "En cours (Nouvelles saisons en production)",
+            "Consultar Sessões e Ingressos 🎟️" to "Séances & Billets 🎟️",
+            "Duração Real" to "Durée",
+            "Média Crítica" to "Note Critique",
+            "Lançamento" to "Sortie",
+            "Sua Avaliação" to "Votre Avis",
+            "Comentário (Opcional)" to "Commentaire (Optionnel)",
+            "Contém Spoiler" to "Contient des Spoilers",
+            "Contém Spoilers" to "Contient des Spoilers",
+            "ENVIAR AVALIAÇÃO" to "ENVOYER L'AVIS",
+            "Avaliações da Sala" to "Avis du Salon",
+            "Nenhuma avaliação ainda." to "Aucun avis pour l'instant.",
+            "Indicação enviada no Chat da Sala! 🍿" to "Recommandation envoyée dans le chat ! 🍿",
+            "Avançar Temporada" to "Saison Suivante",
+            "Marcar Concluída" to "Marquer comme Terminée",
+            "Fim da Temporada" to "Fin de Saison",
+            "Deseja realmente remover" to "Voulez-vous vraiment supprimer",
+            "Cinema / Streaming" to "Cinéma / Streaming",
+            "Outros" to "Autres",
+            "Tanto faz" to "Peu importe",
+            "Filme Curto (< 90m)" to "Film court (< 90m)",
+            "Terror / Medo Real" to "Vraie Peur / Horreur",
+            "Gerar Novas Recomendações 🎲" to "Générer de nouvelles recommandations 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "Découvrir des titres parfaits ✨",
+            "Suspense com reviravolta" to "Thriller à rebondissements",
+            "Parecido com Interestelar" to "Similaire à Interstellar",
+            "Sci-fi dos anos 90" to "Sci-Fi des années 90",
+            "Comédia leve para relaxar" to "Comédie légère pour se détendre",
+            "Terror psicológico tenso" to "Horreur psychologique intense",
+            "Elogiado pela crítica e público com ótima recepção geral" to "Acclamé par la critique et le public",
+            "Avaliação sólida" to "Note solide",
+            "perfeito para uma sessão descontraída" to "parfait pour se détendre",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "Intrigue captivante et palpitante",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "Forte intensité émotionnelle",
+            "Exploração de conceitos fascinantes e visual imersivo" to "Concepts fascinants et visuels immersifs",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "Superbe développement des personnages",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "Verdict CineAI : Expérience vivement recommandée",
+            "Iniciar Debate ✍️" to "Lancer un Débat ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "Rechercher débats, films ou cinéphiles...",
+            "Excluir publicação" to "Supprimer la publication",
+            "Denunciar publicação" to "Signaler la publication",
+            "Escreva uma resposta..." to "Écrivez une réponse...",
+            "NOVA DISCUSSÃO" to "NOUVELLE DISCUSSION",
+            "Publique um debate para a comunidade" to "Publiez un débat pour la communauté",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "Titre du sujet (ex: 'La fin d'Interstellar expliquée')",
+            "Categoria da Publicação:" to "Catégorie de la publication :",
+            "Obra relacionada (filme / série opcional):" to "Œuvre associée (film / série optionnel) :",
+            "Nome da Obra" to "Nom de l'œuvre",
+            "Escreva seus argumentos, resenha ou teoria..." to "Rédigez votre critique ou théorie...",
+            "Esconde o texto por padrão com aviso" to "Masque le texte par défaut avec avertissement",
+            "Publicar no CineFórum 🚀" to "Publier sur CineForum 🚀",
+            "Gênero Predileto" to "Genre Préféré",
+            "Personaliza recomendações do CineBot IA" to "Personnalise les recommandations CineBot IA",
+            "Exportar JSON" to "Exporter JSON",
+            "Restaurar JSON" to "Restaurer JSON",
+            "Exportar CSV" to "Exporter CSV",
+            "Importar CSV" to "Importer CSV",
+            "Limpar Todos os Dados Locais" to "Effacer Toutes les Données Locales",
+            "DESCONECTAR DA CONTA" to "SE DÉCONNECTER DU COMPTE",
+            "ID copiado para a área de transferência! 📋" to "ID copié dans le presse-papier ! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "Notification de test envoyée ! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "DIFFUSIONS & NOTIFICATIONS",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "Envoi direct haute priorité (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "Ma Liste Personnelle",
             "Sala Compartilhada" to "Salon Partagé",
@@ -1001,6 +1454,157 @@ object I18n {
         // ALEMÃO (de-DE / de)
         // ==========================================
         "de" to mapOf(
+            "Rir até doer" to "Lachen bis der Bauch weh tut",
+            "Explodir a mente" to "Mindfuck & Twist",
+            "Chorar de emoção" to "Zu Tränen rührend",
+            "Pipoca & Ação" to "Popcorn & Action",
+            "Ficção & Fantasia" to "Sci-Fi & Fantasy",
+            "Direto ao Ponto (< 95 min)" to "Kurz & Knackig (< 95 min)",
+            "Sessão a Dois" to "Zu zweit schauen",
+            "Frio na Espinha" to "Gänsehaut pur",
+            "Comédias leves e divertidas" to "Leichte und lustige Komödien",
+            "Plot twists e enigmas psicológicos" to "Plot Twists und Psychorätsel",
+            "Dramas tocantes e superação" to "Berührende Dramen und Überwindung",
+            "Ritmo acelerado e aventura" to "Rasantes Tempo und Abenteuer",
+            "Viagem no tempo, espaço e magia" to "Zeitreisen, Weltraum und Magie",
+            "Histórias ágeis para quem tem pouco tempo" to "Schnelle Geschichten bei wenig Zeit",
+            "Romance envolvente e comédia romântica" to "Mitreißende Romantik und Liebeskomödien",
+            "Terror psicológico e suspense sombrio" to "Psychologischer Horror und düsterer Thriller",
+            "Qual é a sua vibe agora?" to "Was ist deine Stimmung im Moment?",
+            "Desafio CineQuiz Trivia" to "CineQuiz Trivia Herausforderung",
+            "Teste seus conhecimentos de cinema com CineAI" to "Teste dein Filmwissen mit CineAI",
+            "Jogar ➔" to "Spielen ➔",
+            "Sugestões de busca rápida:" to "Schnellsuche-Vorschläge:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "Oder beschreibe es mit eigenen Worten (z. B. Schnee-Thriller mit Twist)...",
+            "Consultando CineAI..." to "CineAI wird befragt...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "Keine Empfehlungen für diese Begriffe gefunden. Versuche eine andere Stimmung oder vereinfache die Beschreibung.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 Ausgewählte Empfehlungen für dich:",
+            "Chave Gemini AI" to "Gemini-KI-Schlüssel",
+            "Salvar Chave" to "Schlüssel speichern",
+            "Remover / Usar Motor Híbrido" to "Entfernen / Hybrid-Engine nutzen",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI funktioniert dank heuristischer Kuration auch ohne Schlüssel. Falls du einen kostenlosen Google AI Studio-Schlüssel (Gemini 2.5 Flash) besitzt, füge ihn unten ein:",
+            "Curadoria inteligente por humor e vibe" to "Smarte Kuration nach Stimmung und Vibe",
+            "Configurar Chave Gemini" to "Gemini-Schlüssel einrichten",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "AUSSTEHEND",
+            "RECUSADO" to "ABGELEHNT",
+            "Parceiro(a) recusou" to "Partner hat abgelehnt",
+            "Reabrir Título" to "Titel wieder öffnen",
+            "Marcar como Concluído" to "Als abgeschlossen markieren",
+            "Padrão (Assistindo primeiro)" to "Standard (Am Schauen zuerst)",
+            "Favoritos Primeiro" to "Favoriten zuerst",
+            "Melhor Avaliados" to "Bestbewertet",
+            "Ordem Alfabética (A-Z)" to "Alphabetisch (A-Z)",
+            "Adicionados Recentemente" to "Kürzlich hinzugefügt",
+            "Geral" to "Allgemein",
+            "Apenas disponível nos meus streamings" to "Nur auf meinen Streamingdiensten",
+            "Configurar meus streamings" to "Meine Streamingdienste einrichten",
+            "Meus Streamings" to "Meine Streamingdienste",
+            "Exibir Status" to "Status anzeigen",
+            "Coleção Temática" to "Themensammlung",
+            "Categoria" to "Kategorie",
+            "Ordenar por" to "Sortieren nach",
+            "Filme" to "Film",
+            "Filmes" to "Filme",
+            "Série" to "Serie",
+            "Séries" to "Serien",
+            "Anime" to "Anime",
+            "Animes" to "Anime",
+            "Novela" to "Telenovela",
+            "Novelas" to "Telenovelas",
+            "Dorama" to "K-Drama",
+            "Doramas" to "K-Dramen",
+            "Todas" to "Alle",
+            "Ação" to "Action",
+            "Aventura" to "Abenteuer",
+            "Animação" to "Animation",
+            "Comédia" to "Komödie",
+            "Crime" to "Krimi",
+            "Documentário" to "Dokumentarfilm",
+            "Drama" to "Drama",
+            "Família" to "Familie",
+            "Fantasia" to "Fantasy",
+            "Terror" to "Horror",
+            "Ficção científica" to "Science-Fiction",
+            "Ficção Científica" to "Science-Fiction",
+            "Suspense" to "Thriller",
+            "Romance" to "Liebesfilm",
+            "Mistério" to "Mystery",
+            "Guerra" to "Kriegsfilm",
+            "Música" to "Musik",
+            "Faroeste" to "Western",
+            "Cinema TV" to "TV-Film",
+            "Ação & Aventura" to "Action & Abenteuer",
+            "Sci-Fi & Fantasy" to "Sci-Fi & Fantasy",
+            "Kids" to "Kinder",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "Abspannszenen: Bleib bis zum Ende des Abspanns!",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "Keine Abspannszene — Du kannst ausschalten!",
+            "Esta série foi cancelada" to "Diese Serie wurde abgesetzt",
+            "Série finalizada (Todas temporadas disponíveis)" to "Serie abgeschlossen (Alle Staffeln verfügbar)",
+            "Em exibição (Novas temporadas em produção)" to "Läuft aktuell (Neue Staffeln in Produktion)",
+            "Consultar Sessões e Ingressos 🎟️" to "Spielzeiten & Tickets 🎟️",
+            "Duração Real" to "Laufzeit",
+            "Média Crítica" to "Kritiker-Score",
+            "Lançamento" to "Erscheinungsdatum",
+            "Sua Avaliação" to "Deine Bewertung",
+            "Comentário (Opcional)" to "Kommentar (Optional)",
+            "Contém Spoiler" to "Enthält Spoiler",
+            "Contém Spoilers" to "Enthält Spoiler",
+            "ENVIAR AVALIAÇÃO" to "BEWERTUNG ABSCHICKEN",
+            "Avaliações da Sala" to "Raum-Bewertungen",
+            "Nenhuma avaliação ainda." to "Noch keine Bewertungen.",
+            "Indicação enviada no Chat da Sala! 🍿" to "Empfehlung im Raum-Chat gesendet! 🍿",
+            "Avançar Temporada" to "Nächste Staffel",
+            "Marcar Concluída" to "Als abgeschlossen markieren",
+            "Fim da Temporada" to "Staffelende",
+            "Deseja realmente remover" to "Möchtest du wirklich entfernen",
+            "Cinema / Streaming" to "Kino / Streaming",
+            "Outros" to "Andere",
+            "Tanto faz" to "Egal",
+            "Filme Curto (< 90m)" to "Kurzfilm (< 90m)",
+            "Terror / Medo Real" to "Echter Horror",
+            "Gerar Novas Recomendações 🎲" to "Neue Empfehlungen generieren 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "Perfekte Titel entdecken ✨",
+            "Suspense com reviravolta" to "Thriller mit Wendung",
+            "Parecido com Interestelar" to "Ähnlich wie Interstellar",
+            "Sci-fi dos anos 90" to "90er Sci-Fi",
+            "Comédia leve para relaxar" to "Leichte Komödie zum Entspannen",
+            "Terror psicológico tenso" to "Spannender Psychohorror",
+            "Elogiado pela crítica e público com ótima recepção geral" to "Großartige Resonanz bei Kritikern und Publikum",
+            "Avaliação sólida" to "Solide Bewertung",
+            "perfeito para uma sessão descontraída" to "perfekt für einen entspannten Abend",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "Fesselnde Ermittlungshandlung",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "Starke emotionale Tiefe",
+            "Exploração de conceitos fascinantes e visual imersivo" to "Faszinierende Konzepte und tolle Optik",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "Starke Charakterentwicklung",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "CineAI-Urteil: Absolut sehenswert",
+            "Iniciar Debate ✍️" to "Debatte starten ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "Debatten, Filme oder Fans suchen...",
+            "Excluir publicação" to "Beitrag löschen",
+            "Denunciar publicação" to "Beitrag melden",
+            "Escreva uma resposta..." to "Antwort schreiben...",
+            "NOVA DISCUSSÃO" to "NEUE DISKUSSION",
+            "Publique um debate para a comunidade" to "Starte eine Diskussion für die Community",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "Titel des Themas (z.B. 'Interstellar Ende erklärt')",
+            "Categoria da Publicação:" to "Beitragskategorie:",
+            "Obra relacionada (filme / série opcional):" to "Verwandter Titel (Film / Serie optional):",
+            "Nome da Obra" to "Titelname",
+            "Escreva seus argumentos, resenha ou teoria..." to "Schreibe deine Kritik oder Theorie...",
+            "Esconde o texto por padrão com aviso" to "Text standardmäßig mit Spoiler-Warnung verbergen",
+            "Publicar no CineFórum 🚀" to "Im CineForum veröffentlichen 🚀",
+            "Gênero Predileto" to "Lieblingsgenre",
+            "Personaliza recomendações do CineBot IA" to "Personalisiert CineBot KI-Empfehlungen",
+            "Exportar JSON" to "JSON exportieren",
+            "Restaurar JSON" to "JSON wiederherstellen",
+            "Exportar CSV" to "CSV exportieren",
+            "Importar CSV" to "CSV importieren",
+            "Limpar Todos os Dados Locais" to "Alle lokalen Daten löschen",
+            "DESCONECTAR DA CONTA" to "VOM KONTO ABMELDEN",
+            "ID copiado para a área de transferência! 📋" to "ID in die Zwischenablage kopiert! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "Test-Benachrichtigung gesendet! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "ÜBERTRAGUNGEN & BENACHRICHTIGUNGEN",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "Direkte Zustellung mit hoher Priorität (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "Meine persönliche Liste",
             "Sala Compartilhada" to "Gemeinsamer Raum",
@@ -1273,6 +1877,157 @@ object I18n {
         // ITALIANO (it-IT / it)
         // ==========================================
         "it" to mapOf(
+            "Rir até doer" to "Ridere a crepapelle",
+            "Explodir a mente" to "Mente sconvolta",
+            "Chorar de emoção" to "Piangere dall'emozione",
+            "Pipoca & Ação" to "Popcorn e Azione",
+            "Ficção & Fantasia" to "Fantascienza e Fantasy",
+            "Direto ao Ponto (< 95 min)" to "Dritto al punto (< 95 min)",
+            "Sessão a Dois" to "Serata a due",
+            "Frio na Espinha" to "Brividi lungo la schiena",
+            "Comédias leves e divertidas" to "Commedie leggere e divertenti",
+            "Plot twists e enigmas psicológicos" to "Colpi di scena ed enigmi psicologici",
+            "Dramas tocantes e superação" to "Drammi toccanti e superamento",
+            "Ritmo acelerado e aventura" to "Ritmo frenetico e avventura",
+            "Viagem no tempo, espaço e magia" to "Viaggi nel tempo, spazio e magia",
+            "Histórias ágeis para quem tem pouco tempo" to "Storie veloci per quando hai poco tempo",
+            "Romance envolvente e comédia romântica" to "Romance coinvolgente e commedie romantiche",
+            "Terror psicológico e suspense sombrio" to "Horror psicologico e suspense cupa",
+            "Qual é a sua vibe agora?" to "Qual è la tua vibrazione adesso?",
+            "Desafio CineQuiz Trivia" to "Sfida CineQuiz Trivia",
+            "Teste seus conhecimentos de cinema com CineAI" to "Metti alla prova la tua conoscenza del cinema con CineAI",
+            "Jogar ➔" to "Gioca ➔",
+            "Sugestões de busca rápida:" to "Suggerimenti per la ricerca rapida:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "O descrivi con parole tue (es: thriller sulla neve con colpo di scena)...",
+            "Consultando CineAI..." to "Consultando CineAI...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "Nessun consiglio trovato per questi termini. Prova un'altra vibrazione o semplifica la descrizione.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 Consigli selezionati per te:",
+            "Chave Gemini AI" to "Chiave Gemini AI",
+            "Salvar Chave" to "Salva chiave",
+            "Remover / Usar Motor Híbrido" to "Rimuovi / Usa motore ibrido",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI funziona senza chiave grazie alla selezione euristica. Se hai una chiave gratuita di Google AI Studio (Gemini 2.5 Flash), incollala qui sotto per attivare l'IA generativa avanzata:",
+            "Curadoria inteligente por humor e vibe" to "Curatela intelligente per umore e atmosfera",
+            "Configurar Chave Gemini" to "Configura chiave Gemini",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "IN SOSPESO",
+            "RECUSADO" to "RIFIUTATO",
+            "Parceiro(a) recusou" to "Il partner ha rifiutato",
+            "Reabrir Título" to "Riapri Titolo",
+            "Marcar como Concluído" to "Segna come Completato",
+            "Padrão (Assistindo primeiro)" to "Predefinito (In visione prima)",
+            "Favoritos Primeiro" to "Preferiti Prima",
+            "Melhor Avaliados" to "I più votati",
+            "Ordem Alfabética (A-Z)" to "Ordine alfabetico (A-Z)",
+            "Adicionados Recentemente" to "Aggiunti di recente",
+            "Geral" to "Generale",
+            "Apenas disponível nos meus streamings" to "Disponibile solo sui miei streaming",
+            "Configurar meus streamings" to "Configura i miei streaming",
+            "Meus Streamings" to "I Miei Streaming",
+            "Exibir Status" to "Stato",
+            "Coleção Temática" to "Collezione Tematica",
+            "Categoria" to "Categoria",
+            "Ordenar por" to "Ordina per",
+            "Filme" to "Film",
+            "Filmes" to "Film",
+            "Série" to "Serie",
+            "Séries" to "Serie",
+            "Anime" to "Anime",
+            "Animes" to "Anime",
+            "Novela" to "Telenovela",
+            "Novelas" to "Telenovelas",
+            "Dorama" to "K-Drama",
+            "Doramas" to "K-Drama",
+            "Todas" to "Tutte",
+            "Ação" to "Azione",
+            "Aventura" to "Avventura",
+            "Animação" to "Animazione",
+            "Comédia" to "Commedia",
+            "Crime" to "Crime",
+            "Documentário" to "Documentario",
+            "Drama" to "Drammatico",
+            "Família" to "Famiglia",
+            "Fantasia" to "Fantasy",
+            "Terror" to "Horror",
+            "Ficção científica" to "Fantascienza",
+            "Ficção Científica" to "Fantascienza",
+            "Suspense" to "Thriller",
+            "Romance" to "Romantico",
+            "Mistério" to "Mistero",
+            "Guerra" to "Guerra",
+            "Música" to "Musica",
+            "Faroeste" to "Western",
+            "Cinema TV" to "Film TV",
+            "Ação & Aventura" to "Azione & Avventura",
+            "Sci-Fi & Fantasy" to "Sci-Fi & Fantasy",
+            "Kids" to "Bambini",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "Scene Post-Credit: Rimani fino alla fine dei titoli!",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "Nessuna scena post-credit — Puoi spegnere la TV!",
+            "Esta série foi cancelada" to "Questa serie è stata cancellata",
+            "Série finalizada (Todas temporadas disponíveis)" to "Serie conclusa (Tutte le stagioni disponibili)",
+            "Em exibição (Novas temporadas em produção)" to "In corso (Nuove stagioni in produzione)",
+            "Consultar Sessões e Ingressos 🎟️" to "Orari & Biglietti 🎟️",
+            "Duração Real" to "Durata",
+            "Média Crítica" to "Voto Critica",
+            "Lançamento" to "Uscita",
+            "Sua Avaliação" to "Il Tuo Voto",
+            "Comentário (Opcional)" to "Commento (Opzionale)",
+            "Contém Spoiler" to "Contiene Spoiler",
+            "Contém Spoilers" to "Contiene Spoiler",
+            "ENVIAR AVALIAÇÃO" to "INVIA RECENSIONE",
+            "Avaliações da Sala" to "Recensioni della Stanza",
+            "Nenhuma avaliação ainda." to "Ancora nessuna recensione.",
+            "Indicação enviada no Chat da Sala! 🍿" to "Raccomandazione inviata nella chat! 🍿",
+            "Avançar Temporada" to "Prossima Stagione",
+            "Marcar Concluída" to "Segna Conclusa",
+            "Fim da Temporada" to "Fine Stagione",
+            "Deseja realmente remover" to "Vuoi davvero rimuovere",
+            "Cinema / Streaming" to "Cinema / Streaming",
+            "Outros" to "Altri",
+            "Tanto faz" to "Qualsiasi",
+            "Filme Curto (< 90m)" to "Film corto (< 90m)",
+            "Terror / Medo Real" to "Vero Terrore",
+            "Gerar Novas Recomendações 🎲" to "Genera nuove raccomandazioni 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "Scopri titoli perfetti ✨",
+            "Suspense com reviravolta" to "Thriller con colpo di scena",
+            "Parecido com Interestelar" to "Simile a Interstellar",
+            "Sci-fi dos anos 90" to "Fantascienza anni '90",
+            "Comédia leve para relaxar" to "Commedia leggera per rilassarsi",
+            "Terror psicológico tenso" to "Horror psicologico ad alta tensione",
+            "Elogiado pela crítica e público com ótima recepção geral" to "Molto apprezzato da critica e pubblico",
+            "Avaliação sólida" to "Valutazione solida",
+            "perfeito para uma sessão descontraída" to "perfetto per rilassarsi",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "Trama investigativa coinvolgente",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "Forte impatto emotivo",
+            "Exploração de conceitos fascinantes e visual imersivo" to "Concetti affascinanti e visual immersivo",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "Ottimo sviluppo dei personaggi",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "Verdetto CineAI: Consigliato, ne vale la pena",
+            "Iniciar Debate ✍️" to "Inizia Dibattito ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "Cerca dibattiti, film o cinefili...",
+            "Excluir publicação" to "Elimina post",
+            "Denunciar publicação" to "Segnala post",
+            "Escreva uma resposta..." to "Scrivi una risposta...",
+            "NOVA DISCUSSÃO" to "NUOVA DISCUSSIONE",
+            "Publique um debate para a comunidade" to "Pubblica un dibattito per la community",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "Titolo del Topic (es: 'Il finale di Interstellar spiegato')",
+            "Categoria da Publicação:" to "Categoria del Post:",
+            "Obra relacionada (filme / série opcional):" to "Opera correlata (film / serie opzionale):",
+            "Nome da Obra" to "Nome dell'Opera",
+            "Escreva seus argumentos, resenha ou teoria..." to "Scrivi le tue idee, recensione o teoria...",
+            "Esconde o texto por padrão com aviso" to "Nascondi testo di default con avviso spoiler",
+            "Publicar no CineFórum 🚀" to "Pubblica su CineForum 🚀",
+            "Gênero Predileto" to "Genere Preferito",
+            "Personaliza recomendações do CineBot IA" to "Personalizza i consigli di CineBot IA",
+            "Exportar JSON" to "Esporta JSON",
+            "Restaurar JSON" to "Ripristina JSON",
+            "Exportar CSV" to "Esporta CSV",
+            "Importar CSV" to "Importa CSV",
+            "Limpar Todos os Dados Locais" to "Cancella Tutti i Dati Locali",
+            "DESCONECTAR DA CONTA" to "DISCONNETTI DALL'ACCOUNT",
+            "ID copiado para a área de transferência! 📋" to "ID copiato negli appunti! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "Notifica di test inviata! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "TRASMISSIONI & NOTIFICHE",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "Consegna diretta ad alta priorità (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "La Mia Lista Personale",
             "Sala Compartilhada" to "Stanza Condivisa",
@@ -1525,6 +2280,157 @@ object I18n {
         // JAPONÊS (ja-JP / ja)
         // ==========================================
         "ja" to mapOf(
+            "Rir até doer" to "大笑いする",
+            "Explodir a mente" to "衝撃の展開",
+            "Chorar de emoção" to "感動で涙する",
+            "Pipoca & Ação" to "ポップコーン＆アクション",
+            "Ficção & Fantasia" to "SF＆ファンタジー",
+            "Direto ao Ponto (< 95 min)" to "サクッと観る (< 95分)",
+            "Sessão a Dois" to "ふたりで観る",
+            "Frio na Espinha" to "背筋が凍る",
+            "Comédias leves e divertidas" to "軽快で楽しいコメディ",
+            "Plot twists e enigmas psicológicos" to "どんでん返しと心理パズル",
+            "Dramas tocantes e superação" to "感動的なドラマと克服",
+            "Ritmo acelerado e aventura" to "テンポの良いスリルと冒険",
+            "Viagem no tempo, espaço e magia" to "タイムトラベル、宇宙、魔法",
+            "Histórias ágeis para quem tem pouco tempo" to "時間がない時にサクッと観られる作品",
+            "Romance envolvente e comédia romântica" to "魅力的なロマンスとラブコメ",
+            "Terror psicológico e suspense sombrio" to "サイコホラーとダークサスペンス",
+            "Qual é a sua vibe agora?" to "今どんな気分ですか？",
+            "Desafio CineQuiz Trivia" to "シネクイズ・トリビアチャレンジ",
+            "Teste seus conhecimentos de cinema com CineAI" to "CineAIで映画の知識をテストしよう",
+            "Jogar ➔" to "プレイ ➔",
+            "Sugestões de busca rápida:" to "クイック検索候補:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "または自分の言葉で説明してください (例: 雪山のどんでん返しサスペンス)...",
+            "Consultando CineAI..." to "CineAIに問い合わせ中...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "該当するおすすめが見つかりませんでした。別の気分を選ぶか、説明を簡潔にしてください。",
+            "💡 Recomendações Selecionadas para Você:" to "💡 あなたのためのおすすめ作品:",
+            "Chave Gemini AI" to "Gemini AI キー",
+            "Salvar Chave" to "キーを保存",
+            "Remover / Usar Motor Híbrido" to "削除 / ハイブリッドエンジンを使用",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAIはキーなしでもヒューリスティック推薦で動作します。Google AI Studioの無料キー(Gemini 2.5 Flash)をお持ちの場合は、以下に貼り付けて高度な生成AIを有効にできます:",
+            "Curadoria inteligente por humor e vibe" to "気分や雰囲気に合わせたスマート推薦",
+            "Configurar Chave Gemini" to "Gemini キーを設定",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "保留中",
+            "RECUSADO" to "辞退",
+            "Parceiro(a) recusou" to "パートナーが辞退しました",
+            "Reabrir Título" to "再開する",
+            "Marcar como Concluído" to "視聴完了にする",
+            "Padrão (Assistindo primeiro)" to "デフォルト（視聴中を優先）",
+            "Favoritos Primeiro" to "お気に入りを優先",
+            "Melhor Avaliados" to "高評価順",
+            "Ordem Alfabética (A-Z)" to "五十音順 (A-Z)",
+            "Adicionados Recentemente" to "最近追加された順",
+            "Geral" to "一般",
+            "Apenas disponível nos meus streamings" to "契約中の配信サービスのみ",
+            "Configurar meus streamings" to "配信サービスを設定",
+            "Meus Streamings" to "契約中の配信",
+            "Exibir Status" to "ステータス",
+            "Coleção Temática" to "テーマ別コレクション",
+            "Categoria" to "カテゴリー",
+            "Ordenar por" to "並び替え",
+            "Filme" to "映画",
+            "Filmes" to "映画",
+            "Série" to "ドラマ",
+            "Séries" to "ドラマ",
+            "Anime" to "アニメ",
+            "Animes" to "アニメ",
+            "Novela" to "テレノベラ",
+            "Novelas" to "テレノベラ",
+            "Dorama" to "アジアドラマ",
+            "Doramas" to "アジアドラマ",
+            "Todas" to "すべて",
+            "Ação" to "アクション",
+            "Aventura" to "アドベンチャー",
+            "Animação" to "アニメーション",
+            "Comédia" to "コメディ",
+            "Crime" to "クライム",
+            "Documentário" to "ドキュメンタリー",
+            "Drama" to "ドラマ",
+            "Família" to "ファミリー",
+            "Fantasia" to "ファンタジー",
+            "Terror" to "ホラー",
+            "Ficção científica" to "SF",
+            "Ficção Científica" to "SF",
+            "Suspense" to "サスペンス",
+            "Romance" to "ロマンス",
+            "Mistério" to "ミステリー",
+            "Guerra" to "戦争",
+            "Música" to "音楽",
+            "Faroeste" to "西部劇",
+            "Cinema TV" to "テレビ映画",
+            "Ação & Aventura" to "アクション＆アドベンチャー",
+            "Sci-Fi & Fantasy" to "SF＆ファンタジー",
+            "Kids" to "キッズ",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "ポストクレジットあり：エンドロール最後までお見逃しなく！",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "ポストクレジットなし — 終了して大丈夫です！",
+            "Esta série foi cancelada" to "このドラマは打ち切られました",
+            "Série finalizada (Todas temporadas disponíveis)" to "完結済みドラマ（全シーズン配信中）",
+            "Em exibição (Novas temporadas em produção)" to "放送中（新シーズン制作中）",
+            "Consultar Sessões e Ingressos 🎟️" to "上映時間＆チケット 🎟️",
+            "Duração Real" to "上映時間",
+            "Média Crítica" to "批評家スコア",
+            "Lançamento" to "公開日",
+            "Sua Avaliação" to "あなたの評価",
+            "Comentário (Opcional)" to "コメント（任意）",
+            "Contém Spoiler" to "ネタバレあり",
+            "Contém Spoilers" to "ネタバレあり",
+            "ENVIAR AVALIAÇÃO" to "評価を送信",
+            "Avaliações da Sala" to "ルーム内の評価",
+            "Nenhuma avaliação ainda." to "まだ評価がありません。",
+            "Indicação enviada no Chat da Sala! 🍿" to "おすすめをルームチャットに送信しました！ 🍿",
+            "Avançar Temporada" to "次のシーズンへ",
+            "Marcar Concluída" to "完了にする",
+            "Fim da Temporada" to "シーズン終了",
+            "Deseja realmente remover" to "本当に削除しますか",
+            "Cinema / Streaming" to "映画館 / 配信",
+            "Outros" to "その他",
+            "Tanto faz" to "指定なし",
+            "Filme Curto (< 90m)" to "短い映画 (< 90分)",
+            "Terror / Medo Real" to "ガチホラー",
+            "Gerar Novas Recomendações 🎲" to "新しいおすすめを生成 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "ぴったりの作品を見つける ✨",
+            "Suspense com reviravolta" to "どんでん返しサスペンス",
+            "Parecido com Interestelar" to "インターステラーのような映画",
+            "Sci-fi dos anos 90" to "90年代SF映画",
+            "Comédia leve para relaxar" to "気楽に観られるコメディ",
+            "Terror psicológico tenso" to "緊張感のある心理ホラー",
+            "Elogiado pela crítica e público com ótima recepção geral" to "批評家・観客から大絶賛の話題作",
+            "Avaliação sólida" to "堅実な高評価",
+            "perfeito para uma sessão descontraída" to "気軽に楽しむのに最適",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "先が読めない緊迫の捜査劇",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "胸を打つエモーショナルな絆",
+            "Exploração de conceitos fascinantes e visual imersivo" to "魅惑の世界観と圧巻の映像美",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "見事な人物描写とドラマ性",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "CineAI認定：観て損なしの傑作",
+            "Iniciar Debate ✍️" to "議論を始める ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "議論、映画、仲間を検索...",
+            "Excluir publicação" to "投稿を削除",
+            "Denunciar publicação" to "投稿を通報",
+            "Escreva uma resposta..." to "返信を入力...",
+            "NOVA DISCUSSÃO" to "新しいトピック",
+            "Publique um debate para a comunidade" to "コミュニティにトピックを投稿",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "トピックのタイトル（例: インターステラーのラスト解説）",
+            "Categoria da Publicação:" to "投稿カテゴリー:",
+            "Obra relacionada (filme / série opcional):" to "関連作品（任意）:",
+            "Nome da Obra" to "作品名",
+            "Escreva seus argumentos, resenha ou teoria..." to "感想や考察を入力...",
+            "Esconde o texto por padrão com aviso" to "ネタバレ警告付きで本文を隠す",
+            "Publicar no CineFórum 🚀" to "CineForumに投稿 🚀",
+            "Gênero Predileto" to "好きなジャンル",
+            "Personaliza recomendações do CineBot IA" to "CineBot AIのおすすめを最適化",
+            "Exportar JSON" to "JSONエクスポート",
+            "Restaurar JSON" to "JSON復元",
+            "Exportar CSV" to "CSVエクスポート",
+            "Importar CSV" to "CSVインポート",
+            "Limpar Todos os Dados Locais" to "すべてのローカルデータを削除",
+            "DESCONECTAR DA CONTA" to "ログアウト",
+            "ID copiado para a área de transferência! 📋" to "IDをクリップボードにコピーしました！ 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "テスト通知を送信しました！ 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "配信＆通知",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "高優先度プッシュ通知 (FCM)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "マイリスト（個人）",
             "Sala Compartilhada" to "共有ルーム",
@@ -1775,6 +2681,157 @@ object I18n {
         // COREANO (ko-KR / ko)
         // ==========================================
         "ko" to mapOf(
+            "Rir até doer" to "배꼽 빠지게 웃기",
+            "Explodir a mente" to "뇌를 자극하는 반전",
+            "Chorar de emoção" to "감동의 눈물",
+            "Pipoca & Ação" to "팝콘 & 액션",
+            "Ficção & Fantasia" to "SF & 판타지",
+            "Direto ao Ponto (< 95 min)" to "짧고 굵게 (< 95분)",
+            "Sessão a Dois" to "둘만의 영화관",
+            "Frio na Espinha" to "오싹한 공포",
+            "Comédias leves e divertidas" to "가볍고 유쾌한 코미디",
+            "Plot twists e enigmas psicológicos" to "반전과 심리적 수수께끼",
+            "Dramas tocantes e superação" to "감동적인 드라마와 극복",
+            "Ritmo acelerado e aventura" to "빠른 템포와 모험",
+            "Viagem no tempo, espaço e magia" to "시간 여행, 우주, 마법",
+            "Histórias ágeis para quem tem pouco tempo" to "시간이 부족할 때 빠르게 보는 작품",
+            "Romance envolvente e comédia romântica" to "몰입감 넘치는 로맨스와 로코",
+            "Terror psicológico e suspense sombrio" to "심리 공포와 어두운 서스펜스",
+            "Qual é a sua vibe agora?" to "지금 어떤 기분이신가요?",
+            "Desafio CineQuiz Trivia" to "씨네퀴즈 트리비아 챌린지",
+            "Teste seus conhecimentos de cinema com CineAI" to "CineAI로 영화 지식을 테스트해보세요",
+            "Jogar ➔" to "플레이 ➔",
+            "Sugestões de busca rápida:" to "빠른 검색 추천:",
+            "Ou descreva com suas palavras (ex: um suspense na neve com reviravolta)..." to "또는 직접 설명해보세요 (예: 눈 덮인 반전 스릴러)...",
+            "Consultando CineAI..." to "CineAI 문의 중...",
+            "Nenhuma recomendação encontrada para estes termos. Tente selecionar outra vibe acima ou simplificar a descrição." to "해당 조건의 추천을 찾을 수 없습니다. 다른 바이브를 선택하거나 설명을 간단히 적어보세요.",
+            "💡 Recomendações Selecionadas para Você:" to "💡 회원님을 위해 엄선된 추천작:",
+            "Chave Gemini AI" to "Gemini AI 키",
+            "Salvar Chave" to "키 저장",
+            "Remover / Usar Motor Híbrido" to "삭제 / 하이브리드 엔진 사용",
+            "O CineAI funciona perfeitamente sem chave usando curadoria heurística. Se você tiver uma chave gratuita do Google AI Studio (Gemini 2.5 Flash), cole-a abaixo para ativar a inteligência generativa profunda:" to "CineAI는 키 없이도 추천 알고리즘으로 잘 작동합니다. 무료 Google AI Studio 키(Gemini 2.5 Flash)가 있다면 아래에 붙여넣어 심층 생성 AI를 활성화하세요:",
+            "Curadoria inteligente por humor e vibe" to "기분과 바이브에 맞춘 스마트 큐레이션",
+            "Configurar Chave Gemini" to "Gemini 키 설정",
+            // Chaves expandidas (mix reduction)
+            "PENDENTE" to "대기 중",
+            "RECUSADO" to "거절됨",
+            "Parceiro(a) recusou" to "파트너가 거절했습니다",
+            "Reabrir Título" to "다시 보기",
+            "Marcar como Concluído" to "시청 완료 처리",
+            "Padrão (Assistindo primeiro)" to "기본 (시청 중 우선)",
+            "Favoritos Primeiro" to "즐겨찾기 우선",
+            "Melhor Avaliados" to "최고 평점순",
+            "Ordem Alfabética (A-Z)" to "가나다순 (A-Z)",
+            "Adicionados Recentemente" to "최근 추가순",
+            "Geral" to "일반",
+            "Apenas disponível nos meus streamings" to "내가 구독 중인 스트리밍만",
+            "Configurar meus streamings" to "내 스트리밍 설정",
+            "Meus Streamings" to "내 스트리밍",
+            "Exibir Status" to "상태 표시",
+            "Coleção Temática" to "테마 컬렉션",
+            "Categoria" to "카테고리",
+            "Ordenar por" to "정렬 기준",
+            "Filme" to "영화",
+            "Filmes" to "영화",
+            "Série" to "시리즈",
+            "Séries" to "시리즈",
+            "Anime" to "애니",
+            "Animes" to "애니메이션",
+            "Novela" to "일일드라마",
+            "Novelas" to "일일드라마",
+            "Dorama" to "K-드라마",
+            "Doramas" to "K-드라마",
+            "Todas" to "전체",
+            "Ação" to "액션",
+            "Aventura" to "어드벤처",
+            "Animação" to "애니메이션",
+            "Comédia" to "코미디",
+            "Crime" to "범죄",
+            "Documentário" to "다큐멘터리",
+            "Drama" to "드라마",
+            "Família" to "가족",
+            "Fantasia" to "판타지",
+            "Terror" to "공포",
+            "Ficção científica" to "SF",
+            "Ficção Científica" to "SF",
+            "Suspense" to "스릴러",
+            "Romance" to "로맨스",
+            "Mistério" to "미스터리",
+            "Guerra" to "전쟁",
+            "Música" to "음악",
+            "Faroeste" to "서부극",
+            "Cinema TV" to "TV 영화",
+            "Ação & Aventura" to "액션 & 어드벤처",
+            "Sci-Fi & Fantasy" to "SF & 판타지",
+            "Kids" to "어린이",
+            "Cenas Pós-Créditos: Fique até o fim dos créditos!" to "쿠키 영상 있음: 엔딩 크레딧 끝까지 보세요!",
+            "Sem cenas pós-créditos — Pode desligar a TV!" to "쿠키 영상 없음 — 지금 끄셔도 됩니다!",
+            "Esta série foi cancelada" to "이 시리즈는 조기 종영(캔슬)되었습니다",
+            "Série finalizada (Todas temporadas disponíveis)" to "완결된 시리즈 (모든 시즌 이용 가능)",
+            "Em exibição (Novas temporadas em produção)" to "방영 중 (다음 시즌 제작 중)",
+            "Consultar Sessões e Ingressos 🎟️" to "상영시간표 및 예매 🎟️",
+            "Duração Real" to "러닝타임",
+            "Média Crítica" to "평론가 평점",
+            "Lançamento" to "개봉일",
+            "Sua Avaliação" to "내 평점",
+            "Comentário (Opcional)" to "한줄평 (선택사항)",
+            "Contém Spoiler" to "스포일러 포함",
+            "Contém Spoilers" to "스포일러 포함",
+            "ENVIAR AVALIAÇÃO" to "평가 제출",
+            "Avaliações da Sala" to "방 멤버들의 평가",
+            "Nenhuma avaliação ainda." to "아직 등록된 평가가 없습니다.",
+            "Indicação enviada no Chat da Sala! 🍿" to "방 채팅에 추천을 보냈습니다! 🍿",
+            "Avançar Temporada" to "다음 시즌으로",
+            "Marcar Concluída" to "완료 처리",
+            "Fim da Temporada" to "시즌 종료",
+            "Deseja realmente remover" to "정말 삭제하시겠습니까",
+            "Cinema / Streaming" to "영화관 / 스트리밍",
+            "Outros" to "기타",
+            "Tanto faz" to "상관없음",
+            "Filme Curto (< 90m)" to "짧은 영화 (< 90분)",
+            "Terror / Medo Real" to "진짜 공포",
+            "Gerar Novas Recomendações 🎲" to "새로운 추천 생성 🎲",
+            "Descobrir Títulos Perfeitos ✨" to "딱 맞는 작품 찾기 ✨",
+            "Suspense com reviravolta" to "반전 스릴러",
+            "Parecido com Interestelar" to "인터스텔라 비슷한 영화",
+            "Sci-fi dos anos 90" to "90년대 SF",
+            "Comédia leve para relaxar" to "가볍게 힐링하는 코미디",
+            "Terror psicológico tenso" to "긴장감 넘치는 심리 공포",
+            "Elogiado pela crítica e público com ótima recepção geral" to "평단과 관객 모두에게 호평받은 수작",
+            "Avaliação sólida" to "준수한 평점",
+            "perfeito para uma sessão descontraída" to "가볍게 즐기기 좋은 작품",
+            "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes" to "몰입감 넘치는 수사극과 두뇌 싸움",
+            "Forte apelo emocional e conexão cativante entre os personagens" to "깊은 감정선과 두 주인공의 케미",
+            "Exploração de conceitos fascinantes e visual imersivo" to "흥미로운 설정과 압도적인 비주얼",
+            "Excelente desenvolvimento de personagens e conflitos dinâmicos" to "훌륭한 인물 서사와 갈등 구조",
+            "Veredito CineAI: Experiência recomendada que vale o seu tempo" to "CineAI 한마디: 믿고 볼 만한 추천작",
+            "Iniciar Debate ✍️" to "토론 시작하기 ✍️",
+            "Pesquisar debates, filmes ou cinéfilos..." to "토론, 영화, 영화 친구 검색...",
+            "Excluir publicação" to "게시글 삭제",
+            "Denunciar publicação" to "게시글 신고",
+            "Escreva uma resposta..." to "댓글을 입력하세요...",
+            "NOVA DISCUSSÃO" to "새로운 토론",
+            "Publique um debate para a comunidade" to "커뮤니티에 주제를 올려보세요",
+            "Título do Tópico (ex: 'O final de Interestelar explicado')" to "주제 제목 (예: '인터스텔라 결말 해석')",
+            "Categoria da Publicação:" to "게시글 카테고리:",
+            "Obra relacionada (filme / série opcional):" to "관련 작품 (영화 / 시리즈 선택):",
+            "Nome da Obra" to "작품 이름",
+            "Escreva seus argumentos, resenha ou teoria..." to "의견, 리뷰 또는 해석을 남겨보세요...",
+            "Esconde o texto por padrão com aviso" to "스포일러 주의 경고로 본문 가리기",
+            "Publicar no CineFórum 🚀" to "CineForum에 등록 🚀",
+            "Gênero Predileto" to "선호 장르",
+            "Personaliza recomendações do CineBot IA" to "CineBot AI의 추천을 맞춤형으로 설정",
+            "Exportar JSON" to "JSON 내보내기",
+            "Restaurar JSON" to "JSON 복원",
+            "Exportar CSV" to "CSV 내보내기",
+            "Importar CSV" to "CSV 가져오기",
+            "Limpar Todos os Dados Locais" to "모든 로컬 데이터 초기화",
+            "DESCONECTAR DA CONTA" to "계정 로그아웃",
+            "ID copiado para a área de transferência! 📋" to "ID가 클립보드에 복사되었습니다! 📋",
+            "Notificação de teste enviada para a barra do sistema! 🔔" to "테스트 알림을 보냈습니다! 🔔",
+            "TRANSMISSÕES & NOTIFICAÇÕES" to "알림 및 푸시",
+            "Entrega direta em alta prioridade (FCM High Priority)" to "고우선순위 직접 수신 (FCM High Priority)",
+
             // Novas chaves e telas adicionadas
             "Minha Lista Pessoal" to "내 개인 보관함",
             "Sala Compartilhada" to "공유 방",
@@ -2024,7 +3081,7 @@ object I18n {
 
     /**
      * Traduz uma string em português para o idioma ativo com suporte inteligente
-     * para caracteres de pontuação (como dois-pontos), emojis e prefixos/sufixos.
+     * para caracteres de pontuação, emojis, contadores, separadores compostos e datas relativas.
      */
     fun traduzir(textoPt: String): String {
         val lang = idiomaAtivo.lowercase().take(2)
@@ -2038,51 +3095,199 @@ object I18n {
         // 1. Match direto exato
         mapa[limpo]?.let { return it }
 
-        // 2. Pontuação no final (ex: "Status:", "Gênero:")
+        // 2. Pontuação no final (ex: "Status:", "Gênero:", "Código:", "Ordenar por:")
         val terminaComDoisPontos = limpo.endsWith(":")
         val semPontos = if (terminaComDoisPontos) limpo.dropLast(1).trim() else limpo
         mapa[semPontos]?.let { return if (terminaComDoisPontos) "$it:" else it }
 
-        // 3. Emojis ou símbolos no início (ex: "👤 Minha Lista Pessoal", "⚙️ Gerenciar Salas / Criar Nova", "💡 Recomendações...")
+        // 3. Emojis ou símbolos no início (ex: "👤 Minha Lista Pessoal", "⚙️ Gerenciar Salas / Criar Nova", "💡 Recomendações...", "⏳ PENDENTE", "❌ RECUSADO", "🍿 Cinema / Streaming")
         val (prefixoEmoji, restoTexto) = extrairPrefixoEmoji(limpo)
         if (prefixoEmoji.isNotEmpty() && restoTexto.isNotEmpty()) {
-            val restoSemPontos = if (restoTexto.endsWith(":")) restoTexto.dropLast(1).trim() else restoTexto
-            mapa[restoTexto]?.let { return "$prefixoEmoji$it" }
-            mapa[restoSemPontos]?.let { return if (restoTexto.endsWith(":")) "$prefixoEmoji$it:" else "$prefixoEmoji$it" }
+            val tradResto = traduzir(restoTexto)
+            if (tradResto != restoTexto) {
+                return "$prefixoEmoji$tradResto"
+            }
         }
 
         // 4. Emojis ou símbolos no final (ex: "Listas Compartilhadas 🍿", "CineMatch Coletivo! 🍿", "Convidar via WhatsApp 💚")
         val (inicioTexto, sufixoEmoji) = extrairSufixoEmoji(limpo)
         if (sufixoEmoji.isNotEmpty() && inicioTexto.isNotEmpty()) {
-            mapa[inicioTexto]?.let { return "$it$sufixoEmoji" }
+            val tradInicio = traduzir(inicioTexto)
+            if (tradInicio != inicioTexto) {
+                return "$tradInicio$sufixoEmoji"
+            }
         }
 
-        // 5. Parou em: X min
+        // 5. Separador composto " • " (ex: "Filme • Ação", "Série • Comédia", "Filme • Ação • Netflix")
+        if (limpo.contains(" • ")) {
+            val partes = limpo.split(" • ")
+            val traduzidas = partes.map { parte ->
+                if (parte.contains(", ")) {
+                    parte.split(", ").joinToString(", ") { traduzir(it) }
+                } else {
+                    traduzir(parte)
+                }
+            }
+            return traduzidas.joinToString(" • ")
+        }
+
+        // 6. Contador entre parênteses (ex: "Meus Amigos (3)", "Favoritos (12)", "Pedidos de Conexão (1)", "Membros na Sala (4):")
+        val regexContador = Regex("^(.+?)\\s*\\((\\d+)\\)(:?)$")
+        val matchContador = regexContador.matchEntire(limpo)
+        if (matchContador != null) {
+            val base = matchContador.groupValues[1].trim()
+            val num = matchContador.groupValues[2]
+            val doisPontos = matchContador.groupValues[3]
+            val baseTraduzida = traduzir(base)
+            return "$baseTraduzida ($num)$doisPontos"
+        }
+
+        // 7. Mensagem de títulos exibidos: "15 título(s) exibido(s)"
+        val regexTitulosExibidos = Regex("^(\\d+)\\s+título\\(s\\)\\s+exibido\\(s\\)$", RegexOption.IGNORE_CASE)
+        val matchTitulos = regexTitulosExibidos.matchEntire(limpo)
+        if (matchTitulos != null) {
+            val n = matchTitulos.groupValues[1]
+            return when (lang) {
+                "en" -> "$n title(s) displayed"
+                "es" -> "$n título(s) mostrado(s)"
+                "fr" -> "$n titre(s) affiché(s)"
+                "de" -> "$n Titel angezeigt"
+                "it" -> "$n titolo(i) visualizzato(i)"
+                "ja" -> "$n 件の作品を表示中"
+                "ko" -> "${n}개 작품 표시 중"
+                else -> limpo
+            }
+        }
+
+        // 8. Mensagem de sugestões pendentes: "2 sugestão(ões) aguardando"
+        val regexSugestoes = Regex("^(\\d+)\\s+sugestão\\(ões\\)\\s+aguardando$", RegexOption.IGNORE_CASE)
+        val matchSugest = regexSugestoes.matchEntire(limpo)
+        if (matchSugest != null) {
+            val n = matchSugest.groupValues[1]
+            return when (lang) {
+                "en" -> "$n suggestion(s) pending"
+                "es" -> "$n sugerencia(s) pendiente(s)"
+                "fr" -> "$n suggestion(s) en attente"
+                "de" -> "$n ausstehende Vorschläge"
+                "it" -> "$n suggerimenti in attesa"
+                "ja" -> "$n 件の保留中の提案"
+                "ko" -> "${n}개 추천 대기 중"
+                else -> limpo
+            }
+        }
+
+        // 9. Visto: X (ex: "Visto: Hoje", "Visto: Ontem", "Visto: Há 3 dias")
+        if (limpo.startsWith("Visto:")) {
+            val prefixoTraduzido = mapa["Visto"] ?: "Watched"
+            val dataPart = limpo.substring(6).trim()
+            val dataTraduzida = traduzirDataRelativa(dataPart, lang)
+            return "$prefixoTraduzido: $dataTraduzida"
+        }
+
+        // 10. Parou em: X min
         if (limpo.startsWith("Parou em:")) {
             val prefixoTraduzido = mapa["Parou em"] ?: "Paused at"
             val sufixoMin = mapa["min"] ?: "min"
             return limpo.replace("Parou em", prefixoTraduzido).replace("min", sufixoMin)
         }
 
-        // 6. Visto: X
-        if (limpo.startsWith("Visto:")) {
-            val prefixoTraduzido = mapa["Visto"] ?: "Watched"
-            return limpo.replace("Visto", prefixoTraduzido)
+        // 11. Sugerido por: X / Adicionado por: X
+        if (limpo.startsWith("Sugerido por:")) {
+            val rotulo = when (lang) {
+                "en" -> "Suggested by:"
+                "es" -> "Sugerido por:"
+                "fr" -> "Suggéré par :"
+                "de" -> "Vorgeschlagen von:"
+                "it" -> "Suggerito da:"
+                "ja" -> "提案者:"
+                "ko" -> "추천자:"
+                else -> "Sugerido por:"
+            }
+            return limpo.replace("Sugerido por:", rotulo)
+        }
+        if (limpo.startsWith("Adicionado por:")) {
+            val rotulo = when (lang) {
+                "en" -> "Added by:"
+                "es" -> "Agregado por:"
+                "fr" -> "Ajouté par :"
+                "de" -> "Hinzugefügt von:"
+                "it" -> "Aggiunto da:"
+                "ja" -> "追加者:"
+                "ko" -> "추가한 사람:"
+                else -> "Adicionado por:"
+            }
+            return limpo.replace("Adicionado por:", rotulo)
         }
 
-        // 7. Código: X
-        if (limpo.startsWith("Código:")) {
-            val prefixoTraduzido = mapa["Código"] ?: "Code"
-            return limpo.replace("Código", prefixoTraduzido)
+        // 12. Finalizado em $data
+        if (limpo.startsWith("Finalizado em ")) {
+            val data = limpo.removePrefix("Finalizado em ").trim()
+            val prefixo = when (lang) {
+                "en" -> "Completed on"
+                "es" -> "Completado el"
+                "fr" -> "Terminé le"
+                "de" -> "Abgeschlossen am"
+                "it" -> "Completato il"
+                "ja" -> "完了日:"
+                "ko" -> "완료일:"
+                else -> "Finalizado em"
+            }
+            return "$prefixo $data"
         }
 
-        // 8. T1 • Ep 1 (+1) ou T1 • Episódio 1
-        if (limpo.contains("Episódio")) {
-            val epTrad = mapa["Episódio"] ?: "Episode"
-            return limpo.replace("Episódio", epTrad)
+        // 13. Temporada e Episódio: T1 • Ep 1 (+1) ou T1 • Episódio 1
+        if (limpo.startsWith("T") && limpo.contains("Ep")) {
+            val epTrad = mapa["Episódio"] ?: "Ep"
+            val tempTrad = when (lang) {
+                "en", "fr", "de", "ja", "ko" -> "S"
+                else -> "T"
+            }
+            return limpo.replaceFirst("T", tempTrad).replace("Episódio", epTrad)
         }
 
         return textoPt
+    }
+
+    private fun traduzirDataRelativa(dataStr: String, lang: String): String {
+        if (dataStr.equals("Hoje", ignoreCase = true)) {
+            return when (lang) {
+                "en" -> "Today"
+                "es" -> "Hoy"
+                "fr" -> "Aujourd'hui"
+                "de" -> "Heute"
+                "it" -> "Oggi"
+                "ja" -> "今日"
+                "ko" -> "오늘"
+                else -> dataStr
+            }
+        }
+        if (dataStr.equals("Ontem", ignoreCase = true)) {
+            return when (lang) {
+                "en" -> "Yesterday"
+                "es" -> "Ayer"
+                "fr" -> "Hier"
+                "de" -> "Gestern"
+                "it" -> "Ieri"
+                "ja" -> "昨日"
+                "ko" -> "어제"
+                else -> dataStr
+            }
+        }
+        val matchDias = Regex("^Há\\s+(\\d+)\\s+dias$", RegexOption.IGNORE_CASE).matchEntire(dataStr)
+        if (matchDias != null) {
+            val d = matchDias.groupValues[1]
+            return when (lang) {
+                "en" -> "$d days ago"
+                "es" -> "Hace $d días"
+                "fr" -> "Il y a $d jours"
+                "de" -> "Vor $d Tagen"
+                "it" -> "$d giorni fa"
+                "ja" -> "${d}日前"
+                "ko" -> "${d}일 전"
+                else -> dataStr
+            }
+        }
+        return dataStr
     }
 
     private fun extrairPrefixoEmoji(texto: String): Pair<String, String> {

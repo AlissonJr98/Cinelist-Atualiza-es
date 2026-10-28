@@ -63,9 +63,9 @@ fun formatarDataRelativa(timestamp: Long): String {
     if (mesmoAno) {
         val diffDias = calAgora.get(Calendar.DAY_OF_YEAR) - calData.get(Calendar.DAY_OF_YEAR)
         return when {
-            diffDias == 0 -> "Hoje"
-            diffDias == 1 -> "Ontem"
-            diffDias in 2..6 -> "Há $diffDias dias"
+            diffDias == 0 -> "Hoje".t()
+            diffDias == 1 -> "Ontem".t()
+            diffDias in 2..6 -> "Há $diffDias dias".t()
             else -> SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(timestamp))
         }
     }

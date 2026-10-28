@@ -217,6 +217,19 @@ object CineAiManager {
         return@withContext recomendarComMotorHeuristico(vibe, textoLivre, filtroTipo)
     }
 
+    private fun obterNomeIdiomaAtivo(): String {
+        return when (I18n.idiomaAtivo) {
+            "en-US" -> "English"
+            "es-ES" -> "Spanish (Español)"
+            "fr-FR" -> "French (Français)"
+            "de-DE" -> "German (Deutsch)"
+            "it-IT" -> "Italian (Italiano)"
+            "ja-JP" -> "Japanese (日本語)"
+            "ko-KR" -> "Korean (한국어)"
+            else -> "Portuguese (Português do Brasil)"
+        }
+    }
+
     private suspend fun recomendarComGemini(
         apiKey: String,
         vibe: VibeHumor?,
@@ -231,6 +244,7 @@ object CineAiManager {
 
         val promptVibe = vibe?.promptGemini ?: "excelente produção consagrada e aclamada"
         val promptUsuario = textoLivre.trim()
+        val nomeIdioma = obterNomeIdiomaAtivo()
 
         val promptFinal = """
             Você é o CineAI, o curador cinematográfico de inteligência artificial do CineList.
@@ -242,14 +256,15 @@ object CineAiManager {
             1. Se o usuário pediu algo "parecido com X" (ex: Interestelar), recomende filmes REAIS, famosos e aclamados que pertençam EXATAMENTE ao mesmo subgênero e clima (ex: para Interestelar recomende A Chegada, Contato, Perdido em Marte, Gravidade, 2001). NUNCA traga filmes aleatórios que não tenham relação direta.
             2. Se o usuário descreveu um tema (ex: viagem no tempo, robôs, romance na chuva), traga as melhores obras reais desse nicho.
             3. Retorne exatamente de 3 a 5 recomendações reais existentes no TMDB.
+            4. IDIOMA OBRIGATÓRIO: O usuário selecionou o idioma $nomeIdioma. Todos os textos explicativos ('justificativa', 'destaques' e títulos quando houver tradução local) DEVEM SER ESCRITOS RIGOROSAMENTE EM $nomeIdioma.
             
             Responda EXCLUSIVAMENTE em JSON válido com esta estrutura (sem markdown, sem blocos ```json):
             {
               "recomendacoes": [
                 {
-                  "titulo": "Título em Português ou Original",
+                  "titulo": "Título no idioma $nomeIdioma ou Original",
                   "ano": 2014,
-                  "justificativa": "Frase clara e empolgante de no máximo 2 linhas explicando por que é perfeita para quem pediu isso.",
+                  "justificativa": "Frase clara e empolgante no idioma $nomeIdioma de no máximo 2 linhas explicando por que é perfeita para quem pediu isso.",
                   "destaques": ["Destaque 1", "Destaque 2", "Destaque 3"]
                 }
               ]
@@ -503,10 +518,13 @@ object CineAiManager {
     }
 
     private suspend fun gerarQuizComGemini(apiKey: String, tema: String): List<PerguntaQuiz>? {
+        val nomeIdioma = obterNomeIdiomaAtivo()
         val prompt = """
             Você é o apresentador do CineQuiz no aplicativo CineList.
             Gere exatamente 4 perguntas desafiadoras, divertidas e INÉDITAS sobre o tema de cinema: "$tema".
             As perguntas devem ser dinâmicas e cobrir fatos marcantes da sétima arte.
+            
+            IDIOMA OBRIGATÓRIO: Responda todas as perguntas, opções e curiosidades estritamente no idioma: $nomeIdioma.
             
             Responda EXCLUSIVAMENTE em formato JSON estrito:
             {
@@ -718,22 +736,22 @@ object CineAiManager {
         val pontos = mutableListOf<String>()
 
         if (nota >= 7.5) {
-            pontos.add("⭐ Elogiado pela crítica e público com ótima recepção geral (${String.format(java.util.Locale.US, "%.1f", nota)})")
+            pontos.add("⭐ " + "Elogiado pela crítica e público com ótima recepção geral".t() + " (${String.format(java.util.Locale.US, "%.1f", nota)})")
         } else if (nota >= 6.0) {
-            pontos.add("🍿 Avaliação sólida (${String.format(java.util.Locale.US, "%.1f", nota)}), perfeito para uma sessão descontraída")
+            pontos.add("🍿 " + "Avaliação sólida".t() + " (${String.format(java.util.Locale.US, "%.1f", nota)}), " + "perfeito para uma sessão descontraída".t())
         }
 
         if (sinopse.contains("mistério", ignoreCase = true) || sinopse.contains("investiga", ignoreCase = true) || sinopse.contains("crime", ignoreCase = true)) {
-            pontos.add("🔍 Trama investigativa com ritmo envolvente e quebra-cabeças instigantes")
+            pontos.add("🔍 " + "Trama investigativa com ritmo envolvente e quebra-cabeças instigantes".t())
         } else if (sinopse.contains("amor", ignoreCase = true) || sinopse.contains("paixão", ignoreCase = true) || sinopse.contains("casal", ignoreCase = true)) {
-            pontos.add("❤️ Forte apelo emocional e conexão cativante entre os personagens")
+            pontos.add("❤️ " + "Forte apelo emocional e conexão cativante entre os personagens".t())
         } else if (sinopse.contains("espaço", ignoreCase = true) || sinopse.contains("planeta", ignoreCase = true) || sinopse.contains("futuro", ignoreCase = true)) {
-            pontos.add("🚀 Exploração de conceitos fascinantes e visual imersivo")
+            pontos.add("🚀 " + "Exploração de conceitos fascinantes e visual imersivo".t())
         } else {
-            pontos.add("🎭 Excelente desenvolvimento de personagens e conflitos dinâmicos")
+            pontos.add("🎭 " + "Excelente desenvolvimento de personagens e conflitos dinâmicos".t())
         }
 
-        pontos.add("✅ Veredito CineAI: Experiência recomendada que vale o seu tempo")
+        pontos.add("✅ " + "Veredito CineAI: Experiência recomendada que vale o seu tempo".t())
 
         return pontos
     }
