@@ -492,7 +492,7 @@ private fun ConteudoItemMidiaCard(
                                 }
                             } else {
                                 Text(
-                                    text = "Sem avaliação",
+                                    text = "Sem avaliação".t(),
                                     color = MaterialTheme.colorScheme.secondary,
                                     fontSize = 10.sp
                                 )
@@ -753,7 +753,7 @@ private fun ItemMidiaCardHorizontalComSwipe(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "Excluir",
+                                text = "Excluir".t(),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -1163,7 +1163,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                                     }
                                 } else {
                                     Text(
-                                        text = "Sem avaliação",
+                                        text = "Sem avaliação".t(),
                                         color = MaterialTheme.colorScheme.secondary,
                                         fontSize = 10.sp
                                     )

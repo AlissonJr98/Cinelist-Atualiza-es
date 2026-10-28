@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">CineList</string>
+    <string name="nav_minha_lista">My List</string>
+    <string name="nav_descobrir">Discover</string>
+    <string name="nav_feed_social">Social Feed</string>
+    <string name="nav_lista_sala">Room List</string>
+    <string name="nav_salas">Rooms</string>
+    <string name="nav_perfil">Profile</string>
+    <string name="nav_configuracoes">Settings</string>
+
+    <string name="search_placeholder_minha_lista">Search by title, genre or streaming...</string>
+    <string name="search_placeholder_tmdb">Search online on TMDB...</string>
+    <string name="search_action">Search</string>
+    <string name="search_history">Search History</string>
+    <string name="search_clear">Clear History</string>
+
+    <string name="sec_filmes_populares">🎬 Popular Movies</string>
+    <string name="sec_series_em_alta">🔥 Trending Series</string>
+    <string name="sec_top_comedias">😂 Top Comedies</string>
+    <string name="sec_adrenalina_pura">💥 Pure Adrenaline</string>
+    <string name="sec_lancamentos_streaming">🆕 STREAMING RELEASES</string>
+    <string name="sec_lancamentos_streaming_sub">New seasons and movies on your platforms</string>
+
+    <string name="btn_assistir_trailer">Watch Trailer</string>
+    <string name="btn_ver_detalhes">View Details</string>
+    <string name="btn_adicionar_lista">Add to List</string>
+    <string name="btn_remover_lista">Remove from List</string>
+    <string name="btn_salvar">Save</string>
+    <string name="btn_cancelar">Cancel</string>
+    <string name="btn_fechar">Close</string>
+    <string name="btn_confirmar">Confirm</string>
+    <string name="btn_sair">Sign Out</string>
+    <string name="btn_compartilhar">Share</string>
+
+    <string name="status_assistido">Watched</string>
+    <string name="status_quero_ver">Want to Watch</string>
+    <string name="status_favorito">Favorite</string>
+    <string name="status_novo">New</string>
+
+    <string name="cfg_console">SYSTEM CONSOLE</string>
+    <string name="cfg_active_core">CINELINK OS • ACTIVE CORE</string>
+    <string name="cfg_interface">INTERFACE &amp; APPEARANCE</string>
+    <string name="cfg_interface_sub">Quantum palette, OLED backgrounds and typography</string>
+    <string name="cfg_tema_escuro">Dark Theme / Night Mode</string>
+    <string name="cfg_tema_escuro_sub">Power saving and visual comfort</string>
+    <string name="cfg_idioma_titulo">LANGUAGE &amp; REGION</string>
+    <string name="cfg_idioma_sub">Device recognition and TMDB catalog</string>
+    <string name="cfg_idioma_padrao_celular">Default Device Language</string>
+    <string name="cfg_idioma_seletor_rotulo">Select display and search language:</string>
+    <string name="cfg_diagnostico">DIAGNOSTICS &amp; STORAGE</string>
+    <string name="cfg_limpar_cache">Clear App Cache</string>
+    <string name="cfg_limpar_cache_sub">Frees disk space by removing temporary files</string>
+    <string name="cfg_conta">ACCOUNT &amp; SECURITY</string>
+    <string name="cfg_sair_conta">Sign Out</string>
+    <string name="cfg_sair_conta_sub">Disconnect from CineList on this device</string>
+</resources>

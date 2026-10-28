@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">CineList</string>
+    <string name="nav_minha_lista">Meine Liste</string>
+    <string name="nav_descobrir">Entdecken</string>
+    <string name="nav_feed_social">Social Feed</string>
+    <string name="nav_lista_sala">Raum-Liste</string>
+    <string name="nav_salas">Räume</string>
+    <string name="nav_perfil">Profil</string>
+    <string name="nav_configuracoes">Einstellungen</string>
+
+    <string name="search_placeholder_minha_lista">Nach Titel, Genre oder Streaming suchen...</string>
+    <string name="search_placeholder_tmdb">Online auf TMDB suchen...</string>
+    <string name="search_action">Suchen</string>
+    <string name="search_history">Suchverlauf</string>
+    <string name="search_clear">Verlauf löschen</string>
+
+    <string name="sec_filmes_populares">🎬 Beliebte Filme</string>
+    <string name="sec_series_em_alta">🔥 Angesagte Serien</string>
+    <string name="sec_top_comedias">😂 Beste Komödien</string>
+    <string name="sec_adrenalina_pura">💥 Reine Action</string>
+    <string name="sec_lancamentos_streaming">🆕 STREAMING-NEUHEITEN</string>
+    <string name="sec_lancamentos_streaming_sub">Neue Staffeln und Filme auf deinen Plattformen</string>
+
+    <string name="btn_assistir_trailer">Trailer ansehen</string>
+    <string name="btn_ver_detalhes">Details anzeigen</string>
+    <string name="btn_adicionar_lista">Zur Liste hinzufügen</string>
+    <string name="btn_remover_lista">Aus Liste entfernen</string>
+    <string name="btn_salvar">Speichern</string>
+    <string name="btn_cancelar">Abbrechen</string>
+    <string name="btn_fechar">Schließen</string>
+    <string name="btn_confirmar">Bestätigen</string>
+    <string name="btn_sair">Abmelden</string>
+    <string name="btn_compartilhar">Teilen</string>
+
+    <string name="status_assistido">Gesehen</string>
+    <string name="status_quero_ver">Merkliste</string>
+    <string name="status_favorito">Favorit</string>
+    <string name="status_novo">Neu</string>
+
+    <string name="cfg_console">SYSTEMKONSOLE</string>
+    <string name="cfg_active_core">CINELINK OS • AKTIVER KERN</string>
+    <string name="cfg_interface">OBERFLÄCHE &amp; AUSSEHEN</string>
+    <string name="cfg_interface_sub">Quanten-Palette, OLED-Hintergründe und Typografie</string>
+    <string name="cfg_tema_escuro">Dunkles Design / Nachtmodus</string>
+    <string name="cfg_tema_escuro_sub">Energiesparend und augenschonend</string>
+    <string name="cfg_idioma_titulo">SPRACHE &amp; REGION</string>
+    <string name="cfg_idioma_sub">Geräteerkennung und TMDB-Katalog</string>
+    <string name="cfg_idioma_padrao_celular">Standard-Gerätesprache</string>
+    <string name="cfg_idioma_seletor_rotulo">Wählen Sie die Anzeige- und Suchsprache:</string>
+    <string name="cfg_diagnostico">DIAGNOSE &amp; SPEICHER</string>
+    <string name="cfg_limpar_cache">App-Cache leeren</string>
+    <string name="cfg_limpar_cache_sub">Gibt Speicherplatz frei durch Löschen von temporären Dateien</string>
+    <string name="cfg_conta">KONTO &amp; SICHERHEIT</string>
+    <string name="cfg_sair_conta">Abmelden</string>
+    <string name="cfg_sair_conta_sub">Auf diesem Gerät von CineList abmelden</string>
+</resources>

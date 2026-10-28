@@ -138,7 +138,7 @@ fun FeedAtividadesScreen(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(
-                                    text = "CINEFÓRUM",
+                                    text = "CINEFÓRUM".t(),
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp,
                                     color = Color.White,
@@ -150,7 +150,7 @@ fun FeedAtividadesScreen(
                                     border = BorderStroke(0.5.dp, Color(0xFF00FF7F))
                                 ) {
                                     Text(
-                                        text = "AO VIVO",
+                                        text = "AO VIVO".t(),
                                         fontSize = 8.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF00FF7F),
@@ -159,7 +159,7 @@ fun FeedAtividadesScreen(
                                 }
                             }
                             Text(
-                                text = "Debates, teorias, análises e dicas de filmes e séries",
+                                text = "Debates, teorias, análises e dicas de filmes e séries".t(),
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -183,7 +183,7 @@ fun FeedAtividadesScreen(
                     Icon(Icons.Default.PostAdd, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "ABRIR NOVA DISCUSSÃO NO FÓRUM ✍️",
+                        text = "ABRIR NOVA DISCUSSÃO NO FÓRUM ✍️".t(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -704,7 +704,7 @@ fun CardTopicoForum(
                     ) {
                         Text("⚠️", fontSize = 16.sp)
                         Text(
-                            text = "Este post contém SPOILERS. Toque para revelar o texto.",
+                            text = "Este post contém SPOILERS. Toque para revelar o texto.".t(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFF5252)
@@ -977,7 +977,7 @@ fun DialogoThreadDiscussao(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Ainda não há respostas nesta discussão.\nSeja o primeiro a comentar!",
+                            text = "Ainda não há respostas nesta discussão.\nSeja o primeiro a comentar!".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF64748B),
                             textAlign = TextAlign.Center

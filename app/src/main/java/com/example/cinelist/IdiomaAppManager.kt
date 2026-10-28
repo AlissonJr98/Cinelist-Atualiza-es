@@ -1,10 +1,23 @@
 package com.example.cinelist
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import java.util.Locale
+
+/**
+ * Utilitário global para recuperar com segurança a Activity a partir de qualquer contexto (mesmo ContextThemeWrapper).
+ */
+tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 /**
  * Representa uma opção de idioma para a interface e requisições do TMDB.
@@ -18,8 +31,9 @@ data class IdiomaOpcao(
 
 /**
  * Gerenciador central de idiomas e localização do CineList.
- * Reconhece a língua padrão do dispositivo móvel como principal e permite
- * customização manual no menu de configurações com aplicação em todo o aplicativo.
+ * Implementa o padrão oficial do Android (Per-App Language Preferences / Suporte a Diferentes Idiomas),
+ * sincronizando a configuração do sistema operacional (Android 13+ / AndroidX), motor I18n do Compose
+ * e chamadas de catálogo do TMDB.
  */
 object IdiomaAppManager {
 
@@ -158,8 +172,9 @@ object IdiomaAppManager {
     }
 
     /**
-     * Salva a preferência escolhida pelo usuário e sincroniza com Retrofit (TMDB),
-     * motor i18n do CineList e configurações do sistema Android.
+     * Salva a preferência escolhida pelo usuário e sincroniza com a API oficial
+     * do Android (Per-App Language Preferences), Retrofit (TMDB), motor i18n
+     * e resources do sistema operacional.
      */
     fun salvarPreferenciaEAplicar(context: Context, codigoEscolhido: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -177,7 +192,18 @@ object IdiomaAppManager {
         // 2. Atualiza o cliente Retrofit do TMDB
         RetrofitClient.atualizarIdioma(tagEfetiva)
 
-        // 3. Aplica o Locale global na JVM e nos Resources do Context
+        // 3. Aplica o padrão oficial do Android (AppCompatDelegate e LocaleManager)
+        try {
+            if (codigoEscolhido == "SISTEMA") {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+            } else {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tagEfetiva))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 4. Aplica o Locale global na JVM e nos Resources do Context
         aplicarLocaleGlobal(context, tagEfetiva)
     }
 

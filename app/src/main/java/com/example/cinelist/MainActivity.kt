@@ -206,18 +206,6 @@ import java.util.concurrent.TimeUnit
 
 
 
-tailrec fun Context.findActivity(): Activity? = when (this) {
-
-    is Activity -> this
-
-    is ContextWrapper -> baseContext.findActivity()
-
-    else -> null
-
-}
-
-
-
 fun agendarChecagemAtualizacaoSegundoPlano(context: Context) {
 
 

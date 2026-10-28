@@ -953,7 +953,7 @@ fun TelaDetalhes(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "ASSISTIR TRAILER NO YOUTUBE",
+                                        text = "ASSISTIR TRAILER NO YOUTUBE".t(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
@@ -991,14 +991,14 @@ fun TelaDetalhes(
                                 ) {
                                     Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Agendar na Agenda do Celular", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                                    Text("Agendar na Agenda do Celular".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
                                 }
                             }
 
                             if (provedoresFiltrados.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = "Disponível por Assinatura em:",
+                                    text = "Disponível por Assinatura em:".t(),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
@@ -1103,7 +1103,7 @@ fun TelaDetalhes(
                             if (elencoAtivo.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
-                                    text = "Elenco Principal:",
+                                    text = "Elenco Principal:".t(),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
@@ -1255,7 +1255,7 @@ fun TelaDetalhes(
 
                             if (ehSerieOuAnime) {
                                 Spacer(modifier = Modifier.height(20.dp))
-                                Text(text = "Guia de Episódios:", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Guia de Episódios:".t(), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Card(
@@ -1264,7 +1264,7 @@ fun TelaDetalhes(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(text = "Selecione a Temporada:", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
+                                        Text(text = "Selecione a Temporada:".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
                                         Spacer(modifier = Modifier.height(4.dp))
 
                                         val totalTempDisponiveis = detalhesApi?.totalTemporadas ?: maxOf(temporadaAtual + 1, 1)
@@ -1480,7 +1480,7 @@ fun TelaDetalhes(
                             if (midiaSalva != null) {
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                Text(text = "Sua Nota Geral:", color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Sua Nota Geral:".t(), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.padding(top = 4.dp)) {
                                     repeat(5) { index ->
                                         val estrelaAtiva = index < nota
@@ -1812,7 +1812,7 @@ fun TelaDetalhes(
 
                                 Spacer(modifier = Modifier.height(20.dp))
 
-                                Text(text = "Status Atual da Mídia:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                Text(text = "Status Atual da Mídia:".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     listOf(StatusMidia.QUERO_ASSISTIR, StatusMidia.ASSISTINDO, StatusMidia.CONCLUIDO).forEach { sEnum ->
                                         FilterChip(
@@ -1823,7 +1823,7 @@ fun TelaDetalhes(
                                                     viewModel.pararAssistirAgora()
                                                 }
                                             },
-                                            label = { Text(sEnum.valor, fontSize = 12.sp) },
+                                            label = { Text(sEnum.valor.t(), fontSize = 12.sp) },
                                             colors = FilterChipDefaults.filterChipColors(
                                                 selectedContainerColor = MaterialTheme.colorScheme.primary,
                                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -1837,7 +1837,7 @@ fun TelaDetalhes(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(text = "Sinopse / Visão Geral:", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                            Text(text = "Sinopse / Visão Geral:".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
 
                             val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopse ?: "Carregando sinopse...")
@@ -1880,7 +1880,7 @@ fun TelaDetalhes(
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
-                                            text = "Análise CineAI (Sem Spoilers)",
+                                            text = "Análise CineAI (Sem Spoilers)".t(),
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -1915,7 +1915,7 @@ fun TelaDetalhes(
                             if (recomendacoesAtivas.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 Text(
-                                    text = "Quem assistiu a este título também gostou:",
+                                    text = "Quem assistiu a este título também gostou:".t(),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
@@ -2205,7 +2205,7 @@ fun SecaoComunidade(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
                 Text(
-                    text = "Ainda ninguém comentou sobre este título. Seja o primeiro!",
+                    text = "Ainda ninguém comentou sobre este título. Seja o primeiro!".t(),
                     color = Color.Gray,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(16.dp),
@@ -2780,7 +2780,7 @@ fun TextoComProtecaoSpoiler(
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = "⚠️ Contém Spoiler — Toque para revelar",
+                    text = "⚠️ " + "Contém Spoiler — Toque para revelar".t(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFF9800)

@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">CineList</string>
+    <string name="nav_minha_lista">내 보관함</string>
+    <string name="nav_descobrir">탐색</string>
+    <string name="nav_feed_social">소셜 피드</string>
+    <string name="nav_lista_sala">방 목록</string>
+    <string name="nav_salas">방</string>
+    <string name="nav_perfil">프로필</string>
+    <string name="nav_configuracoes">설정</string>
+
+    <string name="search_placeholder_minha_lista">제목, 장르 또는 스트리밍으로 검색...</string>
+    <string name="search_placeholder_tmdb">TMDB에서 온라인 검색...</string>
+    <string name="search_action">검색</string>
+    <string name="search_history">검색 기록</string>
+    <string name="search_clear">기록 지우기</string>
+
+    <string name="sec_filmes_populares">🎬 인기 영화</string>
+    <string name="sec_series_em_alta">🔥 인기 시리즈</string>
+    <string name="sec_top_comedias">😂 인기 코미디</string>
+    <string name="sec_adrenalina_pura">💥 액션 대작</string>
+    <string name="sec_lancamentos_streaming">🆕 스트리밍 신작</string>
+    <string name="sec_lancamentos_streaming_sub">내 플랫폼의 새로운 시즌과 영화</string>
+
+    <string name="btn_assistir_trailer">예고편 보기</string>
+    <string name="btn_ver_detalhes">상세 정보</string>
+    <string name="btn_adicionar_lista">목록에 추가</string>
+    <string name="btn_remover_lista">목록에서 삭제</string>
+    <string name="btn_salvar">저장</string>
+    <string name="btn_cancelar">취소</string>
+    <string name="btn_fechar">닫기</string>
+    <string name="btn_confirmar">확인</string>
+    <string name="btn_sair">로그아웃</string>
+    <string name="btn_compartilhar">공유</string>
+
+    <string name="status_assistido">시청 완료</string>
+    <string name="status_quero_ver">보고 싶어요</string>
+    <string name="status_favorito">즐겨찾기</string>
+    <string name="status_novo">신작</string>
+
+    <string name="cfg_console">시스템 콘솔</string>
+    <string name="cfg_active_core">CINELINK OS • 활성 코어</string>
+    <string name="cfg_interface">인터페이스 및 모양</string>
+    <string name="cfg_interface_sub">양자 팔레트, OLED 배경 및 서체</string>
+    <string name="cfg_tema_escuro">다크 테마 / 야간 모드</string>
+    <string name="cfg_tema_escuro_sub">절전 및 시각적 편안함</string>
+    <string name="cfg_idioma_titulo">언어 및 지역</string>
+    <string name="cfg_idioma_sub">기기 인식 및 TMDB 카탈로그</string>
+    <string name="cfg_idioma_padrao_celular">기기 기본 언어</string>
+    <string name="cfg_idioma_seletor_rotulo">표시 및 검색 언어 선택:</string>
+    <string name="cfg_diagnostico">진단 및 저장 공간</string>
+    <string name="cfg_limpar_cache">앱 캐시 삭제</string>
+    <string name="cfg_limpar_cache_sub">임시 파일을 삭제하여 저장 공간 확보</string>
+    <string name="cfg_conta">계정 및 보안</string>
+    <string name="cfg_sair_conta">로그아웃</string>
+    <string name="cfg_sair_conta_sub">이 기기의 CineList에서 로그아웃</string>
+</resources>

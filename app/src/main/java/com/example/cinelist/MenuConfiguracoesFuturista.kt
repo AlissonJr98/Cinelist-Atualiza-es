@@ -683,7 +683,12 @@ fun BottomSheetConfiguracoesFuturista(
                                             "Idioma: ${opcao.bandeiraEmoji} ${opcao.nome}",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        (contexto as? android.app.Activity)?.recreate()
+                                        val activity = contexto.findActivity()
+                                        activity?.let { act ->
+                                            act.finish()
+                                            act.startActivity(act.intent)
+                                            act.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                                        }
                                     }
                                 }
                             )
