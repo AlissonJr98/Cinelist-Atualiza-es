@@ -64,13 +64,13 @@ fun DialogoCineClube(
                         }
                         Column {
                             Text(
-                                text = "CINECLUBE // DESAFIOS",
+                                text = "CINECLUBE // DESAFIOS".t(),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 16.sp,
                                 color = Color(0xFF10B981)
                             )
                             Text(
-                                text = "Temporada de ${status.mesNome} • ${status.diasRestantes} dias restantes",
+                                text = "${"Temporada de".t()} ${status.mesNome.t()} • ${status.diasRestantes} ${"dias restantes".t()}",
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -78,7 +78,7 @@ fun DialogoCineClube(
                     }
 
                     IconButton(onClick = onDispensar) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar".t(), tint = Color.White)
                     }
                 }
 
@@ -98,13 +98,13 @@ fun DialogoCineClube(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Progresso da Temporada",
+                                text = "Progresso da Temporada".t(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 color = Color.White
                             )
                             Text(
-                                text = "${status.totalConcluidos}/${status.desafios.size} Concluídos",
+                                text = "${status.totalConcluidos}/${status.desafios.size} ${"Concluídos".t()}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF10B981)
@@ -130,13 +130,13 @@ fun DialogoCineClube(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Recompensas: +${status.xpTotalGanha} XP adquiridos",
+                                text = "${"Recompensas".t()}: +${status.xpTotalGanha} XP ${"adquiridos".t()}",
                                 fontSize = 11.sp,
                                 color = Color(0xFFFBBF24)
                             )
                             if (status.totalConcluidos == status.desafios.size && status.desafios.isNotEmpty()) {
                                 Text(
-                                    text = "🏆 MÊS GABARITADO!",
+                                    text = "🏆 MÊS GABARITADO!".t(),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFBBF24)
@@ -148,7 +148,7 @@ fun DialogoCineClube(
 
                 // Lista de Desafios do Mês
                 Text(
-                    text = "MISSÕES ATIVAS",
+                    text = "MISSÕES ATIVAS".t(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     color = Color(0xFF94A3B8)
@@ -177,13 +177,13 @@ fun DialogoCineClube(
                                     Text(desafio.icone, fontSize = 24.sp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = desafio.titulo,
+                                            text = desafio.titulo.t(),
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = Color.White
                                         )
                                         Text(
-                                            text = desafio.descricao,
+                                            text = desafio.descricao.t(),
                                             fontSize = 11.sp,
                                             color = Color(0xFF94A3B8)
                                         )
@@ -192,7 +192,7 @@ fun DialogoCineClube(
                                     if (desafio.concluido) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = "Concluído",
+                                            contentDescription = "Concluído".t(),
                                             tint = Color(0xFF10B981),
                                             modifier = Modifier.size(24.dp)
                                         )
@@ -219,7 +219,7 @@ fun DialogoCineClube(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "🎖️ Recompensa: ${desafio.badgeNome}",
+                                        text = "🎖️ ${"Recompensa".t()}: ${desafio.badgeNome.t()}",
                                         fontSize = 10.sp,
                                         color = Color(0xFFFBBF24)
                                     )

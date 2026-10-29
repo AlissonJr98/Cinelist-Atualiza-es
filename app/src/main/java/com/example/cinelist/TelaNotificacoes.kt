@@ -34,8 +34,8 @@ fun TelaNotificacoes(
     notificacaoParaExcluir?.let { notif ->
         AlertDialog(
             onDismissRequest = { notificacaoParaExcluir = null },
-            title = { Text("Excluir Notificação", fontWeight = FontWeight.Bold) },
-            text = { Text("Deseja realmente remover esta notificação do histórico?") },
+            title = { Text("Excluir Notificação".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente remover esta notificação do histórico?".t()) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -44,12 +44,12 @@ fun TelaNotificacoes(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Excluir", color = MaterialTheme.colorScheme.onError)
+                    Text("Excluir".t(), color = MaterialTheme.colorScheme.onError)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { notificacaoParaExcluir = null }) {
-                    Text("Cancelar")
+                    Text("Cancelar".t())
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
@@ -59,8 +59,8 @@ fun TelaNotificacoes(
     if (mostrarConfirmacaoLimparTudo) {
         AlertDialog(
             onDismissRequest = { mostrarConfirmacaoLimparTudo = false },
-            title = { Text("Limpar Histórico", fontWeight = FontWeight.Bold) },
-            text = { Text("Todas as notificações de atualizações e avisos serão apagadas.") },
+            title = { Text("Limpar Histórico".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("Todas as notificações de atualizações e avisos serão apagadas.".t()) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -69,12 +69,12 @@ fun TelaNotificacoes(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Limpar Tudo", color = MaterialTheme.colorScheme.onError)
+                    Text("Limpar Tudo".t(), color = MaterialTheme.colorScheme.onError)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarConfirmacaoLimparTudo = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar".t())
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
@@ -84,10 +84,10 @@ fun TelaNotificacoes(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notificações e Novidades", fontWeight = FontWeight.Bold) },
+                title = { Text("Notificações e Novidades".t(), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar".t())
                     }
                 },
                 actions = {
@@ -95,7 +95,7 @@ fun TelaNotificacoes(
                         IconButton(onClick = { mostrarConfirmacaoLimparTudo = true }) {
                             Icon(
                                 imageVector = Icons.Default.DeleteSweep,
-                                contentDescription = "Limpar Todas",
+                                contentDescription = "Limpar Todas".t(),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -126,7 +126,7 @@ fun TelaNotificacoes(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Nenhuma notificação registrada",
+                        text = "Nenhuma notificação registrada".t(),
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 15.sp
                     )
@@ -189,7 +189,7 @@ fun ItemNotificacaoCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = notificacao.titulo,
+                        text = notificacao.titulo.t(),
                         fontWeight = if (notificacao.lida) FontWeight.SemiBold else FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -199,7 +199,7 @@ fun ItemNotificacaoCard(
                 IconButton(onClick = onExcluir, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Excluir",
+                        contentDescription = "Excluir".t(),
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                         modifier = Modifier.size(18.dp)
                     )
@@ -209,7 +209,7 @@ fun ItemNotificacaoCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = notificacao.mensagem,
+                text = notificacao.mensagem.t(),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp

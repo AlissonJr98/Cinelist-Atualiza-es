@@ -65,13 +65,13 @@ fun GraficoCurvaEpisodios(
             ) {
                 Column {
                     Text(
-                        text = "📊 CURVA DE QUALIDADE (T$numeroTemporada)",
+                        text = "📊 ${"CURVA DE QUALIDADE".t()} (T$numeroTemporada)",
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp,
                         color = Color(0xFF38BDF8)
                     )
                     Text(
-                        text = "Variação de notas por episódio (Estilo IMDb)",
+                        text = "Variação de notas por episódio (Estilo IMDb)".t(),
                         fontSize = 10.sp,
                         color = Color(0xFF94A3B8)
                     )
@@ -83,7 +83,7 @@ fun GraficoCurvaEpisodios(
                     border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f))
                 ) {
                     Text(
-                        text = "Média: ${String.format(java.util.Locale.US, "%.1f", mediaTemporada)} ⭐",
+                        text = "${"Média".t()}: ${String.format(java.util.Locale.US, "%.1f", mediaTemporada)} ⭐",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -224,7 +224,7 @@ fun GraficoCurvaEpisodios(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = ep.nome.ifBlank { "Episódio ${ep.numeroEpisodio}" },
+                                text = ep.nome.ifBlank { "${"Episódio".t()} ${ep.numeroEpisodio}" },
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 color = Color.White,
@@ -233,7 +233,7 @@ fun GraficoCurvaEpisodios(
                             )
                             if (ep == melhorEp) {
                                 Text(
-                                    text = "👑 Maior avaliação da temporada!",
+                                    text = "👑 Maior avaliação da temporada!".t(),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFBBF24)

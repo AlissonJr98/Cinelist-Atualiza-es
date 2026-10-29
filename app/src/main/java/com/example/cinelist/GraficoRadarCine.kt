@@ -81,7 +81,7 @@ fun GraficoRadarCine(
     corPrimaria: Color = Color(0xFF00E5FF),
     corPreenchimento: Color = Color(0x3300E5FF)
 ) {
-    val labels = listOf("🎭 Atuação", "📖 Roteiro", "🎨 Visual", "🎵 Trilha", "⚡ Ritmo")
+    val labels = remember(I18n.idiomaAtivo) { listOf("🎭 Atuação".t(), "📖 Roteiro".t(), "🎨 Visual".t(), "🎵 Trilha".t(), "⚡ Ritmo".t()) }
     val valores = listOf(
         criterios.atuacao / 10f,
         criterios.roteiro / 10f,
@@ -215,10 +215,10 @@ fun DialogoAvaliacaoCriterios(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
-                        Text("DNA CINEMATOGRÁFICO", fontWeight = FontWeight.Black, fontSize = 14.sp, color = Color(0xFF00E5FF))
+                        Text("DNA CINEMATOGRÁFICO".t(), fontWeight = FontWeight.Black, fontSize = 14.sp, color = Color(0xFF00E5FF))
                     }
                     IconButton(onClick = onDispensar, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color(0xFF94A3B8))
+                        Icon(Icons.Default.Close, contentDescription = "Fechar".t(), tint = Color(0xFF94A3B8))
                     }
                 }
 
@@ -249,7 +249,7 @@ fun DialogoAvaliacaoCriterios(
                     ) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
                         Text(
-                            text = "Média Geral: ${String.format("%.1f", criteriosAtuais.media())} / 10",
+                            text = "${"Média Geral".t()}: ${String.format(java.util.Locale.US, "%.1f", criteriosAtuais.media())} / 10",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = Color(0xFFFFD700)
@@ -262,11 +262,11 @@ fun DialogoAvaliacaoCriterios(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    ItemSliderCriterio("🎭 Atuação", atuacao) { atuacao = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
-                    ItemSliderCriterio("📖 Roteiro", roteiro) { roteiro = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
-                    ItemSliderCriterio("🎨 Visual & Efeitos", visual) { visual = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
-                    ItemSliderCriterio("🎵 Trilha Sonora", trilha) { trilha = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
-                    ItemSliderCriterio("⚡ Ritmo", ritmo) { ritmo = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    ItemSliderCriterio("🎭 Atuação".t(), atuacao) { atuacao = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    ItemSliderCriterio("📖 Roteiro".t(), roteiro) { roteiro = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    ItemSliderCriterio("🎨 Visual & Efeitos".t(), visual) { visual = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    ItemSliderCriterio("🎵 Trilha Sonora".t(), trilha) { trilha = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    ItemSliderCriterio("⚡ Ritmo".t(), ritmo) { ritmo = it; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                 }
 
                 Button(
@@ -278,7 +278,7 @@ fun DialogoAvaliacaoCriterios(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Salvar Avaliação Detalhada", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
+                    Text("Salvar Avaliação Detalhada".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.Black)
                 }
             }
         }

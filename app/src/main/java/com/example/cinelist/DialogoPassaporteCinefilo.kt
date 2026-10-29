@@ -66,13 +66,13 @@ fun DialogoPassaporteCinefilo(
                         }
                         Column {
                             Text(
-                                text = "PASSAPORTE CINÉFILO",
+                                text = "PASSAPORTE CINÉFILO".t(),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 16.sp,
                                 color = Color(0xFF38BDF8)
                             )
                             Text(
-                                text = "Registro Oficial de Fronteiras",
+                                text = "Registro Oficial de Fronteiras".t(),
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -80,7 +80,7 @@ fun DialogoPassaporteCinefilo(
                     }
 
                     IconButton(onClick = onDispensar) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar".t(), tint = Color.White)
                     }
                 }
 
@@ -100,13 +100,13 @@ fun DialogoPassaporteCinefilo(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = status.patenteViajante,
+                                text = status.patenteViajante.t(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = Color(0xFFFBBF24)
                             )
                             Text(
-                                text = "${status.totalPaisesCarimbados} Países",
+                                text = "${status.totalPaisesCarimbados} " + (if (status.totalPaisesCarimbados == 1) "País".t() else "Países".t()),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF38BDF8)
@@ -125,7 +125,7 @@ fun DialogoPassaporteCinefilo(
                         )
 
                         Text(
-                            text = "Você já explorou ${status.porcentagemMundial.toInt()}% da diversidade cinematográfica mundial!",
+                            text = "${"Você já explorou".t()} ${status.porcentagemMundial.toInt()}% ${"da diversidade cinematográfica mundial!".t()}",
                             fontSize = 11.sp,
                             color = Color(0xFF94A3B8)
                         )
@@ -134,7 +134,7 @@ fun DialogoPassaporteCinefilo(
 
                 // Carimbos de Países Desbloqueados
                 Text(
-                    text = "SEUS CARIMBOS DE IMIGRAÇÃO",
+                    text = "SEUS CARIMBOS DE IMIGRAÇÃO".t(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     color = Color(0xFF94A3B8)
@@ -142,7 +142,7 @@ fun DialogoPassaporteCinefilo(
 
                 if (status.paisesCarimbados.isEmpty()) {
                     Text(
-                        text = "Conclua seus primeiros filmes e séries para começar a carimbar seu passaporte!",
+                        text = "Conclua seus primeiros filmes e séries para começar a carimbar seu passaporte!".t(),
                         fontSize = 12.sp,
                         color = Color(0xFF64748B),
                         textAlign = TextAlign.Center,
@@ -167,7 +167,7 @@ fun DialogoPassaporteCinefilo(
                                     Text(carimbo.bandeira, fontSize = 28.sp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = carimbo.nome,
+                                            text = carimbo.nome.t(),
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = Color.White
@@ -204,7 +204,7 @@ fun DialogoPassaporteCinefilo(
                 // Próximos Destinos Recomendados
                 if (status.destinosSugeridos.isNotEmpty()) {
                     Text(
-                        text = "PRÓXIMAS FRONTEIRAS PARA EXPLORAR ✈️",
+                        text = "PRÓXIMAS FRONTEIRAS PARA EXPLORAR ✈️".t(),
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
                         color = Color(0xFFFBBF24)
@@ -226,13 +226,13 @@ fun DialogoPassaporteCinefilo(
                                     Text(destino.bandeira, fontSize = 24.sp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "${destino.pais} • ${destino.recomendacaoTitulo}",
+                                            text = "${destino.pais.t()} • ${destino.recomendacaoTitulo}",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 13.sp,
                                             color = Color.White
                                         )
                                         Text(
-                                            text = destino.motivo,
+                                            text = destino.motivo.t(),
                                             fontSize = 11.sp,
                                             color = Color(0xFF94A3B8)
                                         )

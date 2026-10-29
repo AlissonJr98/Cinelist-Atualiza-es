@@ -432,7 +432,7 @@ fun TelaPerfil(
 
             onDismissRequest = { mostrarModalEditarPerfil = false },
 
-            title = { Text("Editar Perfil", fontWeight = FontWeight.Bold) },
+            title = { Text("Editar Perfil".t(), fontWeight = FontWeight.Bold) },
 
             text = {
 
@@ -444,19 +444,19 @@ fun TelaPerfil(
 
                 ) {
 
-                    OutlinedTextField(value = editNome, onValueChange = { editNome = it }, label = { Text("Seu Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editNome, onValueChange = { editNome = it }, label = { Text("Seu Nome".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
-                    OutlinedTextField(value = editBio, onValueChange = { editBio = it }, label = { Text("Sua Biografia") }, maxLines = 3, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editBio, onValueChange = { editBio = it }, label = { Text("Sua Biografia".t()) }, maxLines = 3, modifier = Modifier.fillMaxWidth())
 
 
 
-                    Text("Redes Sociais (Apenas o @usuario)", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
+                    Text("Redes Sociais (Apenas o @usuario)".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
 
-                    OutlinedTextField(value = editInsta, onValueChange = { editInsta = it }, label = { Text("Instagram") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editInsta, onValueChange = { editInsta = it }, label = { Text("Instagram".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
-                    OutlinedTextField(value = editTwit, onValueChange = { editTwit = it }, label = { Text("X / Twitter") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editTwit, onValueChange = { editTwit = it }, label = { Text("X / Twitter".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
-                    OutlinedTextField(value = editLett, onValueChange = { editLett = it }, label = { Text("Letterboxd") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editLett, onValueChange = { editLett = it }, label = { Text("Letterboxd".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
 
                 }
 
@@ -508,7 +508,7 @@ fun TelaPerfil(
 
                 }) {
 
-                    Text("Salvar Perfil")
+                    Text("Salvar Perfil".t())
 
                 }
 
@@ -516,7 +516,7 @@ fun TelaPerfil(
 
             dismissButton = {
 
-                TextButton(onClick = { mostrarModalEditarPerfil = false }) { Text("Cancelar") }
+                TextButton(onClick = { mostrarModalEditarPerfil = false }) { Text("Cancelar".t()) }
 
             },
 
@@ -1238,7 +1238,7 @@ fun TelaPerfil(
 
                     IconButton(onClick = { membroSelecionadoParaVer = null }) {
 
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar".t())
 
                     }
 
@@ -2059,7 +2059,7 @@ fun TelaPerfil(
 
                             Text(
 
-                                text = if (modoGrupoAtivo) "Sala Compartilhada" else "Meu Perfil",
+                                text = if (modoGrupoAtivo) "Sala Compartilhada".t() else "Meu Perfil".t(),
 
                                 fontWeight = FontWeight.Bold,
 
@@ -2071,7 +2071,7 @@ fun TelaPerfil(
 
                                 Text(
 
-                                    text = "Código: $casalIdAtivo",
+                                    text = "${"Código".t()}: $casalIdAtivo",
 
                                     fontSize = 12.sp,
 
@@ -2363,9 +2363,9 @@ fun TelaPerfil(
 
                                         text = if (modoGrupoAtivo) {
 
-                                            if (isAdministrador) "👑 Administrador da Sala" else "👤 Membro da Sala"
+                                            if (isAdministrador) "👑 Administrador da Sala".t() else "👤 Membro da Sala".t()
 
-                                        } else "🎬 Lista Pessoal",
+                                        } else "🎬 Lista Pessoal".t(),
 
                                         color = if (modoGrupoAtivo && isAdministrador) CineListTokens.CorPremium else MaterialTheme.colorScheme.onSurface,
 
@@ -2435,7 +2435,7 @@ fun TelaPerfil(
 
                                         Spacer(modifier = Modifier.width(4.dp))
 
-                                        Text("Editar Perfil", fontSize = 12.sp)
+                                        Text("Editar Perfil".t(), fontSize = 12.sp)
 
                                     }
 
@@ -3065,9 +3065,9 @@ fun TelaPerfil(
 
                                     Column {
 
-                                        Text(text = if (modoGrupoAtivo) "Progresso da Sala" else "🎯 Meta de Filmes Anual", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(text = if (modoGrupoAtivo) "Progresso da Sala".t() else "🎯 Meta de Filmes Anual".t(), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
 
-                                        Text(text = "$totalConcluidosGeral de ${if (modoGrupoAtivo) totalMidias else metaAnualDefinida} concluídos", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                                        Text(text = "$totalConcluidosGeral ${"de".t()} ${if (modoGrupoAtivo) totalMidias else metaAnualDefinida} ${"concluídos".t()}", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
 
                                     }
 
@@ -3075,7 +3075,7 @@ fun TelaPerfil(
 
                                         IconButton(onClick = { modoEdicaoMeta = !modoEdicaoMeta }) {
 
-                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Ajustar Meta", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Ajustar Meta".t(), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
 
                                         }
 
@@ -3519,7 +3519,7 @@ fun TelaPerfil(
 
                                                     ) {
 
-                                                        Text(text = itemConcluido.tipo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                        Text(text = itemConcluido.tipo.t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
 
 
 
@@ -3557,9 +3557,9 @@ fun TelaPerfil(
 
                                                         val textoConclusao = buildString {
 
-                                                            if (dataFormatada.isNotBlank()) append("Concluído em $dataFormatada") else append("Concluído")
+                                                            if (dataFormatada.isNotBlank()) append("${"Concluído em".t()} $dataFormatada") else append("Concluído".t())
 
-                                                            if (modoGrupoAtivo && itemConcluido.concluidoPor.isNotBlank()) append(" por ${itemConcluido.concluidoPor}")
+                                                            if (modoGrupoAtivo && itemConcluido.concluidoPor.isNotBlank()) append(" ${"por".t()} ${itemConcluido.concluidoPor}")
 
                                                         }
 
@@ -3721,9 +3721,9 @@ fun ModalPerfilAmigo(
 
             onDismissRequest = { if (!processandoAcao) mostrarConfirmacaoRemover = false },
 
-            title = { Text("Desfazer Amizade", fontWeight = FontWeight.Bold) },
+            title = { Text("Desfazer Amizade".t(), fontWeight = FontWeight.Bold) },
 
-            text = { Text("Deseja realmente remover ${amigo.nome} da sua lista de amigos?") },
+            text = { Text("${"Deseja realmente remover".t()} ${amigo.nome} ${"da sua lista de amigos?".t()}") },
 
             confirmButton = {
 
@@ -3765,7 +3765,7 @@ fun ModalPerfilAmigo(
 
                     } else {
 
-                        Text("Remover", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
+                        Text("Remover".t(), color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
 
                     }
 
@@ -3783,7 +3783,7 @@ fun ModalPerfilAmigo(
 
                 ) {
 
-                    Text("Cancelar")
+                    Text("Cancelar".t())
 
                 }
 
@@ -3803,11 +3803,11 @@ fun ModalPerfilAmigo(
 
             onDismissRequest = { if (!processandoAcao) mostrarConfirmacaoBloquear = false },
 
-            title = { Text("Bloquear Usuário", fontWeight = FontWeight.Bold, color = CineListTokens.CorErro) },
+            title = { Text("Bloquear Usuário".t(), fontWeight = FontWeight.Bold, color = CineListTokens.CorErro) },
 
             text = {
 
-                Text("Deseja bloquear ${amigo.nome}? A amizade e as mensagens serão desfeitas e este usuário não poderá mais encontrar o seu perfil nem enviar novas solicitações.")
+                Text("${"Deseja bloquear".t()} ${amigo.nome}? ${"A amizade e as mensagens serão desfeitas e este usuário não poderá mais encontrar o seu perfil nem enviar novas solicitações.".t()}")
 
             },
 
@@ -3851,7 +3851,7 @@ fun ModalPerfilAmigo(
 
                     } else {
 
-                        Text("Bloquear", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
+                        Text("Bloquear".t(), color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
 
                     }
 
@@ -3869,7 +3869,7 @@ fun ModalPerfilAmigo(
 
                 ) {
 
-                    Text("Cancelar")
+                    Text("Cancelar".t())
 
                 }
 
@@ -3951,7 +3951,7 @@ fun ModalPerfilAmigo(
 
                         imageVector = Icons.Default.Block,
 
-                        contentDescription = "Bloquear usuário",
+                        contentDescription = "Bloquear usuário".t(),
 
                         tint = CineListTokens.CorErro
 
@@ -3967,7 +3967,7 @@ fun ModalPerfilAmigo(
 
                         imageVector = Icons.Default.Delete,
 
-                        contentDescription = "Desfazer amizade",
+                        contentDescription = "Desfazer amizade".t(),
 
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
 
@@ -4139,7 +4139,7 @@ fun ModalPerfilAmigo(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                Text("CineParty Ao Vivo", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                Text("CineParty Ao Vivo".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
 
             }
 
@@ -4159,7 +4159,7 @@ fun ModalPerfilAmigo(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                Text("Duelo de Maratonistas", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("Duelo de Maratonistas".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp)
 
             }
 
@@ -4179,7 +4179,7 @@ fun ModalPerfilAmigo(
 
                 onClick = { abaAmigoSelecionada = 0 },
 
-                text = { Text("Favoritos (${midiasAmigo.size})") }
+                text = { Text("${"Favoritos".t()} (${midiasAmigo.size})") }
 
             )
 
@@ -4189,7 +4189,7 @@ fun ModalPerfilAmigo(
 
                 onClick = { abaAmigoSelecionada = 1 },
 
-                text = { Text("🤝 Em Comum (${midiasEmComum.size})") }
+                text = { Text("🤝 ${"Em Comum".t()} (${midiasEmComum.size})") }
 
             )
 
@@ -4199,7 +4199,7 @@ fun ModalPerfilAmigo(
 
                 onClick = { abaAmigoSelecionada = 2 },
 
-                text = { Text("💬 Chat Rápido") }
+                text = { Text("💬 ${"Chat Rápido".t()}") }
 
             )
 
@@ -4219,7 +4219,7 @@ fun ModalPerfilAmigo(
 
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
-                        Text("Este amigo ainda não sincronizou mídias públicas.", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                        Text("Este amigo ainda não sincronizou mídias públicas.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
 
                     }
 
@@ -4255,7 +4255,7 @@ fun ModalPerfilAmigo(
 
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
-                        Text("Vocês ainda não têm títulos em comum na lista.", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                        Text("Vocês ainda não têm títulos em comum na lista.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
 
                     }
 
@@ -4363,7 +4363,7 @@ fun ModalPerfilAmigo(
 
                             onValueChange = { textoMensagem = it },
 
-                            placeholder = { Text("Enviar mensagem...") },
+                            placeholder = { Text("Enviar mensagem...".t()) },
 
                             modifier = Modifier.weight(1f),
 
@@ -6935,7 +6935,7 @@ fun RaioXStreamingsSection(estatisticasPlataforma: Map<String, Int>) {
 
                 Text(
 
-                    text = "Você concluiu ${maisUsada.second} título(s) na ${maisUsada.first}, mas apenas ${menosUsada.second} na ${menosUsada.first}.\nConsidere pausar a assinatura da ${menosUsada.first} este mês!",
+                    text = "${"Você concluiu".t()} ${maisUsada.second} ${"título(s) na".t()} ${maisUsada.first}, ${"mas apenas".t()} ${menosUsada.second} ${"na".t()} ${menosUsada.first}.\n${"Considere pausar a assinatura da".t()} ${menosUsada.first} ${"este mês!".t()}",
 
                     fontSize = 11.sp,
 
@@ -7317,9 +7317,9 @@ fun MapaDeCalorEstatisticasSection(listaDeMidias: List<Midia>) {
 
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
-            Text("🟩 Mapa de Calor Anual de Maratona", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+            Text("🟩 Mapa de Calor Anual de Maratona".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
 
-            Text("Dias em que você mais assistiu filmes e episódios:", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+            Text("Dias em que você mais assistiu filmes e episódios:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
 
 
 
@@ -7407,13 +7407,13 @@ fun AnoEmNumerosDinamicoSection(listaDeMidias: List<Midia>) {
 
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
 
-            Text("✨ O Seu Ano em Números Cinéfilos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("✨ O Seu Ano em Números Cinéfilos".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
 
-            Text("• Total de Títulos Concluídos: ${concluidos.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• ${"Total de Títulos Concluídos".t()}: ${concluidos.size}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
 
-            Text("• Duração Média Preferida: ${duracaoMedia} minutos", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• ${"Duração Média Preferida".t()}: $duracaoMedia ${"minutos".t()}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
 
-            Text("• Ritmo de Maratona: Ativo e em dia!", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("• ${"Ritmo de Maratona".t()}: ${"Ativo e em dia!".t()}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
 
         }
 
@@ -7547,11 +7547,11 @@ fun ComparacaoNotasTmdbSection(listaDeMidias: List<Midia>) {
 
             val textoComp = if (diffNota >= 0) {
 
-                "Sua média de notas (${String.format(Locale.US, "%.1f", minhaMedia)}★) é +$diffFormatada★ mais alta que a média mundial — você é um espectador generoso!"
+                "${"Sua média de notas".t()} (${String.format(Locale.US, "%.1f", minhaMedia)}★) ${"é".t()} +$diffFormatada★ ${"mais alta que a média mundial — você é um espectador generoso!".t()}"
 
             } else {
 
-                "Sua média de notas (${String.format(Locale.US, "%.1f", minhaMedia)}★) é -$diffFormatada★ mais exigente que a média mundial — um verdadeiro crítico rigoroso!"
+                "${"Sua média de notas".t()} (${String.format(Locale.US, "%.1f", minhaMedia)}★) ${"é".t()} -$diffFormatada★ ${"mais exigente que a média mundial — um verdadeiro crítico rigoroso!".t()}"
 
             }
 
@@ -7613,7 +7613,7 @@ fun SeriesPausadasSection(
 
                     Text("⏸️ Séries Pausadas Há Mais de 14 Dias".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF9800))
 
-                    Text("${seriesPausadas.size} série(s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    Text("${seriesPausadas.size} " + "série(s)".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
 
                 }
 
@@ -7631,9 +7631,9 @@ fun SeriesPausadasSection(
 
                             Column(modifier = Modifier.padding(8.dp)) {
 
-                                Text(serie.titulo, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(MidiaLocalizationManager.obterTituloLocalizado(serie), fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 
-                                Text("T${serie.temporadaAtual}:Ep ${serie.episodioAtual}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                Text("${"T".t()}${serie.temporadaAtual}:${"Ep".t()} ${serie.episodioAtual}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
 
                                 Text("Retomar ⏩".t(), fontSize = 10.sp, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
 
@@ -7865,7 +7865,7 @@ fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
 
                         Text(
 
-                            text = "${statusPassaporte.totalPaisesCarimbados} países",
+                            text = "${statusPassaporte.totalPaisesCarimbados} " + (if (statusPassaporte.totalPaisesCarimbados == 1) "país".t() else "países".t()),
 
                             fontSize = 10.sp,
 
@@ -7881,13 +7881,13 @@ fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
 
                 }
 
-                Text("Ver Carimbos ➔", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
+                Text("Ver Carimbos ➔".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
 
             }
 
 
 
-            Text("Patente: ${statusPassaporte.patenteViajante}", fontSize = 12.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
+            Text("${"Patente".t()}: ${statusPassaporte.patenteViajante.t()}", fontSize = 12.sp, color = Color(0xFFFBBF24), fontWeight = FontWeight.Bold)
 
 
 
@@ -7941,7 +7941,7 @@ fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
 
                         Text(
 
-                            text = "Conclua filmes e séries para carimbar novos países no seu passaporte!",
+                            text = "Conclua filmes e séries para carimbar novos países no seu passaporte!".t(),
 
                             fontSize = 11.sp,
 

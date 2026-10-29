@@ -185,13 +185,13 @@ fun GuiaParentalCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Guia Parental & Conteúdo",
+                        text = "Guia Parental & Conteúdo".t(),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = info.classificacao.descricao,
+                        text = info.classificacao.descricao.t(),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -200,7 +200,7 @@ fun GuiaParentalCard(
 
             // Dica familiar
             Text(
-                text = info.recomendacaoFamilia,
+                text = info.recomendacaoFamilia.t(),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 16.sp
@@ -236,7 +236,7 @@ fun GuiaParentalCard(
                             ) {
                                 Text(aviso.icone, fontSize = 12.sp)
                                 Text(
-                                    aviso.titulo,
+                                    aviso.titulo.t(),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface

@@ -85,7 +85,7 @@ fun DialogoAmigos(
             onDismissRequest = { amigoVisualizando = null },
             title = {
                 Text(
-                    text = "Lista de ${amigoVisualizando?.nome}",
+                    text = "${"Lista de".t()} ${amigoVisualizando?.nome}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 )
@@ -99,7 +99,7 @@ fun DialogoAmigos(
                 ) {
                     if (listaAmigoSelecionado.isEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                            Text("Este usuário ainda não adicionou mídias publicamente.", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp)
+                            Text("Este usuário ainda não adicionou mídias publicamente.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp)
                         }
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -113,8 +113,8 @@ fun DialogoAmigos(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(text = midia.titulo, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                                            Text(text = "${midia.tipo} • ${midia.status}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                            Text(text = MidiaLocalizationManager.obterTituloLocalizado(midia), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                            Text(text = "${midia.tipo.t()} • ${midia.status.t()}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                                         }
                                     }
                                 }
@@ -136,7 +136,7 @@ fun DialogoAmigos(
                         ) {
                             Text("🍿", fontSize = 12.sp)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("CineParty", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Black)
+                            Text("CineParty".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Black)
                         }
 
                         Button(
@@ -145,12 +145,12 @@ fun DialogoAmigos(
                         ) {
                             Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Duelo", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Duelo".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
 
                     TextButton(onClick = { amigoVisualizando = null }) {
-                        Text("Fechar")
+                        Text("Fechar".t())
                     }
                 }
             }
@@ -162,7 +162,7 @@ fun DialogoAmigos(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Default.Group, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("Amigos & Listas Compartilhadas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Amigos & Listas Compartilhadas".t(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -187,7 +187,7 @@ fun DialogoAmigos(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Meu QR Code & Conectar por ID",
+                        text = "Meu QR Code & Conectar por ID".t(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -200,13 +200,13 @@ fun DialogoAmigos(
                         termoPesquisa = it
                         viewModel.pesquisarUsuarios(it)
                     },
-                    label = { Text("Buscar amigo por nome ou e-mail") },
+                    label = { Text("Buscar amigo por nome ou e-mail".t()) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 if (termoPesquisa.isNotBlank() && resultadosBusca.isNotEmpty()) {
-                    Text("Resultados da Busca:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Resultados da Busca:".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     LazyColumn(modifier = Modifier.heightIn(max = 120.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(resultadosBusca) { usuario ->
                             Row(
@@ -233,7 +233,7 @@ fun DialogoAmigos(
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(imageVector = Icons.Default.Add, contentDescription = "Adicionar", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(imageVector = Icons.Default.Add, contentDescription = "Adicionar".t(), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
@@ -242,11 +242,11 @@ fun DialogoAmigos(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                Text("Meus Amigos Conectados (${amigos.size}):", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("${"Meus Amigos Conectados".t()} (${amigos.size}):", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
                 if (amigos.isEmpty()) {
                     Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                        Text("Nenhum amigo adicionado ainda. Busque acima!", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                        Text("Nenhum amigo adicionado ainda. Busque acima!".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
                     }
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -265,9 +265,9 @@ fun DialogoAmigos(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(text = amigo.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(text = amigo.bio.ifBlank { "Sem biografia" }, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(text = amigo.bio.ifBlank { "Sem biografia".t() }, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
-                                Icon(imageVector = Icons.Default.Visibility, contentDescription = "Ver Lista", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                Icon(imageVector = Icons.Default.Visibility, contentDescription = "Ver Lista".t(), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -276,7 +276,7 @@ fun DialogoAmigos(
         },
         confirmButton = {
             TextButton(onClick = onDispensar) {
-                Text("Fechar", fontWeight = FontWeight.Bold)
+                Text("Fechar".t(), fontWeight = FontWeight.Bold)
             }
         }
     )

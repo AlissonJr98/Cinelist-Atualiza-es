@@ -1279,7 +1279,7 @@ fun TelaDetalhes(
                                                 FilterChip(
                                                     selected = (abaTemporadaVisualizada == temp),
                                                     onClick = { abaTemporadaVisualizada = temp },
-                                                    label = { Text("Temporada $temp", fontSize = 12.sp) },
+                                                    label = { Text("${"Temporada".t()} $temp", fontSize = 12.sp) },
                                                     colors = FilterChipDefaults.filterChipColors(
                                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -1319,7 +1319,7 @@ fun TelaDetalhes(
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text(
-                                                        text = "Progresso T$abaTemporadaVisualizada: $epsAssistidosNestaTemporada/$totalEpsNestaTemporada eps (${(percentualTemporada * 100).toInt()}%)",
+                                                        text = "${"Progresso".t()} T$abaTemporadaVisualizada: $epsAssistidosNestaTemporada/$totalEpsNestaTemporada ${"eps".t()} (${(percentualTemporada * 100).toInt()}%)",
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         color = MaterialTheme.colorScheme.primary
@@ -1339,7 +1339,7 @@ fun TelaDetalhes(
                                                         }
                                                     ) {
                                                         Text(
-                                                            text = "Concluir Temporada ✓",
+                                                            text = "Concluir Temporada ✓".t(),
                                                             fontSize = 10.sp,
                                                             fontWeight = FontWeight.Bold,
                                                             color = Color(0xFF10B981),
@@ -1515,7 +1515,7 @@ fun TelaDetalhes(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(16.dp))
-                                            Text("DNA por Critérios (Radar)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
+                                            Text("DNA por Critérios (Radar)".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
                                         }
                                     }
 
@@ -1531,7 +1531,7 @@ fun TelaDetalhes(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Text("🍿", fontSize = 12.sp)
-                                            Text("CineParty Ao Vivo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF007F))
+                                            Text("CineParty Ao Vivo".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF007F))
                                         }
                                     }
 
@@ -1568,7 +1568,7 @@ fun TelaDetalhes(
                                                 fontSize = 13.sp
                                             )
                                             Text(
-                                                text = if (estaNoRadar) "No Radar 🔔" else "Rastrear Estreia",
+                                                text = if (estaNoRadar) "No Radar 🔔".t() else "Rastrear Estreia".t(),
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (estaNoRadar) Color(0xFF10B981) else Color(0xFF00E5FF),
@@ -1665,12 +1665,12 @@ fun TelaDetalhes(
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text("O que achou deste título?", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                Text("O que achou deste título?".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 OutlinedTextField(
                                     value = comentarioPessoalInput,
                                     onValueChange = { comentarioPessoalInput = it },
-                                    placeholder = { Text("Escreva a sua análise ou comentário pessoal...", color = MaterialTheme.colorScheme.secondary) },
+                                    placeholder = { Text("Escreva a sua análise ou comentário pessoal...".t(), color = MaterialTheme.colorScheme.secondary) },
                                     modifier = Modifier.fillMaxWidth().height(100.dp),
                                     maxLines = 4,
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -1693,7 +1693,7 @@ fun TelaDetalhes(
                                         value = tagsInput,
                                         onValueChange = { tagsInput = it },
                                         placeholder = { Text("#Cinema, #Chorei, #ComOPai", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) },
-                                        label = { Text("Tags Personalizadas", fontSize = 11.sp) },
+                                        label = { Text("Tags Personalizadas".t(), fontSize = 11.sp) },
                                         modifier = Modifier.weight(1f),
                                         singleLine = true
                                     )
@@ -1704,7 +1704,7 @@ fun TelaDetalhes(
                                             ehPrivadoState = !ehPrivadoState
                                             Toast.makeText(contexto, if (ehPrivadoState) "Título Privado 🔒 (Oculto de amigos)" else "Título Público 🔓", Toast.LENGTH_SHORT).show()
                                         },
-                                        label = { Text(if (ehPrivadoState) "Privado 🔒" else "Público 🔓", fontSize = 11.sp) }
+                                        label = { Text(if (ehPrivadoState) "Privado 🔒".t() else "Público 🔓".t(), fontSize = 11.sp) }
                                     )
                                 }
 
@@ -1728,9 +1728,9 @@ fun TelaDetalhes(
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            Text("⏱️ Calculadora de Maratona & 'Mais Um e Cama'", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                            Text("⏱️ Calculadora de Maratona & 'Mais Um e Cama'".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                                             Text(
-                                                text = "Faltam $epsFaltam episódios (~${horasTotais}h de conteúdo). Se assistir 2 eps por dia, você conclui em $dias2Ep dias!",
+                                                text = "${"Faltam".t()} $epsFaltam ${"episódios".t()} (~${horasTotais}h ${"de conteúdo".t()}). ${"Se assistir 2 eps por dia, você conclui em".t()} $dias2Ep ${"dias!".t()}",
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1738,14 +1738,14 @@ fun TelaDetalhes(
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 Text("🛌", fontSize = 14.sp)
                                                 Text(
-                                                    text = "Mais 1 e cama: Se der play agora (${fmtHora.format(calAgora.time)}), você dorme às ${fmtHora.format(horaTermino1Ep.time)} (${duracao} min).",
+                                                    text = "${"Mais 1 e cama: Se der play agora".t()} (${fmtHora.format(calAgora.time)}), ${"você dorme às".t()} ${fmtHora.format(horaTermino1Ep.time)} ($duracao ${"min".t()}).",
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = Color(0xFFFBBF24)
                                                 )
                                             }
                                             Text(
-                                                text = "🌙 Maratona de 2 episódios: término previsto para às ${fmtHora.format(horaTermino2Ep.time)}.",
+                                                text = "🌙 ${"Maratona de 2 episódios: término previsto para às".t()} ${fmtHora.format(horaTermino2Ep.time)}.",
                                                 fontSize = 10.sp,
                                                 color = MaterialTheme.colorScheme.secondary
                                             )
@@ -1840,7 +1840,13 @@ fun TelaDetalhes(
                             Text(text = "Sinopse / Visão Geral:".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            val sinopseDinamica = if (midiaSalva != null && sinopse.isNotBlank()) sinopse else (detalhesApi?.sinopse ?: "Carregando sinopse...")
+                            val sinopseDinamica = if (I18n.idiomaAtivo != "pt-BR" && !detalhesApi?.sinopse.isNullOrBlank()) {
+                                detalhesApi?.sinopse ?: sinopse
+                            } else if (midiaSalva != null && sinopse.isNotBlank()) {
+                                sinopse
+                            } else {
+                                detalhesApi?.sinopse ?: "Carregando sinopse...".t()
+                            }
 
                             OutlinedTextField(
                                 value = sinopseDinamica,
@@ -2115,7 +2121,7 @@ fun TelaDetalhes(
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("SALVAR ALTERAÇÕES", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                                    Text("SALVAR ALTERAÇÕES".t(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                                 }
                             } else {
                                 Button(
@@ -2159,7 +2165,7 @@ fun TelaDetalhes(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA" else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA" else "ADICIONAR À MINHA LISTA"),
+                                        text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA".t() else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA".t() else "ADICIONAR À MINHA LISTA".t()),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -2196,7 +2202,7 @@ fun SecaoComunidade(
     var respostaInput by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("O que a comunidade diz:", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text("O que a comunidade diz:".t(), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(12.dp))
 
         if (comentariosPublicos.isEmpty()) {
@@ -2238,7 +2244,7 @@ fun SecaoComunidade(
                         onClick = { mostrarBottomSheet = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Ver todos os ${comentariosPublicos.size} comentários", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text("${"Ver todos os".t()} ${comentariosPublicos.size} ${"comentários".t()}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -2250,7 +2256,7 @@ fun SecaoComunidade(
             OutlinedTextField(
                 value = novoComentarioInput,
                 onValueChange = { novoComentarioInput = it },
-                placeholder = { Text("Publicar no fórum...", color = Color.Gray, fontSize = 13.sp) },
+                placeholder = { Text("Publicar no fórum...".t(), color = Color.Gray, fontSize = 13.sp) },
                 modifier = Modifier.weight(1f).height(56.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
@@ -2271,7 +2277,7 @@ fun SecaoComunidade(
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Text("Postar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("Postar".t(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -2288,7 +2294,7 @@ fun SecaoComunidade(
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 32.dp)
             ) {
-                Text("Todos os Comentários", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Todos os Comentários".t(), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 androidx.compose.foundation.lazy.LazyColumn(
@@ -2343,8 +2349,8 @@ fun ItemComentarioSocial(
     if (mostrarDialogExclusao) {
         AlertDialog(
             onDismissRequest = { mostrarDialogExclusao = false },
-            title = { Text("Apagar Comentário", fontWeight = FontWeight.Bold) },
-            text = { Text("Deseja realmente apagar o seu comentário do fórum público?") },
+            title = { Text("Apagar Comentário".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("Deseja realmente apagar o seu comentário do fórum público?".t()) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -2353,12 +2359,12 @@ fun ItemComentarioSocial(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
                 ) {
-                    Text("Apagar", color = Color.White)
+                    Text("Apagar".t(), color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarDialogExclusao = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar".t())
                 }
             }
         )
@@ -2400,7 +2406,7 @@ fun ItemComentarioSocial(
                         IconButton(onClick = { modoEdicao = !modoEdicao }, modifier = Modifier.size(28.dp)) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "Editar Comentário",
+                                contentDescription = "Editar Comentário".t(),
                                 tint = if (modoEdicao) MaterialTheme.colorScheme.primary else Color.Gray,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -2408,7 +2414,7 @@ fun ItemComentarioSocial(
                         IconButton(onClick = { mostrarDialogExclusao = true }, modifier = Modifier.size(28.dp)) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Apagar Comentário",
+                                contentDescription = "Apagar Comentário".t(),
                                 tint = Color.Gray,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -2454,7 +2460,7 @@ fun ItemComentarioSocial(
                         modoEdicao = false
                         textoEditado = comentario.texto
                     }) {
-                        Text("Cancelar", color = Color.Gray)
+                        Text("Cancelar".t(), color = Color.Gray)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -2468,7 +2474,7 @@ fun ItemComentarioSocial(
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         modifier = Modifier.height(32.dp)
                     ) {
-                        Text("Salvar", color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Salvar".t(), color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
@@ -2489,7 +2495,7 @@ fun ItemComentarioSocial(
                     ) {
                         Icon(
                             imageVector = if (jaCurtiu) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                            contentDescription = "Curtir",
+                            contentDescription = "Curtir".t(),
                             tint = if (jaCurtiu) MaterialTheme.colorScheme.primary else Color.Gray,
                             modifier = Modifier.size(16.dp)
                         )
@@ -2501,9 +2507,9 @@ fun ItemComentarioSocial(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable { onAlternarResponder() }.padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Responder", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Responder".t(), tint = Color.Gray, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Responder", color = Color.Gray, fontSize = 12.sp)
+                        Text("Responder".t(), color = Color.Gray, fontSize = 12.sp)
                     }
                 }
 
@@ -2547,7 +2553,7 @@ fun ItemComentarioSocial(
                         OutlinedTextField(
                             value = respostaInput,
                             onValueChange = onRespostaChange,
-                            placeholder = { Text("Escreva a sua resposta...", fontSize = 12.sp) },
+                            placeholder = { Text("Escreva a sua resposta...".t(), fontSize = 12.sp) },
                             modifier = Modifier.fillMaxWidth().height(60.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White)
                         )
@@ -2557,7 +2563,7 @@ fun ItemComentarioSocial(
                             modifier = Modifier.align(Alignment.End),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("Enviar", color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Enviar".t(), color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

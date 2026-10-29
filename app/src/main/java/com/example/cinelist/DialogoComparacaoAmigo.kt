@@ -50,7 +50,7 @@ fun DialogoComparacaoAmigo(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("Duelo de Maratonistas", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text("Duelo de Maratonistas".t(), fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -60,7 +60,7 @@ fun DialogoComparacaoAmigo(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "Você vs. ${amigo.nome}",
+                    text = "${"Você".t()} vs. ${amigo.nome}",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Medium
@@ -68,16 +68,16 @@ fun DialogoComparacaoAmigo(
 
                 // Cabeçalho dos Nomes
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Você", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 15.sp)
+                    Text("Você".t(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 15.sp)
                     Text(amigo.nome, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, fontSize = 15.sp)
                 }
 
                 // Linhas Comparativas
-                CardComparacaoLinha(titulo = "Total na Lista", meuValor = meuTotal.toString(), amigoValor = amigoTotal.toString())
-                CardComparacaoLinha(titulo = "Títulos Concluídos", meuValor = meusConcluidos.toString(), amigoValor = amigoConcluidos.toString())
-                CardComparacaoLinha(titulo = "Filmes Vistos", meuValor = meusFilmes.toString(), amigoValor = amigoFilmes.toString())
-                CardComparacaoLinha(titulo = "Séries/Outros", meuValor = minhasSeries.toString(), amigoValor = amigoSeries.toString())
-                CardComparacaoLinha(titulo = "Tempo Estimado", meuValor = "${minhasHoras}h", amigoValor = "${amigoHoras}h")
+                CardComparacaoLinha(titulo = "Total na Lista".t(), meuValor = meuTotal.toString(), amigoValor = amigoTotal.toString())
+                CardComparacaoLinha(titulo = "Títulos Concluídos".t(), meuValor = meusConcluidos.toString(), amigoValor = amigoConcluidos.toString())
+                CardComparacaoLinha(titulo = "Filmes Vistos".t(), meuValor = meusFilmes.toString(), amigoValor = amigoFilmes.toString())
+                CardComparacaoLinha(titulo = "Séries/Outros".t(), meuValor = minhasSeries.toString(), amigoValor = amigoSeries.toString())
+                CardComparacaoLinha(titulo = "Tempo Estimado".t(), meuValor = "${minhasHoras}h", amigoValor = "${amigoHoras}h")
 
                 Spacer(modifier = Modifier.height(2.dp))
 
@@ -104,12 +104,12 @@ fun DialogoComparacaoAmigo(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Match Cinéfilo", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(text = "Match Cinéfilo".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(text = "🔥 $pctMatch%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Em Comum", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(text = "Em Comum".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(text = "🎬 $titulosEmComum", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
@@ -119,7 +119,7 @@ fun DialogoComparacaoAmigo(
         },
         confirmButton = {
             TextButton(onClick = onDispensar) {
-                Text("Fechar", fontWeight = FontWeight.Bold)
+                Text("Fechar".t(), fontWeight = FontWeight.Bold)
             }
         }
     )
