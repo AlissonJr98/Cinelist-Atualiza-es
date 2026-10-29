@@ -275,7 +275,7 @@ fun BottomSheetConfiguracoesFuturista(
                                             .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                                     )
                                     Text(
-                                        text = rotulo,
+                                        text = rotulo.t(),
                                         fontSize = 12.sp,
                                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal,
                                         color = if (selecionado) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.8f)
@@ -350,7 +350,7 @@ fun BottomSheetConfiguracoesFuturista(
                                             .background(corHex)
                                     )
                                     Text(
-                                        text = rotulo,
+                                        text = rotulo.t(),
                                         fontSize = 12.sp,
                                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal,
                                         color = if (selecionado) corHex else Color.White.copy(alpha = 0.8f)
@@ -424,7 +424,7 @@ fun BottomSheetConfiguracoesFuturista(
                                             .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape)
                                     )
                                     Text(
-                                        text = rotulo,
+                                        text = rotulo.t(),
                                         fontSize = 12.sp,
                                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal,
                                         color = if (selecionado) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.9f)
@@ -468,7 +468,7 @@ fun BottomSheetConfiguracoesFuturista(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = generoFavorito,
+                                text = generoFavorito.t(),
                                 color = Color(0xFFFFD700),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -485,7 +485,7 @@ fun BottomSheetConfiguracoesFuturista(
                         ) {
                             listaGeneros.forEach { item ->
                                 DropdownMenuItem(
-                                    text = { Text(item, color = Color.White, fontSize = 13.sp) },
+                                    text = { Text(item.t(), color = Color.White, fontSize = 13.sp) },
                                     onClick = {
                                         generoFavorito = item
                                         sharedPreferences.edit().putString("genero", generoFavorito).apply()
@@ -605,7 +605,7 @@ fun BottomSheetConfiguracoesFuturista(
                                         color = Color(0xFF00FF7F)
                                     )
                                     Text(
-                                        text = if (opcaoSelecionada.codigo == "SISTEMA") "Automático ($idiomaDetectadoNome)" else "Código TMDB: ${opcaoSelecionada.tagTmdb}",
+                                        text = if (opcaoSelecionada.codigo == "SISTEMA") "${"Automático".t()} ($idiomaDetectadoNome)" else "${"Código TMDB".t()}: ${opcaoSelecionada.tagTmdb}",
                                         fontSize = 11.sp,
                                         color = Color(0xFF94A3B8)
                                     )
@@ -640,20 +640,20 @@ fun BottomSheetConfiguracoesFuturista(
                                         Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = opcao.nome,
+                                                text = if (opcao.codigo == "SISTEMA") "Padrão do Celular (Automático)".t() else opcao.nome,
                                                 fontSize = 13.sp,
                                                 fontWeight = if (isAtivo) FontWeight.ExtraBold else FontWeight.Medium,
                                                 color = if (isAtivo) Color(0xFF00FF7F) else Color.White
                                             )
                                             if (opcao.codigo == "SISTEMA") {
                                                 Text(
-                                                    text = "Automático ($idiomaDetectadoNome)",
+                                                    text = "${"Automático".t()} ($idiomaDetectadoNome)",
                                                     fontSize = 10.sp,
                                                     color = Color(0xFF94A3B8)
                                                 )
                                             } else {
                                                 Text(
-                                                    text = "Código TMDB: ${opcao.tagTmdb}",
+                                                    text = "${"Código TMDB".t()}: ${opcao.tagTmdb}",
                                                     fontSize = 10.sp,
                                                     color = Color(0xFF64748B)
                                                 )
@@ -678,9 +678,10 @@ fun BottomSheetConfiguracoesFuturista(
                                         viewModel.carregarFilmesEmCartaz()
                                         viewModel.carregarNovidadesPorStreaming(contexto, forcar = true)
                                         viewModel.carregarCarrosseisGenerosFavoritos(contexto)
+                                        val nomeToast = if (opcao.codigo == "SISTEMA") "Padrão do Celular (Automático)".t() else opcao.nome
                                         Toast.makeText(
                                             contexto,
-                                            "Idioma: ${opcao.bandeiraEmoji} ${opcao.nome}",
+                                            "${"Idioma".t()}: ${opcao.bandeiraEmoji} $nomeToast",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                         val activity = contexto.findActivity()
@@ -719,7 +720,7 @@ fun BottomSheetConfiguracoesFuturista(
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF00FF7F), modifier = Modifier.size(18.dp))
                     Text(
-                        text = "FCM High Priority Ativo: Entrega garantida mesmo com o app encerrado.",
+                        text = "FCM High Priority Ativo: Entrega garantida mesmo com o app encerrado.".t(),
                         fontSize = 11.sp,
                         color = Color(0xFF00FF7F),
                         fontWeight = FontWeight.Medium
@@ -799,7 +800,7 @@ fun BottomSheetConfiguracoesFuturista(
                 val totalStreamings = StreamingManager.obterMeusStreamingsIds(contexto).size
                 CyberItemNavegacao(
                     titulo = "Meus Provedores de Streaming",
-                    subtitulo = if (totalStreamings > 0) "$totalStreamings plataformas ativas (Netflix, Prime, Max...)" else "Nenhum configurado (toque para escolher)",
+                    subtitulo = if (totalStreamings > 0) "$totalStreamings ${"plataformas ativas (Netflix, Prime, Max...)".t()}" else "Nenhum configurado (toque para escolher)".t(),
                     icone = Icons.Default.Tv,
                     corIcone = Color(0xFF38BDF8),
                     onClick = {
@@ -814,7 +815,7 @@ fun BottomSheetConfiguracoesFuturista(
                 val totalGeneros = GeneroPreferencesManager.obterGenerosFavoritosIds(contexto).size
                 CyberItemNavegacao(
                     titulo = "Gêneros Favoritos (Explorar)",
-                    subtitulo = if (totalGeneros > 0) "$totalGeneros gêneros selecionados" else "Personalize as vitrines da aba Descobrir",
+                    subtitulo = if (totalGeneros > 0) "$totalGeneros ${"gêneros selecionados".t()}" else "Personalize as vitrines da aba Descobrir".t(),
                     icone = Icons.Default.Category,
                     corIcone = Color(0xFFFFD700),
                     onClick = {
@@ -864,9 +865,9 @@ fun BottomSheetConfiguracoesFuturista(
                 // Status do Backup Automático
                 val ultimoBackupMillis = sharedPreferences.getLong("ultimo_backup_automatico", 0L)
                 val textoUltimoBackup = if (ultimoBackupMillis > 0L) {
-                    "Sincronização: ${SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(ultimoBackupMillis))}"
+                    "${"Sincronização".t()}: ${SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(ultimoBackupMillis))}"
                 } else {
-                    "Backup semanal automático programado"
+                    "Backup semanal automático programado".t()
                 }
 
                 Row(
@@ -993,7 +994,7 @@ fun BottomSheetConfiguracoesFuturista(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "Versão Instalada",
+                                text = "Versão Instalada".t(),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -1014,7 +1015,7 @@ fun BottomSheetConfiguracoesFuturista(
                             }
                         }
                         Text(
-                            text = "Toque para checar atualizações no GitHub",
+                            text = "Toque para checar atualizações no GitHub".t(),
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.6f)
                         )
@@ -1023,7 +1024,7 @@ fun BottomSheetConfiguracoesFuturista(
                     if (viewModel.verificandoAtualizacao) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color(0xFF00E5FF))
                     } else {
-                        Icon(Icons.Default.SystemUpdate, contentDescription = "Verificar", tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.SystemUpdate, contentDescription = "Verificar".t(), tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
                     }
                 }
 
@@ -1040,13 +1041,13 @@ fun BottomSheetConfiguracoesFuturista(
                 ) {
                     Column {
                         Text(
-                            text = "Cache de Imagens & Posters",
+                            text = "Cache de Imagens & Posters".t(),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = "Espaço ocupado: $tamanhoCacheTexto",
+                            text = "${"Espaço ocupado".t()}: $tamanhoCacheTexto",
                             fontSize = 11.sp,
                             color = Color(0xFF00FF7F),
                             fontFamily = FontFamily.Monospace
@@ -1151,8 +1152,8 @@ private fun CardHolograficoUsuario(
     onCopiarUid: (String) -> Unit
 ) {
     val uid = usuarioAtual?.uid ?: ""
-    val email = usuarioAtual?.email ?: "Não registrado"
-    val nome = usuarioAtual?.displayName ?: "Usuário CineList"
+    val email = usuarioAtual?.email ?: "Não registrado".t()
+    val nome = usuarioAtual?.displayName ?: "Usuário CineList".t()
     val provedor = usuarioAtual?.providerData?.lastOrNull()?.providerId?.uppercase() ?: "E-MAIL"
 
     Box(
@@ -1268,7 +1269,7 @@ private fun CardHolograficoUsuario(
                     )
                     Icon(
                         Icons.Default.ContentCopy,
-                        contentDescription = "Copiar ID",
+                        contentDescription = "Copiar ID".t(),
                         tint = Color(0xFF00E5FF),
                         modifier = Modifier.size(10.dp)
                     )
