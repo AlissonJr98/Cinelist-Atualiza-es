@@ -119,7 +119,7 @@ fun TelaLogin(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     PulsarPontoNeon(cor = Color(0xFF00E5FF), tamanho = 8.dp)
-                    Text("Recuperar Acesso", color = Color.White, fontWeight = FontWeight.Black, fontSize = 17.sp)
+                    Text("Recuperar Acesso".t(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 17.sp)
                 }
             },
             containerColor = Color(0xFF0C101B),
@@ -145,7 +145,7 @@ fun TelaLogin(
                     OutlinedTextField(
                         value = emailRecuperacao,
                         onValueChange = { emailRecuperacao = it },
-                        label = { Text("E-mail de Cadastro") },
+                        label = { Text("E-mail de Cadastro".t()) },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !carregandoRecuperacao,
                         shape = RoundedCornerShape(14.dp),
@@ -202,7 +202,7 @@ fun TelaLogin(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Enviar Link", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Text("Enviar Link".t(), color = Color.Black, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -213,7 +213,7 @@ fun TelaLogin(
                         mensagemRecuperacao = ""
                         emailRecuperacao = ""
                     }) {
-                        Text("Cancelar", color = Color.White.copy(alpha = 0.6f))
+                        Text("Cancelar".t(), color = Color.White.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -308,7 +308,7 @@ fun TelaLogin(
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "PORTAL DE ACESSO // V2.0",
+                            text = "PORTAL DE ACESSO // V2.0".t(),
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
@@ -345,7 +345,7 @@ fun TelaLogin(
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
-                            label = { Text("E-mail") },
+                            label = { Text("E-mail".t()) },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !carregando,
                             leadingIcon = {
@@ -374,7 +374,7 @@ fun TelaLogin(
                         OutlinedTextField(
                             value = senha,
                             onValueChange = { senha = it },
-                            label = { Text("Senha") },
+                            label = { Text("Senha".t()) },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !carregando,
                             visualTransformation = if (senhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
@@ -418,7 +418,7 @@ fun TelaLogin(
                             contentAlignment = Alignment.CenterEnd
                         ) {
                             Text(
-                                text = "Esqueceu sua senha?",
+                                text = "Esqueceu sua senha?".t(),
                                 color = Color(0xFF00E5FF),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -549,7 +549,7 @@ fun TelaLogin(
                         color = Color.White.copy(alpha = 0.12f)
                     )
                     Text(
-                        text = "ou autentique com",
+                        text = "ou autentique com".t(),
                         color = Color.White.copy(alpha = 0.5f),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
@@ -592,7 +592,7 @@ fun TelaLogin(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Continuar com Google",
+                        text = "Continuar com Google".t(),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
@@ -611,12 +611,12 @@ fun TelaLogin(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Não tem uma conta? ",
+                        text = "Não tem uma conta? ".t(),
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 13.sp
                     )
                     Text(
-                        text = "Cadastre-se",
+                        text = "Cadastre-se".t(),
                         color = Color(0xFF00E5FF),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Black
@@ -642,7 +642,7 @@ fun TelaLogin(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Conheça como o CineList funciona ✨",
+                        text = "Conheça como o CineList funciona ✨".t(),
                         color = Color(0xFFFFD700),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold

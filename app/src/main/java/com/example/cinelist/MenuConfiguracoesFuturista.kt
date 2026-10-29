@@ -778,7 +778,7 @@ fun BottomSheetConfiguracoesFuturista(
                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "TESTAR NOTIFICAÇÃO IMEDIATAMENTE",
+                        text = "TESTAR NOTIFICAÇÃO IMEDIATAMENTE".t(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700)
@@ -899,7 +899,7 @@ fun BottomSheetConfiguracoesFuturista(
                     Icon(Icons.Default.FileUpload, contentDescription = null, tint = Color(0xFFB388FF), modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "IMPORTAR DO LETTERBOXD / IMDB (.CSV)",
+                        text = "IMPORTAR DO LETTERBOXD / IMDB (.CSV)".t(),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -917,7 +917,7 @@ fun BottomSheetConfiguracoesFuturista(
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Exportar JSON", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Exportar JSON".t(), fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     Button(
@@ -930,7 +930,7 @@ fun BottomSheetConfiguracoesFuturista(
                     ) {
                         Icon(Icons.Default.FileUpload, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Restaurar JSON", fontSize = 11.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Restaurar JSON".t(), fontSize = 11.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
 
@@ -943,7 +943,7 @@ fun BottomSheetConfiguracoesFuturista(
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
-                        Text("Exportar CSV", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Exportar CSV".t(), fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     Button(
@@ -954,7 +954,7 @@ fun BottomSheetConfiguracoesFuturista(
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.08f)),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
                     ) {
-                        Text("Importar CSV", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("Importar CSV".t(), fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -1073,7 +1073,7 @@ fun BottomSheetConfiguracoesFuturista(
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color(0xFF00FF7F), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Limpar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00FF7F))
+                        Text("Limpar".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00FF7F))
                     }
                 }
             }
@@ -1100,7 +1100,7 @@ fun BottomSheetConfiguracoesFuturista(
                 ) {
                     Icon(Icons.Default.DeleteForever, contentDescription = null, tint = CineListTokens.CorErro, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Limpar Todos os Dados Locais", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("Limpar Todos os Dados Locais".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
 
                 // Sair da Conta (Logout)
@@ -1117,12 +1117,12 @@ fun BottomSheetConfiguracoesFuturista(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("DESCONECTAR DA CONTA", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("DESCONECTAR DA CONTA".t(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
                 // Excluir Conta Permanentemente
                 Text(
-                    text = "Excluir permanentemente minha conta e dados",
+                    text = "Excluir permanentemente minha conta e dados".t(),
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 11.sp,
                     modifier = Modifier

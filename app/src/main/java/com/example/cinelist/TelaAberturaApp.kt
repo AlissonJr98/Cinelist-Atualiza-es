@@ -59,68 +59,68 @@ fun TelaAberturaApp(
     val itensApresentacao = remember {
         listOf(
             ItemApresentacaoCineList(
-                titulo = "Organize seu Universo Cinematográfico",
-                subtitulo = "Gerencie tudo o que você assiste em um único lugar moderno e futurista.",
-                tagDestaque = "CONTROLE TOTAL",
+                titulo = "Organize seu Universo Cinematográfico".t(),
+                subtitulo = "Gerencie tudo o que você assiste em um único lugar moderno e futurista.".t(),
+                tagDestaque = "CONTROLE TOTAL".t(),
                 icone = Icons.Default.VideoLibrary,
                 corTema = Color(0xFF00E5FF),
                 beneficios = listOf(
-                    "Filmes, Séries, Animes e Novelas organizados por status",
-                    "Acompanhamento inteligente de temporadas e episódios",
-                    "Suas notas pessoais, histórico e retrospectiva anual",
-                    "Coleções customizadas para seus gêneros e franquias favoritas"
+                    "Filmes, Séries, Animes e Novelas organizados por status".t(),
+                    "Acompanhamento inteligente de temporadas e episódios".t(),
+                    "Suas notas pessoais, histórico e retrospectiva anual".t(),
+                    "Coleções customizadas para seus gêneros e franquias favoritas".t()
                 )
             ),
             ItemApresentacaoCineList(
-                titulo = "Salas Compartilhadas & CineParty",
-                subtitulo = "Assista junto e sincronize o entretenimento com o parceiro(a) ou amigos.",
-                tagDestaque = "AO VIVO & SOCIAL",
+                titulo = "Salas Compartilhadas & CineParty".t(),
+                subtitulo = "Assista junto e sincronize o entretenimento com o parceiro(a) ou amigos.".t(),
+                tagDestaque = "AO VIVO & SOCIAL".t(),
                 icone = Icons.Default.Group,
                 corTema = Color(0xFFFF2A85),
                 beneficios = listOf(
-                    "Salas privadas sincronizadas em tempo real via nuvem",
-                    "Sessões de CineParty com contagem regressiva e chat",
-                    "Reações ao vivo e telemetria de quem está assistindo agora",
-                    "Votação coletiva e aprovação mútua do próximo título"
+                    "Salas privadas sincronizadas em tempo real via nuvem".t(),
+                    "Sessões de CineParty com contagem regressiva e chat".t(),
+                    "Reações ao vivo e telemetria de quem está assistindo agora".t(),
+                    "Votação coletiva e aprovação mútua do próximo título".t()
                 )
             ),
             ItemApresentacaoCineList(
-                titulo = "CineMatch & Roleta da Sorte",
-                subtitulo = "O fim definitivo da indecisão na hora de escolher o que assistir.",
-                tagDestaque = "ESCOLHA RÁPIDA",
+                titulo = "CineMatch & Roleta da Sorte".t(),
+                subtitulo = "O fim definitivo da indecisão na hora de escolher o que assistir.".t(),
+                tagDestaque = "ESCOLHA RÁPIDA".t(),
                 icone = Icons.Default.Casino,
                 corTema = Color(0xFFA855F7),
                 beneficios = listOf(
-                    "CineMatch estilo card game: dê like e receba o match na hora",
-                    "Roleta da Sorte com sorteios instantâneos e justos",
-                    "Filtre por streaming, gênero, duração e nota mínima",
-                    "Perfeito para noites de cinema a dois ou em grupo"
+                    "CineMatch estilo card game: dê like e receba o match na hora".t(),
+                    "Roleta da Sorte com sorteios instantâneos e justos".t(),
+                    "Filtre por streaming, gênero, duração e nota mínima".t(),
+                    "Perfeito para noites de cinema a dois ou em grupo".t()
                 )
             ),
             ItemApresentacaoCineList(
-                titulo = "Radar dos Streamings & Lançamentos",
-                subtitulo = "Saiba exatamente onde cada filme ou série está disponível no Brasil.",
-                tagDestaque = "ONDE ASSISTIR",
+                titulo = "Radar dos Streamings & Lançamentos".t(),
+                subtitulo = "Saiba exatamente onde cada filme ou série está disponível no Brasil.".t(),
+                tagDestaque = "ONDE ASSISTIR".t(),
                 icone = Icons.Default.Explore,
                 corTema = Color(0xFFFFD700),
                 beneficios = listOf(
-                    "Catálogo completo com Netflix, Prime Video, Disney+, Max e outros",
-                    "Filtre recomendações pelos seus serviços favoritos",
-                    "Explore filmografias completas de atores e diretores",
-                    "Trailers oficiais em alta definição e sinopses completas"
+                    "Catálogo completo com Netflix, Prime Video, Disney+, Max e outros".t(),
+                    "Filtre recomendações pelos seus serviços favoritos".t(),
+                    "Explore filmografias completas de atores e diretores".t(),
+                    "Trailers oficiais em alta definição e sinopses completas".t()
                 )
             ),
             ItemApresentacaoCineList(
-                titulo = "CineFórum Seguro & App Familiar",
-                subtitulo = "Participe de discussões vibrantes em um ambiente protegido e acolhedor.",
-                tagDestaque = "AMBIENTE FAMILIAR",
+                titulo = "CineFórum Seguro & App Familiar".t(),
+                subtitulo = "Participe de discussões vibrantes em um ambiente protegido e acolhedor.".t(),
+                tagDestaque = "AMBIENTE FAMILIAR".t(),
                 icone = Icons.Default.Forum,
                 corTema = Color(0xFF10B981),
                 beneficios = listOf(
-                    "Proteção automática contra spoilers com texto oculto",
-                    "Filtro inteligente familiar: livre de ofensas, política e discussões",
-                    "Compartilhe suas teorias, críticas e resenhas",
-                    "Interaja com curtidas, reações de emojis e respostas"
+                    "Proteção automática contra spoilers com texto oculto".t(),
+                    "Filtro inteligente familiar: livre de ofensas, política e discussões".t(),
+                    "Compartilhe suas teorias, críticas e resenhas".t(),
+                    "Interaja com curtidas, reações de emojis e respostas".t()
                 )
             )
         )
@@ -225,7 +225,7 @@ fun TelaAberturaApp(
                             letterSpacing = 0.5.sp
                         )
                         Text(
-                            text = "TOUR INTERATIVO",
+                            text = "TOUR INTERATIVO".t(),
                             fontSize = 9.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
@@ -240,7 +240,7 @@ fun TelaAberturaApp(
                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF94A3B8))
                 ) {
                     Text(
-                        text = "Pular Tour",
+                        text = "Pular Tour".t(),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -472,7 +472,7 @@ fun TelaAberturaApp(
                         )
                     ) {
                         Text(
-                            text = "Próxima Função",
+                            text = "Próxima Função".t(),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -496,7 +496,7 @@ fun TelaAberturaApp(
                         )
                     ) {
                         Text(
-                            text = "Fazer Login",
+                            text = "Fazer Login".t(),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black
                         )
@@ -523,7 +523,7 @@ fun TelaAberturaApp(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
             ) {
                 Text(
-                    text = "Ainda não tem conta? Criar Conta Grátis",
+                    text = "Ainda não tem conta? Criar Conta Grátis".t(),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )

@@ -24,6 +24,12 @@ class CineListApplication : Application(), ImageLoaderFactory {
         super.onCreate()
         instance = this
 
+        try {
+            IdiomaAppManager.inicializar(this)
+        } catch (e: Throwable) {
+            Log.w("CineListApplication", "Falha ao inicializar idioma do app", e)
+        }
+
         // 🛡️ Log defensivo de exceções para depuração de qualquer OEM
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->

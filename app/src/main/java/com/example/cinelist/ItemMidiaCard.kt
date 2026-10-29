@@ -137,6 +137,8 @@ private fun ConteudoItemMidiaCard(
     val ehPendente = midia.status == "Pendente"
     val ehRecusado = midia.status == "Recusado"
     val statusEnum = midia.obterStatusEnum()
+    val tituloExibicao = MidiaLocalizationManager.obterTituloLocalizado(midia)
+    val capaExibicao = MidiaLocalizationManager.obterCapaLocalizada(midia)
 
     val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
@@ -250,21 +252,21 @@ private fun ConteudoItemMidiaCard(
                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!midia.imagemCapa.isNullOrBlank()) {
+                    if (!capaExibicao.isNullOrBlank()) {
                         SubcomposeAsyncImage(
                             model = ImageRequest.Builder(contexto)
-                                .data(midia.imagemCapa)
+                                .data(capaExibicao)
                                 .crossfade(true)
                                 .allowHardware(false)
                                 .build(),
-                            contentDescription = "Capa de ${midia.titulo}",
+                            contentDescription = "Capa de $tituloExibicao",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                             onSuccess = { state ->
                                 val drawable = state.result.drawable
                                 val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                                 bitmap?.let { bmp ->
-                                    val urlCapa = midia.imagemCapa
+                                    val urlCapa = capaExibicao
                                     val corEmCache = if (urlCapa.isNotBlank()) PaletteColorCache.cache.get(urlCapa) else null
                                     if (corEmCache != null) {
                                         corCapa = Color(corEmCache)
@@ -435,7 +437,7 @@ private fun ConteudoItemMidiaCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = midia.titulo,
+                            text = tituloExibicao,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
@@ -736,12 +738,12 @@ private fun ItemMidiaCardHorizontalComSwipe(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Concluir",
+                                contentDescription = "Concluir".t(),
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = if (statusEnum == StatusMidia.CONCLUIDO) "Reabrir" else "Concluir",
+                                text = if (statusEnum == StatusMidia.CONCLUIDO) "Reabrir".t() else "Concluir".t(),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -760,7 +762,7 @@ private fun ItemMidiaCardHorizontalComSwipe(
                             )
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Excluir",
+                                contentDescription = "Excluir".t(),
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -800,6 +802,8 @@ private fun ConteudoItemMidiaCardHorizontal(
     val ehRecusado = midia.status == "Recusado"
 
     val statusEnum = midia.obterStatusEnum()
+    val tituloExibicao = MidiaLocalizationManager.obterTituloLocalizado(midia)
+    val capaExibicao = MidiaLocalizationManager.obterCapaLocalizada(midia)
 
     val uidAtual = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val fuiEuQueSugeri = midia.adicionadoPor.startsWith(uidAtual)
@@ -877,21 +881,21 @@ private fun ConteudoItemMidiaCardHorizontal(
                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (!midia.imagemCapa.isNullOrBlank()) {
+                    if (!capaExibicao.isNullOrBlank()) {
                         SubcomposeAsyncImage(
                             model = ImageRequest.Builder(contexto)
-                                .data(midia.imagemCapa)
+                                .data(capaExibicao)
                                 .crossfade(true)
                                 .allowHardware(false)
                                 .build(),
-                            contentDescription = "Capa de ${midia.titulo}",
+                            contentDescription = "Capa de $tituloExibicao",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                             onSuccess = { state ->
                                 val drawable = state.result.drawable
                                 val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
                                 bitmap?.let { bmp ->
-                                    val urlCapa = midia.imagemCapa
+                                    val urlCapa = capaExibicao
                                     val corEmCache = if (urlCapa.isNotBlank()) PaletteColorCache.cache.get(urlCapa) else null
                                     if (corEmCache != null) {
                                         corCapa = Color(corEmCache)
@@ -968,7 +972,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = midia.titulo,
+                            text = tituloExibicao,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,

@@ -311,7 +311,7 @@ fun HeroBannerDestaque(
                         ) {
                             Icon(Icons.Default.Info, contentDescription = null, tint = Color.Black)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Detalhes", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text("Detalhes".t(), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
 
                         Button(
@@ -332,7 +332,7 @@ fun HeroBannerDestaque(
                         ) {
                             Icon(imageVector = if (jaNaLista) Icons.Default.Check else Icons.Default.Add, contentDescription = null, tint = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (jaNaLista) "Na Lista" else "Adicionar", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(if (jaNaLista) "Na Lista".t() else "Adicionar".t(), color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -869,19 +869,19 @@ fun TelaPrincipal(
         ModalBottomSheet(onDismissRequest = { mostrarBottomSheetFiltrosMinhaLista = false }, containerColor = MaterialTheme.colorScheme.surface, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Filtros da Minha Lista", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Filtros da Minha Lista".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosMinhaLista > 0) {
                         TextButton(onClick = { categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }) { Text("Redefinir", color = Color(0xFFFF5252)) }
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Coleção Temática:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = colecoesDisponiveis) { col -> FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Coleção Temática:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = colecoesDisponiveis) { col -> FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt, fontSize = 12.sp) }) } }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Coleções & Maratonas Temáticas:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("Coleções & Maratonas Temáticas:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -927,9 +927,9 @@ fun TelaPrincipal(
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Meus Streamings:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Meus Streamings:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                            Text("⚙️ Configurar", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            Text("⚙️ Configurar".t(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     val meusStreamingsQueryML = StreamingManager.obterQueryMeusStreamings(contextoLocal)
@@ -947,7 +947,7 @@ fun TelaPrincipal(
                     )
                 }
                 if (streamingsFiltro.size > 1) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Plataforma:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = streamingsFiltro) { st -> FilterChip(selected = (filtroPlataforma == st), onClick = { filtroPlataforma = st }, label = { Text(st, fontSize = 12.sp) }) } } }
-                Button(onClick = { mostrarBottomSheetFiltrosMinhaLista = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros", fontWeight = FontWeight.Bold) }
+                Button(onClick = { mostrarBottomSheetFiltrosMinhaLista = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros".t(), fontWeight = FontWeight.Bold) }
             }
         }
     }
@@ -956,7 +956,7 @@ fun TelaPrincipal(
         ModalBottomSheet(onDismissRequest = { mostrarBottomSheetFiltrosDescobrir = false }, containerColor = MaterialTheme.colorScheme.surface, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Filtros de Descoberta", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Filtros de Descoberta".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosDescobrir > 0) {
                         TextButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }) { Text("Redefinir Tudo", color = Color(0xFFFF5252)) }
                     }
@@ -966,7 +966,7 @@ fun TelaPrincipal(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoDescobrir.map { it.first }) { rotulo -> val chaveSort = opcoesOrdenacaoDescobrir.first { it.first == rotulo }.second; FilterChip(selected = (ordenacaoSelecionada == chaveSort), onClick = { viewModel.selecionarOrdenacao(chaveSort) }, label = { Text(rotulo, fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Plataformas de Streaming:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Plataformas de Streaming:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
                             Text("⚙️ Configurar Meus", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
@@ -1423,7 +1423,7 @@ fun TelaPrincipal(
                         CyberSearchHUD(
                             query = textoPesquisa,
                             onQueryChange = { textoPesquisa = it },
-                            placeholder = if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming...".t() else "Buscar online no TMDB...".t(),
+                            placeholder = if (pagerState.currentPage == 0) "Buscar por título, gênero ou streaming...".t() else "Buscar no CineList...".t(),
                             isFocused = searchFocused,
                             onClear = {
                                 textoPesquisa = ""
@@ -1655,14 +1655,14 @@ fun TelaPrincipal(
                                                     item {
                                                         Column(modifier = Modifier.fillMaxWidth()) {
                                                             Text(
-                                                                text = "🔖 Onde parei",
+                                                                text = "🔖 Onde parei".t(),
                                                                 fontSize = 15.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 color = MaterialTheme.colorScheme.onBackground,
                                                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                                                             )
                                                             Text(
-                                                                text = "A última série em que atualizou o progresso$dataTexto",
+                                                                text = "A última série em que atualizou o progresso".t() + dataTexto,
                                                                 fontSize = 11.sp,
                                                                 color = MaterialTheme.colorScheme.secondary,
                                                                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -1679,10 +1679,10 @@ fun TelaPrincipal(
                                                         }
                                                     }
                                                 }
-                                                if (listaAssistindo.isNotEmpty()) { item { CarrosselMinhaLista("▶️ Continuar Assistindo", listaAssistindo, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
-                                                if (listaFavoritos.isNotEmpty()) { item { CarrosselMinhaLista("❤️ Meus Favoritos", listaFavoritos, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
-                                                if (listaQueroAssistir.isNotEmpty()) { item { CarrosselMinhaLista("👀 Quero Assistir", listaQueroAssistir, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
-                                                if (listaConcluidos.isNotEmpty()) { item { CarrosselMinhaLista("✅ Concluídos", listaConcluidos, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
+                                                if (listaAssistindo.isNotEmpty()) { item { CarrosselMinhaLista("▶️ Continuar Assistindo".t(), listaAssistindo, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
+                                                if (listaFavoritos.isNotEmpty()) { item { CarrosselMinhaLista("❤️ Meus Favoritos".t(), listaFavoritos, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
+                                                if (listaQueroAssistir.isNotEmpty()) { item { CarrosselMinhaLista("👀 Quero Assistir".t(), listaQueroAssistir, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
+                                                if (listaConcluidos.isNotEmpty()) { item { CarrosselMinhaLista("✅ Concluídos".t(), listaConcluidos, onItemClique, onIncrementarEpisodio = { m -> viewModel.incrementarEpisodioRapido(m); mostrarSucesso("Episódio avançado em \"${m.titulo}\"") }, onDeletar = { midiaParaExcluir = it }, onAlternarStatusConcluido = { midiaParaConcluir = it }, onAlternarFavorito = { m -> viewModel.alternarFavorito(m); mostrarSucesso(if (m.favorito) "Removido dos favoritos" else "Adicionado aos favoritos ❤️") }) } }
                                             }
                                         }
                                         1 -> {
@@ -2025,7 +2025,9 @@ fun CardSugestaoCasal(
     val votosAtuais = midia.uidsAprovados.split(",").filter { it.isNotBlank() }.size + 1 // +1 do autor
 
     val diasPendente = ((System.currentTimeMillis() - midia.atualizadoEm) / (1000 * 60 * 60 * 24)).toInt()
-    val textoTempo = if (diasPendente == 0) "Hoje" else if (diasPendente == 1) "Ontem" else "Há $diasPendente dias"
+    val textoTempo = if (diasPendente == 0) "Hoje".t() else if (diasPendente == 1) "Ontem".t() else "Há $diasPendente dias".t()
+    val tituloExibicao = MidiaLocalizationManager.obterTituloLocalizado(midia)
+    val capaExibicao = MidiaLocalizationManager.obterCapaLocalizada(midia)
 
     Card(
         modifier = Modifier
@@ -2056,10 +2058,10 @@ fun CardSugestaoCasal(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (midia.imagemCapa.isNotBlank()) {
+                if (capaExibicao.isNotBlank()) {
                     AsyncImage(
-                        model = midia.imagemCapa,
-                        contentDescription = midia.titulo,
+                        model = capaExibicao,
+                        contentDescription = tituloExibicao,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.size(44.dp, 66.dp).clip(RoundedCornerShape(8.dp))
                     )
@@ -2249,6 +2251,8 @@ fun BannerOndePareiHorizontal(
     onClick: () -> Unit,
     onIncrementarEpisodio: () -> Unit
 ) {
+    val tituloExibicao = MidiaLocalizationManager.obterTituloLocalizado(midia)
+    val capaExibicao = MidiaLocalizationManager.obterCapaLocalizada(midia)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -2290,7 +2294,7 @@ fun BannerOndePareiHorizontal(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = midia.titulo,
+                    text = tituloExibicao,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

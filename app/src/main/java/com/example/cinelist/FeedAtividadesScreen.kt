@@ -244,7 +244,7 @@ fun FeedAtividadesScreen(
                     modifier = Modifier.clickable { categoriaSelecionada = chave }
                 ) {
                     Text(
-                        text = cat,
+                        text = cat.t(),
                         fontSize = 11.sp,
                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Medium,
                         color = if (selecionado) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.8f),
@@ -435,10 +435,10 @@ fun CardTopicoForum(
             val agora = System.currentTimeMillis()
             val diff = agora - atividade.timestamp
             when {
-                diff < 60_000L -> "Agora há pouco"
-                diff < 3600_000L -> "Há ${diff / 60_000L} min"
-                diff < 86400_000L -> "Há ${diff / 3600_000L}h"
-                diff < 172800_000L -> "Ontem"
+                diff < 60_000L -> "Agora há pouco".t()
+                diff < 3600_000L -> "Há ${diff / 60_000L} min".t()
+                diff < 86400_000L -> "Há ${diff / 3600_000L}h".t()
+                diff < 172800_000L -> "Ontem".t()
                 else -> DateUtils.getRelativeTimeSpanString(
                     atividade.timestamp,
                     agora,
@@ -446,7 +446,7 @@ fun CardTopicoForum(
                 ).toString()
             }
         } catch (e: Exception) {
-            "Recentemente"
+            "Recentemente".t()
         }
     }
 

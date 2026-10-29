@@ -188,6 +188,7 @@ object IdiomaAppManager {
 
         // 1. Atualiza o motor i18n Compose
         I18n.definirIdioma(tagEfetiva)
+        MidiaLocalizationManager.limparCache()
 
         // 2. Atualiza o cliente Retrofit do TMDB
         RetrofitClient.atualizarIdioma(tagEfetiva)

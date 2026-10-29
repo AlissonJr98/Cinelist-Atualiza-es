@@ -2519,9 +2519,9 @@ fun TelaPerfil(
 
                             PremiumBannerCard(
 
-                                titulo = "Retrospectiva CineList",
+                                titulo = "Retrospectiva CineList".t(),
 
-                                subtitulo = "Sua jornada cinéfila em destaque",
+                                subtitulo = "Sua jornada cinéfila em destaque".t(),
 
                                 icone = Icons.Default.WorkspacePremium,
 
@@ -2537,7 +2537,7 @@ fun TelaPerfil(
 
                                 PremiumBannerCardSmall(
 
-                                    titulo = "Lançamentos",
+                                    titulo = "Lançamentos".t(),
 
                                     icone = Icons.Default.CalendarMonth,
 
@@ -2553,7 +2553,7 @@ fun TelaPerfil(
 
                                 PremiumBannerCardSmall(
 
-                                    titulo = "Gerir Salas",
+                                    titulo = "Gerir Salas".t(),
 
                                     icone = Icons.Default.Group,
 
@@ -3153,9 +3153,9 @@ fun TelaPerfil(
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
 
-                            CardEstatistica(titulo = "Total Assistido", valor = tempoFormatado, subtitulo = "Horas na tela", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Total Assistido".t(), valor = tempoFormatado, subtitulo = "Horas na tela".t(), modifier = Modifier.weight(1f))
 
-                            CardEstatistica(titulo = "Média Notas", valor = "$mediaNotas ★", subtitulo = "${midiasComNota.size} avaliados", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Média Notas".t(), valor = "$mediaNotas ★", subtitulo = "${midiasComNota.size} ${"avaliados".t()}", modifier = Modifier.weight(1f))
 
                         }
 
@@ -3163,9 +3163,9 @@ fun TelaPerfil(
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
 
-                            CardEstatistica(titulo = "Filmes", valor = filmesConcluidos.toString(), subtitulo = "De $totalFilmes na lista", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Filmes".t(), valor = filmesConcluidos.toString(), subtitulo = "${"De".t()} $totalFilmes ${"na lista".t()}", modifier = Modifier.weight(1f))
 
-                            CardEstatistica(titulo = "Episódios", valor = totalEpisodiosAssistidos.toString(), subtitulo = "De $seriesConcluidas séries", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Episódios".t(), valor = totalEpisodiosAssistidos.toString(), subtitulo = "${"De".t()} $seriesConcluidas ${"séries".t()}", modifier = Modifier.weight(1f))
 
                         }
 
@@ -3177,7 +3177,7 @@ fun TelaPerfil(
 
                                 Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
 
-                                    Text(text = "Distribuição de Avaliações", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = "Distribuição de Avaliações".t(), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
 
                                     Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
@@ -3197,7 +3197,7 @@ fun TelaPerfil(
 
                                 Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
 
-                                    Text(text = "Gêneros Predominantes", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = "Gêneros Predominantes".t(), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
 
                                     Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
@@ -3217,7 +3217,7 @@ fun TelaPerfil(
 
                                 Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
 
-                                    Text(text = "Plataformas Mais Usadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = "Plataformas Mais Usadas".t(), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
 
                                     Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
@@ -3245,7 +3245,7 @@ fun TelaPerfil(
 
                         Text(
 
-                            text = if (modoGrupoAtivo) "Concluídos na Sala (${listaHistoricoConcluido.size})" else "Seus Títulos Concluídos (${listaHistoricoConcluido.size})",
+                            text = if (modoGrupoAtivo) "${"Concluídos na Sala".t()} (${listaHistoricoConcluido.size})" else "${"Seus Títulos Concluídos".t()} (${listaHistoricoConcluido.size})",
 
                             fontSize = 18.sp,
 
@@ -3265,7 +3265,7 @@ fun TelaPerfil(
 
                                 Text(
 
-                                    text = if (modoGrupoAtivo) "Nenhum item marcado como Concluído nesta sala." else "Nenhum item marcado como Concluído na sua lista particular.",
+                                    text = if (modoGrupoAtivo) "Nenhum item marcado como Concluído nesta sala.".t() else "Nenhum item marcado como Concluído na sua lista particular.".t(),
 
                                     color = MaterialTheme.colorScheme.secondary,
 
@@ -3397,9 +3397,9 @@ fun TelaPerfil(
 
                                                     ) {
 
-                                                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reabrir", tint = Color.White)
+                                                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Reabrir".t(), tint = Color.White)
 
-                                                        Text("Reabrir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                        Text("Reabrir".t(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
 
                                                     }
 
@@ -3413,9 +3413,9 @@ fun TelaPerfil(
 
                                                     ) {
 
-                                                        Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                        Text("Excluir".t(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
 
-                                                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
+                                                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Excluir".t(), tint = Color.White)
 
                                                     }
 
@@ -3473,7 +3473,7 @@ fun TelaPerfil(
 
                                                         AsyncImage(
 
-                                                            model = itemConcluido.imagemCapa,
+                                                            model = MidiaLocalizationManager.obterCapaLocalizada(itemConcluido),
 
                                                             contentDescription = null,
 
@@ -3493,7 +3493,7 @@ fun TelaPerfil(
 
                                                     Text(
 
-                                                        text = itemConcluido.titulo,
+                                                        text = MidiaLocalizationManager.obterTituloLocalizado(itemConcluido),
 
                                                         fontWeight = FontWeight.Bold,
 
@@ -6923,7 +6923,7 @@ fun RaioXStreamingsSection(estatisticasPlataforma: Map<String, Int>) {
 
                 Text(
 
-                    text = "💡 Raio-X de Economia de Streamings",
+                    text = "💡 Raio-X de Economia de Streamings".t(),
 
                     fontWeight = FontWeight.Bold,
 
@@ -7007,7 +7007,7 @@ fun TierListSection(listaConcluidos: List<Midia>) {
 
                 Text(
 
-                    text = "📊 Tier List Cinéfila (Classificação)",
+                    text = "📊 Tier List Cinéfila (Classificação)".t(),
 
                     fontWeight = FontWeight.Bold,
 
@@ -7229,7 +7229,7 @@ fun XpEPatenteCard(listaDeMidias: List<Midia>) {
 
                 Text(
 
-                    text = "Nível $nivel • $patente",
+                    text = "${"Nível".t()} $nivel • ${patente.t()}",
 
                     fontWeight = FontWeight.ExtraBold,
 
@@ -7541,7 +7541,7 @@ fun ComparacaoNotasTmdbSection(listaDeMidias: List<Midia>) {
 
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
 
-            Text("🌟 Suas Notas vs. Crítica Mundial (TMDB)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("🌟 Suas Notas vs. Crítica Mundial (TMDB)".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
 
             val diffFormatada = String.format(Locale.US, "%.1f", Math.abs(diffNota))
 
@@ -7611,7 +7611,7 @@ fun SeriesPausadasSection(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
 
-                    Text("⏸️ Séries Pausadas Há Mais de 14 Dias", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF9800))
+                    Text("⏸️ Séries Pausadas Há Mais de 14 Dias".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFF9800))
 
                     Text("${seriesPausadas.size} série(s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
 
@@ -7635,7 +7635,7 @@ fun SeriesPausadasSection(
 
                                 Text("T${serie.temporadaAtual}:Ep ${serie.episodioAtual}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
 
-                                Text("Retomar ⏩", fontSize = 10.sp, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                                Text("Retomar ⏩".t(), fontSize = 10.sp, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
 
                             }
 
@@ -7853,7 +7853,7 @@ fun CineGlobeGeograficoSection(listaDeMidias: List<Midia>) {
 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 
-                    Text("🛂 Passaporte Cinéfilo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("🛂 Passaporte Cinéfilo".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
 
                     Surface(
 
@@ -8071,7 +8071,7 @@ fun MestresCinemaSection(
 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 
-                    Text("🎭 Mestres do Cinema", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFBBF24))
+                    Text("🎭 Mestres do Cinema".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFBBF24))
 
                     Surface(
 
