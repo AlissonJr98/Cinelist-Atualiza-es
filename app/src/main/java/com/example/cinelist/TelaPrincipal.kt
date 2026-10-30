@@ -419,7 +419,7 @@ fun TelaPrincipal(
     var mostrarDialogoPlaylistsPrincipal by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
 
-    val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal" else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
+    val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal".t() else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada".t() } ?: "Sala Compartilhada".t()
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val membroAssistindo = remember(membrosSala, meuUid) {
@@ -871,14 +871,14 @@ fun TelaPrincipal(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Filtros da Minha Lista".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosMinhaLista > 0) {
-                        TextButton(onClick = { categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }) { Text("Redefinir", color = Color(0xFFFF5252)) }
+                        TextButton(onClick = { categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }) { Text("Redefinir".t(), color = Color(0xFFFF5252)) }
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Coleção Temática:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = colecoesDisponiveis) { col -> FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Coleção Temática:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = colecoesDisponiveis) { col -> FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col.t(), fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat.t(), fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s.t(), fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt.t(), fontSize = 12.sp) }) } }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Coleções & Maratonas Temáticas:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
@@ -901,7 +901,7 @@ fun TelaPrincipal(
                             ) {
                                 Text("🏷️", fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Playlists Temáticas", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1)
+                                Text("Playlists Temáticas".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA78BFA), maxLines = 1)
                             }
                         }
 
@@ -920,7 +920,7 @@ fun TelaPrincipal(
                             ) {
                                 Text("🔔", fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Radar de Estreias", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF), maxLines = 1)
+                                Text("Radar de Estreias".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF), maxLines = 1)
                             }
                         }
                     }
@@ -942,11 +942,11 @@ fun TelaPrincipal(
                                 mostrarDialogoMeusStreamings = true
                             }
                         },
-                        label = { Text(if (meusStreamingsQueryML != null) "📺 Apenas disponível nos meus streamings" else "📺 Configurar meus streamings", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text(if (meusStreamingsQueryML != null) "📺 " + "Apenas disponível nos meus streamings".t() else "📺 " + "Configurar meus streamings".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                         leadingIcon = if (filtroApenasMeusStreamingsMinhaLista) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) } } else null
                     )
                 }
-                if (streamingsFiltro.size > 1) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Plataforma:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = streamingsFiltro) { st -> FilterChip(selected = (filtroPlataforma == st), onClick = { filtroPlataforma = st }, label = { Text(st, fontSize = 12.sp) }) } } }
+                if (streamingsFiltro.size > 1) { Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Plataforma:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = streamingsFiltro) { st -> FilterChip(selected = (filtroPlataforma == st), onClick = { filtroPlataforma = st }, label = { Text(st, fontSize = 12.sp) }) } } }
                 Button(onClick = { mostrarBottomSheetFiltrosMinhaLista = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros".t(), fontWeight = FontWeight.Bold) }
             }
         }
@@ -958,17 +958,17 @@ fun TelaPrincipal(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Filtros de Descoberta".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosDescobrir > 0) {
-                        TextButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }) { Text("Redefinir Tudo", color = Color(0xFFFF5252)) }
+                        TextButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }) { Text("Redefinir Tudo".t(), color = Color(0xFFFF5252)) }
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Tipo de Conteúdo:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = tiposDisponiveis) { tipo -> FilterChip(selected = (tipoPaginado == tipo), onClick = { viewModel.selecionarTipo(tipo) }, label = { Text(tipo, fontSize = 12.sp) }) } }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoDescobrir.map { it.first }) { rotulo -> val chaveSort = opcoesOrdenacaoDescobrir.first { it.first == rotulo }.second; FilterChip(selected = (ordenacaoSelecionada == chaveSort), onClick = { viewModel.selecionarOrdenacao(chaveSort) }, label = { Text(rotulo, fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Tipo de Conteúdo:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = tiposDisponiveis) { tipo -> FilterChip(selected = (tipoPaginado == tipo), onClick = { viewModel.selecionarTipo(tipo) }, label = { Text(tipo.t(), fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoDescobrir.map { it.first }) { rotulo -> val chaveSort = opcoesOrdenacaoDescobrir.first { it.first == rotulo }.second; FilterChip(selected = (ordenacaoSelecionada == chaveSort), onClick = { viewModel.selecionarOrdenacao(chaveSort) }, label = { Text(rotulo.t(), fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Plataformas de Streaming:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
                         TextButton(onClick = { mostrarDialogoMeusStreamings = true }, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)) {
-                            Text("⚙️ Configurar Meus", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            Text("⚙️ " + "Configurar Meus".t(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     val filtroMeusStreamingsAtivo by viewModel.filtroMeusStreamingsAtivo.collectAsState()
@@ -982,14 +982,14 @@ fun TelaPrincipal(
                                 mostrarDialogoMeusStreamings = true
                             }
                         },
-                        label = { Text(if (meusStreamingsQuery != null) "📺 Disponível nos meus streamings" else "📺 Configurar meus streamings", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text(if (meusStreamingsQuery != null) "📺 " + "Disponível nos meus streamings".t() else "📺 " + "Configurar meus streamings".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) },
                         leadingIcon = if (filtroMeusStreamingsAtivo) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) } } else null
                     )
                     FlowRowWithSpacing(items = provedoresDisponiveis) { (nome, id) -> FilterChip(selected = (provedorSelecionadoId == id), onClick = { viewModel.selecionarProvedorStreaming(id) }, label = { Text(nome, fontSize = 12.sp) }) }
                 }
                 val listaGenerosExibir = if (tipoPaginado == "Série" || tipoPaginado == "Anime") generosSeries else generosFilmes
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Gêneros:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listaGenerosExibir) { (nome, id) -> FilterChip(selected = (generoSelecionadoId == id), onClick = { viewModel.selecionarGenero(id) }, label = { Text(nome, fontSize = 12.sp) }) } }
-                Button(onClick = { mostrarBottomSheetFiltrosDescobrir = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros", fontWeight = FontWeight.Bold) }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Gêneros:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listaGenerosExibir) { (nome, id) -> FilterChip(selected = (generoSelecionadoId == id), onClick = { viewModel.selecionarGenero(id) }, label = { Text(nome.t(), fontSize = 12.sp) }) } }
+                Button(onClick = { mostrarBottomSheetFiltrosDescobrir = false }, modifier = Modifier.fillMaxWidth()) { Text("Aplicar Filtros".t(), fontWeight = FontWeight.Bold) }
             }
         }
     }
@@ -1045,7 +1045,7 @@ fun TelaPrincipal(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Default.Forum, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Text("Chat: $nomeListaAtiva", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("${"Chat".t()}: $nomeListaAtiva", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1059,14 +1059,14 @@ fun TelaPrincipal(
                         IconButton(onClick = { mostrarDialogoEnquetes = true }) {
                             Icon(
                                 imageVector = Icons.Default.Poll,
-                                contentDescription = "Votações da Sala",
+                                contentDescription = "Votações da Sala".t(),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        IconButton(onClick = { viewModel.alternarMuteSala(); mostrarSucesso(if (salaMutada) "Notificações da sala ativadas" else "Notificações da sala silenciadas") }) {
+                        IconButton(onClick = { viewModel.alternarMuteSala(); mostrarSucesso(if (salaMutada) "Notificações da sala ativadas".t() else "Notificações da sala silenciadas".t()) }) {
                             Icon(
                                 imageVector = if (salaMutada) Icons.Default.NotificationsOff else Icons.Default.NotificationsActive,
-                                contentDescription = "Silenciar Sala",
+                                contentDescription = "Silenciar Sala".t(),
                                 tint = if (salaMutada) Color.Gray else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -1097,10 +1097,10 @@ fun TelaPrincipal(
                             Text("👥", fontSize = 18.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("CineMatch Coletivo em andamento!", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
-                                Text("Vote para encontrar o filme que todos querem assistir", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("CineMatch Coletivo em andamento!".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
+                                Text("Vote para encontrar o filme que todos querem assistir".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text("Votar ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
+                            Text("Votar ➔".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
                         }
                     }
                 }
@@ -1123,8 +1123,8 @@ fun TelaPrincipal(
                             Icon(Icons.Default.Poll, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Votação aberta: ${enqueteAbertaChat.titulo}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("Toque para votar (${enqueteAbertaChat.votos.size} voto(s))", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                Text("${"Votação aberta".t()}: ${enqueteAbertaChat.titulo}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${"Toque para votar".t()} (${enqueteAbertaChat.votos.size} ${"voto(s)".t()})", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
                             }
                             Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
@@ -1178,7 +1178,7 @@ fun TelaPrincipal(
                                                 else -> Text(text = msg.texto, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp, lineHeight = 20.sp)
                                             }
                                             Row(modifier = Modifier.align(Alignment.End).padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                if (msg.editada) Text(text = "(editado)", color = if (souEu) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 9.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                                                if (msg.editada) Text(text = "(editado)".t(), color = if (souEu) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 9.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                                 Text(text = formatoHora.format(java.util.Date(msg.timestamp)), color = if (souEu) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 9.sp)
                                             }
                                         }
@@ -1189,8 +1189,8 @@ fun TelaPrincipal(
                                         onDismissRequest = { msgMenuExpandido = null },
                                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                                     ) {
-                                        DropdownMenuItem(text = { Text("Editar Mensagem", fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }, onClick = { inputMensagemSala = msg.texto; msgSendoEditada = msg; msgMenuExpandido = null })
-                                        DropdownMenuItem(text = { Text("Apagar para todos", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF4C4C)) }, onClick = { msgParaApagar = msg; msgMenuExpandido = null })
+                                        DropdownMenuItem(text = { Text("Editar Mensagem".t(), fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }, onClick = { inputMensagemSala = msg.texto; msgSendoEditada = msg; msgMenuExpandido = null })
+                                        DropdownMenuItem(text = { Text("Apagar para todos".t(), color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF4C4C)) }, onClick = { msgParaApagar = msg; msgMenuExpandido = null })
                                     }
                                 }
                             }
@@ -1203,9 +1203,9 @@ fun TelaPrincipal(
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, start = 8.dp, end = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                                Text("A editar mensagem...", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                Text("A editar mensagem...".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                             }
-                            IconButton(onClick = { msgSendoEditada = null; inputMensagemSala = "" }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp)) }
+                            IconButton(onClick = { msgSendoEditada = null; inputMensagemSala = "" }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, contentDescription = "Cancelar".t(), tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp)) }
                         }
                     }
 
@@ -1216,7 +1216,7 @@ fun TelaPrincipal(
                         OutlinedTextField(
                             value = inputMensagemSala,
                             onValueChange = { inputMensagemSala = it },
-                            placeholder = { Text("Mensagem...", fontSize = 14.sp) },
+                            placeholder = { Text("Mensagem...".t(), fontSize = 14.sp) },
                             modifier = Modifier.weight(1f),
                             singleLine = false,
                             maxLines = 4,
@@ -1234,7 +1234,7 @@ fun TelaPrincipal(
                             },
                             trailingIcon = {
                                 IconButton(onClick = { mostrarDialogoEnquete = true }) {
-                                    Icon(Icons.Default.Poll, contentDescription = "Criar Enquete", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Poll, contentDescription = "Criar Enquete".t(), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         )
@@ -1247,7 +1247,7 @@ fun TelaPrincipal(
                                     if (msgSendoEditada != null) {
                                         viewModel.editarMensagemSala(msgSendoEditada!!.id, inputMensagemSala)
                                         msgSendoEditada = null
-                                        mostrarSucesso("Mensagem editada")
+                                        mostrarSucesso("Mensagem editada".t())
                                     } else {
                                         viewModel.enviarMensagemParaSala(inputMensagemSala)
                                     }
@@ -1261,7 +1261,7 @@ fun TelaPrincipal(
                         ) {
                             Icon(
                                 imageVector = if (msgSendoEditada != null) Icons.Default.Check else Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Enviar",
+                                contentDescription = "Enviar".t(),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(20.dp).offset(x = if (msgSendoEditada != null) 0.dp else 2.dp)
                             )
@@ -1332,7 +1332,7 @@ fun TelaPrincipal(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("CineList", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Trocar de Lista", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Trocar de Lista".t(), modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurface)
                         }
                         Text(nomeListaAtiva, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                     }
@@ -1342,16 +1342,16 @@ fun TelaPrincipal(
                         onDismissRequest = { menuSalasExpandido = false },
                         modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
-                        DropdownMenuItem(text = { Text("👤 Minha Lista Pessoal", fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) }, onClick = { viewModel.selecionarGrupoAtivo(""); menuSalasExpandido = false; mostrarSucesso("A minha lista pessoal") })
+                        DropdownMenuItem(text = { Text("👤 " + "Minha Lista Pessoal".t(), fontWeight = if (casalIdAtivo.isBlank()) FontWeight.Bold else FontWeight.Normal) }, onClick = { viewModel.selecionarGrupoAtivo(""); menuSalasExpandido = false; mostrarSucesso("A minha lista pessoal".t()) })
                         if (gruposSalvos.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                             for (grupo in gruposSalvos) {
                                 val isAtivo = casalIdAtivo == grupo.grupoId
-                                DropdownMenuItem(text = { Text("🍿 ${grupo.nomeGrupo.ifBlank { "Sala" }}", fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal) }, onClick = { viewModel.selecionarGrupoAtivo(grupo.grupoId); menuSalasExpandido = false; mostrarSucesso("Lista \"${grupo.nomeGrupo}\" selecionada") })
+                                DropdownMenuItem(text = { Text("🍿 ${grupo.nomeGrupo.ifBlank { "Sala".t() }}", fontWeight = if (isAtivo) FontWeight.Bold else FontWeight.Normal) }, onClick = { viewModel.selecionarGrupoAtivo(grupo.grupoId); menuSalasExpandido = false; mostrarSucesso("${"Lista".t()} \"${grupo.nomeGrupo}\" ${"selecionada".t()}") })
                             }
                         }
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                        DropdownMenuItem(text = { Text("⚙️ Gerenciar Salas / Criar Nova") }, onClick = { menuSalasExpandido = false; mostrarDialogoGerenciarSalas = true })
+                        DropdownMenuItem(text = { Text("⚙️ " + "Gerenciar Salas / Criar Nova".t()) }, onClick = { menuSalasExpandido = false; mostrarDialogoGerenciarSalas = true })
                     }
                 },
                 actions = {
@@ -1363,7 +1363,7 @@ fun TelaPrincipal(
                                 shape = RoundedCornerShape(20.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                 modifier = Modifier.height(34.dp)
-                            ) { Text("Match 🍿", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
+                            ) { Text("Match 🍿".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White) }
                         }
                     }
                     IconeBouncyIconButton(onClick = { mostrarDialogoCineBot = true }) {
@@ -1460,7 +1460,7 @@ fun TelaPrincipal(
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             PulsarPontoNeon(cor = Color(0xFF00E5FF), tamanho = 6.dp)
                                             Text(
-                                                text = "HISTÓRICO DE BUSCAS // TELEMETRIA",
+                                                text = "HISTÓRICO DE BUSCAS // TELEMETRIA".t(),
                                                 fontSize = 10.sp,
                                                 fontFamily = FontFamily.Monospace,
                                                 color = Color(0xFF00E5FF),
@@ -1475,7 +1475,7 @@ fun TelaPrincipal(
                                             },
                                             contentPadding = PaddingValues(0.dp)
                                         ) {
-                                            Text("Limpar", fontSize = 10.sp, color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                                            Text("Limpar".t(), fontSize = 10.sp, color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
                                         }
                                     }
                                     for (termo in historicoBuscas) {
@@ -1548,12 +1548,12 @@ fun TelaPrincipal(
 
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
-                        onRefresh = { coroutineScope.launch { isRefreshing = true; focusManager.clearFocus(); viewModel.forcarSincronizacaoManual(); delay(800); isRefreshing = false; mostrarSucesso("Sincronização concluída") } },
+                        onRefresh = { coroutineScope.launch { isRefreshing = true; focusManager.clearFocus(); viewModel.forcarSincronizacaoManual(); delay(800); isRefreshing = false; mostrarSucesso("Sincronização concluída".t()) } },
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             if (listaFiltrada.isEmpty()) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Nenhum item encontrado com esses filtros.", color = MaterialTheme.colorScheme.secondary) }
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Nenhum item encontrado com esses filtros.".t(), color = MaterialTheme.colorScheme.secondary) }
                             } else {
                                 // 🚀 MOSTRAR SUGESTÕES PENDENTES EM TODOS OS MODOS
                                 val listaPendentes = listaDeMidias.filter { it.statusSugestao == "PENDENTE" }
@@ -1579,7 +1579,7 @@ fun TelaPrincipal(
                                 Column(modifier = Modifier.fillMaxSize()) {
                                     // Barra de cabeçalho fixa
                                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                        Text("${listaFiltrada.size} título(s) exibido(s)", color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("${listaFiltrada.size} " + (if (listaFiltrada.size == 1) "título exibido".t() else "título(s) exibido(s)".t()), color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                             IconButton(onClick = { modoVisualizacaoMinhaLista = (modoVisualizacaoMinhaLista + 1) % 3 }, modifier = Modifier.size(32.dp)) {
                                                 Icon(
@@ -1588,20 +1588,20 @@ fun TelaPrincipal(
                                                         1 -> Icons.Default.GridView
                                                         else -> Icons.AutoMirrored.Filled.ViewList
                                                     },
-                                                    "Alternar Visualização",
+                                                    "Alternar Visualização".t(),
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                             if (quantidadeFiltrosAtivosMinhaLista > 0 || textoPesquisa.isNotBlank()) {
                                                 IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus(); categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }, modifier = Modifier.size(32.dp)) {
-                                                    Icon(Icons.Default.Clear, "Limpar Filtros", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
+                                                    Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
                                                 }
                                             }
                                             AssistChip(
                                                 onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosMinhaLista = true },
-                                                label = { Text(if (quantidadeFiltrosAtivosMinhaLista > 0) "Filtros ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                                leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) },
+                                                label = { Text(if (quantidadeFiltrosAtivosMinhaLista > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosMinhaLista)" else "Filtros".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                                leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) },
                                                 colors = AssistChipDefaults.assistChipColors(
                                                     containerColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                                                     labelColor = if (quantidadeFiltrosAtivosMinhaLista > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
@@ -1626,14 +1626,14 @@ fun TelaPrincipal(
                                                     Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
                                                     Text(
-                                                        "${listaPendentes.size + listaRecusados.size} sugestão(ões) aguardando",
+                                                        "${listaPendentes.size + listaRecusados.size} " + "sugestão(ões) aguardando".t(),
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                                     )
                                                 }
                                                 TextButton(onClick = { mostrarDialogoSugestoes = true }) {
-                                                    Text("Ver", fontWeight = FontWeight.Bold)
+                                                    Text("Ver".t(), fontWeight = FontWeight.Bold)
                                                 }
                                             }
                                         }
@@ -1878,13 +1878,13 @@ fun TelaPrincipal(
                                                         ) {
                                                             Icon(
                                                                 Icons.Default.Clear,
-                                                                contentDescription = "Limpar Filtros",
+                                                                contentDescription = "Limpar Filtros".t(),
                                                                 tint = Color(0xFFFF5252),
                                                                 modifier = Modifier.size(18.dp)
                                                             )
                                                         }
                                                     }
-                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros", fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
+                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
                                         }
@@ -1932,8 +1932,8 @@ fun TelaPrincipal(
                                                 Text("Exibindo: $tipoPaginado", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                                     IconButton(onClick = { modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3 }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
-                                                    if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
-                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros", fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
+                                                    if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
+                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
                                         }
@@ -1960,8 +1960,8 @@ fun TelaPrincipal(
                                                 Text("Exibindo: $tipoPaginado", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                                     IconButton(onClick = { modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3 }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
-                                                    if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros", tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
-                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "Filtros ($quantidadeFiltrosAtivosDescobrir)" else "Filtros", fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros", tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
+                                                    if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
+                                                    AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
                                         }
@@ -2455,8 +2455,8 @@ fun CarrosselSessao(
 }
 
 fun compartilharCodigoSalaWhatsApp(context: Context, codigoSala: String, nomeSala: String, senhaSala: String) {
-    val senhaTexto = if (senhaSala.isNotBlank()) " e senha: *$senhaSala*" else ""
-    val mensagem = "🍿 Olá! Entra na minha sala compartilhada no *CineList* para vermos filmes juntos!\n\n📍 Sala: *$nomeSala*\n🔑 Código: `$codigoSala`$senhaTexto\n\nBaixe o app e insira o código para se conectar!"
+    val senhaTexto = if (senhaSala.isNotBlank()) " " + "e senha:".t() + " *$senhaSala*" else ""
+    val mensagem = "${"🍿 Olá! Entra na minha sala compartilhada no *CineList* para vermos filmes juntos!".t()}\n\n📍 ${"Sala".t()}: *$nomeSala*\n🔑 ${"Código".t()}: `$codigoSala`$senhaTexto\n\n${"Baixe o app e insira o código para se conectar!".t()}"
     val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, mensagem); setPackage("com.whatsapp") }
     try { context.startActivity(intent) } catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://api.whatsapp.com/send?text=${Uri.encode(mensagem)}"))) }
 }
@@ -2481,13 +2481,13 @@ fun DialogoGerenciarSalasCompartilhadas(viewModel: MidiaViewModel, onDispensar: 
 
     AlertDialog(
         onDismissRequest = onDispensar,
-        title = { Text("Listas Compartilhadas 🍿", fontWeight = FontWeight.Bold) },
+        title = { Text("Listas Compartilhadas 🍿".t(), fontWeight = FontWeight.Bold) },
         text = {
             Column(modifier = Modifier.fillMaxWidth().heightIn(max = 450.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TabRow(selectedTabIndex = abaModoCriarEntrar) {
-                    Tab(selected = abaModoCriarEntrar == 0, onClick = { abaModoCriarEntrar = 0; mensagemErro = null }, text = { Text("Salas") })
-                    Tab(selected = abaModoCriarEntrar == 1, onClick = { abaModoCriarEntrar = 1; mensagemErro = null }, text = { Text("Criar") })
-                    Tab(selected = abaModoCriarEntrar == 2, onClick = { abaModoCriarEntrar = 2; mensagemErro = null }, text = { Text("Entrar") })
+                    Tab(selected = abaModoCriarEntrar == 0, onClick = { abaModoCriarEntrar = 0; mensagemErro = null }, text = { Text("Salas".t()) })
+                    Tab(selected = abaModoCriarEntrar == 1, onClick = { abaModoCriarEntrar = 1; mensagemErro = null }, text = { Text("Criar".t()) })
+                    Tab(selected = abaModoCriarEntrar == 2, onClick = { abaModoCriarEntrar = 2; mensagemErro = null }, text = { Text("Entrar".t()) })
                 }
 
                 if (!mensagemErro.isNullOrBlank()) {
@@ -2495,25 +2495,25 @@ fun DialogoGerenciarSalasCompartilhadas(viewModel: MidiaViewModel, onDispensar: 
                 }
 
                 if (abaModoCriarEntrar == 0) {
-                    Card(modifier = Modifier.fillMaxWidth().clickable { viewModel.selecionarGrupoAtivo(""); onDispensar() }, colors = CardDefaults.cardColors(containerColor = if (casalIdAtivo.isBlank()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)) { Column(modifier = Modifier.padding(12.dp)) { Text("Minha Lista Pessoal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text("Seus filmes e séries privados", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) } }
+                    Card(modifier = Modifier.fillMaxWidth().clickable { viewModel.selecionarGrupoAtivo(""); onDispensar() }, colors = CardDefaults.cardColors(containerColor = if (casalIdAtivo.isBlank()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)) { Column(modifier = Modifier.padding(12.dp)) { Text("Minha Lista Pessoal".t(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text("Seus filmes e séries privados".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) } }
 
                     if (casalIdAtivo.isNotBlank()) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedButton(onClick = { compartilharCodigoSalaWhatsApp(context = contexto, codigoSala = casalIdAtivo, nomeSala = "Sala Compartilhada", senhaSala = "") }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF25D366)), shape = RoundedCornerShape(10.dp)) { Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Convidar via WhatsApp 💚", fontWeight = FontWeight.Bold) }
+                        OutlinedButton(onClick = { compartilharCodigoSalaWhatsApp(context = contexto, codigoSala = casalIdAtivo, nomeSala = "Sala Compartilhada", senhaSala = "") }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF25D366)), shape = RoundedCornerShape(10.dp)) { Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Convidar via WhatsApp 💚".t(), fontWeight = FontWeight.Bold) }
                         if (isAdministrador) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(10.dp)) {
                                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("👑 Painel de Administrador", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
-                                    OutlinedTextField(value = novaSenhaInput, onValueChange = { novaSenhaInput = it }, label = { Text("Nova Senha da Sala") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                                    Button(onClick = { if (novaSenhaInput.isNotBlank()) { viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaInput) { sucesso -> if (sucesso) { Toast.makeText(contexto, "Senha atualizada com sucesso!", Toast.LENGTH_SHORT).show(); novaSenhaInput = "" } else { Toast.makeText(contexto, "Erro ao atualizar senha.", Toast.LENGTH_SHORT).show() } } } }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Salvar Nova Senha", fontSize = 12.sp) }
+                                    Text("👑 " + "Painel de Administrador".t(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                                    OutlinedTextField(value = novaSenhaInput, onValueChange = { novaSenhaInput = it }, label = { Text("Nova Senha da Sala".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                                    Button(onClick = { if (novaSenhaInput.isNotBlank()) { viewModel.atualizarSenhaDaSala(casalIdAtivo, novaSenhaInput) { sucesso -> if (sucesso) { Toast.makeText(contexto, "Senha atualizada com sucesso!".t(), Toast.LENGTH_SHORT).show(); novaSenhaInput = "" } else { Toast.makeText(contexto, "Erro ao atualizar senha.".t(), Toast.LENGTH_SHORT).show() } } } }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Salvar Nova Senha".t(), fontSize = 12.sp) }
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    Text("Membros na Sala (${membrosSala.size}):", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("${"Membros na Sala".t()} (${membrosSala.size}):", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     for (membro in membrosSala) {
                                         val ehMim = membro.uid == (FirebaseAuth.getInstance().currentUser?.uid ?: "")
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                            Text(membro.nome + if (ehMim) " (Você)" else "", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                                            if (!ehMim) { TextButton(onClick = { viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso -> if (sucesso) Toast.makeText(contexto, "${membro.nome} foi removido da sala.", Toast.LENGTH_SHORT).show() } }) { Text("Remover", color = Color(0xFFFF4C4C), fontSize = 11.sp) } }
+                                            Text(membro.nome + if (ehMim) " (" + "Você".t() + ")" else "", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                                            if (!ehMim) { TextButton(onClick = { viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso -> if (sucesso) Toast.makeText(contexto, "${membro.nome} " + "foi removido da sala.".t(), Toast.LENGTH_SHORT).show() } }) { Text("Remover".t(), color = Color(0xFFFF4C4C), fontSize = 11.sp) } }
                                         }
                                     }
                                 }
@@ -2523,38 +2523,38 @@ fun DialogoGerenciarSalasCompartilhadas(viewModel: MidiaViewModel, onDispensar: 
                     }
 
                     if (gruposSalvos.isEmpty()) {
-                        Text("Nenhuma sala salva ainda. Toque em 'Criar' ou 'Entrar' acima!", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                        Text("Nenhuma sala salva ainda. Toque em 'Criar' ou 'Entrar' acima!".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
                     } else {
                         for (grupo in gruposSalvos) {
                             val ehAtiva = casalIdAtivo == grupo.grupoId
                             Card(modifier = Modifier.fillMaxWidth().clickable { viewModel.selecionarGrupoAtivo(grupo.grupoId); onDispensar() }, colors = CardDefaults.cardColors(containerColor = if (ehAtiva) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
                                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Column(modifier = Modifier.weight(1f)) { Text(grupo.nomeGrupo.ifBlank { grupo.grupoId }, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text("Código: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) }
-                                    IconButton(onClick = { viewModel.excluirGrupoSalvo(grupo) }) { Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo", tint = Color(0xFFFF4C4C)) }
+                                    Column(modifier = Modifier.weight(1f)) { Text(grupo.nomeGrupo.ifBlank { grupo.grupoId }, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface); Text("${"Código".t()}: ${grupo.grupoId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) }
+                                    IconButton(onClick = { viewModel.excluirGrupoSalvo(grupo) }) { Icon(Icons.Default.Delete, contentDescription = "Excluir Grupo".t(), tint = Color(0xFFFF4C4C)) }
                                 }
                             }
                         }
                     }
                 } else if (abaModoCriarEntrar == 1) {
-                    OutlinedTextField(value = nomeGrupoInput, onValueChange = { nomeGrupoInput = it }, label = { Text("Nome da Sala (ex: Casal ❤️)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = codigoGrupoInput, onValueChange = { digitos -> codigoGrupoInput = digitos.filter { it.isDigit() }.take(4) }, label = { Text("Código Numérico") }, prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = senhaGrupoInput, onValueChange = { senhaGrupoInput = it }, label = { Text("Senha de Acesso (Opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = nomeGrupoInput, onValueChange = { nomeGrupoInput = it }, label = { Text("Nome da Sala (ex: Casal ❤️)".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = codigoGrupoInput, onValueChange = { digitos -> codigoGrupoInput = digitos.filter { it.isDigit() }.take(4) }, label = { Text("Código Numérico".t()) }, prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = senhaGrupoInput, onValueChange = { senhaGrupoInput = it }, label = { Text("Senha de Acesso (Opcional)".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        OutlinedButton(onClick = { codigoGrupoInput = (1000..9999).random().toString() }, modifier = Modifier.weight(1f)) { Text("Gerar Código", fontSize = 12.sp) }
+                        OutlinedButton(onClick = { codigoGrupoInput = (1000..9999).random().toString() }, modifier = Modifier.weight(1f)) { Text("Gerar Código".t(), fontSize = 12.sp) }
                         if (codigoGrupoInput.isNotBlank()) {
-                            TextButton(onClick = { val codigoCompleto = "CINE-$codigoGrupoInput"; val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Código da Sala", codigoCompleto)); Toast.makeText(contexto, "Código $codigoCompleto copiado!", Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f)) { Text("Copiar", fontSize = 12.sp) }
+                            TextButton(onClick = { val codigoCompleto = "CINE-$codigoGrupoInput"; val clipboard = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager; clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Código da Sala", codigoCompleto)); Toast.makeText(contexto, "${"Código".t()} $codigoCompleto " + "copiado!".t(), Toast.LENGTH_SHORT).show() }, modifier = Modifier.weight(1f)) { Text("Copiar".t(), fontSize = 12.sp) }
                         }
                     }
-                    Button(onClick = { if (codigoGrupoInput.isNotBlank()) { carregando = true; viewModel.criarGrupoComSenha("CINE-$codigoGrupoInput", nomeGrupoInput.ifBlank { "Lista Compartilhada" }, tipoGrupoSelecionado, senhaGrupoInput) { sucesso -> carregando = false; if (sucesso) onDispensar() else mensagemErro = "Erro ao criar grupo na nuvem." } } else { mensagemErro = "Preencha os números do código." } }, modifier = Modifier.fillMaxWidth(), enabled = !carregando, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White) else Text("Criar e Entrar na Sala", fontWeight = FontWeight.Bold) }
+                    Button(onClick = { if (codigoGrupoInput.isNotBlank()) { carregando = true; viewModel.criarGrupoComSenha("CINE-$codigoGrupoInput", nomeGrupoInput.ifBlank { "Lista Compartilhada" }, tipoGrupoSelecionado, senhaGrupoInput) { sucesso -> carregando = false; if (sucesso) onDispensar() else mensagemErro = "Erro ao criar grupo na nuvem.".t() } } else { mensagemErro = "Preencha os números do código.".t() } }, modifier = Modifier.fillMaxWidth(), enabled = !carregando, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White) else Text("Criar e Entrar na Sala".t(), fontWeight = FontWeight.Bold) }
                 } else {
-                    OutlinedTextField(value = nomeGrupoInput, onValueChange = { nomeGrupoInput = it }, label = { Text("Apelido Local da Lista") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = codigoGrupoInput, onValueChange = { digitos -> codigoGrupoInput = digitos.filter { it.isDigit() }.take(4) }, label = { Text("Código Numérico") }, prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = senhaGrupoInput, onValueChange = { senhaGrupoInput = it }, label = { Text("Senha da Sala (se houver)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    Button(onClick = { if (codigoGrupoInput.isNotBlank()) { carregando = true; viewModel.entrarEmGrupoExistente("CINE-$codigoGrupoInput", nomeGrupoInput.ifBlank { "Lista Compartilhada" }, tipoGrupoSelecionado, senhaGrupoInput) { sucesso, erro -> carregando = false; if (sucesso) onDispensar() else mensagemErro = erro } } else { mensagemErro = "Digite os números do código." } }, modifier = Modifier.fillMaxWidth(), enabled = !carregando, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White) else Text("Verificar e Entrar na Sala", fontWeight = FontWeight.Bold) }
+                    OutlinedTextField(value = nomeGrupoInput, onValueChange = { nomeGrupoInput = it }, label = { Text("Apelido Local da Lista".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = codigoGrupoInput, onValueChange = { digitos -> codigoGrupoInput = digitos.filter { it.isDigit() }.take(4) }, label = { Text("Código Numérico".t()) }, prefix = { Text("CINE-", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = senhaGrupoInput, onValueChange = { senhaGrupoInput = it }, label = { Text("Senha da Sala (se houver)".t()) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Button(onClick = { if (codigoGrupoInput.isNotBlank()) { carregando = true; viewModel.entrarEmGrupoExistente("CINE-$codigoGrupoInput", nomeGrupoInput.ifBlank { "Lista Compartilhada" }, tipoGrupoSelecionado, senhaGrupoInput) { sucesso, erro -> carregando = false; if (sucesso) onDispensar() else mensagemErro = erro } } else { mensagemErro = "Digite os números do código.".t() } }, modifier = Modifier.fillMaxWidth(), enabled = !carregando, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { if (carregando) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White) else Text("Verificar e Entrar na Sala".t(), fontWeight = FontWeight.Bold) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDispensar) { Text("Fechar") } }
+        confirmButton = { TextButton(onClick = onDispensar) { Text("Fechar".t()) } }
     )
 }
 
@@ -2647,7 +2647,7 @@ fun ConteudoCardEnquete(
 
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("📊 Enquete da Sala", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("📊 " + "Enquete da Sala".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         Text(msg.texto, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
@@ -2671,7 +2671,7 @@ fun ConteudoCardEnquete(
                         color = if (selecionado) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (selecionado) {
-                        Text("Votado ✅", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        Text("Votado ✅".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
             }
@@ -2693,7 +2693,7 @@ fun ConteudoCardIndicacao(
 
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("🍿 Indicação Recomendada", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("🍿 " + "Indicação Recomendada".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         Text(msg.texto, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
@@ -2717,7 +2717,7 @@ fun ConteudoCardIndicacao(
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                 modifier = Modifier.height(30.dp)
             ) {
-                Text("Ver 🎬", fontSize = 11.sp)
+                Text("Ver 🎬".t(), fontSize = 11.sp)
             }
         }
     }
@@ -2730,7 +2730,7 @@ fun ConteudoCardDebate(
 ) {
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("💬 Debate Pós-Filme", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("💬 " + "Debate Pós-Filme".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         Text(msg.texto, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
@@ -2740,10 +2740,10 @@ fun ConteudoCardDebate(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Perguntas Quebra-Gelo:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Text("• Qual foi a melhor cena?", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text("• O final fez jus à história?", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text("• Que nota você daria agora?", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("Perguntas Quebra-Gelo:".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("• Qual foi a melhor cena?".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("• O final fez jus à história?".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("• Que nota você daria agora?".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

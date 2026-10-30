@@ -225,9 +225,9 @@ fun DialogoAmigos(
                                     onClick = {
                                         viewModel.enviarSolicitacaoAmigo(usuario.uid) { sucesso, erroMsg ->
                                             if (sucesso) {
-                                                Toast.makeText(contexto, "Solicitação de amizade enviada para ${usuario.nome}!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(contexto, "${"Solicitação de amizade enviada para".t()} ${usuario.nome}!", Toast.LENGTH_SHORT).show()
                                             } else {
-                                                Toast.makeText(contexto, erroMsg ?: "Erro ao enviar solicitação.", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(contexto, erroMsg ?: "Erro ao enviar solicitação.".t(), Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     },

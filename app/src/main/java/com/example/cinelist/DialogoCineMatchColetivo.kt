@@ -89,13 +89,13 @@ fun DialogoCineMatchColetivo(
                         }
                         Column {
                             Text(
-                                text = "CINEMATCH COLETIVO",
+                                text = "CINEMATCH COLETIVO".t(),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 15.sp,
                                 color = Color(0xFFEC4899)
                             )
                             Text(
-                                text = "Sala: $nomeGrupo",
+                                text = "${"Sala".t()}: $nomeGrupo",
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -103,7 +103,7 @@ fun DialogoCineMatchColetivo(
                     }
 
                     IconButton(onClick = onDispensar) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Fechar".t(), tint = Color.White)
                     }
                 }
 
@@ -118,14 +118,14 @@ fun DialogoCineMatchColetivo(
                     ) {
                         Text("👥", fontSize = 44.sp)
                         Text(
-                            text = "Sala Compartilhada Necessária",
+                            text = "Sala Compartilhada Necessária".t(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "O CineMatch Coletivo funciona exclusivamente em Salas Compartilhadas com amigos. Selecione ou crie uma sala primeiro!",
+                            text = "O CineMatch Coletivo funciona exclusivamente em Salas Compartilhadas com amigos. Selecione ou crie uma sala primeiro!".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center,
@@ -137,7 +137,7 @@ fun DialogoCineMatchColetivo(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                         ) {
-                            Text("Entendi", fontWeight = FontWeight.Bold)
+                            Text("Entendi".t(), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -159,14 +159,14 @@ fun DialogoCineMatchColetivo(
                             fontSize = 44.sp
                         )
                         Text(
-                            text = "Nenhuma rodada de CineMatch ativa no momento.",
+                            text = "Nenhuma rodada de CineMatch ativa no momento.".t(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Para iniciar o CineMatch Coletivo, pelo menos um amigo precisa estar online na sala com você!",
+                            text = "Para iniciar o CineMatch Coletivo, pelo menos um amigo precisa estar online na sala com você!".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center,
@@ -188,9 +188,9 @@ fun DialogoCineMatchColetivo(
                                 Text(if (amigosOnline.isNotEmpty()) "🟢" else "🔴", fontSize = 12.sp)
                                 Text(
                                     text = if (amigosOnline.isNotEmpty())
-                                        "Amigos online na sala: ${amigosOnline.joinToString { it.nome }}"
+                                        "${"Amigos online na sala".t()}: ${amigosOnline.joinToString { it.nome }}"
                                     else
-                                        "Nenhum amigo está online nesta sala agora.",
+                                        "Nenhum amigo está online nesta sala agora.".t(),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (amigosOnline.isNotEmpty()) Color(0xFF10B981) else Color(0xFFFCA5A5)
@@ -207,7 +207,7 @@ fun DialogoCineMatchColetivo(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("📢 Chamar Amigos no Chat da Sala")
+                                Text("📢 " + "Chamar Amigos no Chat da Sala".t())
                             }
                         }
                         Text(
@@ -215,14 +215,14 @@ fun DialogoCineMatchColetivo(
                             fontSize = 44.sp
                         )
                         Text(
-                            text = "Nenhuma rodada de CineMatch ativa no momento.",
+                            text = "Nenhuma rodada de CineMatch ativa no momento.".t(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Inicie uma rodada com os filmes da sala ou sugestões populares para todos darem match juntos!",
+                            text = "Inicie uma rodada com os filmes da sala ou sugestões populares para todos darem match juntos!".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center,
@@ -266,7 +266,7 @@ fun DialogoCineMatchColetivo(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                         ) {
-                            Text("Iniciar Rodada de Swipe Coletivo 🚀", fontWeight = FontWeight.Bold)
+                            Text("Iniciar Rodada de Swipe Coletivo 🚀".t(), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -286,7 +286,7 @@ fun DialogoCineMatchColetivo(
                             border = BorderStroke(1.dp, Color(0xFF10B981))
                         ) {
                             Text(
-                                text = "🎉 MATCH COLETIVO DA SALA!",
+                                text = "🎉 " + "MATCH COLETIVO DA SALA!".t(),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Black,
@@ -315,7 +315,7 @@ fun DialogoCineMatchColetivo(
                         )
 
                         Text(
-                            text = "A maioria dos membros da sala aprovou este título! Bora dar o play?",
+                            text = "A maioria dos membros da sala aprovou este título! Bora dar o play?".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center
@@ -336,7 +336,7 @@ fun DialogoCineMatchColetivo(
                             ) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("CineParty!", fontWeight = FontWeight.Bold)
+                                Text("CineParty!".t(), fontWeight = FontWeight.Bold)
                             }
 
                             OutlinedButton(
@@ -346,7 +346,7 @@ fun DialogoCineMatchColetivo(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Finalizar")
+                                Text("Finalizar".t())
                             }
                         }
                     }

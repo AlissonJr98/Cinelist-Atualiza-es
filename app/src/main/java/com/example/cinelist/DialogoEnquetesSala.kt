@@ -70,7 +70,7 @@ fun DialogoEnquetesSala(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = if (modoCriacao) "Nova Votação" else "Votações da Sala",
+                        text = if (modoCriacao) "Nova Votação".t() else "Votações da Sala".t(),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -85,15 +85,15 @@ fun DialogoEnquetesSala(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Criar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Criar".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     } else {
                         TextButton(onClick = { modoCriacao = false }) {
-                            Text("Voltar", fontSize = 13.sp)
+                            Text("Voltar".t(), fontSize = 13.sp)
                         }
                     }
                     IconButton(onClick = onDispensar) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar")
+                        Icon(Icons.Default.Close, contentDescription = "Fechar".t())
                     }
                 }
             }
@@ -111,7 +111,7 @@ fun DialogoEnquetesSala(
                             duracaoMinutos = duracao
                         )
                         modoCriacao = false
-                        Toast.makeText(contexto, "Votação criada com sucesso!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(contexto, "Votação criada com sucesso!".t(), Toast.LENGTH_SHORT).show()
                     }
                 )
             } else {
@@ -134,14 +134,14 @@ fun DialogoEnquetesSala(
                             )
                             Spacer(modifier = Modifier.height(14.dp))
                             Text(
-                                text = "Nenhuma votação ativa na sala",
+                                text = "Nenhuma votação ativa na sala".t(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Crie uma enquete rápida com 2 ou mais títulos para decidirem juntos o que assistir hoje!",
+                                text = "Crie uma enquete rápida com 2 ou mais títulos para decidirem juntos o que assistir hoje!".t(),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.secondary,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -153,7 +153,7 @@ fun DialogoEnquetesSala(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Lançar Votação Agora")
+                                Text("Lançar Votação Agora".t())
                             }
                         }
                     }
@@ -265,7 +265,7 @@ fun CardItemEnquete(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = if (enquete.encerrada) "Votação Encerrada" else "Votação Aberta • $totalVotos voto(s)",
+                            text = if (enquete.encerrada) "Votação Encerrada".t() else "${"Votação Aberta".t()} • $totalVotos ${"voto(s)".t()}",
                             fontSize = 11.sp,
                             color = if (enquete.encerrada) Color(0xFFFF5252) else Color(0xFF22C55E),
                             fontWeight = FontWeight.Medium
@@ -277,11 +277,11 @@ fun CardItemEnquete(
                     Row {
                         if (!enquete.encerrada) {
                             TextButton(onClick = onEncerrar) {
-                                Text("Encerrar", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                                Text("Encerrar".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
                             }
                         }
                         IconButton(onClick = onDeletar, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = "Excluir", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "Excluir".t(), tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -354,12 +354,12 @@ fun CardItemEnquete(
                                     )
                                     if (ehVencedor) {
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("🏆 Vencedor!", fontSize = 11.sp, color = Color(0xFFFFB300), fontWeight = FontWeight.Bold)
+                                        Text("🏆 " + "Vencedor!".t(), fontSize = 11.sp, color = Color(0xFFFFB300), fontWeight = FontWeight.Bold)
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "$votosOpcao voto(s) • ${(percentual * 100).toInt()}%",
+                                    text = "$votosOpcao ${"voto(s)".t()} • ${(percentual * 100).toInt()}%",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
@@ -368,7 +368,7 @@ fun CardItemEnquete(
                             if (votadoPorMim) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Seu voto",
+                                    contentDescription = "Seu voto".t(),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -399,7 +399,7 @@ fun SecaoCriarEnquete(
     listaDeMidiasSala: List<Midia>,
     onCriar: (titulo: String, opcoes: List<Map<String, Any>>, duracaoMinutos: Int) -> Unit
 ) {
-    var tituloInput by remember { mutableStateOf("O que vamos assistir hoje?") }
+    var tituloInput by remember { mutableStateOf("O que vamos assistir hoje?".t()) }
     var duracaoSelecionada by remember { mutableIntStateOf(60) } // 60 min default
     val opcoesSelecionadas = remember { mutableStateListOf<Map<String, Any>>() }
     var textoOpcaoCustomizada by remember { mutableStateOf("") }
@@ -412,7 +412,7 @@ fun SecaoCriarEnquete(
         OutlinedTextField(
             value = tituloInput,
             onValueChange = { tituloInput = it },
-            label = { Text("Pergunta da Votação") },
+            label = { Text("Pergunta da Votação".t()) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(12.dp)
@@ -421,7 +421,7 @@ fun SecaoCriarEnquete(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Adicionar Títulos da Sala:",
+            text = "Adicionar Títulos da Sala:".t(),
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.primary
@@ -491,7 +491,7 @@ fun SecaoCriarEnquete(
             OutlinedTextField(
                 value = textoOpcaoCustomizada,
                 onValueChange = { textoOpcaoCustomizada = it },
-                label = { Text("Ou digite uma opção personalizada") },
+                label = { Text("Ou digite uma opção personalizada".t()) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp)
@@ -513,14 +513,14 @@ fun SecaoCriarEnquete(
                 },
                 enabled = textoOpcaoCustomizada.isNotBlank() && opcoesSelecionadas.size < 6
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Adicionar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.AddCircle, contentDescription = "Adicionar".t(), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
             }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Opções Selecionadas (${opcoesSelecionadas.size}/6, mínimo 2):",
+            text = "${"Opções Selecionadas".t()} (${opcoesSelecionadas.size}/6, ${"mínimo 2".t()}):",
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurface
@@ -549,7 +549,7 @@ fun SecaoCriarEnquete(
                             onClick = { opcoesSelecionadas.remove(opMap) },
                             modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Remover", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = "Remover".t(), tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -570,7 +570,7 @@ fun SecaoCriarEnquete(
         ) {
             Icon(Icons.Default.Poll, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Publicar Votação para a Sala", fontWeight = FontWeight.Bold)
+            Text("Publicar Votação para a Sala".t(), fontWeight = FontWeight.Bold)
         }
     }
 }

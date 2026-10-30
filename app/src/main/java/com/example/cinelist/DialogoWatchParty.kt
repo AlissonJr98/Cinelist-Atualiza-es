@@ -250,7 +250,7 @@ fun DialogoWatchParty(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "CINEPARTY LIVE",
+                                        text = "CINEPARTY LIVE".t(),
                                         fontWeight = FontWeight.Black,
                                         fontSize = 13.sp,
                                         color = Color(0xFF00E5FF)
@@ -262,7 +262,7 @@ fun DialogoWatchParty(
                                         border = BorderStroke(0.8.dp, Color(0xFF10B981))
                                     ) {
                                         Text(
-                                            text = "AO VIVO",
+                                            text = "AO VIVO".t(),
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Black,
                                             color = Color(0xFF10B981),
@@ -307,7 +307,7 @@ fun DialogoWatchParty(
                             ) {
                                 Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(16.dp))
                                 Text(
-                                    text = "Sala: $salaId",
+                                    text = "${"Sala".t()}: $salaId",
                                     fontSize = 11.sp,
                                     color = Color(0xFFCBD5E1),
                                     fontWeight = FontWeight.Medium,
@@ -323,17 +323,17 @@ fun DialogoWatchParty(
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
-                                    Icon(Icons.Default.Key, contentDescription = "Entrar com Código", tint = Color(0xFFA78BFA), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Key, contentDescription = "Entrar com Código".t(), tint = Color(0xFFA78BFA), modifier = Modifier.size(16.dp))
                                 }
 
                                 IconButton(
                                     onClick = {
                                         clipboardManager.setText(AnnotatedString(salaId))
-                                        Toast.makeText(contexto, "Código da sala copiado!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(contexto, "Código da sala copiado!".t(), Toast.LENGTH_SHORT).show()
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copiar Código", tint = Color(0xFF00E5FF), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copiar Código".t(), tint = Color(0xFF00E5FF), modifier = Modifier.size(16.dp))
                                 }
 
                                 IconButton(
@@ -350,7 +350,7 @@ fun DialogoWatchParty(
                                     },
                                     modifier = Modifier.size(28.dp)
                                 ) {
-                                    Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Share, contentDescription = "Compartilhar".t(), tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
                                 }
                             }
                         }
@@ -383,7 +383,7 @@ fun DialogoWatchParty(
                                             .background(if (canalVozConectado) Color(0xFF10B981) else Color(0xFF6B7280))
                                     )
                                     Text(
-                                        text = "PALCO // SALA DE VOZ & PRESENÇA",
+                                        text = "PALCO // SALA DE VOZ & PRESENÇA".t(),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF9CA3AF)
@@ -406,7 +406,7 @@ fun DialogoWatchParty(
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                 Toast.makeText(
                                                     contexto,
-                                                    if (microfoneMutado) "Microfone mutado 🔇" else "Microfone aberto 🎙️",
+                                                    if (microfoneMutado) "Microfone mutado 🔇".t() else "Microfone aberto 🎙️".t(),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
@@ -414,7 +414,7 @@ fun DialogoWatchParty(
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 imageVector = if (microfoneMutado) Icons.Default.MicOff else Icons.Default.Mic,
-                                                contentDescription = "Mutar voz",
+                                                contentDescription = "Mutar voz".t(),
                                                 tint = if (microfoneMutado) Color(0xFFEF4444) else Color(0xFF10B981),
                                                 modifier = Modifier.size(15.dp)
                                             )
@@ -485,7 +485,7 @@ fun DialogoWatchParty(
                                         }
 
                                         Text(
-                                            text = if (souEsse) "Você" else part.nome.split(" ").firstOrNull() ?: part.nome,
+                                            text = if (souEsse) "Você".t() else part.nome.split(" ").firstOrNull() ?: part.nome,
                                             fontSize = 11.sp,
                                             fontWeight = if (souEsse) FontWeight.Bold else FontWeight.Normal,
                                             color = if (souEsse) Color(0xFF00E5FF) else Color(0xFFE5E7EB),
@@ -511,7 +511,7 @@ fun DialogoWatchParty(
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = "Amigos online na sala (${ausentesOnline.size}):",
+                                        text = "${"Amigos online na sala".t()} (${ausentesOnline.size}):",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF00E5FF)
@@ -563,7 +563,7 @@ fun DialogoWatchParty(
                                                     modifier = Modifier.height(28.dp)
                                                 ) {
                                                     Text(
-                                                        text = "Chamar 📞",
+                                                        text = "Chamar 📞".t(),
                                                         color = Color.Black,
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold
@@ -593,7 +593,7 @@ fun DialogoWatchParty(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "CONTAGEM SINCRONIZADA",
+                                    text = "CONTAGEM SINCRONIZADA".t(),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF00E5FF),
@@ -608,7 +608,7 @@ fun DialogoWatchParty(
                                 )
 
                                 Text(
-                                    text = "Todos os participantes apertam o play juntos!",
+                                    text = "Todos os participantes apertam o play juntos!".t(),
                                     fontSize = 11.sp,
                                     color = Color(0xFF94A3B8),
                                     textAlign = TextAlign.Center
@@ -628,13 +628,13 @@ fun DialogoWatchParty(
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Text(
-                                    text = "Prontos para assistir juntos?",
+                                    text = "Prontos para assistir juntos?".t(),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "Quando disparar a contagem, todos na sala verão 3, 2, 1... e começarão no exato mesmo segundo!",
+                                    text = "Quando disparar a contagem, todos na sala verão 3, 2, 1... e começarão no exato mesmo segundo!".t(),
                                     fontSize = 12.sp,
                                     color = Color(0xFF94A3B8),
                                     textAlign = TextAlign.Center
@@ -649,7 +649,7 @@ fun DialogoWatchParty(
                                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (souAnfitriao) "Disparar Contagem ao Vivo (3, 2, 1...)" else "Iniciar Contagem (3, 2, 1...)",
+                                        text = if (souAnfitriao) "Disparar Contagem ao Vivo (3, 2, 1...)".t() else "Iniciar Contagem (3, 2, 1...)".t(),
                                         fontWeight = FontWeight.Bold,
                                         color = Color.Black
                                     )
@@ -689,7 +689,7 @@ fun DialogoWatchParty(
                                             .background(if (estaPausado) Color(0xFFE11D48) else Color(0xFF10B981))
                                     )
                                     Text(
-                                        text = if (estaPausado) "SESSÃO PAUSADA" else "EM SINCRONIA AO VIVO",
+                                        text = if (estaPausado) "SESSÃO PAUSADA".t() else "EM SINCRONIA AO VIVO".t(),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (estaPausado) Color(0xFFE11D48) else Color(0xFF10B981),
@@ -727,7 +727,7 @@ fun DialogoWatchParty(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text(if (estaPausado) "Retomar Geral" else "Pausar Geral", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(if (estaPausado) "Retomar Geral".t() else "Pausar Geral".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
 
                                     OutlinedButton(
@@ -740,7 +740,7 @@ fun DialogoWatchParty(
                                         },
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Text("Encerrar", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                                        Text("Encerrar".t(), fontSize = 12.sp, color = Color(0xFF94A3B8))
                                     }
                                 }
                             }
@@ -753,7 +753,7 @@ fun DialogoWatchParty(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Reações ao vivo (transmitidas a todos na sala):",
+                            text = "Reações ao vivo (transmitidas a todos na sala):".t(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -837,14 +837,14 @@ fun DialogoWatchParty(
             if (mostrarDialogoTrocarCodigo) {
                 AlertDialog(
                     onDismissRequest = { mostrarDialogoTrocarCodigo = false },
-                    title = { Text("Entrar em Outra Sala CineParty") },
+                    title = { Text("Entrar em Outra Sala CineParty".t()) },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Digite ou cole o código da sala de CineParty fornecido pelo seu amigo:")
+                            Text("Digite ou cole o código da sala de CineParty fornecido pelo seu amigo:".t())
                             OutlinedTextField(
                                 value = inputCodigoSala,
                                 onValueChange = { inputCodigoSala = it },
-                                label = { Text("Código da Sala") },
+                                label = { Text("Código da Sala".t()) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -862,12 +862,12 @@ fun DialogoWatchParty(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
                         ) {
-                            Text("Entrar na Sala", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text("Entrar na Sala".t(), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { mostrarDialogoTrocarCodigo = false }) {
-                            Text("Cancelar", color = Color.Gray)
+                            Text("Cancelar".t(), color = Color.Gray)
                         }
                     }
                 )

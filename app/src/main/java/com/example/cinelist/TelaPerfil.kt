@@ -2593,7 +2593,7 @@ fun TelaPerfil(
 
                                     ) {
 
-                                        Text(text = "👑 Controle de Administrador", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CineListTokens.CorPremium)
+                                        Text(text = "👑 " + "Controle de Administrador".t(), fontWeight = FontWeight.Bold, fontSize = 15.sp, color = CineListTokens.CorPremium)
 
 
 
@@ -2603,7 +2603,7 @@ fun TelaPerfil(
 
                                             onValueChange = { novaSenhaSalaInput = it },
 
-                                            label = { Text("Atualizar Senha da Sala", color = MaterialTheme.colorScheme.secondary) },
+                                            label = { Text("Atualizar Senha da Sala".t(), color = MaterialTheme.colorScheme.secondary) },
 
                                             singleLine = true,
 
@@ -2623,7 +2623,7 @@ fun TelaPerfil(
 
                                                         if (sucesso) {
 
-                                                            Toast.makeText(contexto, "Senha atualizada com sucesso!", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(contexto, "Senha atualizada com sucesso!".t(), Toast.LENGTH_SHORT).show()
 
                                                             novaSenhaSalaInput = ""
 
@@ -2641,7 +2641,7 @@ fun TelaPerfil(
 
                                         ) {
 
-                                            Text("Salvar Nova Senha", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                            Text("Salvar Nova Senha".t(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
 
                                         }
 
@@ -2649,7 +2649,7 @@ fun TelaPerfil(
 
                                         Spacer(modifier = Modifier.height(2.dp))
 
-                                        Text("Membros Conectados (${membrosOrdenados.size}):", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("${"Membros Conectados".t()} (${membrosOrdenados.size}):", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
 
 
 
@@ -2667,7 +2667,7 @@ fun TelaPerfil(
 
                                             ) {
 
-                                                Text(text = membro.nome + if (ehMim) " (Você)" else "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = if (ehMim) FontWeight.Bold else FontWeight.Normal)
+                                                Text(text = membro.nome + if (ehMim) " (" + "Você".t() + ")" else "", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = if (ehMim) FontWeight.Bold else FontWeight.Normal)
 
                                                 if (!ehMim) {
 
@@ -2675,11 +2675,11 @@ fun TelaPerfil(
 
                                                         viewModel.excluirMembroDaSala(casalIdAtivo, membro.uid) { sucesso ->
 
-                                                            if (sucesso) Toast.makeText(contexto, "${membro.nome} foi removido.", Toast.LENGTH_SHORT).show()
+                                                            if (sucesso) Toast.makeText(contexto, "${membro.nome} " + "foi removido da sala.".t(), Toast.LENGTH_SHORT).show()
 
                                                         }
 
-                                                    }) { Text("Remover", color = CineListTokens.CorErro, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                                    }) { Text("Remover".t(), color = CineListTokens.CorErro, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
 
                                                 }
 
@@ -2723,9 +2723,9 @@ fun TelaPerfil(
 
                         ) {
 
-                            Text(text = "Cinéfilos na Sala (${membrosOrdenados.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                            Text(text = "${"Cinéfilos na Sala".t()} (${membrosOrdenados.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
 
-                            Text(text = "Toque no avatar para inspecionar os títulos adicionados pelo membro.", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                            Text(text = "Toque no avatar para inspecionar os títulos adicionados pelo membro.".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
 
 
 
@@ -2819,7 +2819,7 @@ fun TelaPerfil(
 
                             Text(
 
-                                text = "Histórico de Notificações",
+                                text = "Histórico de Notificações".t(),
 
                                 fontSize = 18.sp,
 
@@ -2837,7 +2837,7 @@ fun TelaPerfil(
 
                                     TextButton(onClick = { viewModel.marcarTodasNotificacoesComoLidas() }) {
 
-                                        Text("Marcar lidas", fontSize = 12.sp)
+                                        Text("Marcar lidas".t(), fontSize = 12.sp)
 
                                     }
 

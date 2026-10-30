@@ -109,7 +109,7 @@ fun DialogoCineBlind(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "CINEBLIND",
+                                    text = "CINEBLIND".t(),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color(0xFFA855F7),
@@ -122,7 +122,7 @@ fun DialogoCineBlind(
                                     border = BorderStroke(0.8.dp, Color(0xFFA855F7))
                                 ) {
                                     Text(
-                                        text = "AMIGO OCULTO",
+                                        text = "AMIGO OCULTO".t(),
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color(0xFFA855F7),
@@ -131,7 +131,7 @@ fun DialogoCineBlind(
                                 }
                             }
                             Text(
-                                text = "Sessão Secreta na Sala $nomeGrupo",
+                                text = "${"Sessão Secreta na Sala".t()} $nomeGrupo",
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8),
                                 maxLines = 1,
@@ -158,14 +158,14 @@ fun DialogoCineBlind(
                         Text("👥", fontSize = 44.sp)
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Sala Compartilhada Necessária",
+                            text = "Sala Compartilhada Necessária".t(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "O CineBlind é um amigo secreto de filmes jogado entre amigos na Sala Compartilhada. Escolha uma de suas salas abaixo:",
+                            text = "O CineBlind é um amigo secreto de filmes jogado entre amigos na Sala Compartilhada. Escolha uma de suas salas abaixo:".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center
@@ -192,8 +192,8 @@ fun DialogoCineBlind(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Column {
-                                                Text(g.nomeGrupo.ifBlank { "Sala Compartilhada" }, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
-                                                Text("Toque para ativar esta sala", fontSize = 11.sp, color = Color(0xFFA855F7))
+                                                Text(g.nomeGrupo.ifBlank { "Sala Compartilhada".t() }, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
+                                                Text("Toque para ativar esta sala".t(), fontSize = 11.sp, color = Color(0xFFA855F7))
                                             }
                                             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFA855F7))
                                         }
@@ -207,7 +207,7 @@ fun DialogoCineBlind(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth().height(48.dp)
                             ) {
-                                Text("Entendi / Criar Sala", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Entendi / Criar Sala".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                         }
                     }
@@ -224,14 +224,14 @@ fun DialogoCineBlind(
                         Text("🎭", fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Nenhuma Sessão Secreta Aberta",
+                            text = "Nenhuma Sessão Secreta Aberta".t(),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "No CineBlind, cada membro da sala sugere um filme secreto com 3 pistas misteriosas. A galera vota nas pistas e o vencedor é desvendado para assistirem juntos!",
+                            text = "No CineBlind, cada membro da sala sugere um filme secreto com 3 pistas misteriosas. A galera vota nas pistas e o vencedor é desvendado para assistirem juntos!".t(),
                             fontSize = 12.sp,
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center
@@ -241,14 +241,14 @@ fun DialogoCineBlind(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.iniciarCineBlind(grupoId) {
-                                    Toast.makeText(contexto, "Rodada do CineBlind aberta!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(contexto, "Rodada do CineBlind aberta!".t(), Toast.LENGTH_SHORT).show()
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth().height(48.dp)
                         ) {
-                            Text("Iniciar Rodada Secreta 🎲", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Iniciar Rodada Secreta 🎲".t(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 } else {
@@ -272,14 +272,14 @@ fun DialogoCineBlind(
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
-                                            text = "FASE 1: CADASTRO DE PISTAS",
+                                            text = "FASE 1: CADASTRO DE PISTAS".t(),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Black,
                                             color = Color(0xFFA855F7),
                                             letterSpacing = 1.sp
                                         )
                                         Text(
-                                            text = "Cadastre um filme com 3 pistas sem dar spoilers. Os amigos só verão as pistas!",
+                                            text = "Cadastre um filme com 3 pistas sem dar spoilers. Os amigos só verão as pistas!".t(),
                                             fontSize = 11.sp,
                                             color = Color(0xFF94A3B8)
                                         )
@@ -287,7 +287,7 @@ fun DialogoCineBlind(
                                 }
 
                                 Text(
-                                    text = "Sugestões misteriosas enviadas (${sugestoes.size}):",
+                                    text = "${"Sugestões misteriosas enviadas".t()} (${sugestoes.size}):",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -324,13 +324,13 @@ fun DialogoCineBlind(
                                                     Text("🔒", fontSize = 20.sp)
                                                     Column {
                                                         Text(
-                                                            text = if (souEu) "Sua Sugestão: ${sug.tituloReal}" else "Sugestão Misteriosa de ${sug.autorNome}",
+                                                            text = if (souEu) "${"Sua Sugestão".t()}: ${sug.tituloReal}" else "${"Sugestão Misteriosa de".t()} ${sug.autorNome}",
                                                             fontWeight = FontWeight.Bold,
                                                             fontSize = 13.sp,
                                                             color = if (souEu) Color(0xFFE9D5FF) else Color.White
                                                         )
                                                         Text(
-                                                            text = "Gênero: ${sug.genero} • ${sug.pistas.size} pistas cadastradas",
+                                                            text = "${"Gênero:".t()} ${sug.genero} • ${sug.pistas.size} ${"pistas cadastradas".t()}",
                                                             fontSize = 11.sp,
                                                             color = Color(0xFF94A3B8)
                                                         )
@@ -338,7 +338,7 @@ fun DialogoCineBlind(
                                                 }
 
                                                 if (souEu) {
-                                                    Text("✅ Pronto", fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+                                                    Text("✅ " + "Pronto".t(), fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
                                                 }
                                             }
                                         }
@@ -354,7 +354,7 @@ fun DialogoCineBlind(
                                     ) {
                                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Enviar Minha Sugestão Secreta", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("Enviar Minha Sugestão Secreta".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                 }
 
@@ -362,7 +362,7 @@ fun DialogoCineBlind(
                                     Button(
                                         onClick = {
                                             viewModel.avancarParaVotacaoCineBlind(grupoId, sessao.id)
-                                            Toast.makeText(contexto, "Votação aberta!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(contexto, "Votação aberta!".t(), Toast.LENGTH_SHORT).show()
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
                                         shape = RoundedCornerShape(12.dp),
@@ -370,7 +370,7 @@ fun DialogoCineBlind(
                                     ) {
                                         Icon(Icons.Default.HowToVote, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Avançar para Votação das Pistas 🗳️", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 13.sp)
+                                        Text("Avançar para Votação das Pistas 🗳️".t(), fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -392,14 +392,14 @@ fun DialogoCineBlind(
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
-                                            text = "FASE 2: VOTE NA MELHOR PISTA",
+                                            text = "FASE 2: VOTE NA MELHOR PISTA".t(),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Black,
                                             color = Color(0xFF00E5FF),
                                             letterSpacing = 1.sp
                                         )
                                         Text(
-                                            text = "Leia as pistas misteriosas abaixo e vote na que mais te chamou atenção!",
+                                            text = "Leia as pistas misteriosas abaixo e vote na que mais te chamou atenção!".t(),
                                             fontSize = 11.sp,
                                             color = Color(0xFF94A3B8)
                                         )
@@ -432,7 +432,7 @@ fun DialogoCineBlind(
                                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                         Text("🎭", fontSize = 16.sp)
                                                         Text(
-                                                            text = "Gênero: ${sug.genero}",
+                                                            text = "${"Gênero:".t()} ${sug.genero}",
                                                             fontWeight = FontWeight.Bold,
                                                             fontSize = 12.sp,
                                                             color = Color(0xFF00E5FF)

@@ -94,14 +94,14 @@ fun DialogoRankingAmigos(
                         }
                         Column {
                             Text(
-                                text = "RANKING SEMANAL",
+                                text = "RANKING SEMANAL".t(),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFFF59E0B),
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "Disputa de Maratonas da Semana",
+                                text = "Disputa de Maratonas da Semana".t(),
                                 fontSize = 11.sp,
                                 color = Color(0xFF94A3B8)
                             )
@@ -109,7 +109,7 @@ fun DialogoRankingAmigos(
                     }
 
                     IconButton(onClick = onDispensar, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color(0xFF94A3B8))
+                        Icon(Icons.Default.Close, contentDescription = "Fechar".t(), tint = Color(0xFF94A3B8))
                     }
                 }
 
@@ -130,7 +130,7 @@ fun DialogoRankingAmigos(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Nenhum dado encontrado para o ranking ainda.\nAdicione amigos e conclua títulos para pontuar!",
+                            text = "Nenhum dado encontrado para o ranking ainda.\nAdicione amigos e conclua títulos para pontuar!".t(),
                             color = Color(0xFF94A3B8),
                             textAlign = TextAlign.Center,
                             fontSize = 13.sp
@@ -196,13 +196,13 @@ fun DialogoRankingAmigos(
                                     )
                                     Column {
                                         Text(
-                                            text = "Sua Posição",
+                                            text = "Sua Posição".t(),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF00E5FF)
                                         )
                                         Text(
-                                            text = "${meuStatus.titulosConcluidos} títulos concluídos nesta semana",
+                                            text = "${meuStatus.titulosConcluidos} " + "títulos concluídos nesta semana".t(),
                                             fontSize = 10.sp,
                                             color = Color(0xFF94A3B8)
                                         )
@@ -293,7 +293,7 @@ fun DialogoRankingAmigos(
                                                 overflow = TextOverflow.Ellipsis
                                             )
                                             Text(
-                                                text = "${item.titulosConcluidos} concluídos • ~${String.format(java.util.Locale.US, "%.1f", item.horasEstimadas)}h",
+                                                text = "${item.titulosConcluidos} " + "concluídos".t() + " • ~${String.format(java.util.Locale.US, "%.1f", item.horasEstimadas)}h",
                                                 fontSize = 10.sp,
                                                 color = Color(0xFF64748B)
                                             )
