@@ -82,7 +82,7 @@ fun SecaoLancamentosStreaming(
             ) {
                 Icon(
                     imageVector = Icons.Default.Tune,
-                    contentDescription = "Configurar Meus Streamings",
+                    contentDescription = "Configurar Meus Streamings".t(),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
@@ -141,7 +141,7 @@ fun SecaoLancamentosStreaming(
                         border = androidx.compose.foundation.BorderStroke(1.dp, corServico.copy(alpha = 0.45f))
                     ) {
                         Text(
-                            text = "${secao.totalTitulos} TÍTULOS",
+                            text = "${secao.totalTitulos} TÍTULOS".t(),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = if (servico.corHex == 0xFF333333L) Color.White else corServico,
@@ -187,7 +187,7 @@ fun SecaoLancamentosStreaming(
                                     }
 
                                     // Badge Topo Estilo JustWatch (Ex: T4 | 8 eps ou Filme)
-                                    val badgeTexto = if (tipoReal == "Série") "Série • Nova" else "Filme"
+                                    val badgeTexto = if (tipoReal == "Série") "Série • Nova".t() else "Filme".t()
                                     Surface(
                                         modifier = Modifier
                                             .align(Alignment.TopStart)
@@ -232,7 +232,7 @@ fun SecaoLancamentosStreaming(
                                     ) {
                                         Icon(
                                             imageVector = if (jaNaLista) Icons.Default.Check else Icons.Default.Add,
-                                            contentDescription = if (jaNaLista) "Na Lista" else "Adicionar à Lista",
+                                            contentDescription = if (jaNaLista) "Na Lista".t() else "Adicionar à Lista".t(),
                                             tint = if (jaNaLista) Color.Black else Color.White,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -243,7 +243,7 @@ fun SecaoLancamentosStreaming(
 
                                 // Título
                                 Text(
-                                    text = item.titulo,
+                                    text = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.titulo, item.ehSerie),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,

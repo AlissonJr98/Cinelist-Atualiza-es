@@ -419,6 +419,10 @@ fun CardTopicoForum(
 
     val emojisDisponiveis = listOf("❤️", "🔥", "🍿", "👏", "🤯", "😂")
     val deulike = atividade.usuarioDeuLike(meuUid)
+    val coroutineScope = rememberCoroutineScope()
+    var textoTraduzido by remember(atividade.id) { mutableStateOf<String?>(null) }
+    var traduzindo by remember(atividade.id) { mutableStateOf(false) }
+    var mostrarTraducao by remember(atividade.id) { mutableStateOf(false) }
 
     val corCategoria = remember(atividade.categoria, atividade.tipo) {
         when {
@@ -503,8 +507,16 @@ fun CardTopicoForum(
 
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            val bandeira = remember(atividade.paisIso, atividade.autorUid) {
+                                TradutorHelper.obterEmojiBandeira(
+                                    if (atividade.paisIso.isNotBlank()) atividade.paisIso
+                                    else if (atividade.autorUid == meuUid) java.util.Locale.getDefault().country
+                                    else ""
+                                )
+                            }
+                            val autorNomeFinal = if (bandeira.isNotBlank()) "$bandeira ${atividade.autorNome}" else atividade.autorNome
                             Text(
-                                text = atividade.autorNome,
+                                text = autorNomeFinal,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 color = Color.White,
@@ -517,7 +529,7 @@ fun CardTopicoForum(
                                 border = BorderStroke(0.6.dp, corCategoria)
                             ) {
                                 Text(
-                                    text = atividade.categoria.ifBlank { "Geral" },
+                                    text = atividade.categoria.ifBlank { "Geral" }.t(),
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = corCategoria,
@@ -629,8 +641,19 @@ fun CardTopicoForum(
                             }
 
                             Column {
+                                val tituloMidiaExibicao = remember(atividade.tmdbId, atividade.tituloMidia, atividade.tipoMidia) {
+                                    if (atividade.tmdbId > 0) {
+                                        MidiaLocalizationManager.obterTituloLocalizadoPorId(
+                                            atividade.tmdbId,
+                                            atividade.tituloMidia,
+                                            atividade.tipoMidia.equals("Série", ignoreCase = true)
+                                        )
+                                    } else {
+                                        atividade.tituloMidia
+                                    }
+                                }
                                 Text(
-                                    text = atividade.tituloMidia,
+                                    text = tituloMidiaExibicao,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
@@ -712,12 +735,55 @@ fun CardTopicoForum(
                     }
                 }
             } else if (atividade.comentario.isNotBlank()) {
+                val textoParaExibir = if (mostrarTraducao && !textoTraduzido.isNullOrBlank()) textoTraduzido!! else atividade.comentario
                 Text(
-                    text = atividade.comentario,
+                    text = textoParaExibir,
                     fontSize = 13.sp,
                     color = Color(0xFFE2E8F0),
                     lineHeight = 19.sp
                 )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    if (traduzindo) {
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color(0xFF00E5FF))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Traduzindo...".t(), fontSize = 10.sp, color = Color(0xFF94A3B8))
+                    } else if (mostrarTraducao && !textoTraduzido.isNullOrBlank()) {
+                        Text("🌐 " + "Traduzido via CineTranslate".t(), fontSize = 10.sp, color = Color(0xFF94A3B8))
+                        TextButton(
+                            onClick = { mostrarTraducao = false },
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                            modifier = Modifier.height(20.dp)
+                        ) {
+                            Text("Mostrar original".t(), fontSize = 10.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        TextButton(
+                            onClick = {
+                                if (textoTraduzido != null) {
+                                    mostrarTraducao = true
+                                } else {
+                                    traduzindo = true
+                                    coroutineScope.launch {
+                                        val trad = TradutorHelper.traduzir(atividade.comentario)
+                                        traduzindo = false
+                                        if (!trad.isNullOrBlank()) {
+                                            textoTraduzido = trad
+                                            mostrarTraducao = true
+                                        }
+                                    }
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                            modifier = Modifier.height(20.dp)
+                        ) {
+                            Text("🌐 " + "Traduzir".t(), fontSize = 10.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
 
             HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
@@ -777,7 +843,7 @@ fun CardTopicoForum(
                                 modifier = Modifier.size(15.dp)
                             )
                             Text(
-                                text = if (atividade.totalComentarios > 0) "${atividade.totalComentarios} respostas" else "Debater",
+                                text = if (atividade.totalComentarios > 0) "${atividade.totalComentarios} respostas".t() else "Debater".t(),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF00E5FF)
@@ -991,6 +1057,19 @@ fun DialogoThreadDiscussao(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(comentarios, key = { it.id }) { c ->
+                            var cTraduzido by remember(c.id) { mutableStateOf<String?>(null) }
+                            var cTraduzindo by remember(c.id) { mutableStateOf(false) }
+                            var cMostrarTraducao by remember(c.id) { mutableStateOf(false) }
+                            val escopoComentario = rememberCoroutineScope()
+                            val bandeiraC = remember(c.paisIso, c.autorUid) {
+                                TradutorHelper.obterEmojiBandeira(
+                                    if (c.paisIso.isNotBlank()) c.paisIso
+                                    else if (c.autorUid == meuUid) java.util.Locale.getDefault().country
+                                    else ""
+                                )
+                            }
+                            val autorNomeC = if (bandeiraC.isNotBlank()) "$bandeiraC ${c.autorNome}" else c.autorNome
+
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = Color(0xFF161F36),
@@ -1021,7 +1100,7 @@ fun DialogoThreadDiscussao(
                                                     Text(c.autorNome.take(1).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
                                                 }
                                             }
-                                            Text(c.autorNome, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(autorNomeC, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                         }
 
                                         if (c.autorUid == meuUid) {
@@ -1050,7 +1129,50 @@ fun DialogoThreadDiscussao(
                                         }
                                     }
 
-                                    Text(text = c.texto, fontSize = 12.sp, color = Color(0xFFE2E8F0), lineHeight = 17.sp)
+                                    val textoExibirC = if (cMostrarTraducao && !cTraduzido.isNullOrBlank()) cTraduzido!! else c.texto
+                                    Text(text = textoExibirC, fontSize = 12.sp, color = Color(0xFFE2E8F0), lineHeight = 17.sp)
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        if (cTraduzindo) {
+                                            CircularProgressIndicator(modifier = Modifier.size(10.dp), strokeWidth = 1.2.dp, color = Color(0xFF00E5FF))
+                                            Spacer(modifier = Modifier.width(2.dp))
+                                            Text("Traduzindo...".t(), fontSize = 9.sp, color = Color(0xFF94A3B8))
+                                        } else if (cMostrarTraducao && !cTraduzido.isNullOrBlank()) {
+                                            Text("🌐 " + "Traduzido via CineTranslate".t(), fontSize = 9.sp, color = Color(0xFF94A3B8))
+                                            TextButton(
+                                                onClick = { cMostrarTraducao = false },
+                                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                                                modifier = Modifier.height(18.dp)
+                                            ) {
+                                                Text("Mostrar original".t(), fontSize = 9.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+                                            }
+                                        } else if (c.texto.isNotBlank()) {
+                                            TextButton(
+                                                onClick = {
+                                                    if (cTraduzido != null) {
+                                                        cMostrarTraducao = true
+                                                    } else {
+                                                        cTraduzindo = true
+                                                        escopoComentario.launch {
+                                                            val trad = TradutorHelper.traduzir(c.texto)
+                                                            cTraduzindo = false
+                                                            if (!trad.isNullOrBlank()) {
+                                                                cTraduzido = trad
+                                                                cMostrarTraducao = true
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                                                modifier = Modifier.height(18.dp)
+                                            ) {
+                                                Text("🌐 " + "Traduzir".t(), fontSize = 9.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
 
                                     // Curtir Comentário
                                     Row(

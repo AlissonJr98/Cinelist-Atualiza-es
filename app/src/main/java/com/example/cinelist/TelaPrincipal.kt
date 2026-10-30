@@ -1651,7 +1651,7 @@ fun TelaPrincipal(
                                                 // 🔖 Secção dedicada apenas à última série editada
                                                 if (listaOndeParei.isNotEmpty()) {
                                                     val ultimaSerie = listaOndeParei.first()
-                                                    val dataTexto = if (ultimaSerie.atualizadoEm > 0L) " (${formatarDataRelativa(ultimaSerie.atualizadoEm)})" else ""
+                                                    val dataTexto = if (ultimaSerie.atualizadoEm > 0L) " (${formatarDataRelativa(ultimaSerie.atualizadoEm).t()})" else ""
                                                     item {
                                                         Column(modifier = Modifier.fillMaxWidth()) {
                                                             Text(
@@ -2277,9 +2277,10 @@ fun BannerOndePareiHorizontal(
                     .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (midia.imagemCapa.isNotBlank()) {
+                val capaFinal = capaExibicao.ifBlank { midia.imagemCapa }
+                if (capaFinal.isNotBlank()) {
                     AsyncImage(
-                        model = midia.imagemCapa,
+                        model = capaFinal,
                         contentDescription = midia.titulo,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -2307,7 +2308,7 @@ fun BannerOndePareiHorizontal(
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        text = "T${midia.temporadaAtual} • Episódio ${midia.episodioAtual}",
+                        text = formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary,
@@ -2326,7 +2327,7 @@ fun BannerOndePareiHorizontal(
                         modifier = Modifier.size(12.dp)
                     )
                     Text(
-                        text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}",
+                        text = "${"Visto".t()}: ${formatarDataRelativa(midia.atualizadoEm).t()}",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Medium

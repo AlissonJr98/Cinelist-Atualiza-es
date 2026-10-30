@@ -377,7 +377,7 @@ private fun ConteudoItemMidiaCard(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}",
+                                        text = formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual),
                                         color = Color(0xFFFFD700),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
@@ -396,12 +396,12 @@ private fun ConteudoItemMidiaCard(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Add,
-                                                contentDescription = "Avançar Episódio",
+                                                contentDescription = "Avançar Episódio".t(),
                                                 tint = MaterialTheme.colorScheme.onPrimary,
                                                 modifier = Modifier.size(14.dp)
                                             )
                                             Text(
-                                                text = "+1 Ep",
+                                                text = "+1 Ep".t(),
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.ExtraBold
@@ -420,7 +420,7 @@ private fun ConteudoItemMidiaCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "T${midia.temporadaAtual} • Ep ${midia.episodioAtual}",
+                                    text = formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual),
                                     color = Color(0xFFFFD700),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
@@ -1188,12 +1188,12 @@ private fun ConteudoItemMidiaCardHorizontal(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Add,
-                                            contentDescription = "Avançar Episódio",
+                                            contentDescription = "Avançar Episódio".t(),
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = "T${midia.temporadaAtual}:Ep ${midia.episodioAtual} (+1)",
+                                            text = "${formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual)} (+1)",
                                             color = MaterialTheme.colorScheme.onPrimary,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold

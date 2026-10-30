@@ -144,6 +144,16 @@ fun TelaDetalhes(
 
     val comentariosPublicos by viewModel.comentariosPublicosAtivos.collectAsState(initial = emptyList())
 
+    val tituloDinamico = remember(I18n.idiomaAtivo, detalhesApi?.titulo, midiaSalva?.titulo, midiaSalva?.idTmdb) {
+        val tituloApi = detalhesApi?.titulo
+        when {
+            I18n.idiomaAtivo != "pt-BR" && !tituloApi.isNullOrBlank() -> tituloApi
+            midiaSalva != null -> MidiaLocalizationManager.obterTituloLocalizado(midiaSalva)
+            !tituloApi.isNullOrBlank() -> tituloApi
+            else -> "Título Indisponível".t()
+        }
+    }
+
     val isLoadingSkeleton = remember(detalhesApi, midiaSalva, idRealBuscaApi) {
         midiaSalva == null && detalhesApi == null && idRealBuscaApi > 0
     }
@@ -267,6 +277,13 @@ fun TelaDetalhes(
         }
     }
     // Preenche automaticamente o género vindo do TMDB quando o item salvo está sem género real
+    LaunchedEffect(detalhesApi) {
+        val d = detalhesApi
+        if (d != null && d.id > 0 && d.titulo.isNotBlank()) {
+            MidiaLocalizationManager.salvarNoCache(d.id, d.titulo, d.caminhoPoster.orEmpty())
+        }
+    }
+
     LaunchedEffect(detalhesApi?.generoTexto, midiaSalva?.genero) {
         val generoTmdb = detalhesApi?.generoTexto.orEmpty()
         val atual = midiaSalva
@@ -450,12 +467,12 @@ fun TelaDetalhes(
     if (mostrarDialogFimTemporada && midiaSalva != null) {
         AlertDialog(
             onDismissRequest = { mostrarDialogFimTemporada = false },
-            title = { Text("Fim da Temporada $temporadaConcluidaAlvo! 🎬", fontWeight = FontWeight.Bold) },
+            title = { Text("${"Fim da Temporada".t()} $temporadaConcluidaAlvo! 🎬", fontWeight = FontWeight.Bold) },
             text = {
                 val textoMsg = if (proximaTemporadaExiste) {
-                    "Este era o último episódio da Temporada $temporadaConcluidaAlvo. Deseja avançar para a próxima temporada e manter o status como Assistindo, ou marcar a série inteira como Concluída?"
+                    "${"Este era o último episódio da Temporada".t()} $temporadaConcluidaAlvo. ${"Deseja avançar para a próxima temporada e manter o status como Assistindo, ou marcar a série inteira como Concluída?".t()}"
                 } else {
-                    "Este era o último episódio disponível da série. Deseja marcar a série como Concluída?"
+                    "Este era o último episódio disponível da série. Deseja marcar a série como Concluída?".t()
                 }
                 Text(textoMsg)
             },
@@ -467,16 +484,16 @@ fun TelaDetalhes(
                             temporadaAtual = temporadaConcluidaAlvo + 1
                             episodioAtual = 1
                             statusAtual = StatusMidia.ASSISTINDO
-                            Toast.makeText(contexto, "Avançando para a Temporada $temporadaAtual! 🚀", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(contexto, "${"Avançando para a Temporada".t()} $temporadaAtual! 🚀", Toast.LENGTH_SHORT).show()
                         } else {
                             statusAtual = StatusMidia.CONCLUIDO
                             if (isModoCasal) viewModel.pararAssistirAgora()
-                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉".t(), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(if (proximaTemporadaExiste) "Avançar Temporada" else "Marcar Concluída", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                    Text(if (proximaTemporadaExiste) "Avançar Temporada".t() else "Marcar Concluída".t(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -487,7 +504,7 @@ fun TelaDetalhes(
                         if (isModoCasal) viewModel.pararAssistirAgora()
                     }
                 ) {
-                    Text("Marcar Concluída", color = MaterialTheme.colorScheme.onSurface)
+                    Text("Marcar Concluída".t(), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         )
@@ -496,8 +513,8 @@ fun TelaDetalhes(
     if (mostrarConfirmacaoExclusao && midiaSalva != null) {
         AlertDialog(
             onDismissRequest = { mostrarConfirmacaoExclusao = false },
-            title = { Text("Excluir Mídia", fontWeight = FontWeight.Bold) },
-            text = { Text("Deseja realmente remover \"${midiaSalva.titulo}\" da lista?") },
+            title = { Text("Excluir Mídia".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("${"Deseja realmente remover".t()} \"${tituloDinamico}\" ${"da lista?".t()}") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -507,12 +524,12 @@ fun TelaDetalhes(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
                 ) {
-                    Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Excluir".t(), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarConfirmacaoExclusao = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar".t())
                 }
             }
         )
@@ -558,7 +575,7 @@ fun TelaDetalhes(
             TopBarModernaTranslucida(
                 title = {
                     Text(
-                        text = if (isModoCasal) "Detalhes • $nomeSalaAtiva" else "Detalhes da Mídia",
+                        text = if (isModoCasal) "${"Detalhes".t()} • $nomeSalaAtiva" else "Detalhes da Mídia".t(),
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -566,7 +583,7 @@ fun TelaDetalhes(
                 },
                 navigationIcon = {
                     IconeBouncyIconButton(onClick = onVoltar) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar".t(), tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
@@ -592,7 +609,7 @@ fun TelaDetalhes(
                                 )
                             )
                         }) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card", tint = MaterialTheme.colorScheme.primary)
+                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card".t(), tint = MaterialTheme.colorScheme.primary)
                         }
 
                         val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
@@ -615,7 +632,7 @@ fun TelaDetalhes(
                         }
 
                         IconeBouncyIconButton(onClick = { mostrarConfirmacaoExclusao = true }) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Deletar", tint = Color(0xFFFF4C4C))
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Deletar".t(), tint = Color(0xFFFF4C4C))
                         }
                     }
                 }
@@ -695,7 +712,8 @@ fun TelaDetalhes(
                             ) {
                                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
                                     val urlPosterExibicao = when {
-                                        midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> midiaSalva.imagemCapa
+                                        I18n.idiomaAtivo != "pt-BR" && !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
+                                        midiaSalva != null && midiaSalva.imagemCapa.isNotBlank() -> MidiaLocalizationManager.obterCapaLocalizada(midiaSalva)
                                         !detalhesApi?.urlPosterVertical.isNullOrBlank() -> detalhesApi?.urlPosterVertical
                                         !detalhesApi?.urlBackdrop.isNullOrBlank() -> detalhesApi?.urlBackdrop
                                         else -> null
@@ -718,7 +736,7 @@ fun TelaDetalhes(
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            val tituloDinamico = midiaSalva?.titulo ?: detalhesApi?.titulo ?: "Título Indisponível"
+
 
                             Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             val generoExibicao = if (generoEhValido(midiaSalva?.genero)) midiaSalva?.genero.orEmpty() else detalhesApi?.generoTexto.orEmpty()
@@ -1065,7 +1083,7 @@ fun TelaDetalhes(
                             if (galeriaImagens.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(20.dp))
                                 Text(
-                                    text = "Galeria de Fotos & Cenas:",
+                                    text = "Galeria de Fotos & Cenas:".t(),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
@@ -1335,7 +1353,7 @@ fun TelaDetalhes(
                                                             if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
                                                                 statusAtual = StatusMidia.ASSISTINDO
                                                             }
-                                                            Toast.makeText(contexto, "Temporada $abaTemporadaVisualizada marcada como concluída! 🎉", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(contexto, "${"Temporada".t()} $abaTemporadaVisualizada ${"marcada como concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
                                                         }
                                                     ) {
                                                         Text(
@@ -1457,7 +1475,7 @@ fun TelaDetalhes(
                                             }
                                         } else {
                                             Text(
-                                                text = "Nenhum detalhe extra de episódios encontrado para esta temporada.",
+                                                text = "Nenhum detalhe extra de episódios encontrado para esta temporada.".t(),
                                                 color = MaterialTheme.colorScheme.secondary,
                                                 fontSize = 12.sp,
                                                 modifier = Modifier.padding(vertical = 8.dp)

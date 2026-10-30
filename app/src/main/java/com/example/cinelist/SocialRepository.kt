@@ -880,6 +880,7 @@ class SocialRepository @Inject constructor() {
                 autorUid = user.uid,
                 autorNome = nome,
                 autorFotoUrl = foto,
+                paisIso = java.util.Locale.getDefault().country.ifBlank { "BR" },
                 tipo = tipo,
                 tmdbId = tmdbId,
                 tituloMidia = tituloMidia,
@@ -1025,6 +1026,7 @@ class SocialRepository @Inject constructor() {
                 autorUid = user.uid,
                 autorNome = nome.take(100),
                 autorFotoUrl = foto.take(2000),
+                paisIso = java.util.Locale.getDefault().country.ifBlank { "BR" },
                 tipo = if (categoria == "Teorias & Enigmas") "TEORIA" else if (categoria == "Crítica / Review") "AVALIOU" else "DISCUSSAO",
                 categoria = categoria.ifBlank { "Discussão Geral" }.take(100),
                 topicoTitulo = tituloSanitizado,
@@ -1165,6 +1167,7 @@ class SocialRepository @Inject constructor() {
                 autorUid = user.uid,
                 autorNome = nome.take(100),
                 autorFotoUrl = foto.take(2000),
+                paisIso = java.util.Locale.getDefault().country.ifBlank { "BR" },
                 texto = ModeracaoConteudoHelper.sanitizarTexto(texto).take(2000),
                 timestamp = System.currentTimeMillis(),
                 curtidasUids = emptyList()

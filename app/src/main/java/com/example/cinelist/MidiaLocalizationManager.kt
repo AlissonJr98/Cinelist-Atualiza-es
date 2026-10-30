@@ -136,6 +136,85 @@ object MidiaLocalizationManager {
     }
 
     /**
+     * Retorna o título da mídia localizado a partir do seu ID do TMDB.
+     */
+    fun obterTituloLocalizadoPorId(idTmdb: Int, tituloOriginal: String, ehSerie: Boolean = false): String {
+        val lang = obterPrefixoIdioma()
+        if (lang == "pt") return tituloOriginal
+        if (idTmdb <= 0) return tituloOriginal.t()
+
+        val chave = "$idTmdb-$lang"
+
+        cacheLocalizado[chave]?.let { return it.first }
+
+        titulosPreCarregados[idTmdb]?.get(lang)?.let {
+            cacheLocalizado[chave] = it
+            return it.first
+        }
+
+        val context = CineListApplication.instance
+        if (context != null) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val salvoTitulo = prefs.getString("tit_$chave", null)
+            val salvoPoster = prefs.getString("pos_$chave", null)
+            if (!salvoTitulo.isNullOrBlank()) {
+                val pair = Pair(salvoTitulo, salvoPoster.orEmpty())
+                cacheLocalizado[chave] = pair
+                return salvoTitulo
+            }
+        }
+
+        // Dispara busca assíncrona no TMDB
+        scope.launch {
+            try {
+                val tagTmdb = I18n.idiomaAtivo
+                val (novoTitulo, novoPoster) = if (ehSerie) {
+                    val detalhe = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagTmdb)
+                    Pair(detalhe.titulo, detalhe.caminhoPoster)
+                } else {
+                    val detalhe = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagTmdb)
+                    Pair(detalhe.titulo, detalhe.caminhoPoster)
+                }
+                if (novoTitulo.isNotBlank()) {
+                    val posterFinal = novoPoster?.takeIf { it.isNotBlank() } ?: ""
+                    val par = Pair(novoTitulo, posterFinal)
+                    if (context != null) {
+                        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        prefs.edit()
+                            .putString("tit_$chave", novoTitulo)
+                            .putString("pos_$chave", posterFinal)
+                            .apply()
+                    }
+                    launch(Dispatchers.Main) {
+                        cacheLocalizado[chave] = par
+                    }
+                }
+            } catch (_: Throwable) {}
+        }
+
+        return tituloOriginal.t()
+    }
+
+    /**
+     * Salva ou atualiza diretamente o cache para um ID do TMDB no idioma ativo.
+     */
+    fun salvarNoCache(idTmdb: Int, titulo: String, caminhoPoster: String) {
+        if (idTmdb <= 0 || titulo.isBlank()) return
+        val lang = obterPrefixoIdioma()
+        val chave = "$idTmdb-$lang"
+        val par = Pair(titulo, caminhoPoster)
+        cacheLocalizado[chave] = par
+        val context = CineListApplication.instance
+        if (context != null) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString("tit_$chave", titulo)
+                .putString("pos_$chave", caminhoPoster)
+                .apply()
+        }
+    }
+
+    /**
      * Retorna a URL da capa localizada no idioma atualmente ativo.
      */
     fun obterCapaLocalizada(midia: Midia): String {

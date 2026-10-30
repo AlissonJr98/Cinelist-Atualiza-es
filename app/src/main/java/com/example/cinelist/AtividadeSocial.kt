@@ -11,6 +11,7 @@ data class AtividadeSocial(
     val autorUid: String = "",
     val autorNome: String = "",
     val autorFotoUrl: String = "",
+    val paisIso: String = "", // Código ISO de 2 letras do país de origem (ex: "BR", "US", "JP")
     val tipo: String = "DISCUSSAO", // "DISCUSSAO", "AVALIOU", "ASSISTIU", "QUERO_VER", "FAVORITOU", "RECOMENDACAO", "TEORIA"
     val categoria: String = "Discussão Geral", // "Discussão Geral", "Crítica / Review", "Teorias & Enigmas", "Recomendações", "Dúvidas"
     val topicoTitulo: String = "", // Título do tópico no fórum (ex: "O que acharam do final de Interestelar?")
@@ -49,6 +50,7 @@ data class ComentarioForum(
     val autorUid: String = "",
     val autorNome: String = "Cinéfilo",
     val autorFotoUrl: String = "",
+    val paisIso: String = "", // Código ISO de 2 letras do país de origem (ex: "BR", "US", "JP")
     val texto: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val curtidasUids: List<String> = emptyList()

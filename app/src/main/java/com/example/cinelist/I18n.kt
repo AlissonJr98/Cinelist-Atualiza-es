@@ -178,6 +178,59 @@ object I18n {
             }
         }
 
+        // Regra Especial: Tempo relativo "Há X dias" e "(Há X dias)"
+        val regexDias = Regex("""^\(?Há\s+(\d+)\s+dias?\)?$""", RegexOption.IGNORE_CASE)
+        val matchDias = regexDias.matchEntire(limpo)
+        if (matchDias != null) {
+            val n = matchDias.groupValues[1]
+            val temParenteses = limpo.startsWith("(") && limpo.endsWith(")")
+            val res = when (lang) {
+                "en" -> if (n == "1") "1 day ago" else "$n days ago"
+                "es" -> if (n == "1") "Hace 1 día" else "Hace $n días"
+                "fr" -> if (n == "1") "Il y a 1 jour" else "Il y a $n jours"
+                "de" -> if (n == "1") "Vor 1 Tag" else "Vor $n Tagen"
+                "it" -> if (n == "1") "1 giorno fa" else "$n giorni fa"
+                "ja" -> "${n}日前"
+                "ko" -> "${n}일 전"
+                else -> if (n == "1") "Há 1 dia" else "Há $n dias"
+            }
+            return if (temParenteses) "($res)" else res
+        }
+
+        // Regra Especial: Contagem de Títulos por Streaming (Ex: "22 TÍTULOS", "1 TÍTULO")
+        val regexTitulosStreaming = Regex("""^(\d+)\s+TÍTULOS?$""", RegexOption.IGNORE_CASE)
+        val matchTitStreaming = regexTitulosStreaming.matchEntire(limpo)
+        if (matchTitStreaming != null) {
+            val n = matchTitStreaming.groupValues[1]
+            return when (lang) {
+                "en" -> if (n == "1") "1 TITLE" else "$n TITLES"
+                "es" -> if (n == "1") "1 TÍTULO" else "$n TÍTULOS"
+                "fr" -> if (n == "1") "1 TITRE" else "$n TITRES"
+                "de" -> if (n == "1") "1 TITEL" else "$n TITEL"
+                "it" -> if (n == "1") "1 TITOLO" else "$n TITOLI"
+                "ja" -> "$n 作品"
+                "ko" -> "${n}개 작품"
+                else -> limpo
+            }
+        }
+
+        // Regra Especial: Contagem de Respostas no Feed (Ex: "3 respostas", "1 resposta")
+        val regexRespostasFeed = Regex("""^(\d+)\s+respostas?$""", RegexOption.IGNORE_CASE)
+        val matchResp = regexRespostasFeed.matchEntire(limpo)
+        if (matchResp != null) {
+            val n = matchResp.groupValues[1]
+            return when (lang) {
+                "en" -> if (n == "1") "1 reply" else "$n replies"
+                "es" -> if (n == "1") "1 respuesta" else "$n respuestas"
+                "fr" -> if (n == "1") "1 réponse" else "$n réponses"
+                "de" -> if (n == "1") "1 Antwort" else "$n Antworten"
+                "it" -> if (n == "1") "1 risposta" else "$n risposte"
+                "ja" -> "${n}件の返信"
+                "ko" -> "${n}개 답변"
+                else -> limpo
+            }
+        }
+
         // Regra Especial: Tempo relativo Feed "Há X min" e "Há Xh"
         val regexMin = Regex("""^Há\s+(\d+)\s*min$""", RegexOption.IGNORE_CASE)
         val matchMin = regexMin.matchEntire(limpo)
@@ -399,4 +452,30 @@ object I18n {
  */
 fun String.t(): String {
     return I18n.traduzir(this)
+}
+
+/**
+ * Formata temporada e episódio respeitando o idioma ativo do usuário.
+ */
+fun formatarTemporadaEpisodio(temporada: Int, episodio: Int): String {
+    val lang = when {
+        I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "en"
+        I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "es"
+        I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "fr"
+        I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "de"
+        I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "it"
+        I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "ja"
+        I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "ko"
+        else -> "pt"
+    }
+    return when (lang) {
+        "en" -> "S$temporada • Ep. $episodio"
+        "es" -> "T$temporada • Ep. $episodio"
+        "fr" -> "S$temporada • Ép. $episodio"
+        "de" -> "S$temporada • Ep. $episodio"
+        "it" -> "S$temporada • Ep. $episodio"
+        "ja" -> "S$temporada • 第${episodio}話"
+        "ko" -> "시즌 $temporada • ${episodio}화"
+        else -> "T$temporada • Ep. $episodio"
+    }
 }
