@@ -549,12 +549,13 @@ fun DialogoWatchParty(
                                                 Button(
                                                     onClick = {
                                                         if (viewModel != null && grupoId.isNotBlank()) {
+                                                            val titLocalizado = tituloMidia.t()
                                                             viewModel.enviarMensagemParaSala(
-                                                                texto = "🍿 Chamando ${amigo.nome} para a chamada CineParty de '$tituloMidia'!",
+                                                                texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
                                                                 tipoMensagem = "CINEPARTY_CHAMADA",
                                                                 mediaUrl = salaId
                                                             )
-                                                            Toast.makeText(contexto, "Chamando ${amigo.nome} para a chamada...", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(contexto, "${"Chamando".t()} ${amigo.nome}...", Toast.LENGTH_SHORT).show()
                                                         }
                                                     },
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),

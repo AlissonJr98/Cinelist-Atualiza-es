@@ -12,6 +12,7 @@ object I18nDicionarioJa {
         res.putAll(parte3)
         res.putAll(parte4)
         res.putAll(parte5)
+        res.putAll(parte6)
         res
     }
 
@@ -1329,5 +1330,59 @@ object I18nDicionarioJa {
         "Nova mensagem de" to "新しいメッセージ:",
         "Você recebeu uma nova atualização no grupo." to "グループに新しい更新があります。",
         "Um cinéfilo" to "映画ファン"
+    )
+
+    private val parte6: Map<String, String> = mapOf(
+        "Apagar Mensagem" to "メッセージを削除",
+        "Deseja realmente apagar esta mensagem da sala para todos?" to "このメッセージをルームの全員から削除してもよろしいですか？",
+        "Mensagem apagada" to "メッセージが削除されました",
+        "Criar Enquete Rápida 📊" to "クイック投票を作成 📊",
+        "Pergunta (ex: O que assistir hoje?)" to "質問（例：今日何を見る？）",
+        "Opção 1" to "選択肢 1",
+        "Opção 2" to "選択肢 2",
+        "Opção 3 (Opcional)" to "選択肢 3 (任意)",
+        "Enviar Enquete 📊" to "投票を送信 📊",
+        "Enquete enviada! 📊" to "投票を送信しました！ 📊",
+        "Recomendo assistirmos" to "おすすめの作品：",
+        "foi concluído! O que acharam do final?" to "を観終わりました！結末はどうでしたか？",
+        "Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!" to "グループCineMatchラウンドを開始しました！ルームを開いて一緒に投票しましょう！",
+        "Chamando" to "呼び出し中：",
+        "para a chamada CineParty de" to "のCineParty通話へ",
+        "Galera, entrem no CineList para jogarmos CineMatch Coletivo!" to "みんな、グループCineMatchを遊ぶためにCineListに参加してね！",
+        "sugeriu:" to "が提案しました：",
+        "A sua sugestão foi recusada." to "あなたの提案は拒否されました。",
+        "Sugestão recusada." to "提案が拒否されました。",
+        "Toque para ver detalhes 🎬" to "タップして詳細を表示 🎬",
+        "Retirar" to "取り消す",
+        "Você aprovou ✅" to "承認済み ✅",
+        "Aprovar" to "承認する",
+        "Resolver" to "解決する",
+        "Controles de Administrador:" to "管理者コントロール：",
+        "Forçar Recusa" to "強制的に拒否",
+        "Forçar Aprovação" to "強制的に承認",
+        "Sugestões Pendentes" to "保留中の提案",
+        "O grupo decidiu não assistir" to "グループはこの作品を観ないことに決定しました：",
+        "Deseja adicionar este título à sua Lista Pessoal para assistir sozinho(a)?" to "一人で見るために、この作品を個人リストに追加しますか？",
+        "Apenas Descartar" to "破棄する",
+        "Sugestão descartada" to "提案を破棄しました",
+        "adicionado à sua lista pessoal" to "が個人リストに追加されました",
+        "Sugestão" to "提案",
+        "aprovada!" to "承認されました！",
+        "Indicar na Sala" to "ルームでおすすめする",
+        "Chamada CineParty Recebida! 🍿" to "CineParty通話を受信しました！ 🍿",
+        "está te chamando para assistir juntos no CineParty da sala" to "がルームのCinePartyで一緒に見ようと呼び出しています：",
+        "Atender e Entrar 🍿" to "応答して参加 🍿",
+        "Aviso enviado no chat da sala!" to "ルームチャットにお知らせを送信しました！",
+        "Seu voto" to "あなたの投票",
+        "Aguardando..." to "待機中...",
+        "Deseja realmente remover" to "本当に削除しますか：",
+        "da lista?" to "をリストから？",
+        "removido da lista" to "がリストから削除されました",
+        "reaberta" to "再開されました",
+        "concluída! 🎉" to "完了しました！ 🎉",
+        "Deseja reabrir" to "再開しますか：",
+        "e voltar para o status Assistindo?" to "「視聴中」ステータスに戻しますか？",
+        "Deseja realmente marcar" to "本当にマークしますか：",
+        "como Concluído?" to "「完了」として？"
     )
 }

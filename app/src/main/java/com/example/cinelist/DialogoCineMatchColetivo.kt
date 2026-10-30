@@ -201,8 +201,8 @@ fun DialogoCineMatchColetivo(
                         if (amigosOnline.isEmpty()) {
                             OutlinedButton(
                                 onClick = {
-                                    viewModel.enviarMensagemParaSala("📢 Galera, entrem no CineList para jogarmos CineMatch Coletivo!")
-                                    android.widget.Toast.makeText(contexto, "Aviso enviado no chat da sala!", android.widget.Toast.LENGTH_SHORT).show()
+                                    viewModel.enviarMensagemParaSala("📢 " + "Galera, entrem no CineList para jogarmos CineMatch Coletivo!".t())
+                                    android.widget.Toast.makeText(contexto, "Aviso enviado no chat da sala!".t(), android.widget.Toast.LENGTH_SHORT).show()
                                 },
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.fillMaxWidth()
@@ -257,10 +257,10 @@ fun DialogoCineMatchColetivo(
                                 }
                                 viewModel.iniciarMatchColetivo(grupoId, candidatos)
                                 viewModel.enviarMensagemParaSala(
-                                    texto = "👥 Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!",
+                                    texto = "👥 " + "Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!".t(),
                                     tipoMensagem = "CINEMATCH_CONVITE"
                                 )
-                                android.widget.Toast.makeText(contexto, "Rodada iniciada! Convite enviado para a sala.", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(contexto, "Rodada iniciada! Convite enviado para a sala.".t(), android.widget.Toast.LENGTH_SHORT).show()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
                             shape = RoundedCornerShape(12.dp),

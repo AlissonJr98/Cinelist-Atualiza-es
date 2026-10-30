@@ -12,6 +12,7 @@ object I18nDicionarioEs {
         res.putAll(parte3)
         res.putAll(parte4)
         res.putAll(parte5)
+        res.putAll(parte6)
         res
     }
 
@@ -1419,5 +1420,59 @@ object I18nDicionarioEs {
         "Nova mensagem de" to "Nuevo mensaje de",
         "Você recebeu uma nova atualização no grupo." to "Recibiste una nueva actualización en el grupo.",
         "Um cinéfilo" to "Un cinéfilo"
+    )
+
+    private val parte6: Map<String, String> = mapOf(
+        "Apagar Mensagem" to "Eliminar Mensaje",
+        "Deseja realmente apagar esta mensagem da sala para todos?" to "¿Realmente deseas eliminar este mensaje de la sala para todos?",
+        "Mensagem apagada" to "Mensaje eliminado",
+        "Criar Enquete Rápida 📊" to "Crear Encuesta Rápida 📊",
+        "Pergunta (ex: O que assistir hoje?)" to "Pregunta (ej: ¿Qué ver hoy?)",
+        "Opção 1" to "Opción 1",
+        "Opção 2" to "Opción 2",
+        "Opção 3 (Opcional)" to "Opción 3 (Opcional)",
+        "Enviar Enquete 📊" to "Enviar Encuesta 📊",
+        "Enquete enviada! 📊" to "¡Encuesta enviada! 📊",
+        "Recomendo assistirmos" to "Recomiendo ver",
+        "foi concluído! O que acharam do final?" to "¡fue completado! ¿Qué les pareció el final?",
+        "Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!" to "¡Inicié una ronda de CineMatch Colectivo! ¡Abre la sala para votar juntos!",
+        "Chamando" to "Llamando a",
+        "para a chamada CineParty de" to "para la llamada CineParty de",
+        "Galera, entrem no CineList para jogarmos CineMatch Coletivo!" to "¡Hola a todos, entren en CineList para jugar CineMatch Colectivo!",
+        "sugeriu:" to "sugirió:",
+        "A sua sugestão foi recusada." to "Tu sugerencia fue rechazada.",
+        "Sugestão recusada." to "Sugerencia rechazada.",
+        "Toque para ver detalhes 🎬" to "Toca para ver detalles 🎬",
+        "Retirar" to "Retirar",
+        "Você aprovou ✅" to "Aprobaste ✅",
+        "Aprovar" to "Aprobar",
+        "Resolver" to "Resolver",
+        "Controles de Administrador:" to "Controles de Administrador:",
+        "Forçar Recusa" to "Forzar Rechazo",
+        "Forçar Aprovação" to "Forzar Aprobación",
+        "Sugestões Pendentes" to "Sugerencias Pendientes",
+        "O grupo decidiu não assistir" to "El grupo decidió no ver",
+        "Deseja adicionar este título à sua Lista Pessoal para assistir sozinho(a)?" to "¿Deseas agregar este título a tu Lista Personal para verlo solo(a)?",
+        "Apenas Descartar" to "Solo Descartar",
+        "Sugestão descartada" to "Sugerencia descartada",
+        "adicionado à sua lista pessoal" to "añadido a tu lista personal",
+        "Sugestão" to "Sugerencia",
+        "aprovada!" to "¡aprobada!",
+        "Indicar na Sala" to "Recomendar en la Sala",
+        "Chamada CineParty Recebida! 🍿" to "¡Llamada CineParty Recibida! 🍿",
+        "está te chamando para assistir juntos no CineParty da sala" to "te está llamando para ver juntos en CineParty de la sala",
+        "Atender e Entrar 🍿" to "Responder y Entrar 🍿",
+        "Aviso enviado no chat da sala!" to "¡Aviso enviado al chat de la sala!",
+        "Seu voto" to "Tu voto",
+        "Aguardando..." to "Esperando...",
+        "Deseja realmente remover" to "¿Realmente deseas eliminar",
+        "da lista?" to "¿de la lista?",
+        "removido da lista" to "eliminado de la lista",
+        "reaberta" to "reabierta",
+        "concluída! 🎉" to "¡completada! 🎉",
+        "Deseja reabrir" to "¿Deseas reabrir",
+        "e voltar para o status Assistindo?" to "y volver al estado Viendo?",
+        "Deseja realmente marcar" to "¿Realmente deseas marcar",
+        "como Concluído?" to "¿como Completado?"
     )
 }

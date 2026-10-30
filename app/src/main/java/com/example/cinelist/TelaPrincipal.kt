@@ -509,11 +509,12 @@ fun TelaPrincipal(
             },
             onAceitar = {
                 viewModel.aceitarMidiaPendente(it, maxOf(2, membrosSala.size))
-                mostrarSucesso("Sugestão \"${it.titulo}\" aprovada!")
+                val tit = MidiaLocalizationManager.obterTituloLocalizado(it)
+                mostrarSucesso("${"Sugestão".t()} \"$tit\" ${"aprovada!".t()}")
             },
             onRecusar = {
                 viewModel.recusarMidiaPendente(it)
-                mostrarSucesso("Sugestão recusada")
+                mostrarSucesso("Sugestão recusada".t())
             },
             onResolverRecusado = { midiaParaDecidirRecusada = it },
             onRetirarSugestao = { viewModel.retirarSugestaoPendente(it) },
@@ -611,9 +612,9 @@ fun TelaPrincipal(
         AlertDialog(
             onDismissRequest = { ultimaChamadaProcessadaId = ultimaMsgSala.id },
             icon = { Text("📞", fontSize = 32.sp) },
-            title = { Text("Chamada CineParty Recebida! 🍿") },
+            title = { Text("Chamada CineParty Recebida! 🍿".t()) },
             text = {
-                Text("${ultimaMsgSala.autorNome} está te chamando para assistir juntos no CineParty da sala '$nomeListaAtiva'!")
+                Text("${ultimaMsgSala.autorNome} ${"está te chamando para assistir juntos no CineParty da sala".t()} '$nomeListaAtiva'!")
             },
             confirmButton = {
                 Button(
@@ -623,12 +624,12 @@ fun TelaPrincipal(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
                 ) {
-                    Text("Atender e Entrar 🍿", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text("Atender e Entrar 🍿".t(), color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { ultimaChamadaProcessadaId = ultimaMsgSala.id }) {
-                    Text("Recusar", color = Color(0xFF94A3B8))
+                    Text("Recusar".t(), color = Color(0xFF94A3B8))
                 }
             }
         )
@@ -692,46 +693,48 @@ fun TelaPrincipal(
 
     if (midiaParaDecidirRecusada != null) {
         val midiaAlvo = midiaParaDecidirRecusada!!
+        val titRec = MidiaLocalizationManager.obterTituloLocalizado(midiaAlvo)
         AlertDialog(
             onDismissRequest = { midiaParaDecidirRecusada = null },
-            title = { Text("Sugestão Recusada ❌", fontWeight = FontWeight.Bold) },
-            text = { Text("O grupo decidiu não assistir \"${midiaAlvo.titulo}\". Deseja adicionar este título à sua Lista Pessoal para assistir sozinho(a)?") },
+            title = { Text("Sugestão Recusada ❌".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("${"O grupo decidiu não assistir".t()} \"$titRec\". ${"Deseja adicionar este título à sua Lista Pessoal para assistir sozinho(a)?".t()}") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.processarMidiaRecusadaPeloParceiro(midiaAlvo, true)
                         midiaParaDecidirRecusada = null
-                        mostrarSucesso("\"${midiaAlvo.titulo}\" adicionado à sua lista pessoal")
+                        mostrarSucesso("\"$titRec\" ${"adicionado à sua lista pessoal".t()}")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) { Text("Sim, adicionar à Minha Lista", color = Color.White, fontWeight = FontWeight.Bold) }
+                ) { Text("Sim, adicionar à Minha Lista".t(), color = Color.White, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { viewModel.processarMidiaRecusadaPeloParceiro(midiaAlvo, false); midiaParaDecidirRecusada = null; mostrarSucesso("Sugestão descartada") }) {
-                    Text("Apenas Descartar", color = Color(0xFFFF4C4C))
+                OutlinedButton(onClick = { viewModel.processarMidiaRecusadaPeloParceiro(midiaAlvo, false); midiaParaDecidirRecusada = null; mostrarSucesso("Sugestão descartada".t()) }) {
+                    Text("Apenas Descartar".t(), color = Color(0xFFFF4C4C))
                 }
             }
         )
     }
 
     if (midiaParaExcluir != null) {
+        val titExc = midiaParaExcluir?.let { MidiaLocalizationManager.obterTituloLocalizado(it) } ?: ""
         AlertDialog(
             onDismissRequest = { midiaParaExcluir = null },
-            title = { Text("Excluir Mídia", fontWeight = FontWeight.Bold) },
-            text = { Text("Deseja realmente remover \"${midiaParaExcluir?.titulo}\" da lista?") },
+            title = { Text("Excluir Mídia".t(), fontWeight = FontWeight.Bold) },
+            text = { Text("${"Deseja realmente remover".t()} \"$titExc\" ${"da lista?".t()}") },
             confirmButton = {
                 Button(
                     onClick = {
                         midiaParaExcluir?.let { m ->
                             viewModel.deletar(m)
-                            mostrarSucesso("\"${m.titulo}\" removido da lista")
+                            mostrarSucesso("\"$titExc\" ${"removido da lista".t()}")
                         }
                         midiaParaExcluir = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))
-                ) { Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold) }
+                ) { Text("Excluir".t(), color = Color.White, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { midiaParaExcluir = null }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { midiaParaExcluir = null }) { Text("Cancelar".t()) } }
         )
     }
 
@@ -740,34 +743,40 @@ fun TelaPrincipal(
         val estaConcluido = midiaAlvo.obterStatusEnum() == StatusMidia.CONCLUIDO
         val acaoTexto = if (estaConcluido) "Reabrir" else "Concluir"
 
-        AlertDialog(
-            onDismissRequest = { midiaParaConcluir = null },
-            title = { Text("$acaoTexto Mídia", fontWeight = FontWeight.Bold) },
-            text = { Text(if (estaConcluido) "Deseja reabrir \"${midiaAlvo.titulo}\" e voltar para o status Assistindo?" else "Deseja realmente marcar \"${midiaAlvo.titulo}\" como Concluído?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (estaConcluido) {
-                            viewModel.atualizar(midiaAlvo.copy(status = StatusMidia.ASSISTINDO.valor, dataConclusao = 0L, concluidoPor = ""))
-                            mostrarSucesso("\"${midiaAlvo.titulo}\" reaberta")
-                        } else {
-                            viewModel.concluirMidia(midiaAlvo)
-                            mostrarSucesso("\"${midiaAlvo.titulo}\" concluída! 🎉")
-                            if (isModoCompartilhado) {
-                                viewModel.enviarMensagemParaSala(
-                                    texto = "💬 Debate Pós-Filme: \"${midiaAlvo.titulo}\" foi concluído! O que acharam do final?",
-                                    tipoMensagem = "DEBATE",
-                                    mediaUrl = "${midiaAlvo.idTmdb}|||${midiaAlvo.titulo}|||${midiaAlvo.imagemCapa}"
-                                )
+                    val titAlvo = MidiaLocalizationManager.obterTituloLocalizado(midiaAlvo)
+            val msgConfirmacao = if (estaConcluido) {
+                "${"Deseja reabrir".t()} \"$titAlvo\" ${"e voltar para o status Assistindo?".t()}"
+            } else {
+                "${"Deseja realmente marcar".t()} \"$titAlvo\" ${"como Concluído?".t()}"
+            }
+            AlertDialog(
+                onDismissRequest = { midiaParaConcluir = null },
+                title = { Text("$acaoTexto " + "Mídia".t(), fontWeight = FontWeight.Bold) },
+                text = { Text(msgConfirmacao) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (estaConcluido) {
+                                viewModel.atualizar(midiaAlvo.copy(status = StatusMidia.ASSISTINDO.valor, dataConclusao = 0L, concluidoPor = ""))
+                                mostrarSucesso("\"$titAlvo\" ${"reaberta".t()}")
+                            } else {
+                                viewModel.concluirMidia(midiaAlvo)
+                                mostrarSucesso("\"$titAlvo\" ${"concluída! 🎉".t()}")
+                                if (isModoCompartilhado) {
+                                    viewModel.enviarMensagemParaSala(
+                                        texto = "💬 " + "Debate Pós-Filme".t() + ": \"$titAlvo\" " + "foi concluído! O que acharam do final?".t(),
+                                        tipoMensagem = "DEBATE",
+                                        mediaUrl = "${midiaAlvo.idTmdb}|||${midiaAlvo.titulo}|||${midiaAlvo.imagemCapa}"
+                                    )
+                                }
                             }
-                        }
-                        midiaParaConcluir = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
-                ) { Text(acaoTexto, color = Color.White, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = { TextButton(onClick = { midiaParaConcluir = null }) { Text("Cancelar") } }
-        )
+                            midiaParaConcluir = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (estaConcluido) MaterialTheme.colorScheme.primary else Color(0xFF2E7D32))
+                    ) { Text(acaoTexto, color = Color.White, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { midiaParaConcluir = null }) { Text("Cancelar".t()) } }
+            )
     }
 
     colecaoParaExcluir?.let { nomeColecao ->
@@ -1017,12 +1026,12 @@ fun TelaPrincipal(
         if (msgParaApagar != null) {
             AlertDialog(
                 onDismissRequest = { msgParaApagar = null },
-                title = { Text("Apagar Mensagem", fontWeight = FontWeight.Bold) },
-                text = { Text("Deseja realmente apagar esta mensagem da sala para todos?") },
+                title = { Text("Apagar Mensagem".t(), fontWeight = FontWeight.Bold) },
+                text = { Text("Deseja realmente apagar esta mensagem da sala para todos?".t()) },
                 confirmButton = {
-                    Button(onClick = { viewModel.deletarMensagemSala(msgParaApagar!!.id); msgParaApagar = null; mostrarSucesso("Mensagem apagada") }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))) { Text("Apagar", color = Color.White) }
+                    Button(onClick = { viewModel.deletarMensagemSala(msgParaApagar!!.id); msgParaApagar = null; mostrarSucesso("Mensagem apagada".t()) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4C4C))) { Text("Apagar".t(), color = Color.White) }
                 },
-                dismissButton = { TextButton(onClick = { msgParaApagar = null }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { msgParaApagar = null }) { Text("Cancelar".t()) } }
             )
         }
 
@@ -1072,7 +1081,7 @@ fun TelaPrincipal(
                             )
                         }
                         IconButton(onClick = { mostrarChatSala = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar", tint = MaterialTheme.colorScheme.onBackground)
+                            Icon(Icons.Default.Close, contentDescription = "Fechar".t(), tint = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 }
@@ -1161,7 +1170,11 @@ fun TelaPrincipal(
 
                             Column(horizontalAlignment = if (souEu) Alignment.End else Alignment.Start) {
                                 if (!souEu && !mesmoAutorDaAnterior) {
-                                    Text(msg.autorNome, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp, start = 4.dp))
+                                    val bandeira = remember(msg.autorUid) {
+                                        TradutorHelper.obterEmojiBandeira(if (msg.autorUid == meuUid) java.util.Locale.getDefault().country else null)
+                                    }
+                                    val autorNomeFinal = if (bandeira.isNotBlank()) "$bandeira ${msg.autorNome}" else msg.autorNome
+                                    Text(autorNomeFinal, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp, start = 4.dp))
                                 }
 
                                 Box {
@@ -1175,7 +1188,9 @@ fun TelaPrincipal(
                                                 "ENQUETE" -> ConteudoCardEnquete(msg, souEu)
                                                 "INDICAÇÃO" -> ConteudoCardIndicacao(msg, souEu, onTmdbItemClique)
                                                 "DEBATE" -> ConteudoCardDebate(msg, souEu)
-                                                else -> Text(text = msg.texto, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp, lineHeight = 20.sp)
+                                                "CINEMATCH_CONVITE" -> ConteudoCardCinema(msg, souEu, onClique = { mostrarMatchColetivoSala = true })
+                                                "CINEPARTY_CHAMADA" -> ConteudoCardCinema(msg, souEu, onClique = { mostrarCinePartySala = true })
+                                                else -> ConteudoMensagemTexto(msg, souEu)
                                             }
                                             Row(modifier = Modifier.align(Alignment.End).padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                                 if (msg.editada) Text(text = "(editado)".t(), color = if (souEu) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), fontSize = 9.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
@@ -1229,7 +1244,7 @@ fun TelaPrincipal(
                             ),
                             leadingIcon = {
                                 IconButton(onClick = { /* O teclado nativo abre os emojis */ }) {
-                                    Icon(Icons.Default.Face, contentDescription = "Emojis", tint = MaterialTheme.colorScheme.secondary)
+                                    Icon(Icons.Default.Face, contentDescription = "Emojis".t(), tint = MaterialTheme.colorScheme.secondary)
                                 }
                             },
                             trailingIcon = {
@@ -1278,7 +1293,7 @@ fun TelaPrincipal(
                     val payload = listOf(op1, op2, op3).filter { it.isNotBlank() }.joinToString("|||")
                     viewModel.enviarMensagemParaSala(pergunta, tipoMensagem = "ENQUETE", mediaUrl = payload)
                     mostrarDialogoEnquete = false
-                    mostrarSucesso("Enquete enviada! 📊")
+                    mostrarSucesso("Enquete enviada! 📊".t())
                 }
             )
         }
@@ -1626,7 +1641,7 @@ fun TelaPrincipal(
                                                     Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                                     Spacer(modifier = Modifier.width(8.dp))
                                                     Text(
-                                                        "${listaPendentes.size + listaRecusados.size} " + "sugestão(ões) aguardando".t(),
+                                                        "${listaPendentes.size + listaRecusados.size} sugestão(ões) aguardando".t(),
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -2041,8 +2056,8 @@ fun CardSugestaoCasal(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when (midia.statusSugestao) {
-                        "PENDENTE" -> if (souOAutor) "⏳ Aguardando... ($votosAtuais/$totalMembros)" else "💡 $nomeRemetente sugeriu:"
-                        "RECUSADO" -> if (souOAutor) "❌ A sua sugestão foi recusada." else "Sugestão recusada."
+                        "PENDENTE" -> if (souOAutor) "⏳ " + "Aguardando...".t() + " ($votosAtuais/$totalMembros)" else "💡 $nomeRemetente " + "sugeriu:".t()
+                        "RECUSADO" -> if (souOAutor) "❌ " + "A sua sugestão foi recusada.".t() else "Sugestão recusada.".t()
                         else -> ""
                     },
                     fontSize = 12.sp,
@@ -2067,9 +2082,9 @@ fun CardSugestaoCasal(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = midia.titulo, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "${midia.tipo} • ${midia.genero}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
-                    Text(text = "Toque para ver detalhes 🎬", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text(text = tituloExibicao, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = "${midia.tipo.t()} • ${midia.genero.split(",").joinToString(", ") { it.trim().t() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text(text = "Toque para ver detalhes 🎬".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -2084,10 +2099,10 @@ fun CardSugestaoCasal(
                             modifier = Modifier.height(32.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
                         ) {
-                            Text("Retirar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Retirar".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     } else if (jaAprovei) {
-                        Text("Você aprovou ✅", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text("Você aprovou ✅".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     } else {
                         OutlinedButton(
                             onClick = onRecusar,
@@ -2095,7 +2110,7 @@ fun CardSugestaoCasal(
                             modifier = Modifier.height(32.dp).padding(end = 8.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
                         ) {
-                            Text("Recusar", color = MaterialTheme.colorScheme.error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Recusar".t(), color = MaterialTheme.colorScheme.error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = onAceitar,
@@ -2103,7 +2118,7 @@ fun CardSugestaoCasal(
                             modifier = Modifier.height(32.dp),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
                         ) {
-                            Text("Aprovar", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Aprovar".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 } else if (midia.statusSugestao == "RECUSADO" && souOAutor) {
@@ -2113,7 +2128,7 @@ fun CardSugestaoCasal(
                         modifier = Modifier.height(32.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
                     ) {
-                        Text("Resolver", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Resolver".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
@@ -2125,7 +2140,7 @@ fun CardSugestaoCasal(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "👑 Controles de Administrador:",
+                        text = "👑 " + "Controles de Administrador:".t(),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -2140,7 +2155,7 @@ fun CardSugestaoCasal(
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Forçar Recusa", fontSize = 11.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                            Text("Forçar Recusa".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                         }
                         Button(
                             onClick = onForcarAprovacaoAdmin,
@@ -2149,7 +2164,7 @@ fun CardSugestaoCasal(
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("Forçar Aprovação", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                            Text("Forçar Aprovação".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -2187,13 +2202,13 @@ fun DialogoSugestoesPendentes(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Sugestões Pendentes",
+                        "Sugestões Pendentes".t(),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     IconButton(onClick = onDispensar) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar")
+                        Icon(Icons.Default.Close, contentDescription = "Fechar".t())
                     }
                 }
 
@@ -2203,7 +2218,7 @@ fun DialogoSugestoesPendentes(
 
                 if (listaMista.isEmpty()) {
                     Text(
-                        "Nenhuma sugestão pendente",
+                        "Nenhuma sugestão pendente".t(),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 24.dp)
@@ -2238,7 +2253,7 @@ fun DialogoSugestoesPendentes(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Fechar", fontWeight = FontWeight.Bold)
+                    Text("Fechar".t(), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -2585,34 +2600,34 @@ fun DialogoCriarEnquete(
 
     AlertDialog(
         onDismissRequest = onDispensar,
-        title = { Text("Criar Enquete Rápida 📊", fontWeight = FontWeight.Bold) },
+        title = { Text("Criar Enquete Rápida 📊".t(), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = pergunta,
                     onValueChange = { pergunta = it },
-                    label = { Text("Pergunta (ex: O que assistir hoje?)") },
+                    label = { Text("Pergunta (ex: O que assistir hoje?)".t()) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = op1,
                     onValueChange = { op1 = it },
-                    label = { Text("Opção 1") },
+                    label = { Text("Opção 1".t()) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = op2,
                     onValueChange = { op2 = it },
-                    label = { Text("Opção 2") },
+                    label = { Text("Opção 2".t()) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = op3,
                     onValueChange = { op3 = it },
-                    label = { Text("Opção 3 (Opcional)") },
+                    label = { Text("Opção 3 (Opcional)".t()) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -2627,11 +2642,11 @@ fun DialogoCriarEnquete(
                 },
                 enabled = pergunta.isNotBlank() && op1.isNotBlank() && op2.isNotBlank()
             ) {
-                Text("Enviar Enquete 📊", fontWeight = FontWeight.Bold)
+                Text("Enviar Enquete 📊".t(), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDispensar) { Text("Cancelar") }
+            TextButton(onClick = onDispensar) { Text("Cancelar".t()) }
         }
     )
 }
@@ -2645,12 +2660,17 @@ fun ConteudoCardEnquete(
         msg.mediaUrl.split("|||").map { it.trim() }.filter { it.isNotBlank() }
     }
     var opcaoSelecionada by remember { mutableStateOf<Int?>(null) }
+    val textoPergunta = if (msg.texto.trim() == "O que vamos assistir hoje?" || msg.texto.isBlank()) {
+        "O que vamos assistir hoje?".t()
+    } else {
+        msg.texto.t()
+    }
 
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("📊 " + "Enquete da Sala".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
-        Text(msg.texto, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+        Text(textoPergunta, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
         opcoes.forEachIndexed { index, op ->
             val selecionado = opcaoSelecionada == index
@@ -2666,7 +2686,7 @@ fun ConteudoCardEnquete(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = op,
+                        text = op.t(),
                         fontSize = 13.sp,
                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal,
                         color = if (selecionado) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -2688,31 +2708,40 @@ fun ConteudoCardIndicacao(
 ) {
     val partes = remember(msg.mediaUrl) { msg.mediaUrl.split("|||") }
     val idTmdb = partes.getOrNull(0)?.toIntOrNull() ?: 0
-    val titulo = partes.getOrNull(1) ?: msg.texto
-    val capa = partes.getOrNull(2) ?: ""
+    val rawTitulo = partes.getOrNull(1) ?: msg.texto
+    val rawCapa = partes.getOrNull(2) ?: ""
     val tipo = partes.getOrNull(3) ?: "Filme"
+
+    val tituloLocalizado = if (idTmdb > 0) MidiaLocalizationManager.obterTituloLocalizadoPorId(idTmdb, rawTitulo) else rawTitulo
+    val capaLocalizada = if (idTmdb > 0) MidiaLocalizationManager.obterCapaLocalizada(idTmdb, rawCapa) else rawCapa
+
+    val textoExibicao = if (msg.texto.contains("Recomendo assistirmos")) {
+        "${"Recomendo assistirmos".t()} \"$tituloLocalizado\"! 🍿"
+    } else {
+        msg.texto.t()
+    }
 
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("🍿 " + "Indicação Recomendada".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
-        Text(msg.texto, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+        Text(textoExibicao, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
         Row(
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surface).padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            if (capa.isNotBlank()) {
-                AsyncImage(model = capa, contentDescription = titulo, contentScale = ContentScale.Crop, modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(6.dp)))
+            if (capaLocalizada.isNotBlank()) {
+                AsyncImage(model = capaLocalizada, contentDescription = tituloLocalizado, contentScale = ContentScale.Crop, modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(6.dp)))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(tipo, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                Text(tituloLocalizado, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(tipo.t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
             }
             Button(
                 onClick = {
-                    val itemTmdb = TmdbFilme(idTmdb = idTmdb, titulo = titulo, caminhoPoster = capa.removePrefix("https://image.tmdb.org/t/p/w500"), mediaType = if (tipo.equals("Série", ignoreCase = true)) "tv" else "movie")
+                    val itemTmdb = TmdbFilme(idTmdb = idTmdb, titulo = tituloLocalizado, caminhoPoster = capaLocalizada.removePrefix("https://image.tmdb.org/t/p/w500"), mediaType = if (tipo.equals("Série", ignoreCase = true)) "tv" else "movie")
                     onTmdbItemClique(itemTmdb, tipo)
                 },
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -2729,11 +2758,22 @@ fun ConteudoCardDebate(
     msg: MensagemGrupo,
     souEu: Boolean
 ) {
+    val partes = remember(msg.mediaUrl) { msg.mediaUrl.split("|||") }
+    val idTmdb = partes.getOrNull(0)?.toIntOrNull() ?: 0
+    val rawTitulo = partes.getOrNull(1) ?: ""
+    val tituloLocalizado = if (idTmdb > 0) MidiaLocalizationManager.obterTituloLocalizadoPorId(idTmdb, rawTitulo) else rawTitulo
+
+    val textoExibicao = if (msg.texto.contains("Debate Pós-Filme") || msg.texto.contains("foi concluído! O que acharam do final?")) {
+        "💬 " + "Debate Pós-Filme".t() + ": \"$tituloLocalizado\" " + "foi concluído! O que acharam do final?".t()
+    } else {
+        msg.texto.t()
+    }
+
     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("💬 " + "Debate Pós-Filme".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
-        Text(msg.texto, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+        Text(textoExibicao, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
 
         Surface(
             color = MaterialTheme.colorScheme.surface,
@@ -2753,12 +2793,28 @@ fun ConteudoCardDebate(
 @Composable
 fun ConteudoCardCinema(
     msg: MensagemGrupo,
-    souEu: Boolean
+    souEu: Boolean,
+    onClique: (() -> Unit)? = null
 ) {
+    val textoExibicao = remember(msg.texto) {
+        val txt = msg.texto
+        if (txt.contains("Iniciei uma rodada de CineMatch Coletivo")) {
+            "👥 " + "Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!".t()
+        } else if (txt.contains("Chamando") && txt.contains("para a chamada CineParty de")) {
+            val nome = txt.substringAfter("Chamando ").substringBefore(" para a chamada")
+            val midia = txt.substringAfter("CineParty de '").substringBefore("'!")
+            "🍿 " + "Chamando".t() + " $nome " + "para a chamada CineParty de".t() + " '$midia'!"
+        } else if (txt.contains("Galera, entrem no CineList para jogarmos CineMatch Coletivo!")) {
+            "📢 " + "Galera, entrem no CineList para jogarmos CineMatch Coletivo!".t()
+        } else {
+            txt.t()
+        }
+    }
+
     Surface(
         color = Color(0xFFE50914).copy(alpha = 0.25f),
         shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth().padding(4.dp)
+        modifier = Modifier.fillMaxWidth().padding(4.dp).clickable(enabled = onClique != null) { onClique?.invoke() }
     ) {
         Row(
             modifier = Modifier.padding(10.dp),
@@ -2767,11 +2823,75 @@ fun ConteudoCardCinema(
         ) {
             Text("🍿", fontSize = 22.sp)
             Text(
-                text = msg.texto,
+                text = textoExibicao,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
                 color = Color(0xFFFF5252)
             )
+        }
+    }
+}
+
+@Composable
+fun ConteudoMensagemTexto(
+    msg: MensagemGrupo,
+    souEu: Boolean
+) {
+    var textoTraduzido by remember(msg.id) { mutableStateOf<String?>(null) }
+    var traduzindo by remember(msg.id) { mutableStateOf(false) }
+    var mostrarTraducao by remember(msg.id) { mutableStateOf(false) }
+
+    val corTexto = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    val textoBase = if (mostrarTraducao && !textoTraduzido.isNullOrBlank()) textoTraduzido!! else msg.texto.t()
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = textoBase,
+            color = corTexto,
+            fontSize = 15.sp,
+            lineHeight = 20.sp
+        )
+
+        if (!souEu && msg.texto.isNotBlank() && msg.texto.length > 2) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(top = 2.dp)
+            ) {
+                if (traduzindo) {
+                    Text("Traduzindo...".t(), fontSize = 9.sp, color = MaterialTheme.colorScheme.primary)
+                } else if (mostrarTraducao && !textoTraduzido.isNullOrBlank()) {
+                    Text(
+                        text = "🌐 " + "Ver original".t(),
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { mostrarTraducao = false }
+                    )
+                } else {
+                    Text(
+                        text = "🌐 " + "Traduzir".t(),
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable {
+                            if (textoTraduzido != null) {
+                                mostrarTraducao = true
+                            } else {
+                                traduzindo = true
+                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                    val trad = TradutorHelper.traduzir(msg.texto)
+                                    traduzindo = false
+                                    if (!trad.isNullOrBlank() && trad != msg.texto) {
+                                        textoTraduzido = trad
+                                        mostrarTraducao = true
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
         }
     }
 }

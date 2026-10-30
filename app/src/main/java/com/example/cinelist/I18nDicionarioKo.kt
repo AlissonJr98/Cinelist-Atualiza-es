@@ -12,6 +12,7 @@ object I18nDicionarioKo {
         res.putAll(parte3)
         res.putAll(parte4)
         res.putAll(parte5)
+        res.putAll(parte6)
         res
     }
 
@@ -1329,5 +1330,59 @@ object I18nDicionarioKo {
         "Nova mensagem de" to "새 메시지:",
         "Você recebeu uma nova atualização no grupo." to "그룹에 새로운 업데이트가 있습니다.",
         "Um cinéfilo" to "영화 팬"
+    )
+
+    private val parte6: Map<String, String> = mapOf(
+        "Apagar Mensagem" to "메시지 삭제",
+        "Deseja realmente apagar esta mensagem da sala para todos?" to "이 방의 모든 사람을 위해 이 메시지를 정말 삭제하시겠습니까?",
+        "Mensagem apagada" to "메시지가 삭제되었습니다",
+        "Criar Enquete Rápida 📊" to "빠른 투표 만들기 📊",
+        "Pergunta (ex: O que assistir hoje?)" to "질문 (예: 오늘 뭐 볼까?)",
+        "Opção 1" to "옵션 1",
+        "Opção 2" to "옵션 2",
+        "Opção 3 (Opcional)" to "옵션 3 (선택 사항)",
+        "Enviar Enquete 📊" to "투표 보내기 📊",
+        "Enquete enviada! 📊" to "투표가 전송되었습니다! 📊",
+        "Recomendo assistirmos" to "시청을 추천합니다：",
+        "foi concluído! O que acharam do final?" to "시청 완료! 결말은 어떠셨나요?",
+        "Iniciei uma rodada de CineMatch Coletivo! Abra a sala para votar juntos!" to "그룹 시네매치 라운드를 시작했습니다! 방을 열고 함께 투표하세요!",
+        "Chamando" to "호출 중：",
+        "para a chamada CineParty de" to "의 시네파티 통화로",
+        "Galera, entrem no CineList para jogarmos CineMatch Coletivo!" to "여러분, 그룹 시네매치를 플레이하려면 CineList에 참여하세요!",
+        "sugeriu:" to "님이 제안했습니다:",
+        "A sua sugestão foi recusada." to "제안이 거절되었습니다.",
+        "Sugestão recusada." to "제안 거절됨.",
+        "Toque para ver detalhes 🎬" to "세부정보를 보려면 탭하세요 🎬",
+        "Retirar" to "철회",
+        "Você aprovou ✅" to "승인됨 ✅",
+        "Aprovar" to "승인",
+        "Resolver" to "해결",
+        "Controles de Administrador:" to "관리자 제어:",
+        "Forçar Recusa" to "강제 거절",
+        "Forçar Aprovação" to "강제 승인",
+        "Sugestões Pendentes" to "대기 중인 제안",
+        "O grupo decidiu não assistir" to "그룹에서 시청하지 않기로 결정했습니다：",
+        "Deseja adicionar este título à sua Lista Pessoal para assistir sozinho(a)?" to "혼자 시청하기 위해 이 작품을 개인 목록에 추가하시겠습니까?",
+        "Apenas Descartar" to "그냥 삭제",
+        "Sugestão descartada" to "제안이 취소되었습니다",
+        "adicionado à sua lista pessoal" to "이(가) 개인 목록에 추가되었습니다",
+        "Sugestão" to "제안",
+        "aprovada!" to "승인되었습니다!",
+        "Indicar na Sala" to "방에서 추천하기",
+        "Chamada CineParty Recebida! 🍿" to "시네파티 통화 수신! 🍿",
+        "está te chamando para assistir juntos no CineParty da sala" to "님이 방의 시네파티에서 함께 시청하자고 호출하고 있습니다:",
+        "Atender e Entrar 🍿" to "응답하고 입장 🍿",
+        "Aviso enviado no chat da sala!" to "방 채팅에 알림이 전송되었습니다!",
+        "Seu voto" to "내 투표",
+        "Aguardando..." to "대기 중...",
+        "Deseja realmente remover" to "정말 삭제하시겠습니까：",
+        "da lista?" to "을(를) 목록에서?",
+        "removido da lista" to "이(가) 목록에서 삭제되었습니다",
+        "reaberta" to "다시 열림",
+        "concluída! 🎉" to "완료되었습니다! 🎉",
+        "Deseja reabrir" to "다시 열겠습니까：",
+        "e voltar para o status Assistindo?" to "「시청 중」 상태로 되돌리시겠습니까?",
+        "Deseja realmente marcar" to "정말 표시하시겠습니까：",
+        "como Concluído?" to "「완료」로?"
     )
 }

@@ -290,8 +290,13 @@ fun CardItemEnquete(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Título
+            val tituloEnquete = if (enquete.titulo == "O que vamos assistir hoje?" || enquete.titulo.isBlank()) {
+                "O que vamos assistir hoje?".t()
+            } else {
+                enquete.titulo.t()
+            }
             Text(
-                text = enquete.titulo,
+                text = tituloEnquete,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -300,10 +305,13 @@ fun CardItemEnquete(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Opções
-            enquete.opcoes.forEach { opMap ->
+                        enquete.opcoes.forEach { opMap ->
                 val opId = opMap["id"] as? String ?: ""
-                val opTitulo = opMap["titulo"] as? String ?: "Opção"
-                val posterPath = opMap["posterPath"] as? String ?: ""
+                val opTmdbId = (opMap["tmdbId"] as? Number)?.toInt() ?: 0
+                val opTituloRaw = opMap["titulo"] as? String ?: "Opção".t()
+                val opTitulo = if (opTmdbId > 0) MidiaLocalizationManager.obterTituloLocalizadoPorId(opTmdbId, opTituloRaw) else opTituloRaw.t()
+                val posterPathRaw = opMap["posterPath"] as? String ?: ""
+                val posterPath = if (opTmdbId > 0) MidiaLocalizationManager.obterCapaLocalizada(opTmdbId, posterPathRaw) else posterPathRaw
                 val votosOpcao = contagemPorOpcao[opId] ?: 0
                 val percentual = if (totalVotos > 0) (votosOpcao.toFloat() / totalVotos.toFloat()) else 0f
                 val votadoPorMim = meuVotoOpcaoId == opId
@@ -437,6 +445,8 @@ fun SecaoCriarEnquete(
             ) {
                 items(listaDeMidiasSala.take(15)) { midia ->
                     val jaSelecionada = opcoesSelecionadas.any { it["tmdbId"] == midia.idTmdb }
+                    val titMidia = MidiaLocalizationManager.obterTituloLocalizado(midia)
+                    val capaMidia = MidiaLocalizationManager.obterCapaLocalizada(midia)
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = if (jaSelecionada) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -449,8 +459,8 @@ fun SecaoCriarEnquete(
                                     opcoesSelecionadas.add(
                                         mapOf(
                                             "id" to UUID.randomUUID().toString(),
-                                            "titulo" to midia.titulo,
-                                            "posterPath" to midia.imagemCapa,
+                                            "titulo" to titMidia,
+                                            "posterPath" to capaMidia,
                                             "tmdbId" to midia.idTmdb
                                         )
                                     )
@@ -470,7 +480,7 @@ fun SecaoCriarEnquete(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = midia.titulo,
+                                text = titMidia,
                                 fontSize = 12.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -533,7 +543,9 @@ fun SecaoCriarEnquete(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(opcoesSelecionadas) { opMap ->
-                val titulo = opMap["titulo"] as? String ?: ""
+                val rawTitulo = opMap["titulo"] as? String ?: ""
+                val tmdbId = (opMap["tmdbId"] as? Number)?.toInt() ?: 0
+                val titulo = if (tmdbId > 0) MidiaLocalizationManager.obterTituloLocalizadoPorId(tmdbId, rawTitulo) else rawTitulo.t()
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),

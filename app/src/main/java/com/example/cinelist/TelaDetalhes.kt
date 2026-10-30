@@ -615,17 +615,18 @@ fun TelaDetalhes(
                         val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
                         if (casalIdAtivo.isNotBlank()) {
                             IconeBouncyIconButton(onClick = {
+                                val titLocalizado = MidiaLocalizationManager.obterTituloLocalizado(midiaReal)
                                 val payload = "${midiaReal.idTmdb}|||${midiaReal.titulo}|||${midiaReal.imagemCapa}|||${midiaReal.tipo}"
                                 viewModel.enviarMensagemParaSala(
-                                    texto = "Recomendo assistirmos \"${midiaReal.titulo}\"! 🍿",
+                                    texto = "${"Recomendo assistirmos".t()} \"$titLocalizado\"! 🍿",
                                     tipoMensagem = "INDICAÇÃO",
                                     mediaUrl = payload
                                 )
-                                Toast.makeText(contexto, "Indicação enviada no Chat da Sala! 🍿", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(contexto, "Indicação enviada no Chat da Sala! 🍿".t(), Toast.LENGTH_SHORT).show()
                             }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = "Indicar na Sala",
+                                    contentDescription = "Indicar na Sala".t(),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }

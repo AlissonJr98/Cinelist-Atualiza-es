@@ -218,12 +218,17 @@ object MidiaLocalizationManager {
      * Retorna a URL da capa localizada no idioma atualmente ativo.
      */
     fun obterCapaLocalizada(midia: Midia): String {
+        return obterCapaLocalizada(midia.idTmdb, midia.imagemCapa)
+    }
+
+    /**
+     * Retorna a URL da capa localizada por idTmdb no idioma atualmente ativo.
+     */
+    fun obterCapaLocalizada(idTmdb: Int, capaPadrao: String = ""): String {
         val lang = obterPrefixoIdioma()
-        if (lang == "pt") return midia.imagemCapa
+        if (lang == "pt" || idTmdb <= 0) return capaPadrao
 
-        if (midia.idTmdb <= 0) return midia.imagemCapa
-
-        val chave = "${midia.idTmdb}-$lang"
+        val chave = "$idTmdb-$lang"
 
         cacheLocalizado[chave]?.let { (_, posterPath) ->
             if (posterPath.isNotBlank()) {
@@ -231,7 +236,7 @@ object MidiaLocalizationManager {
             }
         }
 
-        return midia.imagemCapa
+        return capaPadrao
     }
 
     private fun requisitarLocalizacaoTmdb(midia: Midia, lang: String, chave: String) {
