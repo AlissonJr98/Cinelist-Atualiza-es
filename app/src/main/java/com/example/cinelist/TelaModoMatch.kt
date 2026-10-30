@@ -140,7 +140,7 @@ fun TelaModoMatch(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Match",
+                                contentDescription = "Match".t(),
                                 tint = Color.White,
                                 modifier = Modifier.size(36.dp)
                             )
@@ -148,7 +148,7 @@ fun TelaModoMatch(
                     }
 
                     Text(
-                        text = "DEU MATCH! 🍿❤️",
+                        text = "DEU MATCH! 🍿❤️".t(),
                         fontWeight = FontWeight.Black,
                         fontSize = 22.sp,
                         color = MaterialTheme.colorScheme.primary,
@@ -156,7 +156,7 @@ fun TelaModoMatch(
                     )
 
                     Text(
-                        text = "Vocês dois escolheram este título! Ele foi adicionado à lista compartilhada.",
+                        text = "Vocês dois escolheram este título! Ele foi adicionado à lista compartilhada.".t(),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.secondary,
                         textAlign = TextAlign.Center
@@ -165,7 +165,7 @@ fun TelaModoMatch(
                     if (match.imagemCapa.isNotBlank()) {
                         AsyncImage(
                             model = match.imagemCapa,
-                            contentDescription = match.titulo,
+                            contentDescription = MidiaLocalizationManager.obterTituloLocalizadoPorId(match.idTmdb, match.titulo),
                             modifier = Modifier
                                 .width(140.dp)
                                 .height(200.dp)
@@ -176,7 +176,7 @@ fun TelaModoMatch(
                     }
 
                     Text(
-                        text = match.titulo,
+                        text = MidiaLocalizationManager.obterTituloLocalizadoPorId(match.idTmdb, match.titulo),
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -209,7 +209,7 @@ fun TelaModoMatch(
                     }
 
                     TextButton(onClick = { midiaMatchCelebrada = null }) {
-                        Text("Continuar Votando", color = MaterialTheme.colorScheme.secondary)
+                        Text("Continuar Votando".t(), color = MaterialTheme.colorScheme.secondary)
                     }
                 }
             }
@@ -228,9 +228,9 @@ fun TelaModoMatch(
             TopBarModernaTranslucida(
                 title = {
                     Column {
-                        Text("Modo Match 🍿", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Modo Match 🍿".t(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                         Text(
-                            text = if (estaNoModoDescobertaTmdb) "✨ Em Alta TMDB (${filaFinalParaVotar.size})" else "🍿 Títulos da sala (${filaFinalParaVotar.size})",
+                            text = if (estaNoModoDescobertaTmdb) "✨ ${"Em Alta TMDB".t()} (${filaFinalParaVotar.size})" else "🍿 ${"Títulos da sala".t()} (${filaFinalParaVotar.size})",
                             fontSize = 11.sp,
                             color = if (estaNoModoDescobertaTmdb) Color(0xFFFFD700) else MaterialTheme.colorScheme.secondary,
                             fontWeight = if (estaNoModoDescobertaTmdb) FontWeight.Bold else FontWeight.Normal
@@ -239,22 +239,22 @@ fun TelaModoMatch(
                 },
                 navigationIcon = {
                     IconeBouncyIconButton(onClick = onVoltar) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar".t())
                     }
                 },
                 actions = {
                     IconeBouncyIconButton(onClick = { mostrarAlbumRecordacoes = true }) {
-                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Álbum de Matches", tint = Color(0xFFFF3366))
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Álbum de Matches".t(), tint = Color(0xFFFF3366))
                     }
                     TextButton(onClick = { abaModoTorneio = !abaModoTorneio }) {
-                        Text(if (abaModoTorneio) "🍿 Match" else "🏆 Torneio 1v1", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        Text(if (abaModoTorneio) "🍿 Match".t() else "🏆 Torneio 1v1".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
                     IconeAnimadoRotacao(onClick = {
                         viewModel.resetarRodadaMatch()
                         votosSessaoLocal = emptySet()
                         matchesJaExibidosIds = emptySet()
                     }, anguloRotacaoTotal = 360f) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reiniciar Rodada", tint = MaterialTheme.colorScheme.primary)
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reiniciar Rodada".t(), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             )
@@ -277,7 +277,7 @@ fun TelaModoMatch(
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(36.dp), color = MaterialTheme.colorScheme.primary)
                     Text(
-                        text = "Buscando novas opções em alta...",
+                        text = "Buscando novas opções em alta...".t(),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -329,10 +329,11 @@ fun TelaModoMatch(
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
                                 Box(modifier = Modifier.fillMaxSize()) {
-                                    if (!prox.imagemCapa.isNullOrBlank()) {
+                                    val capaProx = MidiaLocalizationManager.obterCapaLocalizada(prox)
+                                    if (capaProx.isNotBlank()) {
                                         AsyncImage(
-                                            model = prox.imagemCapa,
-                                            contentDescription = prox.titulo,
+                                            model = capaProx,
+                                            contentDescription = MidiaLocalizationManager.obterTituloLocalizado(prox),
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
                                         )
@@ -378,10 +379,11 @@ fun TelaModoMatch(
                             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                if (!midiaAtual.imagemCapa.isNullOrBlank()) {
+                                val capaAtual = MidiaLocalizationManager.obterCapaLocalizada(midiaAtual)
+                                if (capaAtual.isNotBlank()) {
                                     AsyncImage(
-                                        model = midiaAtual.imagemCapa,
-                                        contentDescription = midiaAtual.titulo,
+                                        model = capaAtual,
+                                        contentDescription = MidiaLocalizationManager.obterTituloLocalizado(midiaAtual),
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
                                     )
@@ -392,7 +394,7 @@ fun TelaModoMatch(
                                             .background(MaterialTheme.colorScheme.surfaceVariant),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("SEM CAPA", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                        Text("SEM CAPA".t(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                                     }
                                 }
 
@@ -420,7 +422,7 @@ fun TelaModoMatch(
                                             shape = RoundedCornerShape(8.dp)
                                         ) {
                                             Text(
-                                                text = "${midiaAtual.tipo} • ${midiaAtual.genero.ifBlank { "Geral" }}",
+                                                text = "${midiaAtual.tipo.t()} • ${midiaAtual.genero.ifBlank { "Geral" }.t()}",
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
@@ -434,7 +436,7 @@ fun TelaModoMatch(
                                                 shape = RoundedCornerShape(8.dp)
                                             ) {
                                                 Text(
-                                                    text = "Em Alta TMDB",
+                                                    text = "Em Alta TMDB".t(),
                                                     color = Color.Black,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
@@ -447,7 +449,7 @@ fun TelaModoMatch(
                                     Spacer(modifier = Modifier.height(8.dp))
 
                                     Text(
-                                        text = midiaAtual.titulo,
+                                        text = MidiaLocalizationManager.obterTituloLocalizado(midiaAtual),
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color.White
@@ -486,7 +488,7 @@ fun TelaModoMatch(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Icon(Icons.Default.Check, contentDescription = null, tint = Color.Black, modifier = Modifier.size(26.dp))
-                                            Text("QUERO! 🍿", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.Black)
+                                            Text("QUERO! 🍿".t(), fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.Black)
                                         }
                                     }
                                 }
@@ -511,7 +513,7 @@ fun TelaModoMatch(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
-                                            Text("PASSO ❌", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.White)
+                                            Text("PASSO ❌".t(), fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color.White)
                                         }
                                     }
                                 }
@@ -539,7 +541,7 @@ fun TelaModoMatch(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Não quero agora",
+                                contentDescription = "Não quero agora".t(),
                                 tint = Color(0xFFFF1744),
                                 modifier = Modifier.size(32.dp)
                             )
@@ -552,7 +554,7 @@ fun TelaModoMatch(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         ) {
                             Text(
-                                text = "⟵ Passe ou Curta ⟶",
+                                text = "⟵ Passe ou Curta ⟶".t(),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.secondary,
@@ -572,7 +574,7 @@ fun TelaModoMatch(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Quero assistir hoje!",
+                                contentDescription = "Quero assistir hoje!".t(),
                                 tint = Color(0xFF00E5FF),
                                 modifier = Modifier.size(32.dp)
                             )
@@ -602,7 +604,7 @@ fun TorneioModoView(
 
     if (candidatos.size < 2) {
         Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-            Text("Adicione pelo menos 2 mídias à sala para iniciar o Torneio 🏆", color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+            Text("Adicione pelo menos 2 mídias à sala para iniciar o Torneio 🏆".t(), color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
         }
         return
     }
@@ -613,18 +615,19 @@ fun TorneioModoView(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("🏆 CAMPEÃO DO TORNEIO DA NOITE", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+            Text("🏆 CAMPEÃO DO TORNEIO DA NOITE".t(), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(16.dp))
             Box(modifier = Modifier.size(140.dp, 210.dp).clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
-                if (campeao!!.imagemCapa.isNotBlank()) {
-                    AsyncImage(model = campeao!!.imagemCapa, contentDescription = campeao!!.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                val capaCampeao = MidiaLocalizationManager.obterCapaLocalizada(campeao!!)
+                if (capaCampeao.isNotBlank()) {
+                    AsyncImage(model = capaCampeao, contentDescription = MidiaLocalizationManager.obterTituloLocalizado(campeao!!), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(campeao!!.titulo, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
+            Text(MidiaLocalizationManager.obterTituloLocalizado(campeao!!), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = { onAbrirDetalhesMidia(campeao!!) }) {
-                Text("Ver Detalhes & Assistir 🍿", fontWeight = FontWeight.Bold)
+                Text("Ver Detalhes & Assistir 🍿".t(), fontWeight = FontWeight.Bold)
             }
         }
         return
@@ -641,7 +644,7 @@ fun TorneioModoView(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp)) {
-            Text("⚔️ Duelo ${rodada + 1} • Escolha o Melhor!", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+            Text("${"⚔️ Duelo".t()} ${rodada + 1} • ${"Escolha o Melhor!".t()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
         }
 
         Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -661,16 +664,17 @@ fun TorneioModoView(
             ) {
                 Column(modifier = Modifier.padding(12.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
-                        if (itemA.imagemCapa.isNotBlank()) {
-                            AsyncImage(model = itemA.imagemCapa, contentDescription = itemA.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        val capaItemA = MidiaLocalizationManager.obterCapaLocalizada(itemA)
+                        if (capaItemA.isNotBlank()) {
+                            AsyncImage(model = capaItemA, contentDescription = MidiaLocalizationManager.obterTituloLocalizado(itemA), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(itemA.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(MidiaLocalizationManager.obterTituloLocalizado(itemA), fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
 
-            Text("VS", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterVertically))
+            Text("VS".t(), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.align(Alignment.CenterVertically))
 
             // Card B
             Card(
@@ -688,12 +692,13 @@ fun TorneioModoView(
             ) {
                 Column(modifier = Modifier.padding(12.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.DarkGray)) {
-                        if (itemB.imagemCapa.isNotBlank()) {
-                            AsyncImage(model = itemB.imagemCapa, contentDescription = itemB.titulo, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        val capaItemB = MidiaLocalizationManager.obterCapaLocalizada(itemB)
+                        if (capaItemB.isNotBlank()) {
+                            AsyncImage(model = capaItemB, contentDescription = MidiaLocalizationManager.obterTituloLocalizado(itemB), contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(itemB.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(MidiaLocalizationManager.obterTituloLocalizado(itemB), fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -710,12 +715,12 @@ fun DialogoAlbumRecordacoesMatch(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFFFF3366))
-                Text("Álbum de Matches da Sala 🖼️", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text("Álbum de Matches da Sala 🖼️".t(), fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
         },
         text = {
             if (matches.isEmpty()) {
-                Text("Nenhum Match registrado ainda nesta sala. Continuem votando!", fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                Text("Nenhum Match registrado ainda nesta sala. Continuem votando!".t(), fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
             } else {
                 Column(modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     matches.forEach { match ->
@@ -737,8 +742,8 @@ fun DialogoAlbumRecordacoesMatch(
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(match.titulo, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text("❤️ Deu Match com ${match.votos.size} votos!", fontSize = 11.sp, color = Color(0xFFFF3366), fontWeight = FontWeight.Bold)
+                                    Text(MidiaLocalizationManager.obterTituloLocalizadoPorId(match.idTmdb, match.titulo), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("${"❤️ Deu Match com".t()} ${match.votos.size} ${"votos!".t()}", fontSize = 11.sp, color = Color(0xFFFF3366), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -747,7 +752,7 @@ fun DialogoAlbumRecordacoesMatch(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDispensar) { Text("Fechar") }
+            TextButton(onClick = onDispensar) { Text("Fechar".t()) }
         }
     )
 }

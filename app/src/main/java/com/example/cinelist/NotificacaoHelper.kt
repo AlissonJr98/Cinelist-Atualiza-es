@@ -23,10 +23,10 @@ object NotificacaoHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 CANAL_GRUPO_ID,
-                "Salas Compartilhadas",
+                "Salas Compartilhadas".t(),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Avisos de novos filmes e séries adicionados aos grupos"
+                description = "Avisos de novos filmes e séries adicionados aos grupos".t()
                 enableLights(true)
                 enableVibration(true)
             }
@@ -44,11 +44,11 @@ object NotificacaoHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val textoCorpo = if (autor.isNotBlank()) "$autor adicionou \"$midiaTitulo\" ao grupo!" else "Novo item adicionado: \"$midiaTitulo\""
+        val textoCorpo = if (autor.isNotBlank()) "$autor ${"adicionou".t()} \"$midiaTitulo\" ${"ao grupo!".t()}" else "${"Novo item adicionado:".t()} \"$midiaTitulo\""
 
         val notificacao = NotificationCompat.Builder(context, CANAL_GRUPO_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(titulo)
+            .setContentTitle(titulo.t())
             .setContentText(textoCorpo)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
@@ -89,8 +89,8 @@ object NotificacaoHelper {
 
         val notificacao = NotificationCompat.Builder(context, CANAL_GRUPO_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Alguém terminou de assistir! 🎉")
-            .setContentText("$amigoNome acabou de marcar \"$tituloMidia\" como concluído. Que tal ver também?")
+            .setContentTitle("Alguém terminou de assistir! 🎉".t())
+            .setContentText("$amigoNome ${"acabou de marcar".t()} \"$tituloMidia\" ${"como concluído. Que tal ver também?".t()}")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
@@ -110,10 +110,10 @@ object NotificacaoHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 CANAL_SOLICITACOES_ID,
-                "Solicitações de Amizade",
+                "Solicitações de Amizade".t(),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações sonoras quando outro cinéfilo adiciona você"
+                description = "Notificações sonoras quando outro cinéfilo adiciona você".t()
                 enableLights(true)
                 lightColor = Color.YELLOW
                 enableVibration(true)
@@ -135,8 +135,8 @@ object NotificacaoHelper {
 
         val notificacao = NotificationCompat.Builder(context, CANAL_SOLICITACOES_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Novo pedido de amizade! 🍿")
-            .setContentText("$remetenteNome quer se conectar com você no CineList.")
+            .setContentTitle("Novo pedido de amizade! 🍿".t())
+            .setContentText("$remetenteNome ${"quer se conectar com você no CineList.".t()}")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setVibrate(longArrayOf(0, 350, 200, 350))
@@ -155,7 +155,7 @@ object NotificacaoHelper {
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             Toast.makeText(
                 context,
-                "⚠️ Você foi removido da sala pelo Administrador.",
+                "⚠️ Você foi removido da sala pelo Administrador.".t(),
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -167,10 +167,10 @@ object NotificacaoHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 CANAL_ESTREIAS_ID,
-                "Radar de Estreias nos Streamings",
+                "Radar de Estreias nos Streamings".t(),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc."
+                description = "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc.".t()
                 enableLights(true)
                 lightColor = Color.CYAN
                 enableVibration(true)
@@ -191,9 +191,9 @@ object NotificacaoHelper {
 
         val notificacao = NotificationCompat.Builder(context, CANAL_ESTREIAS_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("🎉 Chegou no Streaming: $provedorNome!")
-            .setContentText("\"$tituloMidia\" já está disponível para assistir!")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("Boas notícias! O título \"$tituloMidia\" que você estava monitorando no Radar agora está disponível no catálogo do $provedorNome! 🍿"))
+            .setContentTitle("${"🎉 Chegou no Streaming:".t()} $provedorNome!")
+            .setContentText("\"$tituloMidia\" ${"já está disponível para assistir!".t()}")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${"Boas notícias! O título".t()} \"$tituloMidia\" ${"que você estava monitorando no Radar agora está disponível no catálogo do".t()} $provedorNome! 🍿"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)

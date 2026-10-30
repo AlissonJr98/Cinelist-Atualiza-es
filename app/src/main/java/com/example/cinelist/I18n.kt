@@ -282,11 +282,26 @@ object I18n {
         }
 
         // 9. Visto: X (ex: "Visto: Hoje", "Visto: Ontem", "Visto: Há 3 dias")
-        if (limpo.startsWith("Visto:")) {
-            val prefixoTraduzido = mapa["Visto"] ?: "Watched"
-            val dataPart = limpo.substring(6).trim()
-            val dataTraduzida = traduzirDataRelativa(dataPart, lang)
+        if (limpo.startsWith("Visto:") || limpo.startsWith("Visto :")) {
+            val prefixoTraduzido = mapa["Visto"] ?: when (lang) {
+                "en" -> "Watched"
+                "es" -> "Visto"
+                "fr" -> "Vu"
+                "de" -> "Gesehen"
+                "it" -> "Visto"
+                "ja" -> "視聴済み"
+                "ko" -> "시청 완료"
+                else -> "Visto"
+            }
+            val dataPart = limpo.substringAfter(":").trim()
+            val dataTraduzida = traduzir(dataPart)
             return "$prefixoTraduzido: $dataTraduzida"
+        }
+
+        // 9.1 Data relativa isolada ("Hoje", "Ontem", "Há X dias")
+        val dataRel = traduzirDataRelativa(limpo, lang)
+        if (dataRel != limpo) {
+            return dataRel
         }
 
         // 10. Parou em: X min

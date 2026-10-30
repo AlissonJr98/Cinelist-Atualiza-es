@@ -37,7 +37,7 @@ object CineClubeManager {
             "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
         )
-        val mesNome = mesesNomes.getOrElse(mesAtual) { "Mês Atual" }
+        val mesNome = mesesNomes.getOrElse(mesAtual) { "Mês Atual" }.t()
 
         val concluidas = midias.filter { it.obterStatusEnum() == StatusMidia.CONCLUIDO }
 
@@ -116,7 +116,7 @@ object CineClubeManager {
 
         return StatusCineClube(
             mesNome = mesNome,
-            temaMes = "Exploradores do Cinema & Narrativas",
+            temaMes = "Exploradores do Cinema & Narrativas".t(),
             diasRestantes = diasRestantes,
             desafios = lista,
             xpTotalGanha = xpGanha,

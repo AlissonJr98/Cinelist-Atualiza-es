@@ -100,14 +100,14 @@ fun DialogoSorteio(
                     PulsarPontoNeon(cor = Color(0xFFFFD700), tamanho = 9.dp)
                     Column {
                         Text(
-                            text = "ROLETA CIBERNÉTICA",
+                            text = "ROLETA CIBERNÉTICA".t(),
                             fontWeight = FontWeight.Black,
                             letterSpacing = 1.sp,
                             fontSize = 15.sp,
                             color = Color.White
                         )
                         Text(
-                            text = "SORTEIO INTELIGENTE // CINELINK",
+                            text = "SORTEIO INTELIGENTE // CINELINK".t(),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 10.sp,
                             color = Color(0xFF00E5FF).copy(alpha = 0.8f)
@@ -121,7 +121,7 @@ fun DialogoSorteio(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Casino,
-                        contentDescription = "Girar Roleta",
+                        contentDescription = "Girar Roleta".t(),
                         tint = Color(0xFFFFD700),
                         modifier = Modifier.size(24.dp)
                     )
@@ -162,7 +162,7 @@ fun DialogoSorteio(
                                     sortearNovamente++
                                 }
                             },
-                            label = status,
+                            label = status.t(),
                             corDestaque = Color(0xFF00E5FF),
                             modifier = Modifier.padding(horizontal = 3.dp)
                         )
@@ -175,7 +175,7 @@ fun DialogoSorteio(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    listOf("Qualquer" to "Qualquer Tempo", "< 90 min" to "< 90 min ⏱️", "Séries" to "Séries / Ep 📺").forEach { (chave, rotulo) ->
+                    listOf("Qualquer" to "Qualquer Tempo".t(), "< 90 min" to "< 90 min ⏱️".t(), "Séries" to "Séries / Ep 📺".t()).forEach { (chave, rotulo) ->
                         CyberFilterChip(
                             selected = (filtroDuracao == chave),
                             onClick = {
@@ -215,7 +215,7 @@ fun DialogoSorteio(
                 ) {
                     if (listaCandidatos.isEmpty()) {
                         Text(
-                            text = "Nenhum título encontrado com esses filtros.",
+                            text = "Nenhum título encontrado com esses filtros.".t(),
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center,
@@ -236,9 +236,10 @@ fun DialogoSorteio(
                                     .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (!midiaSorteada!!.imagemCapa.isNullOrBlank()) {
+                                val capaSorteada = MidiaLocalizationManager.obterCapaLocalizada(midiaSorteada!!)
+                                if (capaSorteada.isNotBlank()) {
                                     SubcomposeAsyncImage(
-                                        model = midiaSorteada!!.imagemCapa,
+                                        model = capaSorteada,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -268,7 +269,7 @@ fun DialogoSorteio(
                                     ) {
                                         PulsarPontoNeon(cor = Color(0xFFFFD700), tamanho = 7.dp)
                                         Text(
-                                            text = "RODANDO...",
+                                            text = "RODANDO...".t(),
                                             fontSize = 10.sp,
                                             fontFamily = FontFamily.Monospace,
                                             fontWeight = FontWeight.Black,
@@ -284,7 +285,7 @@ fun DialogoSorteio(
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
-                                            text = "SELECIONADO 🎯",
+                                            text = "SELECIONADO 🎯".t(),
                                             color = Color(0xFF00FF7F),
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Black,
@@ -296,7 +297,7 @@ fun DialogoSorteio(
                                 Spacer(modifier = Modifier.height(6.dp))
 
                                 Text(
-                                    text = midiaSorteada!!.titulo,
+                                    text = MidiaLocalizationManager.obterTituloLocalizado(midiaSorteada!!),
                                     fontWeight = FontWeight.Black,
                                     fontSize = 15.sp,
                                     color = Color.White,
@@ -307,7 +308,7 @@ fun DialogoSorteio(
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = "🍿 ${midiaSorteada!!.plataforma.ifBlank { "Cinema / Streaming" }}",
+                                    text = "🍿 ${midiaSorteada!!.plataforma.ifBlank { "Cinema / Streaming" }.t()}",
                                     fontSize = 12.sp,
                                     color = Color.White.copy(alpha = 0.7f),
                                     maxLines = 1,
@@ -358,7 +359,7 @@ fun DialogoSorteio(
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
-                    Text("Girar Novamente", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Girar Novamente".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
@@ -387,7 +388,7 @@ fun DialogoSorteio(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Ver Detalhes", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Black)
+                        Text("Ver Detalhes".t(), fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Black)
                     }
                 }
             }
@@ -397,7 +398,7 @@ fun DialogoSorteio(
                 onClick = onDispensar,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Fechar", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+                Text("Fechar".t(), color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
             }
         }
     )

@@ -549,7 +549,7 @@ private fun ConteudoItemMidiaCard(
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
-                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}",
+                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}".t(),
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.secondary,
                                 fontWeight = FontWeight.Medium,
@@ -1058,7 +1058,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 modifier = Modifier.size(12.dp)
                             )
                             Text(
-                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}",
+                                text = "Visto: ${formatarDataRelativa(midia.atualizadoEm)}".t(),
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.secondary,
                                 fontWeight = FontWeight.Medium,

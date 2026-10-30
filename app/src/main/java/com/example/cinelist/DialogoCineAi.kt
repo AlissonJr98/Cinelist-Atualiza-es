@@ -209,7 +209,7 @@ fun DialogoCineAi(
                                 ) {
                                     Text(vibe.emoji, fontSize = 16.sp)
                                     Text(
-                                        text = vibe.titulo,
+                                        text = vibe.titulo.t(),
                                         fontSize = 12.sp,
                                         fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Medium,
                                         color = if (selecionado) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -225,13 +225,13 @@ fun DialogoCineAi(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Formato:",
+                            text = "Formato:".t(),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.secondary
                         )
 
-                        listOf("TODOS" to "Tanto faz", "FILME" to "Filmes", "SERIE" to "Séries").forEach { (chave, rotulo) ->
+                        listOf("TODOS" to "Tanto faz".t(), "FILME" to "Filmes".t(), "SERIE" to "Séries".t()).forEach { (chave, rotulo) ->
                             FilterChip(
                                 selected = filtroTipo == chave,
                                 onClick = { filtroTipo = chave },
@@ -267,7 +267,7 @@ fun DialogoCineAi(
 
                     // CHIPS DE PROMPT RÁPIDO
                     Text(
-                        text = "Sugestões de busca rápida:",
+                        text = "Sugestões de busca rápida:".t(),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF00E5FF)
@@ -359,7 +359,7 @@ fun DialogoCineAi(
                             Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (sugestoes.isNotEmpty()) "Gerar Novas Recomendações 🎲" else "Descobrir Títulos Perfeitos ✨",
+                                text = if (sugestoes.isNotEmpty()) "Gerar Novas Recomendações 🎲".t() else "Descobrir Títulos Perfeitos ✨".t(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -393,7 +393,7 @@ fun DialogoCineAi(
 
                         sugestoes.forEach { sugestao ->
                             val item = sugestao.tmdbItem
-                            val tipoReal = if (item.ehSerie || item.mediaType.equals("tv", ignoreCase = true)) "Série" else "Filme"
+                            val tipoReal = if (item.ehSerie || item.mediaType.equals("tv", ignoreCase = true)) "Série".t() else "Filme".t()
                             val posterUrl = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else ""
 
                             ElevatedCard(
@@ -412,7 +412,7 @@ fun DialogoCineAi(
                                         if (posterUrl.isNotBlank()) {
                                             AsyncImage(
                                                 model = posterUrl,
-                                                contentDescription = item.titulo,
+                                                contentDescription = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.titulo, item.ehSerie),
                                                 contentScale = ContentScale.Crop,
                                                 modifier = Modifier
                                                     .size(65.dp, 95.dp)
@@ -429,7 +429,7 @@ fun DialogoCineAi(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = item.titulo,
+                                                    text = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.titulo, item.ehSerie),
                                                     fontWeight = FontWeight.Bold,
                                                     fontSize = 14.sp,
                                                     color = MaterialTheme.colorScheme.onSurface,
@@ -455,7 +455,7 @@ fun DialogoCineAi(
                                             }
 
                                             Text(
-                                                text = "${if (item.anoLancamento.isNotBlank()) "${item.anoLancamento} • " else ""}$tipoReal • ${item.generoTexto}",
+                                                text = "${if (item.anoLancamento.isNotBlank()) "${item.anoLancamento} • " else ""}$tipoReal • ${item.generoTexto.t()}",
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.secondary
                                             )
@@ -473,7 +473,7 @@ fun DialogoCineAi(
                                                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                                     ) {
                                                         Text(
-                                                            text = destaque,
+                                                            text = destaque.t(),
                                                             fontSize = 9.sp,
                                                             fontWeight = FontWeight.SemiBold,
                                                             color = MaterialTheme.colorScheme.primary,
@@ -500,7 +500,7 @@ fun DialogoCineAi(
                                         ) {
                                             Text("💡", fontSize = 12.sp)
                                             Text(
-                                                text = sugestao.justificativaIa,
+                                                text = sugestao.justificativaIa.t(),
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

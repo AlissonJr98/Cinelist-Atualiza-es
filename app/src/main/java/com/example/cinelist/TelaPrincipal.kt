@@ -2950,7 +2950,7 @@ fun DialogoCineBot(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         sugestoesBot.forEach { item ->
-                            val tipoReal = if (item.ehSerie || item.mediaType.equals("tv", ignoreCase = true)) "Série" else "Filme"
+                            val tipoReal = if (item.ehSerie || item.mediaType.equals("tv", ignoreCase = true)) "Série".t() else "Filme".t()
                             val posterUrl = if (!item.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w500${item.caminhoPoster}" else ""
 
                             Card(
@@ -2965,14 +2965,14 @@ fun DialogoCineBot(
                                     if (posterUrl.isNotBlank()) {
                                         AsyncImage(
                                             model = posterUrl,
-                                            contentDescription = item.titulo,
+                                            contentDescription = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.titulo, item.ehSerie),
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(6.dp))
                                         )
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(item.titulo, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(item.sinopse.ifBlank { "Sem sinopse disponível." }, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.titulo, item.ehSerie), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(item.sinopse.ifBlank { "Sem sinopse disponível.".t() }, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
                                     Button(
                                         onClick = {
@@ -2991,7 +2991,7 @@ fun DialogoCineBot(
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                         modifier = Modifier.height(30.dp)
                                     ) {
-                                        Text("+ Lista", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text("+ Lista".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -3001,7 +3001,7 @@ fun DialogoCineBot(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDispensar) { Text("Fechar") }
+            TextButton(onClick = onDispensar) { Text("Fechar".t()) }
         }
     )
 }

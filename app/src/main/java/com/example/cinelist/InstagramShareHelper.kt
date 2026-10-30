@@ -73,7 +73,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("CINELIST // TELEMETRIA", width / 2f, 163f, paintPillText)
+            canvas.drawText("CINELIST // TELEMETRIA".t(), width / 2f, 163f, paintPillText)
 
             // Título Principal
             val paintTitulo = Paint().apply {
@@ -83,7 +83,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("RETROSPECTIVA CINÉFILA", width / 2f, 300f, paintTitulo)
+            canvas.drawText("RETROSPECTIVA CINÉFILA".t(), width / 2f, 300f, paintTitulo)
 
             val paintSub = Paint().apply {
                 color = Color.parseColor("#94A3B8")
@@ -91,7 +91,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("SEU HISTÓRICO DE MARATONAS E CONQUISTAS", width / 2f, 360f, paintSub)
+            canvas.drawText("SEU HISTÓRICO DE MARATONAS E CONQUISTAS".t(), width / 2f, 360f, paintSub)
 
             // Função para desenhar cards holográficos
             fun desenharCard(top: Float, bottom: Float, label: String, valor: String, destaqueCor: Int) {
@@ -135,12 +135,12 @@ object InstagramShareHelper {
             }
 
             // Cards de estatísticas
-            desenharCard(430f, 630f, "Tempo em Maratona", "${dados.horasTotaisAssistidas} Horas", Color.parseColor("#00E5FF"))
-            desenharCard(670f, 870f, "Títulos Concluídos", "${dados.totalTitulosConcluidos} Obras", Color.parseColor("#10B981"))
-            desenharCard(910f, 1110f, "Gênero Predominante", dados.generoFavorito.ifBlank { "Geral" }, Color.parseColor("#A855F7"))
+            desenharCard(430f, 630f, "Tempo em Maratona".t(), "${dados.horasTotaisAssistidas} ${"Horas".t()}", Color.parseColor("#00E5FF"))
+            desenharCard(670f, 870f, "Títulos Concluídos".t(), "${dados.totalTitulosConcluidos} ${"Obras".t()}", Color.parseColor("#10B981"))
+            desenharCard(910f, 1110f, "Gênero Predominante".t(), dados.generoFavorito.ifBlank { "Geral" }.t(), Color.parseColor("#A855F7"))
 
             val destaque = if (dados.filmeOuSerieDestaque.length > 24) dados.filmeOuSerieDestaque.take(21) + "..." else dados.filmeOuSerieDestaque
-            desenharCard(1150f, 1350f, "Destaque da Jornada", destaque.ifBlank { "CineList" }, Color.parseColor("#F59E0B"))
+            desenharCard(1150f, 1350f, "Destaque da Jornada".t(), destaque.ifBlank { "CineList" }, Color.parseColor("#F59E0B"))
 
             // Frase de Personalidade
             if (dados.frasePersonalizada.isNotBlank()) {
@@ -152,7 +152,7 @@ object InstagramShareHelper {
                     isAntiAlias = true
                 }
                 val fraseEncurtada = if (dados.frasePersonalizada.length > 45) dados.frasePersonalizada.take(42) + "..." else dados.frasePersonalizada
-                canvas.drawText("“$fraseEncurtada”", width / 2f, 1460f, paintFrase)
+                canvas.drawText("“${fraseEncurtada.t()}”", width / 2f, 1460f, paintFrase)
             }
 
             // Badge / Rank Cinéfilo
@@ -163,7 +163,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("✦ PATENTE: COMANDANTE CINE ✦", width / 2f, 1620f, paintRank)
+            canvas.drawText("✦ PATENTE: COMANDANTE CINE ✦".t(), width / 2f, 1620f, paintRank)
 
             // Rodapé
             val paintRodape = Paint().apply {
@@ -172,7 +172,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("App CineList // Sincronizado na Nuvem", width / 2f, 1800f, paintRodape)
+            canvas.drawText("App CineList // Sincronizado na Nuvem".t(), width / 2f, 1800f, paintRodape)
 
             // Salva na cache
             val pastaCache = File(context.cacheDir, "cinelist_imagens")
@@ -272,7 +272,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("CINELIST // DIÁRIO DE CINEMA", width / 2f, 163f, paintPillText)
+            canvas.drawText("CINELIST // DIÁRIO DE CINEMA".t(), width / 2f, 163f, paintPillText)
 
             // 2. Poster do filme ou placeholder estilizado
             val posterLeft = 240f
@@ -394,7 +394,7 @@ object InstagramShareHelper {
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
-            canvas.drawText("Disponível no app CineList // @cinelistapp", width / 2f, 1800f, paintRodape)
+            canvas.drawText("Disponível no app CineList // @cinelistapp".t(), width / 2f, 1800f, paintRodape)
 
             // Salva na cache
             val pastaCache = File(context.cacheDir, "cinelist_imagens")

@@ -4597,11 +4597,11 @@ fun PaginaCapaWrapped(frase: String) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
 
-            Text("🍿 CineList Wrapped", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("🍿 CineList Wrapped".t(), color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(text = frase, color = Color.White, fontSize = 22.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+            Text(text = frase.t(), color = Color.White, fontSize = 22.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
 
         }
 
@@ -4631,11 +4631,11 @@ fun PaginaTempoWrapped(horas: Int, total: Int) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
 
-            Text("Neste ciclo, você dedicou", color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
+            Text("Neste ciclo, você dedicou".t(), color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
 
-            Text(text = "$horas horas", fontSize = 56.sp, fontWeight = FontWeight.Black, color = CineListTokens.CorPremium)
+            Text(text = "$horas ${"horas".t()}", fontSize = 56.sp, fontWeight = FontWeight.Black, color = CineListTokens.CorPremium)
 
-            Text(text = "assistindo a $total títulos entre filmes e séries.", fontSize = 20.sp, color = Color.White, textAlign = TextAlign.Center)
+            Text(text = "${"assistindo a".t()} $total ${"títulos entre filmes e séries.".t()}", fontSize = 20.sp, color = Color.White, textAlign = TextAlign.Center)
 
         }
 
@@ -4665,11 +4665,11 @@ fun PaginaEpisodiosWrapped(totalEpisodios: Int) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
 
-            Text("Viciante em séries!", color = Color.White.copy(alpha = 0.85f), fontSize = 18.sp)
+            Text("Viciante em séries!".t(), color = Color.White.copy(alpha = 0.85f), fontSize = 18.sp)
 
             Text(text = "$totalEpisodios", fontSize = 64.sp, fontWeight = FontWeight.Black, color = Color.White)
 
-            Text(text = "episódios maratonados sem parar.", fontSize = 20.sp, color = Color.White.copy(alpha = 0.9f), textAlign = TextAlign.Center)
+            Text(text = "episódios maratonados sem parar.".t(), fontSize = 20.sp, color = Color.White.copy(alpha = 0.9f), textAlign = TextAlign.Center)
 
         }
 
@@ -4699,15 +4699,15 @@ fun PaginaGenerosWrapped(genero: String, plataforma: String) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
 
-            Text("Seu estilo principal", color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
+            Text("Seu estilo principal".t(), color = Color.White.copy(alpha = 0.8f), fontSize = 18.sp)
 
-            Text(text = genero, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            Text(text = genero.t(), fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text("Sua plataforma favorita:", color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+            Text("Sua plataforma favorita:".t(), color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
 
-            Text(text = plataforma, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = CineListTokens.CorPremium, textAlign = TextAlign.Center)
+            Text(text = plataforma.t(), fontSize = 30.sp, fontWeight = FontWeight.Bold, color = CineListTokens.CorPremium, textAlign = TextAlign.Center)
 
         }
 
@@ -4737,13 +4737,13 @@ fun PaginaFinalWrapped(dadosWrapped: CineWrappedData, onCompartilhar: () -> Unit
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoM)) {
 
-            Text("Destaque da Temporada 🌟", color = CineListTokens.CorPremium, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Destaque da Temporada 🌟".t(), color = CineListTokens.CorPremium, fontSize = 18.sp, fontWeight = FontWeight.Bold)
 
             Text(text = dadosWrapped.filmeOuSerieDestaque, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
 
-            Text(text = "Média de Avaliação: ${dadosWrapped.mediaNotasAtribuidas} ★", fontSize = 15.sp, color = Color.LightGray)
+            Text(text = "${"Média de Avaliação:".t()} ${dadosWrapped.mediaNotasAtribuidas} ★", fontSize = 15.sp, color = Color.LightGray)
 
-            Text(text = "Sua Maior Nota: ${"★".repeat(dadosWrapped.maiorNotaDada.coerceAtLeast(0))}", fontSize = 15.sp, color = CineListTokens.CorPremium)
+            Text(text = "${"Sua Maior Nota:".t()} ${"★".repeat(dadosWrapped.maiorNotaDada.coerceAtLeast(0))}", fontSize = 15.sp, color = CineListTokens.CorPremium)
 
 
 
@@ -4765,7 +4765,7 @@ fun PaginaFinalWrapped(dadosWrapped: CineWrappedData, onCompartilhar: () -> Unit
 
                 Spacer(modifier = Modifier.width(CineListTokens.EspacoXS))
 
-                Text("Compartilhar Resumo", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text("Compartilhar Resumo".t(), color = Color.Black, fontWeight = FontWeight.Bold)
 
             }
 
@@ -6097,7 +6097,7 @@ fun AbaAmigosPerfil(
 
                         Text(
 
-                            text = "🔍 Encontrar Cinéfilos",
+                            text = "🔍 Encontrar Cinéfilos".t(),
 
                             fontSize = 16.sp,
 
@@ -6133,7 +6133,7 @@ fun AbaAmigosPerfil(
 
                         onValueChange = { termoBusca = it },
 
-                        placeholder = { Text("Digite o nome do usuário...") },
+                        placeholder = { Text("Digite o nome do usuário...".t()) },
 
                         modifier = Modifier.fillMaxWidth(),
 
@@ -6607,7 +6607,7 @@ fun AbaAmigosPerfil(
 
                                 Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
 
-                                Text("Nenhum amigo adicionado ainda.\nUse a barra de pesquisa acima para encontrar cinéfilos!", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                                Text("Nenhum amigo adicionado ainda.\nUse a barra de pesquisa acima para encontrar cinéfilos!".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
 
                             }
 

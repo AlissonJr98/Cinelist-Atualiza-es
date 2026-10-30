@@ -5549,30 +5549,12 @@ class MidiaViewModel @Inject constructor(
 
 
 
-        val destaque = concluidos.maxByOrNull { it.nota }?.titulo ?: midias.firstOrNull()?.titulo ?: "Nenhum título ainda"
-
-
-
-
-
-
-
+        val midiaDestaque = concluidos.maxByOrNull { it.nota } ?: midias.firstOrNull()
+        val destaque = if (midiaDestaque != null) MidiaLocalizationManager.obterTituloLocalizado(midiaDestaque) else "Nenhum título ainda".t()
         val frase = when {
-
-
-
-            horas > 100 -> "Você é uma verdadeira lenda das maratonas!"
-
-
-
-            horas > 50 -> "Sua lista está recheada de ótimas histórias!"
-
-
-
-            else -> "Sua jornada cinéfila está apenas começando!"
-
-
-
+            horas > 100 -> "Você é uma verdadeira lenda das maratonas!".t()
+            horas > 50 -> "Sua lista está recheada de ótimas histórias!".t()
+            else -> "Sua jornada cinéfila está apenas começando!".t()
         }
 
 

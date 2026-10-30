@@ -97,8 +97,8 @@ fun SecaoConquistasPerfil(listaDeMidias: List<Midia>) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("🍿 CineClube (${statusClube.mesNome})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
-                    Text("${statusClube.totalConcluidos}/${statusClube.desafios.size} Concluídos ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                    Text("🍿 ${"CineClube".t()} (${statusClube.mesNome.t()})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("${statusClube.totalConcluidos}/${statusClube.desafios.size} ${"Concluídos".t()} ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -110,14 +110,14 @@ fun SecaoConquistasPerfil(listaDeMidias: List<Midia>) {
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
-                                    text = "${desafio.icone} ${desafio.titulo}",
+                                    text = "${desafio.icone} ${desafio.titulo.t()}",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1
                                 )
                                 Text(
-                                    text = if (desafio.concluido) "✅ Completo (+${desafio.recompensaXp} XP)" else "${desafio.progressoAtual}/${desafio.metaTotal} (${desafio.descricao})",
+                                    text = if (desafio.concluido) "✅ ${"Completo".t()} (+${desafio.recompensaXp} XP)" else "${desafio.progressoAtual}/${desafio.metaTotal} (${desafio.descricao.t()})",
                                     fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.secondary,
                                     maxLines = 1

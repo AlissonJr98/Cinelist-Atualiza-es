@@ -71,12 +71,12 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
 
         val titulo = remoteMessage.notification?.title
             ?: remoteMessage.data["titulo"]
-            ?: if (autorNome.isNotBlank()) "Nova mensagem de $autorNome" else "CineList"
+            ?: if (autorNome.isNotBlank()) "${"Nova mensagem de".t()} $autorNome" else "CineList"
 
         val mensagem = remoteMessage.notification?.body
             ?: remoteMessage.data["mensagem"]
             ?: remoteMessage.data["texto"]
-            ?: "Você recebeu uma nova atualização no grupo."
+            ?: "Você recebeu uma nova atualização no grupo.".t()
 
         val tipo = remoteMessage.data["tipo"] ?: remoteMessage.data["tipoAcao"] ?: "GERAL"
         val alvoId = remoteMessage.data["alvoId"] ?: remoteMessage.data["ALVO_ID"] ?: grupoId
@@ -84,10 +84,10 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
         if (tipo == "SOLICITACAO_AMIZADE" || tipo == "AMIZADE_ACEITA") {
             NotificacaoHelper.dispararNotificacaoSolicitacaoAmizade(
                 context = applicationContext,
-                remetenteNome = if (autorNome.isNotBlank()) autorNome else "Um cinéfilo"
+                remetenteNome = if (autorNome.isNotBlank()) autorNome else "Um cinéfilo".t()
             )
         } else {
-            exibirNotificacaoSistema(titulo, mensagem, grupoId, tipo, alvoId)
+            exibirNotificacaoSistema(titulo.t(), mensagem.t(), grupoId, tipo, alvoId)
         }
 
         // Salva a notificação localmente no banco para aparecer na aba Notificações
@@ -95,8 +95,8 @@ class CineFirebaseMessagingService : FirebaseMessagingService() {
             try {
                 notificacaoRepository.inserir(
                     NotificacaoEntity(
-                        titulo = titulo,
-                        mensagem = mensagem,
+                        titulo = titulo.t(),
+                        mensagem = mensagem.t(),
                         tipo = tipo,
                         dataCriacao = System.currentTimeMillis(),
                         lida = false
