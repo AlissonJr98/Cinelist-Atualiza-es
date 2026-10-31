@@ -1,6 +1,6 @@
 {
   "versaoCodigo": 101,
   "versaoNome": "2.0.61",
-  "notas": "Tradução dinâmica e normalização automática de todos os gêneros (filmes e séries)\nInternacionalização completa do histórico e avisos de versão nas notificações\nAgenda do Cinéfilo 100% internacionalizada com títulos localizados e formatação de datas\nCards de compartilhamento para o Instagram Stories traduzidos dinamicamente\nCorreção no fechamento inesperado ao visualizar o perfil de amigos e membros\nSeletor de idiomas agora exibe o nome de todas as línguas traduzido no idioma ativo\nPlayer de trailers flutuante em Picture-in-Picture (PiP) aprimorado\nRadar de lançamentos em streaming com notificações inteligentes em segundo plano\nFeedback tátil (vibração háptica) integrado nas ações do aplicativo",
+  "notas": "Melhorias gerais e correções de desempenho.",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.61/CineList-v2.0.61.apk"
 }
