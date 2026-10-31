@@ -97,6 +97,14 @@ fun InlineTrailerPlayer(
                         loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "UTF-8", null)
                     }
                 },
+                onRelease = { webView ->
+                    try {
+                        webView.stopLoading()
+                        webView.loadUrl("about:blank")
+                        webView.onPause()
+                        webView.destroy()
+                    } catch (_: Throwable) {}
+                },
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -153,8 +161,12 @@ fun InlineTrailerPlayer(
                         IconButton(
                             onClick = {
                                 CineHaptics.click(context)
-                                val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$chaveTrailer"))
-                                val intentNav = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$chaveTrailer"))
+                                val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$chaveTrailer")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                val intentNav = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$chaveTrailer")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
                                 try {
                                     context.startActivity(intentApp)
                                 } catch (_: Exception) {

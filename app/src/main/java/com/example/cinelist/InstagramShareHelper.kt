@@ -190,7 +190,7 @@ object InstagramShareHelper {
             val instagramIntent = Intent("com.instagram.share.ADD_TO_STORY").apply {
                 setDataAndType(uriImagem, "image/png")
                 putExtra(Intent.EXTRA_STREAM, uriImagem)
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
                 putExtra("source_application", context.packageName)
                 setPackage("com.instagram.android")
             }
@@ -205,7 +205,7 @@ object InstagramShareHelper {
                     putExtra(Intent.EXTRA_TEXT, "Minha retrospectiva cinematográfica no CineList! 🍿✨".t())
                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineStats Retrospectiva".t()))
+                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineStats Retrospectiva".t()).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
             }
 
         } catch (e: Exception) {
@@ -411,7 +411,7 @@ object InstagramShareHelper {
             val instagramIntent = Intent("com.instagram.share.ADD_TO_STORY").apply {
                 setDataAndType(uriImagem, "image/png")
                 putExtra(Intent.EXTRA_STREAM, uriImagem)
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
                 putExtra("source_application", context.packageName)
                 setPackage("com.instagram.android")
             }
@@ -425,7 +425,7 @@ object InstagramShareHelper {
                     putExtra(Intent.EXTRA_TEXT, "${"Confira minha avaliação de".t()} '$titulo' ${"no CineList!".t()} 🍿✨")
                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineCard".t()))
+                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineCard".t()).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
             }
 
         } catch (e: Exception) {

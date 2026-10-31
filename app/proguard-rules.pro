@@ -27,6 +27,24 @@
 -keep class com.example.cinelist.Match* { *; }
 -keep class com.example.cinelist.Solicitacao* { *; }
 
+# Modelos sociais, interativos e de recursos do CineList
+-keep class com.example.cinelist.AtividadeSocial { *; }
+-keep class com.example.cinelist.AtividadeSocialEntity { *; }
+-keep class com.example.cinelist.Enquete* { *; }
+-keep class com.example.cinelist.CineBlind* { *; }
+-keep class com.example.cinelist.CineParty* { *; }
+-keep class com.example.cinelist.MatchColetivo* { *; }
+-keep class com.example.cinelist.Passaporte* { *; }
+-keep class com.example.cinelist.Playlist* { *; }
+-keep class com.example.cinelist.RadarStreaming* { *; }
+-keep class com.example.cinelist.Ranking* { *; }
+-keep class com.example.cinelist.GuiaParental* { *; }
+-keep class com.example.cinelist.MestresCinema* { *; }
+-keep class com.example.cinelist.CineWrappedData { *; }
+-keep class com.example.cinelist.PerguntaQuiz { *; }
+-keep class com.example.cinelist.CineAiSugestao { *; }
+-keep class com.example.cinelist.Conquista { *; }
+
 # Retrofit 2
 -keepclassmembers,allowobfuscation interface * {
     @retrofit2.http.* <methods>;

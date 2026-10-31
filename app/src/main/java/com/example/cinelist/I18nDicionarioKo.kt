@@ -1515,5 +1515,13 @@ object I18nDicionarioKo {
 ,
         "Tradução dinâmica e normalização automática de todos os gêneros (filmes e séries)" to "모든 장르(영화 및 시리즈) 동적 번역 및 자동 정규화",
         "Internacionalização completa do histórico e avisos de versão nas notificações" to "알림 기록 및 버전 알림의 완벽한 다국어 현지화"
+,
+        "Auditoria e blindagem completa de segurança, memória e concorrência" to "보안, 메모리 및 동시성에 대한 종합 감사 및 강화",
+        "Fechamento de sockets e streams de conexão no CineAI e no Tradutor" to "CineAI 및 번역기 연결 소켓 및 스트림 정상 종료",
+        "Descarte seguro e liberação de recursos do player de trailers em background" to "백그라운드 예고편 플레이어의 안전한 폐기 및 리소스 정리",
+        "Remoção do limite de 10 amigos e bloqueados com sincronização em lote inteligente" to "스마트 배치 동기화를 통한 친구 및 차단 목록 10명 제한 해제",
+        "Proteção de credenciais e chaves contra extração não criptografada em backups" to "암호화되지 않은 백업 추출로부터 자격 증명 및 키 보호",
+        "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "모든 데이터 모델 및 Firestore 리플렉션용 ProGuard 규칙 강화",
+        "Eliminação de riscos de segurança no FileProvider" to "FileProvider 내 잠재적 보안 위험 제거",
     )
 }

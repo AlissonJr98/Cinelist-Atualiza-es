@@ -52,10 +52,11 @@ object TradutorHelper {
      */
     suspend fun traduzir(textoOriginal: String, idiomaDestino: String = obterPrefixoIdiomaDestino()): String? = withContext(Dispatchers.IO) {
         if (textoOriginal.isBlank()) return@withContext null
+        var conexao: HttpURLConnection? = null
         try {
             val urlString = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$idiomaDestino&dt=t&q=" + Uri.encode(textoOriginal)
             val url = URL(urlString)
-            val conexao = (url.openConnection() as HttpURLConnection).apply {
+            conexao = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 6000
                 readTimeout = 6000
@@ -65,7 +66,6 @@ object TradutorHelper {
             if (conexao.responseCode == 200) {
                 val leitor = BufferedReader(InputStreamReader(conexao.inputStream, "UTF-8"))
                 val resposta = leitor.use { it.readText() }
-                conexao.disconnect()
 
                 val json = JSONArray(resposta)
                 val frasesArray = json.optJSONArray(0)
@@ -84,7 +84,12 @@ object TradutorHelper {
                     }
                 }
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        } finally {
+            try {
+                conexao?.disconnect()
+            } catch (_: Throwable) {}
+        }
         null
     }
 }

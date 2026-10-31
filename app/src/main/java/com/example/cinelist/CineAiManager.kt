@@ -295,9 +295,12 @@ object CineAiManager {
                     .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
                     .build()
 
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val body = response.body?.string().orEmpty()
+                val body = httpClient.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        response.body?.string().orEmpty()
+                    } else ""
+                }
+                if (body.isNotBlank()) {
                     val jsonResp = gson.fromJson(body, JsonObject::class.java)
                     val candidate = jsonResp.getAsJsonArray("candidates")?.get(0)?.asJsonObject
                     val text = candidate?.getAsJsonObject("content")
@@ -557,10 +560,10 @@ object CineAiManager {
             .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
-        val response = httpClient.newCall(request).execute()
-        if (!response.isSuccessful) return null
-
-        val responseBody = response.body?.string().orEmpty()
+        val responseBody = httpClient.newCall(request).execute().use { response ->
+            if (response.isSuccessful) response.body?.string().orEmpty() else ""
+        }
+        if (responseBody.isBlank()) return null
         val jsonResposta = gson.fromJson(responseBody, JsonObject::class.java)
         val textoGerado = jsonResposta.getAsJsonArray("candidates")
             ?.get(0)?.asJsonObject

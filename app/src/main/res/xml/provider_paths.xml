@@ -7,8 +7,7 @@
     <external-files-path name="external_download_lower" path="download" />
     <!-- Mapeia external cache -->
     <external-cache-path name="external_cache" path="." />
-    <!-- Mapeia cache e armazenamento raiz -->
-    <external-path name="external_storage" path="." />
+    <!-- Mapeia cache interno e subpastas -->
     <cache-path name="cache" path="." />
     <cache-path name="updates" path="updates" />
     <files-path name="files" path="." />

@@ -1515,5 +1515,13 @@ object I18nDicionarioJa {
 ,
         "Tradução dinâmica e normalização automática de todos os gêneros (filmes e séries)" to "全ジャンル（映画・ドラマ）の動的翻訳と自動正規化",
         "Internacionalização completa do histórico e avisos de versão nas notificações" to "通知履歴とバージョン通知の完全な多言語対応"
+,
+        "Auditoria e blindagem completa de segurança, memória e concorrência" to "セキュリティ、メモリ、並行性の完全な監査と強化",
+        "Fechamento de sockets e streams de conexão no CineAI e no Tradutor" to "CineAIおよび翻訳ツールにおけるソケットとストリームの確実なクローズ",
+        "Descarte seguro e liberação de recursos do player de trailers em background" to "バックグラウンド予告編プレーヤーの安全な破棄とリソース解放",
+        "Remoção do limite de 10 amigos e bloqueados com sincronização em lote inteligente" to "スマートバッチ同期によるフレンドおよびブロック人数の上限解除",
+        "Proteção de credenciais e chaves contra extração não criptografada em backups" to "暗号化されていないバックアップ抽出からの認証情報とAPIキーの保護",
+        "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "全データモデルおよびFirestoreリフレクション向けProGuardルールの強化",
+        "Eliminação de riscos de segurança no FileProvider" to "FileProviderにおけるセキュリティ脆弱性の解消",
     )
 }

@@ -1537,5 +1537,13 @@ object I18nDicionarioDe {
 ,
         "Tradução dinâmica e normalização automática de todos os gêneros (filmes e séries)" to "Dynamische Übersetzung und automatische Normalisierung aller Genres (Filme und Serien)",
         "Internacionalização completa do histórico e avisos de versão nas notificações" to "Vollständige Internationalisierung des Verlaufs und der Versionshinweise in Benachrichtigungen"
+,
+        "Auditoria e blindagem completa de segurança, memória e concorrência" to "Umfassendes Audit und Härtung von Sicherheit, Speicher und Nebenläufigkeit",
+        "Fechamento de sockets e streams de conexão no CineAI e no Tradutor" to "Schließen von Sockets und Verbindungs-Streams in CineAI und Übersetzer",
+        "Descarte seguro e liberação de recursos do player de trailers em background" to "Sichere Freigabe von Ressourcen des Trailer-Players im Hintergrund",
+        "Remoção do limite de 10 amigos e bloqueados com sincronização em lote inteligente" to "Aufhebung des Limits von 10 Freunden und Blockierten durch intelligente Stapelsynchronisierung",
+        "Proteção de credenciais e chaves contra extração não criptografada em backups" to "Schutz von Anmeldedaten und Schlüsseln vor unverschlüsselter Sicherungsextraktion",
+        "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "Härtung der ProGuard-Regeln für alle Datenmodelle und Firestore-Reflexion",
+        "Eliminação de riscos de segurança no FileProvider" to "Beseitigung von Sicherheitsrisiken im FileProvider",
     )
 }

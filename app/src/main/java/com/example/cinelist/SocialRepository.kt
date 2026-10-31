@@ -546,7 +546,7 @@ class SocialRepository @Inject constructor() {
             return@callbackFlow
         }
 
-        var listenerPublicos: com.google.firebase.firestore.ListenerRegistration? = null
+                val listenersPublicos = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
 
         val listenerAmigos = firestore.collection("usuarios").document(meuUid).collection("amigos")
             .whereEqualTo("status", "aceito")
@@ -558,45 +558,58 @@ class SocialRepository @Inject constructor() {
 
                 val uids = snapshot?.documents?.map { it.id } ?: emptyList()
 
+                listenersPublicos.forEach { it.remove() }
+                listenersPublicos.clear()
+
                 if (uids.isEmpty()) {
-                    listenerPublicos?.remove()
-                    listenerPublicos = null
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
 
-                listenerPublicos?.remove()
+                val chunks = uids.chunked(30)
+                val mapaResultados = java.util.concurrent.ConcurrentHashMap<Int, List<AmigoPerfil>>()
 
-                listenerPublicos = firestore.collection("usuarios_publicos")
-                    .whereIn(FieldPath.documentId(), uids.take(10))
-                    .addSnapshotListener { amigosSnap, errPublicos ->
-                        if (errPublicos != null) {
-                            trySend(emptyList())
-                            return@addSnapshotListener
+                fun emitirResultadoCombinado() {
+                    val listaCompleta = mapaResultados.values.flatten().distinctBy { it.uid }.sortedBy { it.nome }
+                    trySend(listaCompleta)
+                }
+
+                chunks.forEachIndexed { index, chunk ->
+                    val listenerChunk = firestore.collection("usuarios_publicos")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .addSnapshotListener { amigosSnap, errPublicos ->
+                            if (errPublicos != null) {
+                                mapaResultados[index] = emptyList()
+                                emitirResultadoCombinado()
+                                return@addSnapshotListener
+                            }
+
+                            val lista = amigosSnap?.documents?.mapNotNull { doc ->
+                                AmigoPerfil(
+                                    uid = doc.id,
+                                    nome = doc.getString("nome") ?: "Amigo",
+                                    fotoUrl = doc.getString("fotoUrl") ?: "",
+                                    bio = doc.getString("bio") ?: "",
+                                    email = doc.getString("email") ?: "",
+                                    online = doc.getBoolean("online") ?: false,
+                                    vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
+                                    instagram = doc.getString("instagram") ?: "",
+                                    twitter = doc.getString("twitter") ?: "",
+                                    letterboxd = doc.getString("letterboxd") ?: ""
+                                )
+                            } ?: emptyList()
+
+                            mapaResultados[index] = lista
+                            emitirResultadoCombinado()
                         }
-
-                        val lista = amigosSnap?.documents?.map { doc ->
-                            AmigoPerfil(
-                                uid = doc.id,
-                                nome = doc.getString("nome") ?: "Amigo",
-                                fotoUrl = doc.getString("fotoUrl") ?: "",
-                                bio = doc.getString("bio") ?: "",
-                                email = doc.getString("email") ?: "",
-                                online = doc.getBoolean("online") ?: false,
-                                vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
-                                instagram = doc.getString("instagram") ?: "",
-                                twitter = doc.getString("twitter") ?: "",
-                                letterboxd = doc.getString("letterboxd") ?: ""
-                            )
-                        } ?: emptyList()
-
-                        trySend(lista)
-                    }
+                    listenersPublicos.add(listenerChunk)
+                }
             }
 
         awaitClose {
             listenerAmigos.remove()
-            listenerPublicos?.remove()
+            listenersPublicos.forEach { it.remove() }
+            listenersPublicos.clear()
         }
     }
 
@@ -807,7 +820,7 @@ class SocialRepository @Inject constructor() {
             return@callbackFlow
         }
 
-        var listenerPublicos: com.google.firebase.firestore.ListenerRegistration? = null
+                val listenersPublicos = mutableListOf<com.google.firebase.firestore.ListenerRegistration>()
 
         val listenerBloqueados = firestore.collection("usuarios")
             .document(meuUid)
@@ -820,42 +833,56 @@ class SocialRepository @Inject constructor() {
 
                 val uidsBloqueados = snapshot?.documents?.map { it.id } ?: emptyList()
 
+                listenersPublicos.forEach { it.remove() }
+                listenersPublicos.clear()
+
                 if (uidsBloqueados.isEmpty()) {
-                    listenerPublicos?.remove()
-                    listenerPublicos = null
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
 
-                listenerPublicos?.remove()
-                listenerPublicos = firestore.collection("usuarios_publicos")
-                    .whereIn(FieldPath.documentId(), uidsBloqueados.take(10))
-                    .addSnapshotListener { docsPublicos, errPublicos ->
-                        if (errPublicos != null) {
-                            trySend(emptyList())
-                            return@addSnapshotListener
+                val chunks = uidsBloqueados.chunked(30)
+                val mapaResultados = java.util.concurrent.ConcurrentHashMap<Int, List<AmigoPerfil>>()
+
+                fun emitirResultadoCombinado() {
+                    val listaCompleta = mapaResultados.values.flatten().distinctBy { it.uid }.sortedBy { it.nome }
+                    trySend(listaCompleta)
+                }
+
+                chunks.forEachIndexed { index, chunk ->
+                    val listenerChunk = firestore.collection("usuarios_publicos")
+                        .whereIn(FieldPath.documentId(), chunk)
+                        .addSnapshotListener { docsPublicos, errPublicos ->
+                            if (errPublicos != null) {
+                                mapaResultados[index] = emptyList()
+                                emitirResultadoCombinado()
+                                return@addSnapshotListener
+                            }
+
+                            val lista = docsPublicos?.documents?.mapNotNull { doc ->
+                                AmigoPerfil(
+                                    uid = doc.id,
+                                    nome = doc.getString("nome") ?: "Usuário",
+                                    fotoUrl = doc.getString("fotoUrl") ?: "",
+                                    bio = doc.getString("bio") ?: "",
+                                    email = doc.getString("email") ?: "",
+                                    instagram = doc.getString("instagram") ?: "",
+                                    twitter = doc.getString("twitter") ?: "",
+                                    letterboxd = doc.getString("letterboxd") ?: ""
+                                )
+                            } ?: emptyList()
+
+                            mapaResultados[index] = lista
+                            emitirResultadoCombinado()
                         }
-
-                        val lista = docsPublicos?.documents?.map { doc ->
-                            AmigoPerfil(
-                                uid = doc.id,
-                                nome = doc.getString("nome") ?: "Usuário",
-                                fotoUrl = doc.getString("fotoUrl") ?: "",
-                                bio = doc.getString("bio") ?: "",
-                                email = doc.getString("email") ?: "",
-                                instagram = doc.getString("instagram") ?: "",
-                                twitter = doc.getString("twitter") ?: "",
-                                letterboxd = doc.getString("letterboxd") ?: ""
-                            )
-                        } ?: emptyList()
-
-                        trySend(lista)
-                    }
+                    listenersPublicos.add(listenerChunk)
+                }
             }
 
         awaitClose {
             listenerBloqueados.remove()
-            listenerPublicos?.remove()
+            listenersPublicos.forEach { it.remove() }
+            listenersPublicos.clear()
         }
     }
 
