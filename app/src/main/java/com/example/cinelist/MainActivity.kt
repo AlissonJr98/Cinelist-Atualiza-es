@@ -1,5 +1,8 @@
 package com.example.cinelist
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+
 
 
 import android.app.Activity
@@ -1175,7 +1178,10 @@ viewModel.atualizarStatusPresenca(false)
 
 
 
-NavHost(navController = navController, startDestination = rotaInicial) {
+@OptIn(ExperimentalSharedTransitionApi::class)
+SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+        NavHost(navController = navController, startDestination = rotaInicial) {
 
 
 
@@ -1275,6 +1281,8 @@ onVoltarParaLogin = { navController.popBackStack() }
 
 
 composable("home") {
+CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+
 
 
 
@@ -1451,10 +1459,13 @@ onAbrirMatch = { navController.navigate("match") }
 
 
 }
+}
 
 
 
 composable("match") {
+CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+
 
 
 
@@ -1499,10 +1510,13 @@ navController.navigate("detalhes/$idNavegacao/${midia.tipo}")
 
 
 }
+}
 
 
 
 composable("detalhes/{id}/{tipo}") { backStackEntry ->
+CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+
 
 
 
@@ -1552,10 +1566,13 @@ onRecomendacaoClique = { novoId, novoTipo ->
 
 
 }
+}
 
 
 
 composable("perfil") {
+CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+
 
 
 
@@ -1648,6 +1665,7 @@ navController.navigate("calendario")
 
 
 }
+}
 
 
 
@@ -1715,6 +1733,8 @@ onVoltar = { navController.popBackStack() }
 
 
 
+        }
+    }
 }
 
 

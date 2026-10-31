@@ -222,7 +222,9 @@ fun HeroBannerDestaque(
                 AsyncImage(
                     model = if (!itemTmdb.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w780${itemTmdb.caminhoPoster}" else "",
                     contentDescription = itemTmdb.titulo,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedPosterElement(if (itemTmdb.idTmdb > 0) "poster_${itemTmdb.idTmdb}" else ""),
                     contentScale = ContentScale.Crop
                 )
 
@@ -2298,7 +2300,9 @@ fun BannerOndePareiHorizontal(
                         model = capaFinal,
                         contentDescription = midia.titulo,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .sharedPosterElement(if (midia.idTmdb > 0) "poster_${midia.idTmdb}" else "")
                     )
                 } else {
                     Text("SEM CAPA", fontSize = 9.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)

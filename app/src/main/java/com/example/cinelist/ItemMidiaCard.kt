@@ -260,7 +260,9 @@ private fun ConteudoItemMidiaCard(
                                 .allowHardware(false)
                                 .build(),
                             contentDescription = "Capa de $tituloExibicao",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .sharedPosterElement(if (midia.idTmdb > 0) "poster_${midia.idTmdb}" else ""),
                             contentScale = ContentScale.Crop,
                             onSuccess = { state ->
                                 val drawable = state.result.drawable
@@ -889,7 +891,9 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 .allowHardware(false)
                                 .build(),
                             contentDescription = "Capa de $tituloExibicao",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .sharedPosterElement(if (midia.idTmdb > 0) "poster_${midia.idTmdb}" else ""),
                             contentScale = ContentScale.Crop,
                             onSuccess = { state ->
                                 val drawable = state.result.drawable

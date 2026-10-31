@@ -696,7 +696,8 @@ fun TelaDetalhes(
                                 modifier = Modifier
                                     .width(154.dp)
                                     .height(224.dp)
-                                    .align(Alignment.Center),
+                                    .align(Alignment.Center)
+                                    .sharedPosterElement(if (idRealBuscaApi > 0) "poster_$idRealBuscaApi" else if (id > 0) "poster_$id" else ""),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 border = BorderStroke(
