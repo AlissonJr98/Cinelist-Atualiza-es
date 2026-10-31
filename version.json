@@ -2,5 +2,5 @@
   "versionCode": 103,
   "versionName": "2.0.63",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.63/CineList-v2.0.63.apk",
-  "changelog": "Ajuste na tela de configurações para respeitar a barra superior e status bar\nAdicionado espaçamento seguro contra sobreposição da top bar e recorte de tela\nOtimização do painel futurista com controle de altura e insets dinâmicos"
+  "changelog": "Melhorias gerais e correções de desempenho."
 }
