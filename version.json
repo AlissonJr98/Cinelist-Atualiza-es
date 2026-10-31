@@ -2,5 +2,5 @@
   "versionCode": 102,
   "versionName": "2.0.62",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.62/CineList-v2.0.62.apk",
-  "changelog": "Auditoria e blindagem completa de segurança, memória e concorrência\nFechamento de sockets e streams de conexão no CineAI e no Tradutor\nDescarte seguro e liberação de recursos do player de trailers em background\nRemoção do limite de 10 amigos e bloqueados com sincronização em lote inteligente\nProteção de credenciais e chaves contra extração não criptografada em backups\nBlindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore\nEliminação de riscos de segurança no FileProvider"
+  "changelog": "Melhorias gerais e correções de desempenho."
 }
