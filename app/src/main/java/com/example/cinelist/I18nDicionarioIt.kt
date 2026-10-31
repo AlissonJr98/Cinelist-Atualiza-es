@@ -1561,5 +1561,20 @@ object I18nDicionarioIt {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "Blocco dell'accesso automatico senza conferma email con pulsanti di reinvio e verifica rapida",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "Traduzione dinamica dei generi di serie e film nella lingua selezionata",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "Internazionalizzazione completa della cronologia e degli avvisi di nuove versioni in tutte le lingue",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "CHIAMATA ONLINE ATTIVA // VOCE IN TEMPO REALE 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "CONNESSIONE CHIAMATA VOCALE... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "Autorizzazione microfono richiesta per la chiamata vocale",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "Il Mio Play Pronto ✅ (Tocca per deselezionare)",
+        "Liberar Meu Play 🔓" to "Sblocca Il Mio Play 🔓",
+        "Aguardando liberação de:" to "In attesa di:",
+        "Aguardando todos liberarem o play 🔒" to "In attesa che tutti siano pronti 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "CHIAMATA CINEPARTY // DAL VIVO",
+        "está te chamando para assistir juntos!" to "ti sta chiamando per guardare insieme!",
+        "Atender & Entrar 🍿" to "Rispondi & Entra 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "ENTRA IN CINEMATCH ➔",
+        "ENTRAR NA CINEPARTY ➔" to "ENTRA IN CINEPARTY ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Avvia Conto alla Rovescia dal Vivo (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "Avvia Conto alla Rovescia (3, 2, 1...) 🚀",
+)
 }

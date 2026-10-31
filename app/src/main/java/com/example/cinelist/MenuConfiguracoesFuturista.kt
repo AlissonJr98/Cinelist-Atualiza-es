@@ -121,16 +121,14 @@ fun BottomSheetConfiguracoesFuturista(
         containerColor = Color(0xFF0C101B),
         scrimColor = Color.Black.copy(alpha = 0.75f),
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        dragHandle = {
+                dragHandle = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
-                        .padding(top = 14.dp, bottom = 10.dp)
+                        .padding(top = 16.dp, bottom = 12.dp)
                         .width(48.dp)
                         .height(4.dp)
                         .clip(CircleShape)
@@ -148,7 +146,8 @@ fun BottomSheetConfiguracoesFuturista(
                 .fillMaxWidth()
                 .wrapContentWidth(Alignment.CenterHorizontally)
                 .widthIn(max = 640.dp)
-                .fillMaxHeight(0.92f)
+                .fillMaxHeight(0.90f)
+                .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp)
@@ -607,7 +606,7 @@ fun BottomSheetConfiguracoesFuturista(
                                 Text(text = opcaoSelecionada.bandeiraEmoji, fontSize = 24.sp)
                                 Column {
                                     Text(
-                                        text = opcaoSelecionada.nome.t(),
+                                        text = IdiomaAppManager.obterNomeTraduzido(opcaoSelecionada.codigo, I18n.idiomaAtivo),
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFF00FF7F)
@@ -648,7 +647,7 @@ fun BottomSheetConfiguracoesFuturista(
                                         Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = opcao.nome.t(),
+                                                text = IdiomaAppManager.obterNomeTraduzido(opcao.codigo, I18n.idiomaAtivo),
                                                 fontSize = 13.sp,
                                                 fontWeight = if (isAtivo) FontWeight.ExtraBold else FontWeight.Medium,
                                                 color = if (isAtivo) Color(0xFF00FF7F) else Color.White
@@ -686,7 +685,7 @@ fun BottomSheetConfiguracoesFuturista(
                                         viewModel.carregarFilmesEmCartaz()
                                         viewModel.carregarNovidadesPorStreaming(contexto, forcar = true)
                                         viewModel.carregarCarrosseisGenerosFavoritos(contexto)
-                                        val nomeToast = if (opcao.codigo == "SISTEMA") "Padrão do Celular (Automático)".t() else opcao.nome
+                                        val nomeToast = IdiomaAppManager.obterNomeTraduzido(opcao.codigo, I18n.idiomaAtivo)
                                         Toast.makeText(
                                             contexto,
                                             "${"Idioma".t()}: ${opcao.bandeiraEmoji} $nomeToast",

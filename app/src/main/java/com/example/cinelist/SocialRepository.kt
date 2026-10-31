@@ -1629,9 +1629,129 @@ class SocialRepository @Inject constructor() {
 
             docRef.update(
                 mapOf(
-                    "participantes.$uid" to com.google.firebase.firestore.FieldValue.delete()
+                    "participantes.$uid" to com.google.firebase.firestore.FieldValue.delete(),
+                    "prontosParaPlay" to com.google.firebase.firestore.FieldValue.arrayRemove(uid)
                 )
             ).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun alternarProntoParaPlayCineParty(salaId: String): Boolean = withContext(Dispatchers.IO) {
+        val uid = auth.currentUser?.uid ?: return@withContext false
+        if (salaId.isBlank()) return@withContext false
+        try {
+            val docRef = firestore.collection("cineparty_salas").document(salaId)
+            val snap = docRef.get().await()
+            val sessao = snap.toObject(CinePartySessao::class.java) ?: return@withContext false
+            val prontos = sessao.prontosParaPlay.toMutableList()
+            val souProntoAgora: Boolean
+            if (prontos.contains(uid)) {
+                prontos.remove(uid)
+                souProntoAgora = false
+                docRef.update("prontosParaPlay", com.google.firebase.firestore.FieldValue.arrayRemove(uid)).await()
+            } else {
+                prontos.add(uid)
+                souProntoAgora = true
+                docRef.update("prontosParaPlay", com.google.firebase.firestore.FieldValue.arrayUnion(uid)).await()
+            }
+
+            // Verifica se todos os participantes presentes na sala confirmaram a liberação
+            val participantesUids = sessao.obterParticipantesMapeados().filter { it.online }.map { it.uid }.filter { it.isNotBlank() }
+            val todosLiberaram = participantesUids.isNotEmpty() && participantesUids.all { prontos.contains(it) }
+            if (todosLiberaram) {
+                dispararContagemCineParty(salaId)
+            }
+            return@withContext souProntoAgora
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
+        }
+    }
+
+    suspend fun chamarAmigoParaCineParty(
+        amigoUid: String,
+        salaId: String,
+        tituloMidia: String,
+        posterMidia: String,
+        grupoId: String
+    ) = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext
+        val meuNome = auth.currentUser?.displayName?.ifBlank { "Seu amigo" } ?: "Seu amigo"
+        if (amigoUid.isBlank() || salaId.isBlank()) return@withContext
+        try {
+            val chamadaId = java.util.UUID.randomUUID().toString()
+            val dados = mapOf(
+                "id" to chamadaId,
+                "salaId" to salaId,
+                "tituloMidia" to tituloMidia,
+                "posterMidia" to posterMidia,
+                "chamadorUid" to meuUid,
+                "chamadorNome" to meuNome,
+                "timestamp" to System.currentTimeMillis(),
+                "status" to "PENDENTE"
+            )
+            firestore.collection("usuarios")
+                .document(amigoUid)
+                .collection("chamada_cineparty")
+                .document("ativa")
+                .set(dados)
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun observarChamadaCinePartyRecebida(): kotlinx.coroutines.flow.Flow<ChamadaCineParty?> = callbackFlow {
+        val meuUid = auth.currentUser?.uid
+        if (meuUid.isNullOrBlank()) {
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+        val listener = firestore.collection("usuarios")
+            .document(meuUid)
+            .collection("chamada_cineparty")
+            .document("ativa")
+            .addSnapshotListener { snap, _ ->
+                if (snap != null && snap.exists()) {
+                    val status = snap.getString("status") ?: "PENDENTE"
+                    val timestamp = snap.getLong("timestamp") ?: 0L
+                    val agora = System.currentTimeMillis()
+                    // Chamada válida por até 60 segundos
+                    if (status == "PENDENTE" && (agora - timestamp) < 60_000L) {
+                        val chamada = ChamadaCineParty(
+                            id = snap.getString("id") ?: snap.id,
+                            salaId = snap.getString("salaId") ?: "",
+                            tituloMidia = snap.getString("tituloMidia") ?: "",
+                            posterMidia = snap.getString("posterMidia") ?: "",
+                            chamadorUid = snap.getString("chamadorUid") ?: "",
+                            chamadorNome = snap.getString("chamadorNome") ?: "Amigo",
+                            timestamp = timestamp,
+                            status = status
+                        )
+                        trySend(chamada)
+                        return@addSnapshotListener
+                    }
+                }
+                trySend(null)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun responderChamadaCineParty(aceitar: Boolean) = withContext(Dispatchers.IO) {
+        val meuUid = auth.currentUser?.uid ?: return@withContext
+        try {
+            val docRef = firestore.collection("usuarios")
+                .document(meuUid)
+                .collection("chamada_cineparty")
+                .document("ativa")
+            if (aceitar) {
+                docRef.update("status", "ACEITA").await()
+            } else {
+                docRef.delete().await()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

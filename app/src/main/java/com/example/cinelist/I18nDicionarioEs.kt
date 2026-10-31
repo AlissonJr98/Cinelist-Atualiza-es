@@ -1649,5 +1649,20 @@ object I18nDicionarioEs {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "Bloqueo de inicio de sesión automático sin confirmación de correo con botones de reenvío y comprobación rápida",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "Traducción dinámica de géneros de series y películas al idioma seleccionado",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "Internacionalización completa del historial y avisos de nuevas versiones en todos los idiomas",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "LLAMADA ONLINE ACTIVA // VOZ EN TIEMPO REAL 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "CONECTANDO LLAMADA DE VOZ... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "Permiso de micrófono requerido para la llamada de voz",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "Mi Play Listo ✅ (Toca para desmarcar)",
+        "Liberar Meu Play 🔓" to "Liberar Mi Play 🔓",
+        "Aguardando liberação de:" to "Esperando confirmación de:",
+        "Aguardando todos liberarem o play 🔒" to "Esperando que todos liberen el play 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "LLAMADA CINEPARTY // EN VIVO",
+        "está te chamando para assistir juntos!" to "¡te está llamando para ver juntos!",
+        "Atender & Entrar 🍿" to "Contestar y Entrar 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "ENTRAR EN CINEMATCH ➔",
+        "ENTRAR NA CINEPARTY ➔" to "ENTRAR EN CINEPARTY ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Iniciar Cuenta Regresiva en Vivo (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "Iniciar Cuenta Regresiva (3, 2, 1...) 🚀",
+)
 }

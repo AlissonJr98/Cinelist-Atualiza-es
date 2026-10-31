@@ -4378,45 +4378,55 @@ fun ModalPerfilAmigo(
 
                             ) {
 
+                                val isCineParty = msg.tipoMensagem == "CINEPARTY_CHAMADA" || msg.tipoMensagem == "CINEPARTY" || msg.texto.contains("CineParty", ignoreCase = true)
                                 val isCineMatch = msg.tipoMensagem == "CINEMATCH_CONVITE" || msg.texto.contains("CineMatch", ignoreCase = true)
-                                if (isCineMatch) {
+                                if (isCineMatch || isCineParty) {
                                     Surface(
-                                        shape = RoundedCornerShape(14.dp),
-                                        color = Color(0xFF1E1B4B),
-                                        border = BorderStroke(1.5.dp, androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFF8B5CF6)))),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = if (isCineMatch) Color(0xFF1E1B4B) else Color(0xFF0F172A),
+                                        border = BorderStroke(
+                                            1.8.dp,
+                                            if (isCineMatch) androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFF8B5CF6)))
+                                            else androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF00E5FF), Color(0xFF10B981)))
+                                        ),
+                                        shadowElevation = 8.dp,
                                         modifier = Modifier
-                                            .widthIn(max = 280.dp)
+                                            .widthIn(max = 290.dp)
                                             .clickable {
                                                 CineHaptics.confirm(contexto)
-                                                mostrarMatchColetivoAmigo = true
+                                                if (isCineMatch) {
+                                                    mostrarMatchColetivoAmigo = true
+                                                } else {
+                                                    mostrarCineParty = true
+                                                }
                                             }
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            modifier = Modifier.padding(14.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                                             ) {
                                                 Box(
                                                     modifier = Modifier
-                                                        .size(32.dp)
+                                                        .size(36.dp)
                                                         .clip(CircleShape)
-                                                        .background(Color(0xFFEC4899).copy(alpha = 0.25f)),
+                                                        .background(if (isCineMatch) Color(0xFFEC4899).copy(alpha = 0.25f) else Color(0xFF00E5FF).copy(alpha = 0.25f)),
                                                     contentAlignment = Alignment.Center
                                                 ) {
-                                                    Text("👥", fontSize = 16.sp)
+                                                    Text(if (isCineMatch) "👥" else "🍿", fontSize = 18.sp)
                                                 }
-                                                Column {
+                                                Column(modifier = Modifier.weight(1f)) {
                                                     Text(
-                                                        text = "CINEMATCH 🍿".t(),
+                                                        text = if (isCineMatch) "CINEMATCH 🍿".t() else "CINEPARTY AO VIVO 🍿".t(),
                                                         fontWeight = FontWeight.Black,
                                                         fontSize = 11.sp,
-                                                        color = Color(0xFFEC4899)
+                                                        color = if (isCineMatch) Color(0xFFEC4899) else Color(0xFF00E5FF)
                                                     )
                                                     Text(
-                                                        text = msg.texto.ifBlank { "Convite para jogar CineMatch!".t() },
+                                                        text = msg.texto.ifBlank { if (isCineMatch) "Convite para jogar CineMatch!".t() else "Chamando para assistir juntos!".t() },
                                                         fontWeight = FontWeight.SemiBold,
                                                         fontSize = 12.sp,
                                                         color = Color.White
@@ -4426,16 +4436,38 @@ fun ModalPerfilAmigo(
                                             Button(
                                                 onClick = {
                                                     CineHaptics.confirm(contexto)
-                                                    mostrarMatchColetivoAmigo = true
+                                                    if (isCineMatch) {
+                                                        mostrarMatchColetivoAmigo = true
+                                                    } else {
+                                                        mostrarCineParty = true
+                                                    }
                                                 },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier.fillMaxWidth().height(34.dp),
-                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (isCineMatch) Color(0xFFEC4899) else Color(0xFF00E5FF)
+                                                ),
+                                                shape = RoundedCornerShape(12.dp),
+                                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
+                                                border = BorderStroke(1.2.dp, Color.White.copy(alpha = 0.4f)),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(44.dp)
+                                                    .bounceOnClick(),
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                             ) {
-                                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("Entrar no CineMatch ➔".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = if (isCineMatch) Color.White else Color.Black,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = if (isCineMatch) "ENTRAR NO CINEMATCH ➔".t() else "ENTRAR NA CINEPARTY ➔".t(),
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 12.sp,
+                                                    letterSpacing = 0.5.sp,
+                                                    color = if (isCineMatch) Color.White else Color.Black
+                                                )
                                             }
                                         }
                                     }

@@ -38,6 +38,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -2743,6 +2745,27 @@ socialRepository.enviarReacaoCineParty(salaId, emoji)
 
 }
 
+}
+
+val chamadaCinePartyAtiva: StateFlow<ChamadaCineParty?> = socialRepository.observarChamadaCinePartyRecebida()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+fun alternarProntoParaPlayCineParty(salaId: String) {
+    viewModelScope.launch {
+        socialRepository.alternarProntoParaPlayCineParty(salaId)
+    }
+}
+
+fun chamarAmigoParaCineParty(amigoUid: String, salaId: String, tituloMidia: String, posterMidia: String, grupoId: String) {
+    viewModelScope.launch {
+        socialRepository.chamarAmigoParaCineParty(amigoUid, salaId, tituloMidia, posterMidia, grupoId)
+    }
+}
+
+fun responderChamadaCineParty(aceitar: Boolean) {
+    viewModelScope.launch {
+        socialRepository.responderChamadaCineParty(aceitar)
+    }
 }
 
 // ==========================================

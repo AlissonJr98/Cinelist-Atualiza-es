@@ -2873,19 +2873,30 @@ fun ConteudoCardCinema(
                     onClique?.invoke()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isCineMatch) Color(0xFFEC4899) else Color(0xFFE50914)
+                    containerColor = if (isCineMatch) Color(0xFFEC4899) else Color(0xFF00E5FF)
                 ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth().height(36.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                shape = RoundedCornerShape(12.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp),
+                border = BorderStroke(1.2.dp, Color.White.copy(alpha = 0.4f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .bounceOnClick(),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = if (isCineMatch) Color.White else Color.Black,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (isCineMatch) "Entrar no CineMatch ➔".t() else "Entrar na CineParty ➔".t(),
-                    fontWeight = FontWeight.Bold,
+                    text = if (isCineMatch) "ENTRAR NO CINEMATCH ➔".t() else "ENTRAR NA CINEPARTY ➔".t(),
+                    fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
-                    color = Color.White
+                    letterSpacing = 0.5.sp,
+                    color = if (isCineMatch) Color.White else Color.Black
                 )
             }
         }

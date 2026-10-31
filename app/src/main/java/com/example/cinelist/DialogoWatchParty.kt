@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -89,9 +90,24 @@ fun DialogoWatchParty(
     var estaPausadoLocal by remember { mutableStateOf(false) }
     var segundosDecorridosLocal by remember { mutableIntStateOf(0) }
 
-    // Estados de voz estilo Discord (Portas abertas para WebRTC / Voice Channel)
-    var microfoneMutado by remember { mutableStateOf(false) }
-    var canalVozConectado by remember { mutableStateOf(true) }
+    val souAnfitriao = sessaoAtiva?.anfitriaoUid.isNullOrBlank() || sessaoAtiva?.anfitriaoUid == meuUid
+
+    // Gerenciador de voz online WebRTC em tempo real estilo ligação
+    val voiceManager = remember { CinePartyVoiceManager(contexto) }
+    val voiceConectado by voiceManager.conectado.collectAsState()
+    val microfoneMutado by voiceManager.microfoneMutado.collectAsState()
+    val autoFalanteAtivo by voiceManager.autoFalanteLigado.collectAsState()
+    val falandoRemoto by voiceManager.falandoRemoto.collectAsState()
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        if (concedida) {
+            voiceManager.conectarVoz(salaId, souAnfitriao)
+        } else {
+            Toast.makeText(contexto, "Permissão de microfone necessária para ligação de voz".t(), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val emojisFlutuando = remember { mutableStateListOf<EmojiFlutuante>() }
     var ultimoTimestampReacaoProcessado by remember { mutableLongStateOf(0L) }
@@ -108,9 +124,19 @@ fun DialogoWatchParty(
         }
     }
 
+    // Iniciar chamada de voz com checagem de permissão
+    LaunchedEffect(salaId) {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(contexto, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            voiceManager.conectarVoz(salaId, souAnfitriao)
+        } else {
+            permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
     // Desconectar ao fechar
     DisposableEffect(salaId) {
         onDispose {
+            voiceManager.desconectarVoz()
             if (viewModel != null && salaId.isNotBlank()) {
                 viewModel.desconectarCineParty(salaId)
             }
@@ -136,8 +162,6 @@ fun DialogoWatchParty(
 
     // Determina se a sessão está sendo coordenada pelo Firestore
     val sincronizadoFirestore = sessaoAtiva != null
-    val souAnfitriao = sessaoAtiva?.anfitriaoUid.isNullOrBlank() || sessaoAtiva?.anfitriaoUid == meuUid
-
     val estaEmContagem = if (sincronizadoFirestore) sessaoAtiva?.emContagem == true else emContagemLocal
     val numeroContagem = if (sincronizadoFirestore) (sessaoAtiva?.contagemNumero ?: 3) else contagemRegressivaLocal
 
@@ -178,8 +202,20 @@ fun DialogoWatchParty(
         }
     }
 
-    // Dispara contagem sincronizada para todos os dispositivos
+    val participantesSala = sessaoAtiva?.obterParticipantesMapeados() ?: emptyList()
+    val prontosParaPlayLista = sessaoAtiva?.prontosParaPlay ?: emptyList()
+    val euPronto = prontosParaPlayLista.contains(meuUid)
+    val totalParticipantes = participantesSala.size
+    val todosLiberaramPlay = totalParticipantes <= 1 || (totalParticipantes > 1 && participantesSala.all { prontosParaPlayLista.contains(it.uid) })
+
+    // Dispara contagem sincronizada para todos os dispositivos (com bloqueio mútuo)
     fun iniciarContagemSincronizada() {
+        if (totalParticipantes > 1 && !todosLiberaramPlay) {
+            val naoProntos = participantesSala.filter { !prontosParaPlayLista.contains(it.uid) }.map { it.nome }
+            val nomes = if (naoProntos.isNotEmpty()) naoProntos.joinToString(", ") else "amigo(a)"
+            Toast.makeText(contexto, "${"Aguardando liberação de:".t()} $nomes", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (viewModel != null && salaId.isNotBlank()) {
             viewModel.dispararContagemCineParty(salaId)
         } else {
@@ -380,21 +416,49 @@ fun DialogoWatchParty(
                                         modifier = Modifier
                                             .size(8.dp)
                                             .clip(CircleShape)
-                                            .background(if (canalVozConectado) Color(0xFF10B981) else Color(0xFF6B7280))
+                                            .background(if (voiceConectado) Color(0xFF10B981) else Color(0xFFF59E0B))
                                     )
                                     Text(
-                                        text = "PALCO // SALA DE VOZ & PRESENÇA".t(),
-                                        fontSize = 11.sp,
+                                        text = if (voiceConectado) "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢".t() else "CONECTANDO LIGAÇÃO DE VOZ... 🟡".t(),
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF9CA3AF)
+                                        color = if (voiceConectado) Color(0xFF10B981) else Color(0xFFF59E0B)
                                     )
                                 }
 
-                                // Controles de Áudio estilo Discord
+                                // Controles da Ligação (Microfone e Alto-falante)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
+                                    // Alto-falante / Modo Viva-voz
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (autoFalanteAtivo) Color(0xFF00E5FF).copy(alpha = 0.2f) else Color(0xFF6B7280).copy(alpha = 0.2f),
+                                        border = BorderStroke(1.dp, if (autoFalanteAtivo) Color(0xFF00E5FF) else Color(0xFF6B7280)),
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clickable {
+                                                val at = voiceManager.alternarAltoFalante()
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                Toast.makeText(
+                                                    contexto,
+                                                    if (at) "Viva-voz ativado 🔊".t() else "Áudio auricular 🔈".t(),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = if (autoFalanteAtivo) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
+                                                contentDescription = "Viva-voz".t(),
+                                                tint = if (autoFalanteAtivo) Color(0xFF00E5FF) else Color(0xFF9CA3AF),
+                                                modifier = Modifier.size(15.dp)
+                                            )
+                                        }
+                                    }
+
+                                    // Microfone
                                     Surface(
                                         shape = CircleShape,
                                         color = if (microfoneMutado) Color(0xFFEF4444).copy(alpha = 0.2f) else Color(0xFF10B981).copy(alpha = 0.2f),
@@ -402,11 +466,11 @@ fun DialogoWatchParty(
                                         modifier = Modifier
                                             .size(28.dp)
                                             .clickable {
-                                                microfoneMutado = !microfoneMutado
+                                                val mut = voiceManager.alternarMudo()
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                 Toast.makeText(
                                                     contexto,
-                                                    if (microfoneMutado) "Microfone mutado 🔇".t() else "Microfone aberto 🎙️".t(),
+                                                    if (mut) "Microfone mutado 🔇".t() else "Microfone aberto 🎙️".t(),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
@@ -493,6 +557,22 @@ fun DialogoWatchParty(
                                             overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Center
                                         )
+
+                                        val prontosParaPlay = sessaoAtiva?.prontosParaPlay ?: emptyList()
+                                        val partPronto = prontosParaPlay.contains(part.uid)
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = if (partPronto) Color(0xFF10B981).copy(alpha = 0.25f) else Color(0xFFF59E0B).copy(alpha = 0.15f),
+                                            border = BorderStroke(0.6.dp, if (partPronto) Color(0xFF10B981) else Color(0xFFF59E0B).copy(alpha = 0.6f))
+                                        ) {
+                                            Text(
+                                                text = if (partPronto) "Pronto ✅".t() else "Aguardando ⏳".t(),
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (partPronto) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -548,13 +628,23 @@ fun DialogoWatchParty(
 
                                                 Button(
                                                     onClick = {
-                                                        if (viewModel != null && grupoId.isNotBlank()) {
-                                                            val titLocalizado = tituloMidia.t()
-                                                            viewModel.enviarMensagemParaSala(
-                                                                texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
-                                                                tipoMensagem = "CINEPARTY_CHAMADA",
-                                                                mediaUrl = salaId
+                                                        if (viewModel != null) {
+                                                            // Dispara chamada em tempo real que abre em qualquer aba do app do amigo
+                                                            viewModel.chamarAmigoParaCineParty(
+                                                                amigoUid = amigo.uid,
+                                                                salaId = salaId,
+                                                                tituloMidia = tituloMidia,
+                                                                posterMidia = posterMidia,
+                                                                grupoId = grupoId
                                                             )
+                                                            if (grupoId.isNotBlank()) {
+                                                                val titLocalizado = tituloMidia.t()
+                                                                viewModel.enviarMensagemParaSala(
+                                                                    texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
+                                                                    tipoMensagem = "CINEPARTY_CHAMADA",
+                                                                    mediaUrl = salaId
+                                                                )
+                                                            }
                                                             Toast.makeText(contexto, "${"Chamando".t()} ${amigo.nome}...", Toast.LENGTH_SHORT).show()
                                                         }
                                                     },
@@ -641,18 +731,73 @@ fun DialogoWatchParty(
                                     textAlign = TextAlign.Center
                                 )
 
+                                // Botão de Liberação Mútua de Play
+                                Button(
+                                    onClick = {
+                                        if (viewModel != null && salaId.isNotBlank()) {
+                                            viewModel.alternarProntoParaPlayCineParty(salaId)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(44.dp).bounceOnClick(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (euPronto) Color(0xFF10B981) else Color(0xFF26324D)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, if (euPronto) Color(0xFF10B981) else Color(0xFF00E5FF).copy(alpha = 0.6f))
+                                ) {
+                                    Icon(
+                                        imageVector = if (euPronto) Icons.Default.CheckCircle else Icons.Default.LockOpen,
+                                        contentDescription = null,
+                                        tint = if (euPronto) Color.Black else Color(0xFF00E5FF),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (euPronto) "Meu Play Liberado ✅ (Toque para desmarcar)".t() else "Liberar Meu Play 🔓".t(),
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp,
+                                        color = if (euPronto) Color.Black else Color.White
+                                    )
+                                }
+
+                                if (totalParticipantes > 1 && !todosLiberaramPlay) {
+                                    val pendentes = participantesSala.filter { !prontosParaPlayLista.contains(it.uid) }.map { it.nome }
+                                    Text(
+                                        text = "⏳ ${"Aguardando liberação de:".t()} ${pendentes.joinToString(", ")}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFF59E0B),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
                                 Button(
                                     onClick = { iniciarContagemSincronizada() },
-                                    modifier = Modifier.fillMaxWidth().bounceOnClick(),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
-                                    shape = RoundedCornerShape(12.dp)
+                                    enabled = todosLiberaramPlay,
+                                    modifier = Modifier.fillMaxWidth().height(48.dp).bounceOnClick(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (todosLiberaramPlay) Color(0xFF00E5FF) else Color(0xFF334155),
+                                        disabledContainerColor = Color(0xFF1E293B)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = if (todosLiberaramPlay) 6.dp else 0.dp)
                                 ) {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black)
+                                    Icon(
+                                        imageVector = if (todosLiberaramPlay) Icons.Default.PlayArrow else Icons.Default.Lock,
+                                        contentDescription = null,
+                                        tint = if (todosLiberaramPlay) Color.Black else Color(0xFF64748B),
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (souAnfitriao) "Disparar Contagem ao Vivo (3, 2, 1...)".t() else "Iniciar Contagem (3, 2, 1...)".t(),
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        text = if (todosLiberaramPlay) {
+                                            if (souAnfitriao) "Disparar Contagem ao Vivo (3, 2, 1...) 🚀".t() else "Iniciar Contagem (3, 2, 1...) 🚀".t()
+                                        } else {
+                                            "Aguardando todos liberarem o play 🔒".t()
+                                        },
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp,
+                                        color = if (todosLiberaramPlay) Color.Black else Color(0xFF94A3B8)
                                     )
                                 }
                             }
@@ -872,6 +1017,139 @@ fun DialogoWatchParty(
                         }
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun DialogoChamadaCinePartyRecebida(
+    chamada: ChamadaCineParty,
+    onAceitar: () -> Unit,
+    onRecusar: () -> Unit
+) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    LaunchedEffect(chamada.id) {
+        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+    }
+
+    val transicaoInfinita = androidx.compose.animation.core.rememberInfiniteTransition(label = "anim_chamada_cineparty")
+    val pulsoEscala by transicaoInfinita.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(600, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "pulso_escala"
+    )
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onRecusar,
+        properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFF0F172A),
+            border = BorderStroke(
+                2.dp,
+                Brush.linearGradient(
+                    listOf(Color(0xFF00E5FF), Color(0xFF10B981), Color(0xFFEC4899))
+                )
+            ),
+            shadowElevation = 24.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Ícone de Chamada Vibrando
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .scale(pulsoEscala)
+                        .clip(CircleShape)
+                        .background(Color(0xFF10B981).copy(alpha = 0.2f))
+                        .border(2.dp, Color(0xFF10B981), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("📞🍿", fontSize = 28.sp)
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "CHAMADA CINEPARTY // AO VIVO".t(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF00E5FF),
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        text = "${chamada.chamadorNome} ${"está te chamando para assistir juntos!".t()}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = chamada.tituloMidia,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF94A3B8),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Botão Recusar
+                    Button(
+                        onClick = onRecusar,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .bounceOnClick(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE11D48)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Recusar".t(),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
+                    }
+
+                    // Botão Atender & Entrar
+                    Button(
+                        onClick = onAceitar,
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(46.dp)
+                            .bounceOnClick(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                    ) {
+                        Text(
+                            text = "Atender & Entrar 🍿".t(),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         }
     }

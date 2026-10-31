@@ -40,6 +40,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.border
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -124,10 +130,17 @@ object AtualizadorGitHub {
         val melhorInfo = when {
             infoJson != null && infoRelease != null -> {
                 val cmp = compararSemver(infoRelease.versaoNome, infoJson.versaoNome)
-                if (cmp > 0) {
-                    infoRelease
+                val notasEfetivas = if (infoJson.notas.isNotBlank() && (infoRelease.notas.isBlank() || infoRelease.notas.startsWith("v") || infoRelease.notas.startsWith("Nova versão"))) {
+                    infoJson.notas
+                } else if (infoRelease.notas.isNotBlank()) {
+                    infoRelease.notas
                 } else {
-                    infoJson
+                    infoJson.notas
+                }
+                if (cmp > 0) {
+                    infoRelease.copy(notas = notasEfetivas)
+                } else {
+                    infoJson.copy(notas = notasEfetivas)
                 }
             }
             infoJson != null -> infoJson
@@ -431,20 +444,53 @@ fun DialogoAtualizacaoGitHub(
     onBaixarOuInstalar: () -> Unit,
     onFechar: () -> Unit
 ) {
-    val linhasNovidades = info.notas
-        .split("\n", ";")
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
+    // Normalização e extração profunda dos itens do changelog
+    val linhasNovidades = remember(info.notas) {
+        info.notas
+            .split("\n", ";")
+            .map { it.trim().removePrefix("-").removePrefix("•").removePrefix("*").trim() }
+            .filter { it.isNotBlank() && !it.startsWith("v2.", ignoreCase = true) }
+    }
+
+    // Animações contínuas de respiração e brilho futurista
+    val transicaoInfinita = androidx.compose.animation.core.rememberInfiniteTransition(label = "anim_atualizacao")
+    val flutuacaoY by transicaoInfinita.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "flutuacao_icone"
+    )
+    val pulsoBrilho by transicaoInfinita.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1.0f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(1200, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "pulso_borda"
+    )
 
     Dialog(onDismissRequest = { if (!baixando) onFechar() }) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(vertical = 12.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF0F1424)),
+            border = BorderStroke(
+                1.8.dp,
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(
+                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = pulsoBrilho),
+                        androidx.compose.ui.graphics.Color(0xFF8B5CF6).copy(alpha = pulsoBrilho * 0.8f),
+                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = pulsoBrilho)
+                    )
+                )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -453,116 +499,172 @@ fun DialogoAtualizacaoGitHub(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Cabeçalho com ícone e versões
+                // Cabeçalho com ícone animado flutuante e versões
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(52.dp)
+                            .graphicsLayer { translationY = flutuacaoY }
                             .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                RoundedCornerShape(12.dp)
-                            ),
+                                androidx.compose.ui.graphics.Brush.radialGradient(
+                                    listOf(
+                                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.35f),
+                                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.08f)
+                                    )
+                                ),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .border(1.2.dp, androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = pulsoBrilho), RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Atualização",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(26.dp)
+                            contentDescription = "Atualização".t(),
+                            tint = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
                     Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "NOVA VERSÃO DISPONÍVEL".t(),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = androidx.compose.ui.graphics.Color(0xFF10B981).copy(alpha = 0.2f),
+                                border = BorderStroke(0.8.dp, androidx.compose.ui.graphics.Color(0xFF10B981))
+                            ) {
+                                Text(
+                                    text = "v${info.versaoNome}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = androidx.compose.ui.graphics.Color(0xFF10B981),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Nova Atualização",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Versão instalada: v$versaoInstalada → Nova: v${info.versaoNome}",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
+                            text = "${"Sua versão".t()}: v$versaoInstalada ➔ ${"Nova".t()}: v${info.versaoNome}",
+                            color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f))
 
-                // Seção com novidades
+                // Seção com novidades com visual Sci-Fi e scroll suave
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    shape = RoundedCornerShape(12.dp),
+                    color = androidx.compose.ui.graphics.Color(0xFF151D30),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFF26324D)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(12.dp)
-                            .heightIn(max = 200.dp)
+                            .padding(14.dp)
+                            .heightIn(max = 220.dp)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "NOVIDADES DA VERSÃO",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("✨", fontSize = 12.sp)
+                            Text(
+                                text = "O QUE HÁ DE NOVO NESTA VERSÃO".t(),
+                                color = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
 
                         if (linhasNovidades.isNotEmpty()) {
-                            linhasNovidades.forEach { item ->
+                            for (item in linhasNovidades) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = androidx.compose.ui.graphics.Color(0xFF10B981),
                                         modifier = Modifier
                                             .size(16.dp)
                                             .padding(top = 2.dp)
                                     )
                                     Text(
-                                        text = item.removePrefix("-").trim(),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 18.sp
+                                        text = item.t(),
+                                        fontSize = 12.sp,
+                                        color = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
+                                        lineHeight = 17.sp,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
                         } else {
-                            Text(
-                                text = info.notas.ifBlank { "Melhorias gerais e correções de bugs." },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = androidx.compose.ui.graphics.Color(0xFF10B981),
+                                    modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                                )
+                                Text(
+                                    text = "Melhorias gerais e correções de desempenho.".t(),
+                                    fontSize = 12.sp,
+                                    color = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
+                                    lineHeight = 17.sp
+                                )
+                            }
                         }
                     }
                 }
 
-                // Progresso do download
+                // Progresso dinâmico do download com animação
                 if (baixando) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         val pct = (progresso * 100).toInt()
-                        Text(
-                            text = "Baixando atualização... $pct%",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Baixando pacote oficial...".t(),
+                                color = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "$pct%",
+                                color = androidx.compose.ui.graphics.Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
                         LinearProgressIndicator(
                             progress = { progresso.coerceIn(0f, 1f) },
-                            color = MaterialTheme.colorScheme.primary,
+                            color = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                            trackColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
                         )
                     }
                 }
@@ -580,18 +682,21 @@ fun DialogoAtualizacaoGitHub(
                 Button(
                     onClick = onBaixarOuInstalar,
                     enabled = !baixando,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF)),
+                    modifier = Modifier.fillMaxWidth().height(48.dp).bounceOnClick(),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
                     Text(
                         text = when {
-                            baixando -> "Baixando atualização..."
-                            apkPronto -> "📦 Instalar atualização agora"
-                            else -> "⬇ Baixar e Atualizar"
+                            baixando -> "Baixando atualização...".t()
+                            apkPronto -> "📦 Instalar atualização agora".t()
+                            else -> "🚀 Baixar e Atualizar Agora".t()
                         },
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        letterSpacing = 0.5.sp,
+                        color = androidx.compose.ui.graphics.Color.Black
                     )
                 }
 
@@ -602,8 +707,10 @@ fun DialogoAtualizacaoGitHub(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
                         Text(
-                            text = "Agora não",
-                            color = MaterialTheme.colorScheme.secondary
+                            text = "Agora não".t(),
+                            color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }

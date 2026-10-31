@@ -40,6 +40,110 @@ object IdiomaAppManager {
     private const val PREFS_NAME = "ConfiguracoesPerfil"
     private const val CHAVE_PREFERENCIA_IDIOMA = "idioma_selecionado_usuario"
 
+    /**
+     * Retorna o nome do idioma traduzido de acordo com a língua que o usuário está visualizando no app.
+     * Exemplo: Se o app está em inglês, "Português (Brasil)" aparece como "Portuguese (Brazil)".
+     * Se o app está em espanhol, aparece como "Portugués (Brasil)".
+     */
+    fun obterNomeTraduzido(codigo: String, idiomaVisualizacao: String = I18n.idiomaAtivo): String {
+        val lang = idiomaVisualizacao.lowercase().take(2)
+        return when (codigo) {
+            "SISTEMA" -> when (lang) {
+                "en" -> "System Default (Automatic)"
+                "es" -> "Predeterminado del Celular (Automático)"
+                "fr" -> "Par Défaut du Téléphone (Automatique)"
+                "de" -> "Handy-Standard (Automatisch)"
+                "it" -> "Predefinito del Telefono (Automatico)"
+                "ja" -> "スマホのデフォルト (自動)"
+                "ko" -> "스마트폰 기본값 (자동)"
+                else -> "Padrão do Celular (Automático)"
+            }
+            "pt-BR" -> when (lang) {
+                "en" -> "Portuguese (Brazil)"
+                "es" -> "Portugués (Brasil)"
+                "fr" -> "Portugais (Brésil)"
+                "de" -> "Portugiesisch (Brasilien)"
+                "it" -> "Portoghese (Brasile)"
+                "ja" -> "ポルトガル語 (ブラジル)"
+                "ko" -> "포르투갈어 (브라질)"
+                else -> "Português (Brasil)"
+            }
+            "en-US" -> when (lang) {
+                "es" -> "Inglés (Estados Unidos)"
+                "fr" -> "Anglais (États-Unis)"
+                "de" -> "Englisch (Vereinigte Staaten)"
+                "it" -> "Inglese (Stati Uniti)"
+                "ja" -> "英語 (米国)"
+                "ko" -> "영어 (미국)"
+                "pt" -> "Inglês (Estados Unidos)"
+                else -> "English (United States)"
+            }
+            "es-ES" -> when (lang) {
+                "en" -> "Spanish"
+                "fr" -> "Espagnol"
+                "de" -> "Spanisch"
+                "it" -> "Spagnolo"
+                "ja" -> "スペイン語"
+                "ko" -> "스페인어"
+                "pt" -> "Espanhol"
+                else -> "Español"
+            }
+            "fr-FR" -> when (lang) {
+                "en" -> "French"
+                "es" -> "Francés"
+                "de" -> "Französisch"
+                "it" -> "Francese"
+                "ja" -> "フランス語"
+                "ko" -> "프랑스어"
+                "pt" -> "Francês"
+                else -> "Français"
+            }
+            "de-DE" -> when (lang) {
+                "en" -> "German"
+                "es" -> "Alemán"
+                "fr" -> "Allemand"
+                "it" -> "Tedesco"
+                "ja" -> "ドイツ語"
+                "ko" -> "독일어"
+                "pt" -> "Alemão"
+                else -> "Deutsch"
+            }
+            "it-IT" -> when (lang) {
+                "en" -> "Italian"
+                "es" -> "Italiano"
+                "fr" -> "Italien"
+                "de" -> "Italienisch"
+                "ja" -> "イタリア語"
+                "ko" -> "이탈리아어"
+                "pt" -> "Italiano"
+                else -> "Italiano"
+            }
+            "ja-JP" -> when (lang) {
+                "en" -> "Japanese"
+                "es" -> "Japonés"
+                "fr" -> "Japonais"
+                "de" -> "Japanisch"
+                "it" -> "Giapponese"
+                "ja" -> "日本語"
+                "ko" -> "일본어"
+                "pt" -> "Japonês"
+                else -> "Japanese"
+            }
+            "ko-KR" -> when (lang) {
+                "en" -> "Korean"
+                "es" -> "Coreano"
+                "fr" -> "Coréen"
+                "de" -> "Koreanisch"
+                "it" -> "Coreano"
+                "ja" -> "韓国語"
+                "ko" -> "한국어"
+                "pt" -> "Coreano"
+                else -> "Korean"
+            }
+            else -> IDIOMAS_DISPONIVEIS.find { it.codigo == codigo }?.nome?.t() ?: codigo
+        }
+    }
+
     val IDIOMAS_DISPONIVEIS = listOf(
         IdiomaOpcao(
             codigo = "SISTEMA",

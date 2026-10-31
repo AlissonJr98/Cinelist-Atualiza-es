@@ -391,6 +391,36 @@ onFechar = { viewModel.fecharDialogoAtualizacao() }
 
 }
 
+// 🍿 Atendimento global de chamadas CineParty recebidas em tempo real em qualquer aba do aplicativo
+val chamadaCinePartyRecebida by viewModel.chamadaCinePartyAtiva.collectAsState()
+var chamadaCinePartyParaEntrar by remember { mutableStateOf<ChamadaCineParty?>(null) }
+
+chamadaCinePartyRecebida?.let { chamada ->
+    DialogoChamadaCinePartyRecebida(
+        chamada = chamada,
+        onAceitar = {
+            viewModel.responderChamadaCineParty(aceitar = true)
+            chamadaCinePartyParaEntrar = chamada
+        },
+        onRecusar = {
+            viewModel.responderChamadaCineParty(aceitar = false)
+        }
+    )
+}
+
+if (chamadaCinePartyParaEntrar != null) {
+    val ch = chamadaCinePartyParaEntrar!!
+    DialogoWatchParty(
+        tituloMidia = ch.tituloMidia,
+        posterMidia = ch.posterMidia,
+        salaIdInicial = ch.salaId,
+        grupoId = ch.grupoId,
+        viewModel = viewModel,
+        onDispensar = { chamadaCinePartyParaEntrar = null }
+    )
+}
+
+
 // Se o usuário tocou na notificação do sistema para abrir a atualização
 
 val abrirAtualizacaoExtra = remember { intentRecebida?.getBooleanExtra("abrir_atualizacao", false) ?: false }

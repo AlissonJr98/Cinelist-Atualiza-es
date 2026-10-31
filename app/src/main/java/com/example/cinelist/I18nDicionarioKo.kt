@@ -1559,5 +1559,20 @@ object I18nDicionarioKo {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "이메일 미인증 시 자동 로그인 차단 및 재전송·확인 버튼 추가",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "선택한 언어로 영화 및 시리즈 장르 동적 번역",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "모든 언어에서 히스토리 및 새 버전 알림 완전 다국어화",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "온라인 통화 중 // 실시간 음성 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "음성 통화 연결 중... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "음성 통화를 위해 마이크 권한이 필요합니다",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "재생 준비 완료 ✅ (취소하려면 탭)",
+        "Liberar Meu Play 🔓" to "재생 준비 🔓",
+        "Aguardando liberação de:" to "대기 중:",
+        "Aguardando todos liberarem o play 🔒" to "모든 사용자의 준비를 기다리는 중 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "씨네파티 통화 // 라이브",
+        "está te chamando para assistir juntos!" to "함께 시청하자고 전화하는 중입니다!",
+        "Atender & Entrar 🍿" to "응답하고 입장 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "씨네매치 입장 ➔",
+        "ENTRAR NA CINEPARTY ➔" to "씨네파티 입장 ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "라이브 카운트다운 시작 (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "카운트다운 시작 (3, 2, 1...) 🚀",
+)
 }

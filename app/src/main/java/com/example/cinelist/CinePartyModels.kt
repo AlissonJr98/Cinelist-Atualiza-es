@@ -36,7 +36,8 @@ data class CinePartySessao(
     val ultimaReacaoEmoji: String = "",
     val ultimaReacaoAutor: String = "",
     val ultimaReacaoTimestamp: Long = 0L,
-    val canalVozAtivo: Boolean = false // Porta para futuro canal de áudio WebRTC / Discord
+    val canalVozAtivo: Boolean = false,
+    val prontosParaPlay: List<String> = emptyList() // Uids dos membros que liberaram o play
 ) {
     fun obterParticipantesMapeados(): List<CinePartyParticipante> {
         val lista = mutableListOf<CinePartyParticipante>()
@@ -62,3 +63,19 @@ data class CinePartySessao(
         )
     }
 }
+
+
+/**
+ * Representa um convite ou chamada em tempo real para CineParty recebida por um usuário.
+ */
+data class ChamadaCineParty(
+    val id: String = "",
+    val salaId: String = "",
+    val tituloMidia: String = "",
+    val posterMidia: String = "",
+    val chamadorUid: String = "",
+    val chamadorNome: String = "",
+    val grupoId: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val status: String = "PENDENTE" // "PENDENTE", "ACEITA", "RECUSADA"
+)

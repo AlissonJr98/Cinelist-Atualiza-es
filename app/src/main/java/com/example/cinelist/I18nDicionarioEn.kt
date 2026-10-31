@@ -1649,5 +1649,20 @@ object I18nDicionarioEn {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "Blocked auto-login without email confirmation with resend and quick check buttons",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "Dynamic translation of TV and movie genres into the selected language",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "Complete internationalization of history and new version alerts in all languages",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "ONLINE CALL ACTIVE // REAL-TIME VOICE 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "CONNECTING VOICE CALL... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "Microphone permission required for voice call",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "My Play Ready ✅ (Tap to uncheck)",
+        "Liberar Meu Play 🔓" to "Ready to Play 🔓",
+        "Aguardando liberação de:" to "Waiting for:",
+        "Aguardando todos liberarem o play 🔒" to "Waiting for everyone to be ready 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "CINEPARTY CALL // LIVE",
+        "está te chamando para assistir juntos!" to "is calling you to watch together!",
+        "Atender & Entrar 🍿" to "Answer & Join 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "JOIN CINEMATCH ➔",
+        "ENTRAR NA CINEPARTY ➔" to "JOIN CINEPARTY ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Start Live Countdown (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "Start Countdown (3, 2, 1...) 🚀",
+)
 }

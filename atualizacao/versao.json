@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 105,
-  "versaoNome": "2.0.65",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.65/CineList-v2.0.65.apk"
+  "versaoCodigo": 106,
+  "versaoNome": "2.0.66",
+  "notas": "Ligação de voz WebRTC em tempo real estilo ligação com áudio online no palco do CineParty\nTrava mútua de play no CineParty: contagem regressiva só inicia quando todos na sala liberarem\nChamadas globais de CineParty que tocam em qualquer aba do app com atender ou recusar\nBotões de CineParty e CineMatch no chat com visual destacado, elevado e ação direta\nPop-up de atualização com animações fluídas e exibição completa das notas da versão\nAjuste na tela de configurações contra sobreposição da barra superior\nExibição dos nomes dos idiomas traduzidos de acordo com a língua ativa no aplicativo",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.66/CineList-v2.0.66.apk"
 }

@@ -1559,5 +1559,20 @@ object I18nDicionarioJa {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "メール未確認時の自動ログインをブロックし、再送信と確認ボタンを追加",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "選択した言語への映画・ドラマジャンルの動的翻訳",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "すべての言語での履歴と新バージョン通知の完全な多言語化",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "オンライン通話中 // リアルタイム音声 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "音声通話を接続中... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "音声通話にはマイクの権限が必要です",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "再生準備完了 ✅ (タップで解除)",
+        "Liberar Meu Play 🔓" to "再生を許可する 🔓",
+        "Aguardando liberação de:" to "待機中:",
+        "Aguardando todos liberarem o play 🔒" to "全員の再生準備を待っています 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "シネパーティー通話 // ライブ",
+        "está te chamando para assistir juntos!" to "一緒に見ようと電話しています！",
+        "Atender & Entrar 🍿" to "応答して参加 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "シネマッチに参加 ➔",
+        "ENTRAR NA CINEPARTY ➔" to "シネパーティーに参加 ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "ライブカウントダウン開始 (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "カウントダウン開始 (3, 2, 1...) 🚀",
+)
 }

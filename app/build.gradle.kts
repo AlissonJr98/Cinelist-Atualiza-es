@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 105
-        versionName = "2.0.65"
+        versionCode = 106
+        versionName = "2.0.66"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -161,6 +161,7 @@ dependencies {
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
     implementation("com.google.zxing:core:3.5.3")
+    implementation("io.getstream:stream-webrtc-android:1.3.10")
 
     // Testes Unitários e Instrumentados
     testImplementation(libs.mockk)

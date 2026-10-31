@@ -1581,5 +1581,20 @@ object I18nDicionarioDe {
         "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "Automatische Anmeldung ohne E-Mail-Bestätigung blockiert mit Schaltflächen zum erneuten Senden und schnellen Prüfen",
         "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "Dynamische Übersetzung von Serien- und Filmgenres in die ausgewählte Sprache",
         "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "Vollständige Internationalisierung des Verlaufs und der Hinweise auf neue Versionen in allen Sprachen",
-    )
+    
+        "LIGAÇÃO ONLINE ATIVA // VOZ EM TEMPO REAL 🟢" to "ONLINE-ANRUF AKTIV // ECHTZEIT-STIMME 🟢",
+        "CONECTANDO LIGAÇÃO DE VOZ... 🟡" to "VERBINDE SPRACHANRUF... 🟡",
+        "Permissão de microfone necessária para ligação de voz" to "Mikrofonberechtigung für Sprachanruf erforderlich",
+        "Meu Play Liberado ✅ (Toque para desmarcar)" to "Mein Play Freigegeben ✅ (Tippen zum Abbrechen)",
+        "Liberar Meu Play 🔓" to "Mein Play Freigeben 🔓",
+        "Aguardando liberação de:" to "Warte auf Freigabe von:",
+        "Aguardando todos liberarem o play 🔒" to "Warten, bis alle bereit sind 🔒",
+        "CHAMADA CINEPARTY // AO VIVO" to "CINEPARTY-ANRUF // LIVE",
+        "está te chamando para assistir juntos!" to "ruft dich an, um zusammen zu schauen!",
+        "Atender & Entrar 🍿" to "Annehmen & Beitreten 🍿",
+        "ENTRAR NO CINEMATCH ➔" to "CINEMATCH BEITRETEN ➔",
+        "ENTRAR NA CINEPARTY ➔" to "CINEPARTY BEITRETEN ➔",
+        "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Live-Countdown Starten (3, 2, 1...) 🚀",
+        "Iniciar Contagem (3, 2, 1...) 🚀" to "Countdown Starten (3, 2, 1...) 🚀",
+)
 }
