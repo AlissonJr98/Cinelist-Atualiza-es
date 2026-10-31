@@ -62,10 +62,10 @@ object UpdateManager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val canal = NotificationChannel(
                 CANAL_ID,
-                "Atualizações do CineList",
+                "Atualizações do CineList".t(),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações quando novas versões estiverem disponíveis"
+                description = "Notificações quando novas versões estiverem disponíveis".t()
             }
             notificationManager.createNotificationChannel(canal)
         }
@@ -82,13 +82,13 @@ object UpdateManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val resumoNovidades = info.notas.ifBlank { "Uma nova versão com melhorias está disponível." }
+        val resumoNovidades = info.notas.ifBlank { "Uma nova versão com melhorias está disponível.".t() }
 
         val notificacao = NotificationCompat.Builder(context, CANAL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Nova Versão CineList v${info.versaoNome}!")
-            .setContentText("Toque para conferir as novidades e atualizar.")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("Novidades da v${info.versaoNome}:\n$resumoNovidades"))
+            .setContentTitle("${"Nova Versão CineList".t()} v${info.versaoNome}!")
+            .setContentText("Toque para conferir as novidades e atualizar.".t())
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${"Novidades da".t()} v${info.versaoNome}:\n$resumoNovidades"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -108,7 +108,7 @@ object UpdateManager {
                 }
                 context.startActivity(intentPermissao)
                 Handler(Looper.getMainLooper()).post {
-                    Toast.makeText(context, "Permita a instalação de fontes desconhecidas.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Permita a instalação de fontes desconhecidas.".t(), Toast.LENGTH_LONG).show()
                 }
                 return
             }
@@ -124,8 +124,8 @@ object UpdateManager {
         }
 
         val request = DownloadManager.Request(apkUrl.toUri())
-            .setTitle("Atualizando CineList")
-            .setDescription("Baixando nova versão do aplicativo...")
+            .setTitle("Atualizando CineList".t())
+            .setDescription("Baixando nova versão do aplicativo...".t())
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, nomeArquivo)
             .setMimeType("application/vnd.android.package-archive")

@@ -62,20 +62,20 @@ fun DialogoNovidadesAtualizacao(
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Novidades",
+                            contentDescription = "Novidades".t(),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
                     Column {
                         Text(
-                            text = "O que há de novo?",
+                            text = "O que há de novo?".t(),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Versão ${info.versaoNome} (Build ${info.versaoCode})",
+                            text = "${"Versão".t()} ${info.versaoNome} (Build ${info.versaoCode})",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -110,7 +110,7 @@ fun DialogoNovidadesAtualizacao(
                                         .padding(top = 2.dp)
                                 )
                                 Text(
-                                    text = item.removePrefix("-").trim(),
+                                    text = item.removePrefix("-").trim().t(),
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     lineHeight = 18.sp
@@ -119,7 +119,7 @@ fun DialogoNovidadesAtualizacao(
                         }
                     } else {
                         Text(
-                            text = info.notasDaVersao.ifBlank { "Melhorias gerais de estabilidade e correções de bugs." },
+                            text = info.notasDaVersao.ifBlank { "Melhorias gerais de estabilidade e correções de bugs.".t() },
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -137,7 +137,7 @@ fun DialogoNovidadesAtualizacao(
                         onClick = onDispensar,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Depois", color = MaterialTheme.colorScheme.secondary)
+                        Text("Depois".t(), color = MaterialTheme.colorScheme.secondary)
                     }
 
                     Button(
@@ -149,7 +149,7 @@ fun DialogoNovidadesAtualizacao(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text(
-                            text = "Atualizar",
+                            text = "Atualizar".t(),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )

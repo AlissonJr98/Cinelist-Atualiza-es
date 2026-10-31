@@ -239,16 +239,17 @@ class LembreteWorker(
                 ) > 0
 
                 if (!jaNotificouEssaVersao) {
-                    val tituloUpdate = "Nova versão disponível: ${infoAtualizacao.versaoNome}"
+                    val tituloUpdate = "${"Nova versão disponível".t()}: ${infoAtualizacao.versaoNome}"
+                    val corpoUpdate = infoAtualizacao.notasDaVersao.ifBlank { "${"Uma nova versão".t()} (${infoAtualizacao.versaoNome}) ${"com melhorias e correções está disponível.".t()}" }
                     notificacaoDao.inserir(
                         NotificacaoEntity(
                             tipo = "ATUALIZACAO",
                             titulo = tituloUpdate,
-                            mensagem = infoAtualizacao.notasDaVersao,
+                            mensagem = corpoUpdate,
                             idReferencia = infoAtualizacao.versaoCode
                         )
                     )
-                    enviarNotificacaoSistema(CANAL_ATUALIZACOES, 1002, tituloUpdate, infoAtualizacao.notasDaVersao)
+                    enviarNotificacaoSistema(CANAL_ATUALIZACOES, 1002, tituloUpdate, corpoUpdate)
                 }
             }
 

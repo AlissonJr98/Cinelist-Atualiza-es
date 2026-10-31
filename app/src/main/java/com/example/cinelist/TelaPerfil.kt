@@ -161,6 +161,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.CompositionLocalProvider
 
 import kotlinx.coroutines.tasks.await
 
@@ -545,6 +546,8 @@ fun TelaPerfil(
 
 
     var amigoSelecionadoParaVer by remember { mutableStateOf<AmigoPerfil?>(null) }
+    val sheetStateAmigo = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetStateMembro = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val listaAmigoSelecionado by viewModel.listaAmigoSelecionado.collectAsState(initial = emptyList())
 
@@ -992,27 +995,31 @@ fun TelaPerfil(
 
             onDismissRequest = { amigoSelecionadoParaVer = null },
 
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = sheetStateAmigo,
 
             containerColor = MaterialTheme.colorScheme.surface
 
         ) {
 
-            ModalPerfilAmigo(
+            CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides null) {
 
-                amigo = amigo,
+                ModalPerfilAmigo(
 
-                minhasMidias = midiasContextoAtual,
+                    amigo = amigo,
 
-                midiasAmigo = listaAmigoSelecionado,
+                    minhasMidias = midiasContextoAtual,
 
-                viewModel = viewModel,
+                    midiasAmigo = listaAmigoSelecionado,
 
-                onFechar = { amigoSelecionadoParaVer = null },
+                    viewModel = viewModel,
 
-                onMidiaClique = onMidiaClique
+                    onFechar = { amigoSelecionadoParaVer = null },
 
-            )
+                    onMidiaClique = onMidiaClique
+
+                )
+
+            }
 
         }
 
@@ -1126,13 +1133,15 @@ fun TelaPerfil(
 
             onDismissRequest = { membroSelecionadoParaVer = null },
 
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = sheetStateMembro,
 
             containerColor = MaterialTheme.colorScheme.surface
 
         ) {
 
-            Column(
+            CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides null) {
+
+                Column(
 
                 modifier = Modifier
 
@@ -1456,6 +1465,8 @@ fun TelaPerfil(
 
             }
 
+            }
+
         }
 
     }
@@ -1530,6 +1541,20 @@ fun TelaPerfil(
 
     var notificacaoDetalhada by remember { mutableStateOf<NotificacaoEntity?>(null) }
 
+    notificacaoDetalhada?.let { notif ->
+        AlertDialog(
+            onDismissRequest = { notificacaoDetalhada = null },
+            title = { Text(notif.titulo.t(), fontWeight = FontWeight.Bold) },
+            text = { Text(notif.mensagem.t()) },
+            confirmButton = {
+                TextButton(onClick = { notificacaoDetalhada = null }) {
+                    Text("OK".t())
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
     var mostrarConfirmacaoLimparTudoNotif by remember { mutableStateOf(false) }
 
 
@@ -1540,9 +1565,9 @@ fun TelaPerfil(
 
             onDismissRequest = { notificacaoParaExcluir = null },
 
-            title = { Text("Excluir Notificação", fontWeight = FontWeight.Bold) },
+            title = { Text("Excluir Notificação".t(), fontWeight = FontWeight.Bold) },
 
-            text = { Text("Deseja apagar esta notificação do seu histórico?") },
+            text = { Text("Deseja apagar esta notificação do seu histórico?".t()) },
 
             confirmButton = {
 
@@ -1554,13 +1579,13 @@ fun TelaPerfil(
 
                         notificacaoParaExcluir = null
 
-                        Toast.makeText(contexto, "Notificação excluída.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(contexto, "Notificação excluída.".t(), Toast.LENGTH_SHORT).show()
 
                     }
 
                 ) {
 
-                    Text("Excluir", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
+                    Text("Excluir".t(), color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
 
                 }
 
@@ -1590,9 +1615,9 @@ fun TelaPerfil(
 
             onDismissRequest = { mostrarConfirmacaoLimparTudoNotif = false },
 
-            title = { Text("Limpar Histórico", fontWeight = FontWeight.Bold) },
+            title = { Text("Limpar Histórico".t(), fontWeight = FontWeight.Bold) },
 
-            text = { Text("Deseja apagar todas as notificações recebidas?") },
+            text = { Text("Deseja apagar todas as notificações recebidas?".t()) },
 
             confirmButton = {
 
@@ -1604,13 +1629,13 @@ fun TelaPerfil(
 
                         mostrarConfirmacaoLimparTudoNotif = false
 
-                        Toast.makeText(contexto, "Histórico de notificações limpo.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(contexto, "Histórico de notificações limpo.".t(), Toast.LENGTH_SHORT).show()
 
                     }
 
                 ) {
 
-                    Text("Limpar Tudo", color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
+                    Text("Limpar Tudo".t(), color = CineListTokens.CorErro, fontWeight = FontWeight.Bold)
 
                 }
 
@@ -1660,7 +1685,7 @@ fun TelaPerfil(
 
             configurarLembretes(contexto, true)
 
-            Toast.makeText(contexto, "Notificações diárias ativadas!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(contexto, "Notificações diárias ativadas!".t(), Toast.LENGTH_SHORT).show()
 
         } else {
 
@@ -1668,7 +1693,7 @@ fun TelaPerfil(
 
             sharedPreferences.edit().putBoolean("notificacoes", false).apply()
 
-            Toast.makeText(contexto, "Permissão negada. Ative nas configurações do aparelho.", Toast.LENGTH_LONG).show()
+            Toast.makeText(contexto, "Permissão negada. Ative nas configurações do aparelho.".t(), Toast.LENGTH_LONG).show()
 
         }
 
@@ -5059,7 +5084,7 @@ fun ItemNotificacao(
 
                     Text(
 
-                        text = notificacao.titulo,
+                        text = notificacao.titulo.t(),
 
                         fontWeight = if (notificacao.lida) FontWeight.SemiBold else FontWeight.Bold,
 
@@ -5077,7 +5102,7 @@ fun ItemNotificacao(
 
                         imageVector = Icons.Default.Delete,
 
-                        contentDescription = "Excluir",
+                        contentDescription = "Excluir".t(),
 
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
 
@@ -5093,7 +5118,7 @@ fun ItemNotificacao(
 
             Text(
 
-                text = notificacao.mensagem,
+                text = notificacao.mensagem.t(),
 
                 fontSize = 13.sp,
 

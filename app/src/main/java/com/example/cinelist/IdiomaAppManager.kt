@@ -129,7 +129,7 @@ object IdiomaAppManager {
         val tag = obterIdiomaPadraoDispositivo()
         val opcao = IDIOMAS_DISPONIVEIS.find { it.codigo == tag }
         return if (opcao != null) {
-            "${opcao.bandeiraEmoji} ${opcao.nome}"
+            "${opcao.bandeiraEmoji} ${opcao.nome.t()}"
         } else {
             "🌐 ${Locale.getDefault().displayName}"
         }

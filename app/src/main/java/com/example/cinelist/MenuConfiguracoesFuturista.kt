@@ -599,7 +599,7 @@ fun BottomSheetConfiguracoesFuturista(
                                 Text(text = opcaoSelecionada.bandeiraEmoji, fontSize = 24.sp)
                                 Column {
                                     Text(
-                                        text = opcaoSelecionada.nome,
+                                        text = opcaoSelecionada.nome.t(),
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFF00FF7F)
@@ -640,7 +640,7 @@ fun BottomSheetConfiguracoesFuturista(
                                         Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = if (opcao.codigo == "SISTEMA") "Padrão do Celular (Automático)".t() else opcao.nome,
+                                                text = opcao.nome.t(),
                                                 fontSize = 13.sp,
                                                 fontWeight = if (isAtivo) FontWeight.ExtraBold else FontWeight.Medium,
                                                 color = if (isAtivo) Color(0xFF00FF7F) else Color.White

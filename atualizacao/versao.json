@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 99,
-  "versaoNome": "2.0.59",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.59/CineList-v2.0.59.apk"
+  "versaoCodigo": 100,
+  "versaoNome": "2.0.60",
+  "notas": "Agenda do Cinéfilo 100% internacionalizada com títulos localizados e formatação de datas\nCards de compartilhamento para o Instagram Stories traduzidos dinamicamente\nCorreção no fechamento inesperado ao visualizar o perfil de amigos e membros\nAvisos de atualização e notificações do sistema agora exibidos no idioma selecionado\nSeletor de idiomas agora exibe o nome de todas as línguas traduzido no idioma ativo\nPlayer de trailers flutuante em Picture-in-Picture (PiP) aprimorado\nRadar de lançamentos em streaming com notificações inteligentes em segundo plano\nFeedback tátil (vibração háptica) integrado nas ações do aplicativo",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.60/CineList-v2.0.60.apk"
 }

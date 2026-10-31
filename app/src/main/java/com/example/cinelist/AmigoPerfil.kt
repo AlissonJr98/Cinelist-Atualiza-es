@@ -26,27 +26,27 @@ data class AmigoPerfil(
         }
 
     fun obterTextoVistoPorUltimo(): String {
-        if (estaRealmenteOnline) return "Online agora"
-        if (vistoPorUltimo <= 0L) return "Offline"
+        if (estaRealmenteOnline) return "Online agora".t()
+        if (vistoPorUltimo <= 0L) return "Offline".t()
 
         val diferenca = System.currentTimeMillis() - vistoPorUltimo
-        if (diferenca < 0L) return "Online agora"
+        if (diferenca < 0L) return "Online agora".t()
 
         val minutos = (diferenca / (1000 * 60)).toInt()
         val horas = minutos / 60
         val dias = horas / 24
 
         return when {
-            minutos < 1 -> "Visto agora há pouco"
-            minutos == 1 -> "Visto há 1 minuto"
-            minutos < 60 -> "Visto há $minutos minutos"
-            horas == 1 -> "Visto há 1 hora"
-            horas < 24 -> "Visto há $horas horas"
-            dias == 1 -> "Visto ontem"
-            dias < 7 -> "Visto há $dias dias"
+            minutos < 1 -> "Visto agora há pouco".t()
+            minutos == 1 -> "Visto há 1 minuto".t()
+            minutos < 60 -> "${"Visto há".t()} $minutos ${"minutos".t()}"
+            horas == 1 -> "Visto há 1 hora".t()
+            horas < 24 -> "${"Visto há".t()} $horas ${"horas".t()}"
+            dias == 1 -> "Visto ontem".t()
+            dias < 7 -> "${"Visto há".t()} $dias ${"dias".t()}"
             else -> {
                 val formatador = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                "Visto em ${formatador.format(Date(vistoPorUltimo))}"
+                "${"Visto em".t()} ${formatador.format(Date(vistoPorUltimo))}"
             }
         }
     }

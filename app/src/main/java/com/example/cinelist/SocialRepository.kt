@@ -645,8 +645,22 @@ class SocialRepository @Inject constructor() {
 
         val listener = firestore.collection("chats").document(chatId).collection("mensagens")
             .orderBy("timestamp", Query.Direction.ASCENDING)
-            .addSnapshotListener { snap, _ ->
-                val mensagens = snap?.documents?.mapNotNull { it.toObject(MensagemChat::class.java) } ?: emptyList()
+            .addSnapshotListener { snap, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val mensagens = try {
+                    snap?.documents?.mapNotNull { doc ->
+                        try {
+                            doc.toObject(MensagemChat::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } ?: emptyList()
+                } catch (e: Exception) {
+                    emptyList()
+                }
                 trySend(mensagens)
             }
 

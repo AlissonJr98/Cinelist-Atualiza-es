@@ -202,15 +202,15 @@ object InstagramShareHelper {
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(Intent.EXTRA_STREAM, uriImagem)
-                    putExtra(Intent.EXTRA_TEXT, "Minha retrospectiva cinematográfica no CineList! 🍿✨")
+                    putExtra(Intent.EXTRA_TEXT, "Minha retrospectiva cinematográfica no CineList! 🍿✨".t())
                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineStats Retrospectiva"))
+                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineStats Retrospectiva".t()))
             }
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Erro ao gerar imagem de retrospectiva.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Erro ao gerar imagem de retrospectiva.".t(), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -336,7 +336,7 @@ object InstagramShareHelper {
             }
             val anoTxt = if (ano.isNotBlank()) " • $ano" else ""
             val generoTxt = if (genero.isNotBlank()) " • ${genero.split(",").firstOrNull()?.trim() ?: ""}" else ""
-            canvas.drawText("${tipo.uppercase()}$anoTxt$generoTxt", width / 2f, 1260f, paintSub)
+            canvas.drawText("${tipo.t().uppercase()}$anoTxt$generoTxt", width / 2f, 1260f, paintSub)
 
             // 5. Avaliação em Estrelas
             val paintEstrelas = Paint().apply {
@@ -376,7 +376,7 @@ object InstagramShareHelper {
             }
             canvas.drawText("“", 130f, cardResenhaTop + 70f, paintAspas)
 
-            val frase = if (comentario.isNotBlank()) comentario else "Experiência cinematográfica imperdível registrada no CineList!"
+            val frase = if (comentario.isNotBlank()) comentario else "Experiência cinematográfica imperdível registrada no CineList!".t()
             val paintTextoFrase = Paint().apply {
                 color = Color.parseColor("#E2E8F0")
                 textSize = 34f
@@ -422,15 +422,15 @@ object InstagramShareHelper {
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(Intent.EXTRA_STREAM, uriImagem)
-                    putExtra(Intent.EXTRA_TEXT, "Confira minha avaliação de '$titulo' no CineList! 🍿✨")
+                    putExtra(Intent.EXTRA_TEXT, "${"Confira minha avaliação de".t()} '$titulo' ${"no CineList!".t()} 🍿✨")
                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineCard"))
+                context.startActivity(Intent.createChooser(shareIntent, "Compartilhar CineCard".t()))
             }
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Erro ao gerar CineCard para o Story.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Erro ao gerar CineCard para o Story.".t(), Toast.LENGTH_LONG).show()
         }
     }
 }

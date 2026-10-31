@@ -2740,18 +2740,19 @@ fun compartilharCardEstilizado(
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             paint.textAlign = Paint.Align.CENTER
 
-            val tituloLimitado = if (midia.titulo.length > 25) midia.titulo.take(22) + "..." else midia.titulo
+            val tituloLocalizado = MidiaLocalizationManager.obterTituloLocalizadoPorId(midia.idTmdb, midia.titulo)
+            val tituloLimitado = if (tituloLocalizado.length > 25) tituloLocalizado.take(22) + "..." else tituloLocalizado
             canvas.drawText(tituloLimitado, width / 2f, 1350f, paint)
             paint.color = android.graphics.Color.parseColor("#FFD700")
             paint.textSize = 60f
-            canvas.drawText("Nota: ${midia.nota} ★", width / 2f, 1480f, paint)
+            canvas.drawText("${"Nota".t()}: ${midia.nota} ★", width / 2f, 1480f, paint)
             paint.color = android.graphics.Color.LTGRAY
             paint.textSize = 50f
             paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            canvas.drawText("Status: ${midia.status}", width / 2f, 1580f, paint)
+            canvas.drawText("${"Status".t()}: ${midia.status.t()}", width / 2f, 1580f, paint)
 
             if (midia.tipo.equals("Série", ignoreCase = true) || midia.tipo.equals("Anime", ignoreCase = true)) {
-                canvas.drawText("Temporada ${midia.temporadaAtual} • Ep ${midia.episodioAtual}", width / 2f, 1660f, paint)
+                canvas.drawText(formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual), width / 2f, 1660f, paint)
             }
 
             if (midia.comentarioPessoal.isNotBlank()) {
@@ -2763,7 +2764,7 @@ fun compartilharCardEstilizado(
 
             paint.color = android.graphics.Color.DKGRAY
             paint.textSize = 40f
-            canvas.drawText("Gerado por CineList 🍿", width / 2f, 1850f, paint)
+            canvas.drawText("Gerado por CineList 🍿".t(), width / 2f, 1850f, paint)
 
             val cachePath = File(contexto.cacheDir, "images")
             cachePath.mkdirs()
@@ -2789,15 +2790,15 @@ fun compartilharCardEstilizado(
                 val intent = Intent(Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_TEXT, "Dá uma olhada no que estou acompanhando no CineList: ${midia.titulo} 🍿")
+                    putExtra(Intent.EXTRA_TEXT, "${"Dá uma olhada no que estou acompanhando no CineList".t()}: $tituloLocalizado 🍿")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     clipData = ClipData.newRawUri("", uri)
                 }
-                contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via"))
+                contexto.startActivity(Intent.createChooser(intent, "Compartilhar Card via".t()))
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(contexto, "Erro ao gerar card de compartilhamento.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(contexto, "Erro ao gerar card de compartilhamento.".t(), Toast.LENGTH_SHORT).show()
             }
         }
     }

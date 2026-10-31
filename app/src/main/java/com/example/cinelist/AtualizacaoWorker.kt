@@ -28,15 +28,15 @@ class AtualizacaoWorker(
 
                 if (!jaRegistrada) {
                     val corpo = if (update.notasDaVersao.isNotBlank()) {
-                        "Novidades da versão ${update.versaoNome}:\n${update.notasDaVersao}"
+                        "${"Novidades da versão".t()} ${update.versaoNome}:\n${update.notasDaVersao}"
                     } else {
-                        "Uma nova versão (${update.versaoNome}) com melhorias e correções está disponível."
+                        "${"Uma nova versão".t()} (${update.versaoNome}) ${"com melhorias e correções está disponível.".t()}"
                     }
 
                     notificacaoDao.inserir(
                         NotificacaoEntity(
                             tipo = "ATUALIZACAO",
-                            titulo = "Nova Versão v${update.versaoNome} Disponível",
+                            titulo = "${"Nova Versão".t()} v${update.versaoNome} ${"Disponível".t()}",
                             mensagem = corpo,
                             dataCriacao = System.currentTimeMillis(),
                             lida = false,

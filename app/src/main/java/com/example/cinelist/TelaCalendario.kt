@@ -150,10 +150,10 @@ fun TelaCalendario(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Agenda do Cinéfilo", fontWeight = FontWeight.Bold) },
+                title = { Text("Agenda do Cinéfilo".t(), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onVoltar) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar".t())
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -180,17 +180,17 @@ fun TelaCalendario(
                 FilterChip(
                     selected = filtroSelecionado == "TODOS",
                     onClick = { filtroSelecionado = "TODOS" },
-                    label = { Text("Todos (${itensCalendario.size})") }
+                    label = { Text("${"Todos".t()} (${itensCalendario.size})") }
                 )
                 FilterChip(
                     selected = filtroSelecionado == "SERIE",
                     onClick = { filtroSelecionado = "SERIE" },
-                    label = { Text("📺 Séries") }
+                    label = { Text("📺 Séries".t()) }
                 )
                 FilterChip(
                     selected = filtroSelecionado == "FILME",
                     onClick = { filtroSelecionado = "FILME" },
-                    label = { Text("🎬 Filmes") }
+                    label = { Text("🎬 Filmes".t()) }
                 )
             }
 
@@ -209,7 +209,7 @@ fun TelaCalendario(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Nenhum lançamento futuro encontrado para as mídias da sua lista.",
+                            text = "Nenhum lançamento futuro encontrado para as mídias da sua lista.".t(),
                             color = MaterialTheme.colorScheme.secondary,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(horizontal = 24.dp),
@@ -261,7 +261,7 @@ fun TelaCalendario(
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = item.serieTitulo,
+                                        text = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.serieTitulo),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = MaterialTheme.colorScheme.onSurface,
@@ -271,14 +271,14 @@ fun TelaCalendario(
                                     Spacer(modifier = Modifier.height(2.dp))
                                     if (item.tipoItem == "SERIE") {
                                         Text(
-                                            text = "Temporada ${item.numeroTemporada} • Episódio ${item.numeroEpisodio}",
+                                            text = formatarTemporadaEpisodio(item.numeroTemporada, item.numeroEpisodio),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                     } else {
                                         Text(
-                                            text = "🎬 Lançamento de Filme",
+                                            text = "🎬 Lançamento de Filme".t(),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(0xFFF59E0B)
@@ -296,7 +296,7 @@ fun TelaCalendario(
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "📅 Data: ${item.dataExibicaoStr}",
+                                        text = "${"📅 Data:".t()} ${item.dataExibicaoStr}",
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
@@ -310,7 +310,7 @@ fun TelaCalendario(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Event,
-                                        contentDescription = "Agendar Lembrete",
+                                        contentDescription = "Agendar Lembrete".t(),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -328,13 +328,14 @@ fun TelaCalendario(
  */
 private fun adicionarAoGoogleAgenda(context: Context, item: ItemCalendario) {
     try {
+        val tituloLocalizado = MidiaLocalizationManager.obterTituloLocalizadoPorId(item.idTmdb, item.serieTitulo)
         val tituloEvento = if (item.tipoItem == "SERIE") {
-            "Lançamento: ${item.serieTitulo} (T${item.numeroTemporada}E${item.numeroEpisodio})"
+            "${"Lançamento".t()}: $tituloLocalizado (${formatarTemporadaEpisodio(item.numeroTemporada, item.numeroEpisodio)})"
         } else {
-            "Estreia do Filme: ${item.serieTitulo}"
+            "${"Estreia do Filme".t()}: $tituloLocalizado"
         }
 
-        val descricao = item.nomeEpisodio ?: "Lembrete sincronizado pelo CineList"
+        val descricao = item.nomeEpisodio ?: "Lembrete sincronizado pelo CineList".t()
 
         val dataMillis = if (item.dataExibicaoMillis > 0) item.dataExibicaoMillis else System.currentTimeMillis()
 
@@ -349,6 +350,6 @@ private fun adicionarAoGoogleAgenda(context: Context, item: ItemCalendario) {
         context.startActivity(intent)
     } catch (e: Exception) {
         e.printStackTrace()
-        Toast.makeText(context, "Não foi possível abrir o aplicativo de calendário.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Não foi possível abrir o aplicativo de calendário.".t(), Toast.LENGTH_SHORT).show()
     }
 }
