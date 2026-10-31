@@ -1473,6 +1473,13 @@ object I18nDicionarioEs {
         "Deseja reabrir" to "¿Deseas reabrir",
         "e voltar para o status Assistindo?" to "y volver al estado Viendo?",
         "Deseja realmente marcar" to "¿Realmente deseas marcar",
-        "como Concluído?" to "¿como Completado?"
+        "como Concluído?" to "¿como Completado?",
+        "Janela Flutuante (PiP)" to "Ventana Flotante (PiP)",
+        "Abrir no YouTube" to "Abrir en YouTube",
+        "Fechar Trailer" to "Cerrar Tráiler",
+        "ASSISTIR TRAILER" to "VER TRÁILER",
+        "FECHAR TRAILER" to "CERRAR TRÁILER",
+        "Radar de Estreias nos Streamings" to "Radar de Estrenos en Streaming",
+        "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc." to "Notificaciones cuando los títulos monitoreados lleguen a Netflix, Prime Video, Max, etc."
     )
 }

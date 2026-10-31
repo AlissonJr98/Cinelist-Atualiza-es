@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -183,7 +185,11 @@ fun ItemNotificacaoCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = if (notificacao.tipo == "ATUALIZACAO") Icons.Default.SystemUpdate else Icons.Default.Notifications,
+                        imageVector = when (notificacao.tipo) {
+                        "ATUALIZACAO" -> Icons.Default.SystemUpdate
+                        "ESTREIA_STREAMING" -> Icons.Default.Tv
+                        else -> Icons.Default.Notifications
+                    },
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)

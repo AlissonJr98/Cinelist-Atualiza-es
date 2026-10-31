@@ -1383,6 +1383,13 @@ object I18nDicionarioJa {
         "Deseja reabrir" to "再開しますか：",
         "e voltar para o status Assistindo?" to "「視聴中」ステータスに戻しますか？",
         "Deseja realmente marcar" to "本当にマークしますか：",
-        "como Concluído?" to "「完了」として？"
+        "como Concluído?" to "「完了」として？",
+        "Janela Flutuante (PiP)" to "フローティングウィンドウ (PiP)",
+        "Abrir no YouTube" to "YouTubeで開く",
+        "Fechar Trailer" to "予告編を閉じる",
+        "ASSISTIR TRAILER" to "予告編を見る",
+        "FECHAR TRAILER" to "予告編を閉じる",
+        "Radar de Estreias nos Streamings" to "配信レーダー",
+        "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc." to "追跡中の作品がNetflix、Prime Video、Maxなどに配信されたときの通知"
     )
 }

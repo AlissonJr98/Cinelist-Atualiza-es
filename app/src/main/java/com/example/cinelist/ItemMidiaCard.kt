@@ -314,7 +314,10 @@ private fun ConteudoItemMidiaCard(
                         if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
                             BotaoFavoritoAnimado(
                                 favorito = midia.favorito,
-                                onToggle = { onAlternarFavorito() },
+                                onToggle = {
+                                    CineHaptics.click(contexto)
+                                    onAlternarFavorito()
+                                },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(6.dp)
@@ -386,7 +389,10 @@ private fun ConteudoItemMidiaCard(
                                     )
 
                                     Button(
-                                        onClick = { onIncrementarEpisodio() },
+                                        onClick = {
+                                            CineHaptics.click(contexto)
+                                            onIncrementarEpisodio()
+                                        },
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
@@ -683,6 +689,7 @@ private fun ItemMidiaCardHorizontalComSwipe(
             onProcessarRecusado = onProcessarRecusado
         )
     } else {
+        val contexto = LocalContext.current
         val currentOnDeletar by rememberUpdatedState(onDeletar)
         val currentOnAlternarConcluido by rememberUpdatedState(onAlternarStatusConcluido)
 
@@ -690,10 +697,12 @@ private fun ItemMidiaCardHorizontalComSwipe(
             confirmValueChange = { valorDismiss ->
                 when (valorDismiss) {
                     SwipeToDismissBoxValue.EndToStart -> {
+                        CineHaptics.warning(contexto)
                         currentOnDeletar?.invoke()
                         false
                     }
                     SwipeToDismissBoxValue.StartToEnd -> {
+                        CineHaptics.confirm(contexto)
                         currentOnAlternarConcluido?.invoke()
                         false
                     }
@@ -1180,7 +1189,10 @@ private fun ConteudoItemMidiaCardHorizontal(
 
                             if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
                                 Button(
-                                    onClick = { onIncrementarEpisodio() },
+                                    onClick = {
+                                        CineHaptics.click(contexto)
+                                        onIncrementarEpisodio()
+                                    },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),

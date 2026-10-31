@@ -1383,6 +1383,13 @@ object I18nDicionarioKo {
         "Deseja reabrir" to "다시 열겠습니까：",
         "e voltar para o status Assistindo?" to "「시청 중」 상태로 되돌리시겠습니까?",
         "Deseja realmente marcar" to "정말 표시하시겠습니까：",
-        "como Concluído?" to "「완료」로?"
+        "como Concluído?" to "「완료」로?",
+        "Janela Flutuante (PiP)" to "플로팅 윈도우 (PiP)",
+        "Abrir no YouTube" to "YouTube에서 열기",
+        "Fechar Trailer" to "예고편 닫기",
+        "ASSISTIR TRAILER" to "예고편 보기",
+        "FECHAR TRAILER" to "예고편 닫기",
+        "Radar de Estreias nos Streamings" to "스트리밍 공개 레이더",
+        "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc." to "보고 싶은 콘텐츠가 Netflix, Prime Video, Max 등에 공개될 때 알림"
     )
 }

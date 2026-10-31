@@ -161,6 +161,31 @@ object NotificacaoHelper {
         }
     }
 
+    fun gerarTextoEstreiaStreaming(tituloMidia: String, provedorNome: String): Pair<String, String> {
+        val lang = I18n.idiomaAtivo.lowercase().take(2)
+        val titulo = when (lang) {
+            "en" -> "🎉 Now on $provedorNome!"
+            "es" -> "🎉 ¡Llegó a $provedorNome!"
+            "fr" -> "🎉 Arrivé sur $provedorNome !"
+            "de" -> "🎉 Jetzt auf $provedorNome!"
+            "it" -> "🎉 Disponibile su $provedorNome!"
+            "ja" -> "🎉 $provedorNome で配信開始！"
+            "ko" -> "🎉 $provedorNome 공개!"
+            else -> "🎉 Chegou no $provedorNome!"
+        }
+        val mensagem = when (lang) {
+            "en" -> "\"$tituloMidia\" just arrived on $provedorNome! It's on your watchlist."
+            "es" -> "¡\"$tituloMidia\" acaba de estrenarse en $provedorNome! Está en tu lista de espera."
+            "fr" -> "« $tituloMidia » vient d'arriver sur $provedorNome ! C'est dans votre liste d'attente."
+            "de" -> "„$tituloMidia“ ist jetzt auf $provedorNome verfügbar! Es ist auf deiner Watchlist."
+            "it" -> "\"$tituloMidia\" è appena arrivato su $provedorNome! È nella tua lista d'attesa."
+            "ja" -> "「$tituloMidia」が $provedorNome で配信開始されました！あなたのリストに入っています。"
+            "ko" -> "\"$tituloMidia\"이(가) ${provedorNome}에 공개되었습니다! 보고 싶은 목록에 있습니다."
+            else -> "\"$tituloMidia\" acabou de estrear na $provedorNome! Está na sua lista de espera."
+        }
+        return Pair(titulo, mensagem)
+    }
+
     fun dispararNotificacaoEstreiaStreaming(context: Context, tituloMidia: String, provedorNome: String, idRef: Int) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -189,11 +214,13 @@ object NotificacaoHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val (tituloFormatado, msgFormatada) = gerarTextoEstreiaStreaming(tituloMidia, provedorNome)
+
         val notificacao = NotificationCompat.Builder(context, CANAL_ESTREIAS_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("${"🎉 Chegou no Streaming:".t()} $provedorNome!")
-            .setContentText("\"$tituloMidia\" ${"já está disponível para assistir!".t()}")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("${"Boas notícias! O título".t()} \"$tituloMidia\" ${"que você estava monitorando no Radar agora está disponível no catálogo do".t()} $provedorNome! 🍿"))
+            .setContentTitle(tituloFormatado)
+            .setContentText(msgFormatada)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(msgFormatada))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)

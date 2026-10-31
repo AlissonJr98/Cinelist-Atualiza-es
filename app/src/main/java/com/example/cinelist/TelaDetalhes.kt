@@ -17,6 +17,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -228,6 +231,7 @@ fun TelaDetalhes(
     var statusAtual by remember { mutableStateOf(StatusMidia.QUERO_ASSISTIR) }
     var rewatchContador by remember { mutableIntStateOf(0) }
     var tagsInput by remember { mutableStateOf("") }
+    var mostrarTrailerInline by remember { mutableStateOf(false) }
     var estaNoRadar by remember(midiaSalva?.idTmdb, detalhesApi?.id) {
         mutableStateOf(
             RadarStreamingManager.isMonitorado(contexto, midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0)
@@ -570,6 +574,16 @@ fun TelaDetalhes(
         }
     }
 
+    val emModoPip = LocalPipMode.current
+    if (emModoPip && !chaveTrailer.isNullOrBlank()) {
+        InlineTrailerPlayer(
+            chaveTrailer = chaveTrailer ?: "",
+            modifier = Modifier.fillMaxSize(),
+            onFechar = { mostrarTrailerInline = false }
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
             TopBarModernaTranslucida(
@@ -593,6 +607,7 @@ fun TelaDetalhes(
                             onToggle = {
                                 val novoFavorito = !ehFavorito
                                 ehFavorito = novoFavorito
+                                CineHaptics.click(contexto)
                                 viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
                             }
                         )
@@ -951,29 +966,40 @@ fun TelaDetalhes(
                             if (!chaveTrailer.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(12.dp))
 
+                                AnimatedVisibility(
+                                    visible = mostrarTrailerInline,
+                                    enter = fadeIn() + expandVertically(),
+                                    exit = fadeOut() + shrinkVertically()
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        InlineTrailerPlayer(
+                                            chaveTrailer = chaveTrailer ?: "",
+                                            onFechar = { mostrarTrailerInline = false }
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                    }
+                                }
+
                                 Button(
                                     onClick = {
-                                        val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$chaveTrailer"))
-                                        val intentNavegador = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$chaveTrailer"))
-                                        try {
-                                            contexto.startActivity(intentApp)
-                                        } catch (ex: Exception) {
-                                            contexto.startActivity(intentNavegador)
-                                        }
+                                        CineHaptics.click(contexto)
+                                        mostrarTrailerInline = !mostrarTrailerInline
                                     },
                                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (mostrarTrailerInline) Color(0xFF334155) else Color(0xFFE50914)
+                                    ),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.PlayArrow,
+                                        imageVector = if (mostrarTrailerInline) Icons.Default.Close else Icons.Default.PlayArrow,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(22.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "ASSISTIR TRAILER NO YOUTUBE".t(),
+                                        text = if (mostrarTrailerInline) "FECHAR TRAILER".t() else "ASSISTIR TRAILER".t(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
@@ -1394,6 +1420,7 @@ fun TelaDetalhes(
                                                             .clickable {
                                                                 temporadaAtual = abaTemporadaVisualizada
                                                                 episodioAtual = epItem.numeroEpisodio
+                                                                CineHaptics.click(contexto)
                                                                 if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
                                                                     statusAtual = StatusMidia.ASSISTINDO
                                                                 }
@@ -1508,7 +1535,7 @@ fun TelaDetalhes(
                                             imageVector = Icons.Default.Star,
                                             contentDescription = null,
                                             tint = if (estrelaAtiva) MaterialTheme.colorScheme.primary else Color.DarkGray,
-                                            modifier = Modifier.size(36.dp).clickable { nota = index + 1 }
+                                            modifier = Modifier.size(36.dp).clickable { CineHaptics.tick(contexto); nota = index + 1 }
                                         )
                                     }
                                 }
@@ -2828,6 +2855,7 @@ fun SecaoAvaliacoesSala(
     midia: Midia,
     onSalvarAvaliacao: (Int, String, Boolean) -> Unit
 ) {
+    val contexto = LocalContext.current
     var notaMembro by remember { mutableIntStateOf(5) }
     var comentarioMembro by remember { mutableStateOf("") }
     var contemSpoiler by remember { mutableStateOf(false) }
@@ -2877,7 +2905,7 @@ fun SecaoAvaliacoesSala(
                         tint = if (estrelaAtiva) MaterialTheme.colorScheme.primary else Color.DarkGray,
                         modifier = Modifier
                             .size(32.dp)
-                            .clickable { notaMembro = index + 1 }
+                            .clickable { CineHaptics.tick(contexto); notaMembro = index + 1 }
                     )
                 }
             }

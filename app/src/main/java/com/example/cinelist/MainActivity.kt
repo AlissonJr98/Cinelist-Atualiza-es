@@ -351,6 +351,16 @@ e.printStackTrace()
 
 class MainActivity : ComponentActivity() {
 
+    // Modo PiP gerenciado em PipHelper
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: android.content.res.Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        PipHelper.isInPipMode = isInPictureInPictureMode
+    }
+
 override fun attachBaseContext(newBase: Context) {
     val contextComLocale = IdiomaAppManager.aplicarContextLocale(newBase)
     super.attachBaseContext(contextComLocale)
@@ -1180,7 +1190,7 @@ viewModel.atualizarStatusPresenca(false)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 SharedTransitionLayout {
-    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this, LocalPipMode provides PipHelper.isInPipMode) {
         NavHost(navController = navController, startDestination = rotaInicial) {
 
 

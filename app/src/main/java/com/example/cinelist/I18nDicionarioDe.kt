@@ -1405,6 +1405,13 @@ object I18nDicionarioDe {
         "Deseja reabrir" to "Möchten Sie wiedereröffnen:",
         "e voltar para o status Assistindo?" to "und zum Status 'Wird geschaut' zurückkehren?",
         "Deseja realmente marcar" to "Möchten Sie wirklich markieren:",
-        "como Concluído?" to "als Abgeschlossen?"
+        "como Concluído?" to "als Abgeschlossen?",
+        "Janela Flutuante (PiP)" to "Schwebendes Fenster (PiP)",
+        "Abrir no YouTube" to "In YouTube öffnen",
+        "Fechar Trailer" to "Trailer schließen",
+        "ASSISTIR TRAILER" to "TRAILER ANSEHEN",
+        "FECHAR TRAILER" to "TRAILER SCHLIESSEN",
+        "Radar de Estreias nos Streamings" to "Streaming-Premieren-Radar",
+        "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc." to "Benachrichtigungen, wenn überwachte Titel auf Netflix, Prime Video, Max usw. erscheinen."
     )
 }

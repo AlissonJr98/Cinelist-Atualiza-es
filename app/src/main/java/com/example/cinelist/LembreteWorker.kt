@@ -108,7 +108,68 @@ class LembreteWorker(
 
             // 2. LEMBRETE & ESTREIAS: títulos em "Quero Assistir"
             val pendentes = todasMidias.filter { it.status == "Quero Assistir" }
+            val meusStreamingsIds = StreamingManager.obterMeusStreamingsIds(applicationContext)
+
             for (itemPendente in pendentes) {
+                // 2.1 CHECAGEM INTELIGENTE DE ESTREIA NOS STREAMINGS CONFIGURADOS
+                if (itemPendente.idTmdb > 0) {
+                    try {
+                        val ehSerie = !itemPendente.tipo.equals("Filme", ignoreCase = true)
+                        val respProvedores = if (ehSerie) {
+                            RetrofitClient.apiService.obterProvedoresSerieOuAnime(itemPendente.idTmdb)
+                        } else {
+                            RetrofitClient.apiService.obterProvedoresFilme(itemPendente.idTmdb)
+                        }
+
+                        val codPais = Locale.getDefault().country.takeIf { it.isNotBlank() } ?: "BR"
+                        val infoPais = respProvedores.resultados?.get(codPais) ?: respProvedores.resultados?.get("BR")
+                        val flatrate = infoPais?.streamingAssinatura ?: emptyList()
+
+                        if (flatrate.isNotEmpty()) {
+                            val provEncontrado = if (meusStreamingsIds.isNotEmpty()) {
+                                flatrate.firstOrNull { it.idProvedor in meusStreamingsIds }
+                            } else {
+                                flatrate.firstOrNull()
+                            }
+
+                            if (provEncontrado != null) {
+                                val idRefStreaming = ("streaming_${itemPendente.idTmdb}_${provEncontrado.idProvedor}").hashCode() and 0x7FFFFFFF
+                                val jaNotificouStreaming = notificacaoDao.contarNotificacaoRecente(
+                                    idRef = idRefStreaming,
+                                    tipo = "ESTREIA_STREAMING",
+                                    desde = System.currentTimeMillis() - (15L * 24 * 60 * 60 * 1000)
+                                ) > 0
+
+                                if (!jaNotificouStreaming) {
+                                    val (tituloNotif, msgNotif) = NotificacaoHelper.gerarTextoEstreiaStreaming(
+                                        tituloMidia = itemPendente.titulo,
+                                        provedorNome = provEncontrado.nomeProvedor
+                                    )
+
+                                    notificacaoDao.inserir(
+                                        NotificacaoEntity(
+                                            tipo = "ESTREIA_STREAMING",
+                                            titulo = tituloNotif,
+                                            mensagem = msgNotif,
+                                            idReferencia = idRefStreaming,
+                                            dataCriacao = System.currentTimeMillis()
+                                        )
+                                    )
+
+                                    NotificacaoHelper.dispararNotificacaoEstreiaStreaming(
+                                        context = applicationContext,
+                                        tituloMidia = itemPendente.titulo,
+                                        provedorNome = provEncontrado.nomeProvedor,
+                                        idRef = idRefStreaming
+                                    )
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
                 if (itemPendente.idTmdb > 0 && itemPendente.dataLancamento.isNotBlank()) {
                     try {
                         val formatoData = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

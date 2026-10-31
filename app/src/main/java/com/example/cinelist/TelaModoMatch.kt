@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -116,6 +117,10 @@ fun TelaModoMatch(
 
     // DIÁLOGO COMEMORATIVO DE MATCH
     midiaMatchCelebrada?.let { match ->
+        val contextoCelebracao = LocalContext.current
+        LaunchedEffect(match) {
+            CineHaptics.celebrate(contextoCelebracao)
+        }
         Dialog(onDismissRequest = { midiaMatchCelebrada = null }) {
             GlassmorphicCard(
                 shape = RoundedCornerShape(24.dp),
@@ -292,9 +297,10 @@ fun TelaModoMatch(
                 val offsetX = remember(midiaAtual) { Animatable(0f) }
                 val offsetY = remember(midiaAtual) { Animatable(0f) }
 
+                val contextoVoto = LocalContext.current
                 fun executarVotoAnimado(quero: Boolean) {
                     escopoVoto.launch {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (quero) CineHaptics.confirm(contextoVoto) else CineHaptics.tick(contextoVoto)
                         val alvo = if (quero) 1400f else -1400f
                         offsetX.animateTo(alvo, animationSpec = tween(durationMillis = 260))
                         viewModel.votarMatch(midiaAtual, quero)

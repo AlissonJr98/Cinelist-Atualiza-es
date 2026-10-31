@@ -1416,6 +1416,13 @@ object I18nDicionarioFr {
         "Deseja reabrir" to "Voulez-vous rouvrir",
         "e voltar para o status Assistindo?" to "et revenir au statut En cours ?",
         "Deseja realmente marcar" to "Voulez-vous vraiment marquer",
-        "como Concluído?" to "comme Terminé ?"
+        "como Concluído?" to "comme Terminé ?",
+        "Janela Flutuante (PiP)" to "Fenêtre Flottante (PiP)",
+        "Abrir no YouTube" to "Ouvrir sur YouTube",
+        "Fechar Trailer" to "Fermer la Bande-annonce",
+        "ASSISTIR TRAILER" to "VOIR LA BANDE-ANNONCE",
+        "FECHAR TRAILER" to "FERMER LA BANDE-ANNONCE",
+        "Radar de Estreias nos Streamings" to "Radar des Sorties Streaming",
+        "Notificações quando filmes monitorados chegarem à Netflix, Prime Video, Max, etc." to "Notifications lorsque les titres surveillés arrivent sur Netflix, Prime Video, Max, etc."
     )
 }
