@@ -1523,5 +1523,8 @@ object I18nDicionarioKo {
         "Proteção de credenciais e chaves contra extração não criptografada em backups" to "암호화되지 않은 백업 추출로부터 자격 증명 및 키 보호",
         "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "모든 데이터 모델 및 Firestore 리플렉션용 ProGuard 규칙 강화",
         "Eliminação de riscos de segurança no FileProvider" to "FileProvider 내 잠재적 보안 위험 제거",
+        "Ajuste na tela de configurações para respeitar a barra superior e status bar" to "상단 바 및 상태 표시줄을 고려한 설정 화면 조정",
+        "Adicionado espaçamento seguro contra sobreposição da top bar e recorte de tela" to "상단 바 겹침 및 노치 영역을 방지하는 안전 여백 추가",
+        "Otimização do painel futurista com controle de altura e insets dinâmicos" to "높이 제어 및 동적 인셋을 통한 미래형 패널 최적화"
     )
 }

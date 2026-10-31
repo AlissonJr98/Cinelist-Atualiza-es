@@ -1545,5 +1545,8 @@ object I18nDicionarioDe {
         "Proteção de credenciais e chaves contra extração não criptografada em backups" to "Schutz von Anmeldedaten und Schlüsseln vor unverschlüsselter Sicherungsextraktion",
         "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "Härtung der ProGuard-Regeln für alle Datenmodelle und Firestore-Reflexion",
         "Eliminação de riscos de segurança no FileProvider" to "Beseitigung von Sicherheitsrisiken im FileProvider",
+        "Ajuste na tela de configurações para respeitar a barra superior e status bar" to "Einstellungsbildschirm angepasst, um obere Leiste und Statusleiste zu beachten",
+        "Adicionado espaçamento seguro contra sobreposição da top bar e recorte de tela" to "Sicherheitsabstand gegen Überlappung der oberen Leiste und Display-Ausschnitt hinzugefügt",
+        "Otimização do painel futurista com controle de altura e insets dinâmicos" to "Optimierung des futuristischen Panels mit Höhensteuerung und dynamischen Insets"
     )
 }

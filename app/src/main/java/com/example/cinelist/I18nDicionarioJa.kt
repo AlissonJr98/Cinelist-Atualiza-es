@@ -1523,5 +1523,8 @@ object I18nDicionarioJa {
         "Proteção de credenciais e chaves contra extração não criptografada em backups" to "暗号化されていないバックアップ抽出からの認証情報とAPIキーの保護",
         "Blindagem das regras ProGuard para todos os modelos de dados e reflexão do Firestore" to "全データモデルおよびFirestoreリフレクション向けProGuardルールの強化",
         "Eliminação de riscos de segurança no FileProvider" to "FileProviderにおけるセキュリティ脆弱性の解消",
+        "Ajuste na tela de configurações para respeitar a barra superior e status bar" to "トップバーとステータスバーを考慮した設定画面の調整",
+        "Adicionado espaçamento seguro contra sobreposição da top bar e recorte de tela" to "トップバーの重なりやノッチに対応した安全な余白を追加",
+        "Otimização do painel futurista com controle de altura e insets dinâmicos" to "高さ制御と動的インセットによる近未来パネルの最適化"
     )
 }

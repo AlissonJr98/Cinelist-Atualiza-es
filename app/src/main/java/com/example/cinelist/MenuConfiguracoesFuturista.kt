@@ -122,18 +122,25 @@ fun BottomSheetConfiguracoesFuturista(
         scrimColor = Color.Black.copy(alpha = 0.75f),
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         dragHandle = {
-            Box(
+            Column(
                 modifier = Modifier
-                    .padding(top = 12.dp, bottom = 8.dp)
-                    .width(48.dp)
-                    .height(4.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFF00E5FF), Color(0xFFFFD700), Color(0xFFFF007F))
+                    .fillMaxWidth()
+                    .statusBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 14.dp, bottom = 10.dp)
+                        .width(48.dp)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF00E5FF), Color(0xFFFFD700), Color(0xFFFF007F))
+                            )
                         )
-                    )
-            )
+                )
+            }
         }
     ) {
         Column(
@@ -141,6 +148,7 @@ fun BottomSheetConfiguracoesFuturista(
                 .fillMaxWidth()
                 .wrapContentWidth(Alignment.CenterHorizontally)
                 .widthIn(max = 640.dp)
+                .fillMaxHeight(0.92f)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp)
