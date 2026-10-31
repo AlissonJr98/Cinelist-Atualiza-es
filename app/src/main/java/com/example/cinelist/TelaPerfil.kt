@@ -3660,6 +3660,8 @@ fun ModalPerfilAmigo(
 
     }.collectAsState(initial = emptyList())
 
+    val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
+
 
 
     var textoMensagem by remember { mutableStateOf("") }
@@ -3675,6 +3677,8 @@ fun ModalPerfilAmigo(
     var mostrarDuelo by remember { mutableStateOf(false) }
 
     var mostrarCineParty by remember { mutableStateOf(false) }
+
+    var mostrarMatchColetivoAmigo by remember { mutableStateOf(false) }
 
 
 
@@ -3736,6 +3740,22 @@ fun ModalPerfilAmigo(
 
         )
 
+    }
+
+    if (mostrarMatchColetivoAmigo) {
+        val meuUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val salaIdAmigo = if (meuUid < amigo.uid) "match_${meuUid}_${amigo.uid}" else "match_${amigo.uid}_${meuUid}"
+        DialogoCineMatchColetivo(
+            grupoId = casalIdAtivo.ifBlank { salaIdAmigo },
+            nomeGrupo = amigo.nome,
+            midiasGrupo = minhasMidias,
+            membrosSala = listOf(
+                MembroGrupo(uid = meuUid, nome = "Você", online = true, vistoPorUltimo = System.currentTimeMillis()),
+                MembroGrupo(uid = amigo.uid, nome = amigo.nome, fotoUrl = amigo.fotoUrl, online = amigo.estaRealmenteOnline, vistoPorUltimo = amigo.vistoPorUltimo)
+            ),
+            viewModel = viewModel,
+            onDispensar = { mostrarMatchColetivoAmigo = false }
+        )
     }
 
 
@@ -4144,9 +4164,29 @@ fun ModalPerfilAmigo(
 
             modifier = Modifier.fillMaxWidth(),
 
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
 
         ) {
+
+            Button(
+
+                onClick = { mostrarMatchColetivoAmigo = true },
+
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+
+                shape = RoundedCornerShape(10.dp),
+
+                modifier = Modifier.weight(1f)
+
+            ) {
+
+                Text("👥", fontSize = 13.sp)
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text("CineMatch".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+
+            }
 
             Button(
 
@@ -4160,11 +4200,11 @@ fun ModalPerfilAmigo(
 
             ) {
 
-                Text("🍿", fontSize = 14.sp)
+                Text("🍿", fontSize = 13.sp)
 
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
-                Text("CineParty Ao Vivo".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                Text("CineParty".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Black)
 
             }
 
@@ -4180,11 +4220,11 @@ fun ModalPerfilAmigo(
 
             ) {
 
-                Icon(Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(14.dp))
 
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
-                Text("Duelo de Maratonistas".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("Duelo".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp)
 
             }
 
@@ -4338,28 +4378,91 @@ fun ModalPerfilAmigo(
 
                             ) {
 
-                                Surface(
+                                val isCineMatch = msg.tipoMensagem == "CINEMATCH_CONVITE" || msg.texto.contains("CineMatch", ignoreCase = true)
+                                if (isCineMatch) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = Color(0xFF1E1B4B),
+                                        border = BorderStroke(1.5.dp, androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFF8B5CF6)))),
+                                        modifier = Modifier
+                                            .widthIn(max = 280.dp)
+                                            .clickable {
+                                                CineHaptics.confirm(contexto)
+                                                mostrarMatchColetivoAmigo = true
+                                            }
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(32.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFFEC4899).copy(alpha = 0.25f)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("👥", fontSize = 16.sp)
+                                                }
+                                                Column {
+                                                    Text(
+                                                        text = "CINEMATCH 🍿".t(),
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 11.sp,
+                                                        color = Color(0xFFEC4899)
+                                                    )
+                                                    Text(
+                                                        text = msg.texto.ifBlank { "Convite para jogar CineMatch!".t() },
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontSize = 12.sp,
+                                                        color = Color.White
+                                                    )
+                                                }
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    CineHaptics.confirm(contexto)
+                                                    mostrarMatchColetivoAmigo = true
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.fillMaxWidth().height(34.dp),
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                            ) {
+                                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Entrar no CineMatch ➔".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Surface(
 
-                                    shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(12.dp),
 
-                                    color = if (souEu) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        color = if (souEu) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
 
-                                    modifier = Modifier.widthIn(max = 260.dp)
+                                        modifier = Modifier.widthIn(max = 260.dp)
 
-                                ) {
+                                    ) {
 
-                                    Text(
+                                        Text(
 
-                                        text = msg.texto,
+                                            text = msg.texto,
 
-                                        color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = if (souEu) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
 
-                                        modifier = Modifier.padding(10.dp),
+                                            modifier = Modifier.padding(10.dp),
 
-                                        fontSize = 13.sp
+                                            fontSize = 13.sp
 
-                                    )
+                                        )
 
+                                    }
                                 }
 
                             }

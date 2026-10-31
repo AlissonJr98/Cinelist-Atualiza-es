@@ -28,6 +28,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 import kotlinx.coroutines.Job
@@ -411,6 +412,7 @@ carregarFilmesEmCartaz()
 carregarCarrosseisDescobrir()
 
 monitorarExpulsaoDaSala()
+iniciarHeartbeatPresenca()
 
 }
 
@@ -2963,6 +2965,34 @@ onConcluido?.invoke()
 
 }
 
+}
+
+fun entrarNaSessaoMatchColetivo(grupoId: String) {
+    if (grupoId.isBlank()) return
+    viewModelScope.launch {
+        socialRepository.entrarNaSessaoMatchColetivo(grupoId)
+    }
+}
+
+private fun iniciarHeartbeatPresenca() {
+    viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        while (isActive) {
+            val grupoId = _casalIdAtivo.value
+            if (grupoId.isNotBlank()) {
+                try {
+                    repository.atualizarPresencaNoGrupo(grupoId, true)
+                } catch (e: Exception) {
+                    // ignora erros de conexao
+                }
+            }
+            try {
+                socialRepository.atualizarPresencaGlobal(true)
+            } catch (e: Exception) {
+                // ignora erros
+            }
+            kotlinx.coroutines.delay(25_000L)
+        }
+    }
 }
 
 }

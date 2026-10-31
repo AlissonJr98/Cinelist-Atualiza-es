@@ -22,7 +22,7 @@ data class AmigoPerfil(
         get() {
             if (!online) return false
             val diferenca = System.currentTimeMillis() - vistoPorUltimo
-            return diferenca in 0..45_000L
+            return diferenca in 0..90_000L
         }
 
     fun obterTextoVistoPorUltimo(): String {

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
@@ -52,9 +53,11 @@ fun TelaModoMatch(
     onVoltar: () -> Unit,
     onAbrirDetalhesMidia: (Midia) -> Unit
 ) {
+    val contexto = LocalContext.current
     val meuUid = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     val matchesConfirmados by viewModel.matchesDoGrupo.collectAsState(initial = emptyList())
     val popularesTmdb by viewModel.popularesTmdbMatch.collectAsState(initial = emptyList())
+    val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
 
     // Chaves de títulos que JÁ DERAM MATCH (2 ou mais votos)
     val chavesJaDeramMatch = remember(matchesConfirmados) {
@@ -105,6 +108,7 @@ fun TelaModoMatch(
         val novoMatch = matchesConfirmados.firstOrNull { it.deuMatch(2) && !matchesJaExibidosIds.contains(it.idDoc) }
         if (novoMatch != null) {
             midiaMatchCelebrada = novoMatch
+            CineHaptics.celebrate(contexto)
             matchesJaExibidosIds = matchesJaExibidosIds + novoMatch.idDoc
 
             // CORREÇÃO ANTI-DUPLICATA: Apenas o último votante (quem fechou o Match) persiste o registro no banco
@@ -117,9 +121,9 @@ fun TelaModoMatch(
 
     // DIÁLOGO COMEMORATIVO DE MATCH
     midiaMatchCelebrada?.let { match ->
-        val contextoCelebracao = LocalContext.current
+        val contexto = LocalContext.current
         LaunchedEffect(match) {
-            CineHaptics.celebrate(contextoCelebracao)
+            CineHaptics.celebrate(contexto)
         }
         Dialog(onDismissRequest = { midiaMatchCelebrada = null }) {
             GlassmorphicCard(
@@ -234,8 +238,10 @@ fun TelaModoMatch(
                 title = {
                     Column {
                         Text("Modo Match 🍿".t(), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        val onlineCount = membrosSala.count { it.estaRealmenteOnline }
                         Text(
-                            text = if (estaNoModoDescobertaTmdb) "✨ ${"Em Alta TMDB".t()} (${filaFinalParaVotar.size})" else "🍿 ${"Títulos da sala".t()} (${filaFinalParaVotar.size})",
+                            text = if (estaNoModoDescobertaTmdb) "✨ ${"Em Alta TMDB".t()} (${filaFinalParaVotar.size}) • 👥 $onlineCount ${"online".t()}" 
+                                   else "🍿 ${"Títulos da sala".t()} (${filaFinalParaVotar.size}) • 👥 $onlineCount ${"online".t()}",
                             fontSize = 11.sp,
                             color = if (estaNoModoDescobertaTmdb) Color(0xFFFFD700) else MaterialTheme.colorScheme.secondary,
                             fontWeight = if (estaNoModoDescobertaTmdb) FontWeight.Bold else FontWeight.Normal
@@ -248,6 +254,16 @@ fun TelaModoMatch(
                     }
                 },
                 actions = {
+                    IconeBouncyIconButton(onClick = {
+                        CineHaptics.confirm(contexto)
+                        viewModel.enviarMensagemParaSala(
+                            texto = "🍿 " + "Estou no Modo Match! Entrem para votarmos juntos!".t(),
+                            tipoMensagem = "CINEMATCH_CONVITE"
+                        )
+                        android.widget.Toast.makeText(contexto, "Aviso enviado no chat da sala! 📢".t(), android.widget.Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(imageVector = Icons.Default.Campaign, contentDescription = "Chamar Amigos na Sala".t(), tint = Color(0xFFEC4899))
+                    }
                     IconeBouncyIconButton(onClick = { mostrarAlbumRecordacoes = true }) {
                         Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = "Álbum de Matches".t(), tint = Color(0xFFFF3366))
                     }

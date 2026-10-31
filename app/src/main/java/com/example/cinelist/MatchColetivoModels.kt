@@ -49,6 +49,7 @@ data class MatchColetivoSessao(
     @get:PropertyName("filmes") @set:PropertyName("filmes") var filmes: List<FilmeCandidatoMatch> = emptyList(),
     // Map de idTmdb (String) para lista de UIDs que votaram SIM
     @get:PropertyName("votosSim") @set:PropertyName("votosSim") var votosSim: Map<String, List<String>> = emptyMap(),
+    @get:PropertyName("participantes") @set:PropertyName("participantes") var participantes: List<String> = emptyList(),
     @get:PropertyName("vencedorIdTmdb") @set:PropertyName("vencedorIdTmdb") var vencedorIdTmdb: Int = 0,
     @get:PropertyName("vencedorTitulo") @set:PropertyName("vencedorTitulo") var vencedorTitulo: String = "",
     @get:PropertyName("vencedorPoster") @set:PropertyName("vencedorPoster") var vencedorPoster: String = "",
@@ -65,6 +66,7 @@ data class MatchColetivoSessao(
             "estado" to estado,
             "filmes" to filmes.map { it.toMap() },
             "votosSim" to votosSim,
+            "participantes" to participantes,
             "vencedorIdTmdb" to vencedorIdTmdb,
             "vencedorTitulo" to vencedorTitulo,
             "vencedorPoster" to vencedorPoster,
@@ -80,6 +82,7 @@ data class MatchColetivoSessao(
             } ?: emptyList()
 
             val votosRaw = map["votosSim"] as? Map<String, List<String>> ?: emptyMap()
+            val participantesList = (map["participantes"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 
             return MatchColetivoSessao(
                 id = map["id"] as? String ?: "",
@@ -89,6 +92,7 @@ data class MatchColetivoSessao(
                 estado = map["estado"] as? String ?: "ATIVO",
                 filmes = filmesList,
                 votosSim = votosRaw,
+                participantes = participantesList,
                 vencedorIdTmdb = (map["vencedorIdTmdb"] as? Number)?.toInt() ?: 0,
                 vencedorTitulo = map["vencedorTitulo"] as? String ?: "",
                 vencedorPoster = map["vencedorPoster"] as? String ?: "",

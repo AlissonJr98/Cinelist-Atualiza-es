@@ -1971,6 +1971,7 @@ class SocialRepository @Inject constructor() {
             estado = "ATIVO",
             filmes = filmesCandidatos,
             votosSim = emptyMap(),
+            participantes = if (meuUid.isNotBlank()) listOf(meuUid) else emptyList(),
             timestamp = System.currentTimeMillis()
         )
 
@@ -2026,6 +2027,19 @@ class SocialRepository @Inject constructor() {
             true
         } catch (e: Exception) {
             e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun entrarNaSessaoMatchColetivo(grupoId: String): Boolean = withContext(Dispatchers.IO) {
+        if (grupoId.isBlank()) return@withContext false
+        val meuUid = auth.currentUser?.uid ?: return@withContext false
+        val docRef = firestore.collection("grupos").document(grupoId)
+            .collection("match_coletivo").document("sessao_ativa")
+        try {
+            docRef.update("participantes", com.google.firebase.firestore.FieldValue.arrayUnion(meuUid)).await()
+            true
+        } catch (e: Exception) {
             false
         }
     }

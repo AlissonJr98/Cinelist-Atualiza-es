@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 103,
-  "versaoNome": "2.0.63",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.63/CineList-v2.0.63.apk"
+  "versaoCodigo": 104,
+  "versaoNome": "2.0.64",
+  "notas": "Reconhecimento em tempo real de membros na sala e heartbeat de presença no CineMatch\nConvites do CineMatch clicáveis diretamente no chat da sala e de amigos\nFiltro dinâmico por gênero, feedback tátil e celebração aprimorada de match",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.64/CineList-v2.0.64.apk"
 }

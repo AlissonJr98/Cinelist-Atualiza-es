@@ -1186,12 +1186,12 @@ fun TelaPrincipal(
                                         modifier = Modifier.widthIn(max = 280.dp).combinedClickable(onClick = {}, onLongClick = { if (souEu) { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); msgMenuExpandido = msg.id } })
                                     ) {
                                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                            when (msg.tipoMensagem) {
-                                                "ENQUETE" -> ConteudoCardEnquete(msg, souEu)
-                                                "INDICAÇÃO" -> ConteudoCardIndicacao(msg, souEu, onTmdbItemClique)
-                                                "DEBATE" -> ConteudoCardDebate(msg, souEu)
-                                                "CINEMATCH_CONVITE" -> ConteudoCardCinema(msg, souEu, onClique = { mostrarMatchColetivoSala = true })
-                                                "CINEPARTY_CHAMADA" -> ConteudoCardCinema(msg, souEu, onClique = { mostrarCinePartySala = true })
+                                            when {
+                                                msg.tipoMensagem == "ENQUETE" -> ConteudoCardEnquete(msg, souEu)
+                                                msg.tipoMensagem == "INDICAÇÃO" -> ConteudoCardIndicacao(msg, souEu, onTmdbItemClique)
+                                                msg.tipoMensagem == "DEBATE" -> ConteudoCardDebate(msg, souEu)
+                                                msg.tipoMensagem == "CINEMATCH_CONVITE" || msg.texto.contains("CineMatch", ignoreCase = true) -> ConteudoCardCinema(msg, souEu, onClique = { mostrarMatchColetivoSala = true })
+                                                msg.tipoMensagem == "CINEPARTY_CHAMADA" || msg.texto.contains("CineParty", ignoreCase = true) -> ConteudoCardCinema(msg, souEu, onClique = { mostrarCinePartySala = true })
                                                 else -> ConteudoMensagemTexto(msg, souEu)
                                             }
                                             Row(modifier = Modifier.align(Alignment.End).padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -2800,6 +2800,7 @@ fun ConteudoCardCinema(
     souEu: Boolean,
     onClique: (() -> Unit)? = null
 ) {
+    val contexto = LocalContext.current
     val textoExibicao = remember(msg.texto) {
         val txt = msg.texto
         if (txt.contains("Iniciei uma rodada de CineMatch Coletivo")) {
@@ -2815,23 +2816,78 @@ fun ConteudoCardCinema(
         }
     }
 
+    val isCineMatch = msg.tipoMensagem == "CINEMATCH_CONVITE" || msg.texto.contains("CineMatch", ignoreCase = true)
+
     Surface(
-        color = Color(0xFFE50914).copy(alpha = 0.25f),
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth().padding(4.dp).clickable(enabled = onClique != null) { onClique?.invoke() }
+        color = if (isCineMatch) Color(0xFF1E1B4B) else Color(0xFFE50914).copy(alpha = 0.25f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(
+            1.5.dp,
+            if (isCineMatch) Brush.horizontalGradient(listOf(Color(0xFFEC4899), Color(0xFF8B5CF6)))
+            else Brush.horizontalGradient(listOf(Color(0xFFFF5252), Color(0xFFE50914)))
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp)
+            .clickable(enabled = onClique != null) {
+                CineHaptics.confirm(contexto)
+                onClique?.invoke()
+            }
     ) {
-        Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("🍿", fontSize = 22.sp)
-            Text(
-                text = textoExibicao,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color(0xFFFF5252)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(if (isCineMatch) Color(0xFFEC4899).copy(alpha = 0.25f) else Color(0xFFE50914).copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(if (isCineMatch) "👥" else "🍿", fontSize = 18.sp)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isCineMatch) "CINEMATCH DA SALA 🍿".t() else "CINEPARTY AO VIVO 🍿".t(),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        color = if (isCineMatch) Color(0xFFEC4899) else Color(0xFFFF5252)
+                    )
+                    Text(
+                        text = textoExibicao,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Button(
+                onClick = {
+                    CineHaptics.confirm(contexto)
+                    onClique?.invoke()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isCineMatch) Color(0xFFEC4899) else Color(0xFFE50914)
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isCineMatch) "Entrar no CineMatch ➔".t() else "Entrar na CineParty ➔".t(),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color.White
+                )
+            }
         }
     }
 }
