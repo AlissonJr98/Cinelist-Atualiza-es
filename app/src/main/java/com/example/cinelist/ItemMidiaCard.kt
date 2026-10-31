@@ -465,7 +465,7 @@ private fun ConteudoItemMidiaCard(
                     }
 
                     Text(
-                        text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero}" else midia.tipo,
+                        text = if (generoEhValido(midia.genero)) "${midia.tipo.t()} • ${GeneroLocalizationHelper.formatarGeneros(midia.genero)}" else midia.tipo.t(),
                         color = MaterialTheme.colorScheme.secondary,
                         fontSize = 11.sp,
                         maxLines = 1,
@@ -1016,7 +1016,7 @@ private fun ConteudoItemMidiaCardHorizontal(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = if (generoEhValido(midia.genero)) "${midia.tipo} • ${midia.genero}" else midia.tipo,
+                                text = if (generoEhValido(midia.genero)) "${midia.tipo.t()} • ${GeneroLocalizationHelper.formatarGeneros(midia.genero)}" else midia.tipo.t(),
                                 color = MaterialTheme.colorScheme.secondary,
                                 fontSize = 11.sp,
                                 maxLines = 1,

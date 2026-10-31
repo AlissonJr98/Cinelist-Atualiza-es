@@ -195,7 +195,7 @@ fun ItemNotificacaoCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = notificacao.titulo.t(),
+                        text = NotificacaoLocalizationHelper.obterTituloFormatado(notificacao),
                         fontWeight = if (notificacao.lida) FontWeight.SemiBold else FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface
@@ -215,7 +215,7 @@ fun ItemNotificacaoCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = notificacao.mensagem.t(),
+                text = NotificacaoLocalizationHelper.obterMensagemFormatada(notificacao),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp

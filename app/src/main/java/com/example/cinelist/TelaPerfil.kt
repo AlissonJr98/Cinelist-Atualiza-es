@@ -1544,8 +1544,8 @@ fun TelaPerfil(
     notificacaoDetalhada?.let { notif ->
         AlertDialog(
             onDismissRequest = { notificacaoDetalhada = null },
-            title = { Text(notif.titulo.t(), fontWeight = FontWeight.Bold) },
-            text = { Text(notif.mensagem.t()) },
+            title = { Text(NotificacaoLocalizationHelper.obterTituloFormatado(notif), fontWeight = FontWeight.Bold) },
+            text = { Text(NotificacaoLocalizationHelper.obterMensagemFormatada(notif)) },
             confirmButton = {
                 TextButton(onClick = { notificacaoDetalhada = null }) {
                     Text("OK".t())
@@ -5084,7 +5084,7 @@ fun ItemNotificacao(
 
                     Text(
 
-                        text = notificacao.titulo.t(),
+                        text = NotificacaoLocalizationHelper.obterTituloFormatado(notificacao),
 
                         fontWeight = if (notificacao.lida) FontWeight.SemiBold else FontWeight.Bold,
 
@@ -5118,7 +5118,7 @@ fun ItemNotificacao(
 
             Text(
 
-                text = notificacao.mensagem.t(),
+                text = NotificacaoLocalizationHelper.obterMensagemFormatada(notificacao),
 
                 fontSize = 13.sp,
 

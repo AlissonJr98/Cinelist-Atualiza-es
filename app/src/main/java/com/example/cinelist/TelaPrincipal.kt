@@ -2085,7 +2085,7 @@ fun CardSugestaoCasal(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = tituloExibicao, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(text = "${midia.tipo.t()} • ${midia.genero.split(",").joinToString(", ") { it.trim().t() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text(text = "${midia.tipo.t()} • ${GeneroLocalizationHelper.formatarGeneros(midia.genero)}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
                     Text(text = "Toque para ver detalhes 🎬".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
