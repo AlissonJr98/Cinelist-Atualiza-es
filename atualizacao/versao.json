@@ -1,6 +1,6 @@
 {
   "versaoCodigo": 105,
   "versaoNome": "2.0.65",
-  "notas": "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida\nTradução dinâmica de gêneros de séries e filmes para o idioma selecionado\nInternacionalização completa do histórico e avisos de novas versões em todos os idiomas",
+  "notas": "Melhorias gerais e correções de desempenho.",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.65/CineList-v2.0.65.apk"
 }
