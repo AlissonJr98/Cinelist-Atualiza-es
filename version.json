@@ -1,6 +1,6 @@
 {
-  "versionCode": 104,
-  "versionName": "2.0.64",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.64/CineList-v2.0.64.apk",
-  "changelog": "Melhorias gerais e correções de desempenho."
+  "versionCode": 105,
+  "versionName": "2.0.65",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.65/CineList-v2.0.65.apk",
+  "changelog": "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida\nTradução dinâmica de gêneros de séries e filmes para o idioma selecionado\nInternacionalização completa do histórico e avisos de novas versões em todos os idiomas"
 }

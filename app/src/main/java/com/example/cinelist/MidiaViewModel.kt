@@ -2367,27 +2367,28 @@ var ehRealmenteSerie = ehSerieOuAnime
 
 try {
 
+val tagIdiomaApi = I18n.idiomaAtivo
 if (ehSerieOuAnime) {
 
-detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb)
+detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
 
-creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb)
+creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
 
-videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb)
+videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
 
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb)
+recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
 
 imagensResposta = RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
 
 } else {
 
-detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb)
+detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
 
-creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb)
+creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
 
-videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb)
+videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
 
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb)
+recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
 
 imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
 
@@ -2397,15 +2398,16 @@ imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
 
 try {
 
+val tagIdiomaFallback = I18n.idiomaAtivo
 if (!ehSerieOuAnime) {
 
-detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb)
+detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
 
-creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb)
+creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
 
-videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb)
+videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
 
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb)
+recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
 
 imagensResposta = RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
 
@@ -2413,13 +2415,13 @@ ehRealmenteSerie = true
 
 } else {
 
-detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb)
+detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
 
-creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb)
+creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
 
-videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb)
+videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
 
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb)
+recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
 
 imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
 

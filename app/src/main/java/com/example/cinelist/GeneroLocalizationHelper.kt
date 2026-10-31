@@ -463,7 +463,7 @@ object GeneroLocalizationHelper {
 
     fun formatarGeneros(generosBrutos: String?, tagIdioma: String = I18n.idiomaAtivo): String {
         if (generosBrutos.isNullOrBlank()) return ""
-        val tokens = generosBrutos.split(",", ";", "/").map { it.trim() }.filter { it.isNotBlank() }
+        val tokens = generosBrutos.split(",", ";", "/", "•", "|").map { it.trim() }.filter { it.isNotBlank() }
         if (tokens.isEmpty()) return ""
         return tokens.map { traduzirGeneroIndividual(it, tagIdioma) }.distinct().joinToString(", ")
     }

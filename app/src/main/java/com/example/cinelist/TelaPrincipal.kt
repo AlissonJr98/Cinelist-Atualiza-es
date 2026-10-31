@@ -280,7 +280,7 @@ fun HeroBannerDestaque(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "$tipoReal • ${itemTmdb.generoTexto} • $plataformaFinal",
+                        text = "${tipoReal.t()} • ${GeneroLocalizationHelper.formatarGeneros(itemTmdb.generoTexto, I18n.idiomaAtivo)} • $plataformaFinal",
                         fontSize = 12.sp,
                         color = Color.White.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Bold

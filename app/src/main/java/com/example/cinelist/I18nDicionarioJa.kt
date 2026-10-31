@@ -1553,6 +1553,11 @@ object I18nDicionarioJa {
         "Convite de CineMatch enviado!" to "シネマッチの招待を送信しました！",
         "Reconhecimento em tempo real de membros na sala e heartbeat de presença no CineMatch" to "CineMatchにおけるルームメンバーのリアルタイム認識とプレゼンスハートビート",
         "Convites do CineMatch clicáveis diretamente no chat da sala e de amigos" to "ルームチャットや友達チャットから直接タップ可能なCineMatch招待",
-        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "ジャンル別動的フィルター、触覚フィードバック、強化されたマッチ祝福演出"
+        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "ジャンル別動的フィルター、触覚フィードバック、強化されたマッチ祝福演出",
+        "Já confirmei meu e-mail (Entrar)" to "メール確認済み (ログイン)",
+        "Reenviar e-mail de confirmação" to "確認メールを再送信",
+        "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "メール未確認時の自動ログインをブロックし、再送信と確認ボタンを追加",
+        "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "選択した言語への映画・ドラマジャンルの動的翻訳",
+        "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "すべての言語での履歴と新バージョン通知の完全な多言語化",
     )
 }

@@ -444,6 +444,60 @@ fun TelaLogin(
                             )
                         }
 
+                        if (mostrarBotaoReenviarVerificacao) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    val u = firebaseAuth.currentUser
+                                    if (u != null) {
+                                        carregando = true
+                                        u.reload().addOnCompleteListener {
+                                            carregando = false
+                                            if (u.isEmailVerified) {
+                                                onLoginSucesso()
+                                            } else {
+                                                erroMensagem = "E-mail ainda não confirmado. Verifique sua caixa de entrada e spam, clique no link e tente novamente."
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(42.dp).bounceOnClick(),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF00E5FF).copy(alpha = 0.08f))
+                            ) {
+                                Text(
+                                    text = "Já confirmei meu e-mail (Entrar)".t(),
+                                    color = Color(0xFF00E5FF),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    val u = firebaseAuth.currentUser
+                                    if (u != null) {
+                                        u.sendEmailVerification().addOnCompleteListener { task ->
+                                            if (task.isSuccessful) {
+                                                Toast.makeText(contexto, "E-mail de confirmação reenviado com sucesso!", Toast.LENGTH_LONG).show()
+                                            } else {
+                                                Toast.makeText(contexto, "Falha ao reenviar e-mail. Aguarde alguns instantes.", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Reenviar e-mail de confirmação".t(),
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
                         // Botão Conectar (Entrar)
                         if (carregando) {
                             CircularProgressIndicator(
@@ -479,19 +533,7 @@ fun TelaLogin(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
-                                    .bounceOnClick {
-                                        if (email.isNotBlank() && senha.isNotBlank()) {
-                                            erroMensagem = ""
-                                            carregando = true
-                                            firebaseAuth.signInWithEmailAndPassword(email.trim(), senha.trim())
-                                                .addOnCompleteListener { t ->
-                                                    carregando = false
-                                                    if (t.isSuccessful) onLoginSucesso() else erroMensagem = "E-mail ou senha incorretos."
-                                                }
-                                        } else {
-                                            erroMensagem = "Por favor, preencha todos os campos."
-                                        }
-                                    },
+                                    .bounceOnClick(),
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                                 contentPadding = PaddingValues()
@@ -573,12 +615,7 @@ fun TelaLogin(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .bounceOnClick {
-                            erroMensagem = ""
-                            carregando = true
-                            val intentSelecaoOpc = googleSignInClient.signInIntent
-                            launcherGoogle.launch(intentSelecaoOpc)
-                        },
+                        .bounceOnClick(),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
                     colors = ButtonDefaults.outlinedButtonColors(

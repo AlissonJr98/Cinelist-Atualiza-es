@@ -1553,6 +1553,11 @@ object I18nDicionarioKo {
         "Convite de CineMatch enviado!" to "시네매치 초대가 전송되었습니다!",
         "Reconhecimento em tempo real de membros na sala e heartbeat de presença no CineMatch" to "CineMatch의 실시간 방 멤버 인식 및 접속 유지 하트비트",
         "Convites do CineMatch clicáveis diretamente no chat da sala e de amigos" to "방 채팅 및 친구 채팅에서 바로 클릭 가능한 CineMatch 초대 카드",
-        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "동적 장르 필터, 햅틱 진동 피드백 및 강화된 매치 축하 화면"
+        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "동적 장르 필터, 햅틱 진동 피드백 및 강화된 매치 축하 화면",
+        "Já confirmei meu e-mail (Entrar)" to "이메일 인증 완료 (로그인)",
+        "Reenviar e-mail de confirmação" to "인증 이메일 재전송",
+        "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "이메일 미인증 시 자동 로그인 차단 및 재전송·확인 버튼 추가",
+        "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "선택한 언어로 영화 및 시리즈 장르 동적 번역",
+        "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "모든 언어에서 히스토리 및 새 버전 알림 완전 다국어화",
     )
 }

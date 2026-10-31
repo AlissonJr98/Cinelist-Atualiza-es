@@ -326,7 +326,10 @@ val navController = rememberNavController()
 
 val contexto = LocalContext.current
 
-val usuarioLogado = remember { FirebaseAuth.getInstance().currentUser != null }
+val usuarioLogado = remember {
+    val u = FirebaseAuth.getInstance().currentUser
+    u != null && u.isEmailVerified
+}
 
 val rotaInicial = "splash"
 
@@ -618,13 +621,26 @@ TelaSplashMp4(
 onSplashConcluida = {
     val prefsOnboarding = contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE)
     val aberturaApresentada = prefsOnboarding.getBoolean("abertura_apresentada", false)
-    val destinoFinal = when {
-        usuarioLogado -> "home"
-        !aberturaApresentada -> "abertura"
-        else -> "login"
+    val user = FirebaseAuth.getInstance().currentUser
+
+    fun navegarDestino(logado: Boolean) {
+        val destinoFinal = when {
+            logado -> "home"
+            !aberturaApresentada -> "abertura"
+            else -> "login"
+        }
+        navController.navigate(destinoFinal) {
+            popUpTo("splash") { inclusive = true }
+        }
     }
-    navController.navigate(destinoFinal) {
-        popUpTo("splash") { inclusive = true }
+
+    if (user != null && !user.isEmailVerified) {
+        user.reload().addOnCompleteListener {
+            val emailEstaVerificado = user.isEmailVerified
+            navegarDestino(emailEstaVerificado)
+        }
+    } else {
+        navegarDestino(user != null && user.isEmailVerified)
     }
 }
 )

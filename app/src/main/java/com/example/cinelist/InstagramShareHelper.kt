@@ -335,7 +335,8 @@ object InstagramShareHelper {
                 isAntiAlias = true
             }
             val anoTxt = if (ano.isNotBlank()) " • $ano" else ""
-            val generoTxt = if (genero.isNotBlank()) " • ${genero.split(",").firstOrNull()?.trim() ?: ""}" else ""
+            val generoFormatado = GeneroLocalizationHelper.formatarGeneros(genero, I18n.idiomaAtivo)
+            val generoTxt = if (generoFormatado.isNotBlank()) " • ${generoFormatado.split(",").firstOrNull()?.trim() ?: ""}" else ""
             canvas.drawText("${tipo.t().uppercase()}$anoTxt$generoTxt", width / 2f, 1260f, paintSub)
 
             // 5. Avaliação em Estrelas

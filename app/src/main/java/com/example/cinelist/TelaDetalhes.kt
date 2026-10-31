@@ -757,7 +757,7 @@ fun TelaDetalhes(
 
                             Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             val generoExibicao = if (generoEhValido(midiaSalva?.genero)) midiaSalva?.genero.orEmpty() else detalhesApi?.generoTexto.orEmpty()
-                            val generosTraduzidos = GeneroLocalizationHelper.formatarGeneros(generoExibicao)
+                            val generosTraduzidos = remember(generoExibicao, I18n.idiomaAtivo) { GeneroLocalizationHelper.formatarGeneros(generoExibicao, I18n.idiomaAtivo) }
                             val tipoTraduzido = tipoRealUtilizado.t()
                             Text(
                                 text = if (generosTraduzidos.isBlank()) tipoTraduzido else "$tipoTraduzido • $generosTraduzidos",
@@ -1683,7 +1683,7 @@ fun TelaDetalhes(
                                                     titulo = t,
                                                     tipo = tp,
                                                     ano = an,
-                                                    genero = gen,
+                                                    genero = GeneroLocalizationHelper.formatarGeneros(gen, I18n.idiomaAtivo),
                                                     nota = nt,
                                                     comentario = cmt,
                                                     posterBitmap = posterBitmap

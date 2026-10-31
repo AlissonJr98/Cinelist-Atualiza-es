@@ -455,7 +455,7 @@ fun DialogoCineAi(
                                             }
 
                                             Text(
-                                                text = "${if (item.anoLancamento.isNotBlank()) "${item.anoLancamento} • " else ""}$tipoReal • ${item.generoTexto.t()}",
+                                                text = "${if (item.anoLancamento.isNotBlank()) "${item.anoLancamento} • " else ""}${tipoReal.t()} • ${GeneroLocalizationHelper.formatarGeneros(item.generoTexto, I18n.idiomaAtivo)}",
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.secondary
                                             )

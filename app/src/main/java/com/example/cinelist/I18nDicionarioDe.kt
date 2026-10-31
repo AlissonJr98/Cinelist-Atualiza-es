@@ -1575,6 +1575,11 @@ object I18nDicionarioDe {
         "Convite de CineMatch enviado!" to "CineMatch-Einladung gesendet!",
         "Reconhecimento em tempo real de membros na sala e heartbeat de presença no CineMatch" to "Echtzeit-Erkennung von Raummitgliedern und Anwesenheits-Heartbeat in CineMatch",
         "Convites do CineMatch clicáveis diretamente no chat da sala e de amigos" to "CineMatch-Einladungen direkt im Raum- und Freunde-Chat anklickbar",
-        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "Dynamischer Genre-Filter, haptisches Feedback und verbesserte Match-Feier"
+        "Filtro dinâmico por gênero, feedback tátil e celebração aprimorada de match" to "Dynamischer Genre-Filter, haptisches Feedback und verbesserte Match-Feier",
+        "Já confirmei meu e-mail (Entrar)" to "Ich habe meine E-Mail bestätigt (Anmelden)",
+        "Reenviar e-mail de confirmação" to "Bestätigungs-E-Mail erneut senden",
+        "Bloqueio de auto-login sem confirmação de e-mail com botões de reenvio e checagem rápida" to "Automatische Anmeldung ohne E-Mail-Bestätigung blockiert mit Schaltflächen zum erneuten Senden und schnellen Prüfen",
+        "Tradução dinâmica de gêneros de séries e filmes para o idioma selecionado" to "Dynamische Übersetzung von Serien- und Filmgenres in die ausgewählte Sprache",
+        "Internacionalização completa do histórico e avisos de novas versões em todos os idiomas" to "Vollständige Internationalisierung des Verlaufs und der Hinweise auf neue Versionen in allen Sprachen",
     )
 }
