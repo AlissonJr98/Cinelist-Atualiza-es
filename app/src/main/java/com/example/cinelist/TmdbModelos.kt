@@ -115,7 +115,11 @@ data class TmdbProvedoresResposta(
 )
 
 data class DetalhesPaisProvedor(
-    @SerializedName("flatrate") val streamingAssinatura: List<ItemProvedor>? = null
+    @SerializedName("flatrate") val streamingAssinatura: List<ItemProvedor>? = null,
+    @SerializedName("free") val streamingGratis: List<ItemProvedor>? = null,
+    @SerializedName("ads") val streamingComAnuncios: List<ItemProvedor>? = null,
+    @SerializedName("rent") val aluguel: List<ItemProvedor>? = null,
+    @SerializedName("buy") val compra: List<ItemProvedor>? = null
 )
 
 data class ItemProvedor(

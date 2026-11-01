@@ -107,6 +107,11 @@ fun BottomSheetConfiguracoesFuturista(
     // Efeitos Visuais & Animações
     var efeitosVisuaisAtivos by remember { mutableStateOf(sharedPreferences.getBoolean("efeitos_visuais", true)) }
 
+    // Diálogos de Termos, Políticas e Suporte Oficial
+    var mostrarDialogoTermos by remember { mutableStateOf(false) }
+    var mostrarDialogoPoliticas by remember { mutableStateOf(false) }
+    var mostrarOpcoesSuporteEmail by remember { mutableStateOf(false) }
+
     // Diagnóstico de Armazenamento de Cache
     var tamanhoCacheTexto by remember { mutableStateOf("Calculando...") }
     LaunchedEffect(Unit) {
@@ -861,6 +866,58 @@ fun BottomSheetConfiguracoesFuturista(
             }
 
             // ========================================================
+            // SEÇÃO: TERMOS, POLÍTICAS, TMDB & SUPORTE OFICIAL
+            // ========================================================
+            CyberCardSecao(
+                titulo = "TERMOS, PRIVACIDADE & SUPORTE",
+                subtitulo = "Termos de uso, privacidade, TMDB e contato oficial",
+                icone = Icons.Default.Gavel,
+                corDestaque = Color(0xFF00E5FF)
+            ) {
+                // Termos de Uso
+                CyberItemNavegacao(
+                    titulo = "Termos de Uso e Condições",
+                    subtitulo = "Regras de uso, planos futuros e comercialização",
+                    icone = Icons.Default.Description,
+                    corIcone = Color(0xFF00E5FF),
+                    onClick = {
+                        mostrarDialogoTermos = true
+                    }
+                )
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
+
+                // Política de Privacidade
+                CyberItemNavegacao(
+                    titulo = "Política de Privacidade (LGPD/GDPR)",
+                    subtitulo = "Proteção de dados, retenção e privacidade",
+                    icone = Icons.Default.PrivacyTip,
+                    corIcone = Color(0xFF10B981),
+                    onClick = {
+                        mostrarDialogoPoliticas = true
+                    }
+                )
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
+
+                // Canal de Contato e Atendimento Oficial
+                CyberItemNavegacao(
+                    titulo = "Canal Oficial de Atendimento",
+                    subtitulo = "suportecinelist@gmail.com • Dúvidas e feedback",
+                    icone = Icons.Default.Email,
+                    corIcone = Color(0xFFFFD700),
+                    onClick = {
+                        mostrarOpcoesSuporteEmail = true
+                    }
+                )
+
+                HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
+
+                // Atribuição Obrigatória do The Movie Database (TMDB)
+                CardAtribuicaoTmdb(contexto = contexto)
+            }
+
+            // ========================================================
             // 6. SEÇÃO: BANCO DE DADOS & IMPORTAÇÃO / EXPORTAÇÃO
             // ========================================================
             CyberCardSecao(
@@ -1144,6 +1201,20 @@ fun BottomSheetConfiguracoesFuturista(
                 )
             }
         }
+    }
+
+    if (mostrarDialogoTermos) {
+        DialogoTermosUso(onDispensar = { mostrarDialogoTermos = false })
+    }
+    if (mostrarDialogoPoliticas) {
+        DialogoPoliticaPrivacidade(onDispensar = { mostrarDialogoPoliticas = false })
+    }
+    if (mostrarOpcoesSuporteEmail) {
+        DialogoCanalSuporteCineList(
+            contexto = contexto,
+            onDispensar = { mostrarOpcoesSuporteEmail = false },
+            onAbrirFeedback = { onDismiss(); onAbrirSuporte() }
+        )
     }
 }
 

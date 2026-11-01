@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MovieFilter
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
@@ -147,6 +148,7 @@ fun TelaDetalhes(
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
+    val provedoresGratis by viewModel.provedoresGratis.collectAsState()
     val elencoAtivo by viewModel.elencoMidia.collectAsState()
     val chaveTrailer by viewModel.chaveTrailerYoutube.collectAsState()
     val recomendacoesAtivas by viewModel.recomendacoesMidia.collectAsState()
@@ -194,6 +196,12 @@ fun TelaDetalhes(
             nomeProvedor.contains("Globoplay", ignoreCase = true) -> "com.globo.globotv"
             nomeProvedor.contains("Apple", ignoreCase = true) -> "com.apple.atv.android.appletv"
             nomeProvedor.contains("Paramount", ignoreCase = true) -> "com.cbs.app"
+            nomeProvedor.contains("Pluto", ignoreCase = true) -> "tv.pluto.android"
+            nomeProvedor.contains("NetMovies", ignoreCase = true) -> "br.com.netmovies.android"
+            nomeProvedor.contains("Runtime", ignoreCase = true) -> "com.amagi.runtime"
+            nomeProvedor.contains("Mercado Play", ignoreCase = true) || nomeProvedor.contains("Mercado Livre", ignoreCase = true) -> "com.mercadolibre"
+            nomeProvedor.contains("Vix", ignoreCase = true) -> "com.univision.prendatv"
+            nomeProvedor.contains("YouTube", ignoreCase = true) -> "com.google.android.youtube"
             else -> null
         }
 
@@ -248,7 +256,7 @@ fun TelaDetalhes(
     }
     var ehPrivadoState by remember { mutableStateOf(false) }
 
-    val provedoresFiltrados = remember(provedoresStreaming) {
+    val provedoresAssinaturaFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
             val nome = item.nomeProvedor.lowercase()
             when {
@@ -264,6 +272,23 @@ fun TelaDetalhes(
             }
         }
     }
+
+    val provedoresGratisFiltrados = remember(provedoresGratis) {
+        provedoresGratis.distinctBy { item ->
+            val nome = item.nomeProvedor.lowercase()
+            when {
+                nome.contains("pluto") -> "pluto"
+                nome.contains("netmovies") -> "netmovies"
+                nome.contains("runtime") -> "runtime"
+                nome.contains("vix") -> "vix"
+                nome.contains("mercado") -> "mercado play"
+                nome.contains("youtube") -> "youtube"
+                else -> item.nomeProvedor.lowercase().trim()
+            }
+        }
+    }
+
+    val provedoresFiltrados = provedoresAssinaturaFiltrados
 
     val ehSerieOuAnime = remember(tipoRealUtilizado) {
         val t = tipoRealUtilizado.trim().lowercase()
@@ -1050,14 +1075,127 @@ fun TelaDetalhes(
                                 }
                             }
 
-                            if (provedoresFiltrados.isNotEmpty()) {
+                            // SEÇÃO: DISPONÍVEL GRÁTIS
+                            if (provedoresGratisFiltrados.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = "Disponível por Assinatura em:".t(),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color(0xFF10B981).copy(alpha = 0.08f),
+                                    border = BorderStroke(1.2.dp, Color(0xFF10B981).copy(alpha = 0.45f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "🎁 Assistir Grátis em:".t(),
+                                                color = Color(0xFF10B981),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Color(0xFF10B981).copy(alpha = 0.25f),
+                                                border = BorderStroke(0.6.dp, Color(0xFF10B981))
+                                            ) {
+                                                Text(
+                                                    text = "100% GRÁTIS / ANÚNCIOS".t(),
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFF10B981),
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            provedoresGratisFiltrados.forEach { streaming ->
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier
+                                                        .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
+                                                        .padding(vertical = 4.dp)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(52.dp)
+                                                            .clip(RoundedCornerShape(10.dp))
+                                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = streaming.urlLogo,
+                                                            contentDescription = streaming.nomeProvedor,
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentScale = ContentScale.Crop
+                                                        )
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                                    val nomeOriginal = streaming.nomeProvedor
+                                                    val nomeExibicao = when {
+                                                        nomeOriginal.contains("pluto", ignoreCase = true) -> "Pluto TV"
+                                                        nomeOriginal.contains("netmovies", ignoreCase = true) -> "NetMovies"
+                                                        nomeOriginal.contains("runtime", ignoreCase = true) -> "Runtime"
+                                                        nomeOriginal.contains("mercado", ignoreCase = true) -> "Mercado Play"
+                                                        nomeOriginal.contains("vix", ignoreCase = true) -> "Vix"
+                                                        nomeOriginal.contains("youtube", ignoreCase = true) -> "YouTube"
+                                                        else -> nomeOriginal
+                                                    }
+
+                                                    Text(
+                                                        text = nomeExibicao,
+                                                        fontSize = 10.sp,
+                                                        color = Color(0xFF10B981),
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.width(62.dp),
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // SEÇÃO: REQUER ASSINATURA
+                            if (provedoresAssinaturaFiltrados.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "💳 Requer Assinatura em:".t(),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFF00E5FF).copy(alpha = 0.15f),
+                                        border = BorderStroke(0.6.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
+                                    ) {
+                                        Text(
+                                            text = "PLANO PAGO".t(),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF00E5FF),
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier
@@ -1066,7 +1204,7 @@ fun TelaDetalhes(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    provedoresFiltrados.forEach { streaming ->
+                                    provedoresAssinaturaFiltrados.forEach { streaming ->
                                         Column(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             modifier = Modifier
@@ -1114,6 +1252,34 @@ fun TelaDetalhes(
                                             )
                                         }
                                     }
+                                }
+                            }
+
+                            // SEÇÃO: INDISPONÍVEL EM STREAMING
+                            if (provedoresGratisFiltrados.isEmpty() && provedoresAssinaturaFiltrados.isEmpty() && detalhesApi != null) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color.White.copy(alpha = 0.04f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Tv,
+                                        contentDescription = null,
+                                        tint = Color(0xFF94A3B8),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "Indisponível para streaming no catálogo nacional no momento".t(),
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF94A3B8),
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
 
@@ -2127,7 +2293,8 @@ fun TelaDetalhes(
                             if (midiaSalva != null) {
                                 Button(
                                     onClick = {
-                                        val streamingAtualizado = provedoresFiltrados.firstOrNull()?.nomeProvedor
+                                        val streamingAtualizado = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
                                             ?: provedoresStreaming.firstOrNull()?.nomeProvedor
                                             ?: midiaSalva.plataforma
 
@@ -2183,7 +2350,8 @@ fun TelaDetalhes(
                             } else {
                                 Button(
                                     onClick = {
-                                        val streamingPrincipal = provedoresFiltrados.firstOrNull()?.nomeProvedor
+                                        val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
                                             ?: provedoresStreaming.firstOrNull()?.nomeProvedor
                                             ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
 

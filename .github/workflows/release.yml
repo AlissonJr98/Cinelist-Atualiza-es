@@ -76,25 +76,46 @@ jobs:
           git checkout main
           git pull origin main
 
-          # 2. Gera o version.json e atualizacao/versao.json atualizados
-          cat <<EOF > version.json
-          {
-            "versionCode": $VERSION_CODE,
-            "versionName": "$VERSAO_NOME",
-            "apkUrl": "$APK_URL",
-            "changelog": "Melhorias gerais e correções de desempenho."
-          }
-          EOF
+          # 2. Atualiza version.json e atualizacao/versao.json preservando as notas reais do changelog
+          python3 -c "
+          import json, os
 
-          mkdir -p atualizacao
-          cat <<EOF > atualizacao/versao.json
-          {
-            "versaoCodigo": $VERSION_CODE,
-            "versaoNome": "$VERSAO_NOME",
-            "notas": "Melhorias gerais e correções de desempenho.",
-            "apkUrl": "$APK_URL"
+          notas = 'Novas melhorias, correções e novidades adicionadas nesta versão.'
+          try:
+              if os.path.exists('atualizacao/versao.json'):
+                  with open('atualizacao/versao.json', 'r', encoding='utf-8') as f:
+                      d = json.load(f)
+                      val = d.get('notas') or d.get('changelog')
+                      if val and val.strip():
+                          notas = val.strip()
+              elif os.path.exists('version.json'):
+                  with open('version.json', 'r', encoding='utf-8') as f:
+                      d = json.load(f)
+                      val = d.get('changelog') or d.get('notas')
+                      if val and val.strip():
+                          notas = val.strip()
+          except Exception as e:
+              print('Erro ao carregar notas:', e)
+
+          data_version = {
+              'versionCode': int('$VERSION_CODE'),
+              'versionName': '$VERSAO_NOME',
+              'apkUrl': '$APK_URL',
+              'changelog': notas
           }
-          EOF
+          with open('version.json', 'w', encoding='utf-8') as f:
+              json.dump(data_version, f, indent=2, ensure_ascii=False)
+
+          data_atualizacao = {
+              'versaoCodigo': int('$VERSION_CODE'),
+              'versaoNome': '$VERSAO_NOME',
+              'notas': notas,
+              'apkUrl': '$APK_URL'
+          }
+          os.makedirs('atualizacao', exist_ok=True)
+          with open('atualizacao/versao.json', 'w', encoding='utf-8') as f:
+              json.dump(data_atualizacao, f, indent=2, ensure_ascii=False)
+          "
 
           # 3. Commita e envia diretamente para a branch main
           git add version.json atualizacao/versao.json

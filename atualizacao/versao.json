@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 107,
-  "versaoNome": "2.0.67",
-  "notas": "Melhorias gerais e correções de desempenho.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.67/CineList-v2.0.67.apk"
+  "versaoCodigo": 108,
+  "versaoNome": "2.0.68",
+  "notas": "Distinção inteligente de streaming nos Detalhes: identificação clara se a obra requer assinatura ou está disponível grátis (Pluto TV, NetMovies, YouTube, Mercado Play, Runtime)\nNovos Termos de Uso e Condições preparados para comercialização futura, licenciamento e diretrizes da plataforma\nNova Política de Privacidade com conformidade total LGPD e GDPR, proteção de dados e exclusão de conta\nCanal de Atendimento e Suporte oficial com e-mail direto para suportecinelist@gmail.com\nAtribuição oficial da API do TMDB com link direto para themoviedb.org conforme diretrizes oficiais\nJanela de atualização com nova animação de entrada com física de mola (Pop-in Spring), anel orbital giratório e exibição dinâmica das novidades\nPreservação definitiva do changelog nas publicações OTA pelo GitHub Actions",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.68/CineList-v2.0.68.apk"
 }

@@ -2289,6 +2289,10 @@ private val _provedoresStreaming = MutableStateFlow<List<ItemProvedor>>(emptyLis
 
 val provedoresStreaming: StateFlow<List<ItemProvedor>> = _provedoresStreaming
 
+private val _provedoresGratis = MutableStateFlow<List<ItemProvedor>>(emptyList())
+
+val provedoresGratis: StateFlow<List<ItemProvedor>> = _provedoresGratis
+
 private val _elencoMidia = MutableStateFlow<List<TmdbAtor>>(emptyList())
 
 val elencoMidia: StateFlow<List<TmdbAtor>> = _elencoMidia
@@ -2467,9 +2471,12 @@ val ehSerieOuAnime = verificarSeEhSerie(tipo)
 
 val resposta = if (ehSerieOuAnime) RetrofitClient.apiService.obterProvedoresSerieOuAnime(idSerie = idTmdb) else RetrofitClient.apiService.obterProvedoresFilme(idFilme = idTmdb)
 
-_provedoresStreaming.value = resposta.resultados?.get("BR")?.streamingAssinatura ?: emptyList()
+val dadosPais = resposta.resultados?.get("BR") ?: resposta.resultados?.get("US")
+_provedoresStreaming.value = (dadosPais?.streamingAssinatura ?: emptyList()).distinctBy { it.idProvedor }
+val listaGratis = ((dadosPais?.streamingGratis ?: emptyList()) + (dadosPais?.streamingComAnuncios ?: emptyList())).distinctBy { it.idProvedor }
+_provedoresGratis.value = listaGratis
 
-} catch (e: Exception) { e.printStackTrace(); _provedoresStreaming.value = emptyList() }
+} catch (e: Exception) { e.printStackTrace(); _provedoresStreaming.value = emptyList(); _provedoresGratis.value = emptyList() }
 
 }
 
@@ -2480,6 +2487,8 @@ fun limparDetalhesEstendidos() {
 _detalhesEstendidosApi.value = null
 
 _provedoresStreaming.value = emptyList()
+
+_provedoresGratis.value = emptyList()
 
 _elencoMidia.value = emptyList()
 

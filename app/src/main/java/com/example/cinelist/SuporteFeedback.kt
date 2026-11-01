@@ -62,7 +62,7 @@ import androidx.compose.foundation.text.KeyboardOptions
  */
 object SuporteConfig {
     /** E-mail que recebe os contactos. */
-    const val EMAIL_DESTINO = "alissonjunior41@gmail.com"
+    const val EMAIL_DESTINO = "suportecinelist@gmail.com"
 
     /** Prefixo do assunto, para facilitar a triagem. */
     const val ASSUNTO_PREFIXO = "[CineList]"

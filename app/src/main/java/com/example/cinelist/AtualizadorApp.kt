@@ -40,6 +40,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.fillMaxSize
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.animateFloat
@@ -452,11 +455,27 @@ fun DialogoAtualizacaoGitHub(
             .filter { it.isNotBlank() && !it.startsWith("v2.", ignoreCase = true) }
     }
 
-    // Animações contínuas de respiração e brilho futurista
+    // Animações de entrada com física de mola (Pop-in com Spring)
+    val escalaEntrada = remember { androidx.compose.animation.core.Animatable(0.72f) }
+    val alfaEntrada = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) {
+        escalaEntrada.animateTo(
+            1f,
+            animationSpec = androidx.compose.animation.core.spring(
+                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+            )
+        )
+    }
+    LaunchedEffect(Unit) {
+        alfaEntrada.animateTo(1f, animationSpec = androidx.compose.animation.core.tween(280))
+    }
+
+    // Animações contínuas de respiração, rotação cósmica e brilho futurista
     val transicaoInfinita = androidx.compose.animation.core.rememberInfiniteTransition(label = "anim_atualizacao")
     val flutuacaoY by transicaoInfinita.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
+        initialValue = -6f,
+        targetValue = 6f,
         animationSpec = androidx.compose.animation.core.infiniteRepeatable(
             animation = androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
             repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
@@ -472,12 +491,25 @@ fun DialogoAtualizacaoGitHub(
         ),
         label = "pulso_borda"
     )
+    val rotacaoRing by transicaoInfinita.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(6000, easing = androidx.compose.animation.core.LinearEasing)
+        ),
+        label = "rotacao_anel"
+    )
 
     Dialog(onDismissRequest = { if (!baixando) onFechar() }) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 12.dp)
+                .graphicsLayer {
+                    scaleX = escalaEntrada.value
+                    scaleY = escalaEntrada.value
+                    alpha = alfaEntrada.value
+                },
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF0F1424)),
             border = BorderStroke(
@@ -506,26 +538,50 @@ fun DialogoAtualizacaoGitHub(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
-                            .graphicsLayer { translationY = flutuacaoY }
-                            .background(
-                                androidx.compose.ui.graphics.Brush.radialGradient(
-                                    listOf(
-                                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.35f),
-                                        androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.08f)
-                                    )
-                                ),
-                                RoundedCornerShape(16.dp)
-                            )
-                            .border(1.2.dp, androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = pulsoBrilho), RoundedCornerShape(16.dp)),
+                            .size(54.dp)
+                            .graphicsLayer { translationY = flutuacaoY },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Atualização".t(),
-                            tint = androidx.compose.ui.graphics.Color(0xFF00E5FF),
-                            modifier = Modifier.size(28.dp)
+                        // Anel orbital holográfico giratório
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer { rotationZ = rotacaoRing }
+                                .border(
+                                    1.2.dp,
+                                    androidx.compose.ui.graphics.Brush.sweepGradient(
+                                        listOf(
+                                            androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                                            androidx.compose.ui.graphics.Color(0xFF8B5CF6),
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            androidx.compose.ui.graphics.Color(0xFF00E5FF)
+                                        )
+                                    ),
+                                    RoundedCornerShape(16.dp)
+                                )
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.radialGradient(
+                                        listOf(
+                                            androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.35f),
+                                            androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.08f)
+                                        )
+                                    ),
+                                    RoundedCornerShape(14.dp)
+                                )
+                                .border(1.dp, androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = pulsoBrilho), RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "Atualização".t(),
+                                tint = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
 
                     Column(modifier = Modifier.weight(1f)) {
@@ -589,26 +645,36 @@ fun DialogoAtualizacaoGitHub(
                         }
 
                         if (linhasNovidades.isNotEmpty()) {
-                            for (item in linhasNovidades) {
+                            for ((idx, item) in linhasNovidades.withIndex()) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.03f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = androidx.compose.ui.graphics.Color(0xFF10B981),
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .padding(top = 2.dp)
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.2f),
+                                        border = BorderStroke(0.6.dp, androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.6f))
+                                    ) {
+                                        Text(
+                                            text = if (idx == 0) "NOVO".t() else "✨",
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
                                     Text(
                                         text = item.t(),
                                         fontSize = 12.sp,
                                         color = androidx.compose.ui.graphics.Color(0xFFE2E8F0),
                                         lineHeight = 17.sp,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
