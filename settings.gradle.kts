@@ -19,16 +19,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://jitpack.io")
     }
 }
 
 rootProject.name = "CineList"
 include(":app")
-
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven(url = "https://jitpack.io")
-    }
-}
+include(":shared")

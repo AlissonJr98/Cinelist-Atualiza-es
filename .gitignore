@@ -7,6 +7,13 @@ local.properties
 .DS_Store
 /build/
 /app/build/
+/shared/build/
+iosApp/build/
+iosApp/DerivedData/
+*.xcworkspace
+*.xcuserdatad
+Payload/
+*.ipa
 /app/release/
 /captures/
 .externalNativeBuild/

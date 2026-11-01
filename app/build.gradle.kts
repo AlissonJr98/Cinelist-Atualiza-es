@@ -107,6 +107,8 @@ android {
 }
 
 dependencies {
+    // Shared Multiplatform Module (Android & iOS)
+    implementation(project(":shared"))
     // Core e Ciclo de Vida
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
