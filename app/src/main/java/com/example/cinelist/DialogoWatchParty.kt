@@ -124,10 +124,12 @@ fun DialogoWatchParty(
         }
     }
 
-    // Iniciar chamada de voz com checagem de permissão
-    LaunchedEffect(salaId) {
+    // Iniciar chamada de voz com checagem de permissão e determinação de anfitrião
+    LaunchedEffect(salaId, sessaoAtiva?.anfitriaoUid) {
+        val anfitriaoReal = sessaoAtiva?.anfitriaoUid
+        val souHost = if (!anfitriaoReal.isNullOrBlank()) anfitriaoReal == meuUid else true
         if (androidx.core.content.ContextCompat.checkSelfPermission(contexto, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            voiceManager.conectarVoz(salaId, souAnfitriao)
+            voiceManager.conectarVoz(salaId, souHost)
         } else {
             permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
         }
@@ -577,26 +579,32 @@ fun DialogoWatchParty(
                                 }
                             }
 
-                            // Lista de amigos online na sala compartilhada para chamar instantaneamente
-                            val ausentesOnline = remember(membrosSala, participantesLista) {
-                                membrosSala.filter { m ->
-                                    m.uid != meuUid && m.estaRealmenteOnline && participantesLista.none { p -> p.uid == m.uid }
-                                }
+                            // Lista de amigos (da sala ou do perfil do usuário) para chamar instantaneamente
+                            val amigosPerfis by (viewModel?.amigosConectados?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList()) })
+                            val todosAmigosCandidatos = remember(membrosSala, amigosPerfis) {
+                                if (membrosSala.isNotEmpty()) membrosSala
+                                else amigosPerfis.map { MembroGrupo(uid = it.uid, nome = it.nome, fotoUrl = it.fotoUrl, online = it.online, vistoPorUltimo = it.vistoPorUltimo) }
                             }
 
-                            if (ausentesOnline.isNotEmpty()) {
+                            val ausentesParaChamar = remember(todosAmigosCandidatos, participantesLista) {
+                                todosAmigosCandidatos.filter { m ->
+                                    m.uid != meuUid && participantesLista.none { p -> p.uid == m.uid }
+                                }.sortedByDescending { it.estaRealmenteOnline }
+                            }
+
+                            if (ausentesParaChamar.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = "${"Amigos online na sala".t()} (${ausentesOnline.size}):",
+                                        text = "${"Amigos para chamar".t()} (${ausentesParaChamar.size}):",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF00E5FF)
                                     )
-                                    ausentesOnline.forEach { amigo ->
+                                    ausentesParaChamar.forEach { amigo ->
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
                                             color = Color(0xFF151D30),
@@ -629,7 +637,6 @@ fun DialogoWatchParty(
                                                 Button(
                                                     onClick = {
                                                         if (viewModel != null) {
-                                                            // Dispara chamada em tempo real que abre em qualquer aba do app do amigo
                                                             viewModel.chamarAmigoParaCineParty(
                                                                 amigoUid = amigo.uid,
                                                                 salaId = salaId,
@@ -637,10 +644,17 @@ fun DialogoWatchParty(
                                                                 posterMidia = posterMidia,
                                                                 grupoId = grupoId
                                                             )
+                                                            val titLocalizado = tituloMidia.t()
                                                             if (grupoId.isNotBlank()) {
-                                                                val titLocalizado = tituloMidia.t()
                                                                 viewModel.enviarMensagemParaSala(
                                                                     texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
+                                                                    tipoMensagem = "CINEPARTY_CHAMADA",
+                                                                    mediaUrl = salaId
+                                                                )
+                                                            } else {
+                                                                viewModel.enviarMensagemAmigo(
+                                                                    amigoUid = amigo.uid,
+                                                                    texto = "🍿 Te chamei para a CineParty de '$titLocalizado'! Entre na sala:",
                                                                     tipoMensagem = "CINEPARTY_CHAMADA",
                                                                     mediaUrl = salaId
                                                                 )
@@ -651,13 +665,16 @@ fun DialogoWatchParty(
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
                                                     shape = RoundedCornerShape(8.dp),
                                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                                    modifier = Modifier.height(28.dp)
+                                                    modifier = Modifier.height(28.dp).bounceOnClick()
                                                 ) {
                                                     Text(
                                                         text = "Chamar 📞".t(),
                                                         color = Color.Black,
                                                         fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1,
+                                                        softWrap = false,
+                                                        overflow = TextOverflow.Ellipsis
                                                     )
                                                 }
                                             }

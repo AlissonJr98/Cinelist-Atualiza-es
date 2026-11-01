@@ -1634,5 +1634,15 @@ object I18nDicionarioJa {
         "ACESSAR THEMOVIEDB.ORG" to "VISIT THEMOVIEDB.ORG",
         "NOVO" to "新規",
         "E-mail copiado para a área de transferência! 📋" to "Email copied to clipboard! 📋",
+        "Amigos para chamar" to "招待する友達",
+        "BEM-VINDO AO CINELIST" to "CINELISTへようこそ",
+        "Para sua total segurança e transparência, nosso aplicativo opera em estrita conformidade com a LGPD e GDPR. Antes de continuar, solicitamos que leia e aceite nossos Termos de Uso e Política de Privacidade." to "お客様の完全なセキュリティと透明性のために、当アプリはLGPDおよびGDPRに厳格に準拠して運営されています。続行する前に、利用規約とプライバシーポリシーをお読みになり、同意してください。",
+        "LI E CONCORDO COM OS TERMOS" to "規約を読み、同意します",
+        "✓ Dados 100% criptografados e confidenciais" to "✓ 100%暗号化された機密データ",
+        "✓ Direito garantido de exclusão integral de conta e dados" to "✓ アカウントとデータの完全な削除権を保証",
+        "✓ Sem venda ou repasse a intermediários de anúncios" to "✓ 広告仲介業者への販売または譲渡は一切ありません",
+        "estreia hoje!" to "本日初公開！",
+        "estreia dia" to "公開日:",
+        "CineParty // Ao Vivo 🍿" to "CineParty // ライブ 🍿",
 )
 }

@@ -1546,11 +1546,11 @@ _listaAmigoSelecionado.value = socialRepository.buscarListaAmigo(amigoUid)
 
 }
 
-fun enviarMensagemAmigo(amigoUid: String, texto: String) {
+fun enviarMensagemAmigo(amigoUid: String, texto: String, tipoMensagem: String = "TEXTO", mediaUrl: String = "") {
 
 viewModelScope.launch {
 
-socialRepository.enviarMensagemChat(amigoUid, texto)
+socialRepository.enviarMensagemChat(amigoUid, texto, tipoMensagem, mediaUrl)
 
 }
 
@@ -2358,84 +2358,72 @@ try {
 val ehSerieOuAnime = verificarSeEhSerie(tipo)
 
 var detalhes: TmdbDetalhesEstendidos? = null
-
 var creditos: TmdbCreditosResposta? = null
-
 var videosResposta: TmdbVideosResposta? = null
-
 var recomendacoesResposta: TmdbRecomendacoesResposta? = null
-
 var imagensResposta: TmdbImagensResposta? = null
-
 var ehRealmenteSerie = ehSerieOuAnime
-
-try {
-
 val tagIdiomaApi = I18n.idiomaAtivo
+
 if (ehSerieOuAnime) {
-
-detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
-
-creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
-
-videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
-
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
-
-imagensResposta = RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
-
+    try {
+        detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
+    } catch (e: Exception) {
+        try {
+            detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = "en-US")
+        } catch (e2: Exception) {
+            try {
+                detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
+                ehRealmenteSerie = false
+            } catch (e3: Exception) { e3.printStackTrace() }
+        }
+    }
 } else {
-
-detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
-
-creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
-
-videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
-
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
-
-imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
-
+    try {
+        detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
+    } catch (e: Exception) {
+        try {
+            detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = "en-US")
+        } catch (e2: Exception) {
+            try {
+                detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
+                ehRealmenteSerie = true
+            } catch (e3: Exception) { e3.printStackTrace() }
+        }
+    }
 }
-
-} catch (e: Exception) {
 
 try {
+    creditos = if (ehRealmenteSerie) {
+        RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
+    } else {
+        RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
+    }
+} catch (e: Exception) { e.printStackTrace() }
 
-val tagIdiomaFallback = I18n.idiomaAtivo
-if (!ehSerieOuAnime) {
+try {
+    videosResposta = if (ehRealmenteSerie) {
+        RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
+    } else {
+        RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
+    }
+} catch (e: Exception) { e.printStackTrace() }
 
-detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
+try {
+    recomendacoesResposta = if (ehRealmenteSerie) {
+        RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaApi)
+    } else {
+        RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb, idioma = tagIdiomaApi)
+    }
+} catch (e: Exception) { e.printStackTrace() }
 
-creditos = RetrofitClient.apiService.obterCreditosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
-
-videosResposta = RetrofitClient.apiService.obterVideosSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
-
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesSerieOuAnime(idSerie = idTmdb, idioma = tagIdiomaFallback)
-
-imagensResposta = RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
-
-ehRealmenteSerie = true
-
-} else {
-
-detalhes = RetrofitClient.apiService.obterDetalhesFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
-
-creditos = RetrofitClient.apiService.obterCreditosFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
-
-videosResposta = RetrofitClient.apiService.obterVideosFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
-
-recomendacoesResposta = RetrofitClient.apiService.obterRecomendacoesFilme(idFilme = idTmdb, idioma = tagIdiomaFallback)
-
-imagensResposta = RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
-
-ehRealmenteSerie = false
-
-}
-
-} catch (e2: Exception) { e2.printStackTrace() }
-
-}
+try {
+    imagensResposta = if (ehRealmenteSerie) {
+        RetrofitClient.apiService.obterImagensSerieOuAnime(idSerie = idTmdb)
+    } else {
+        RetrofitClient.apiService.obterImagensFilme(idFilme = idTmdb)
+    }
+} catch (e: Exception) { e.printStackTrace() }
 
 _detalhesEstendidosApi.value = detalhes
 

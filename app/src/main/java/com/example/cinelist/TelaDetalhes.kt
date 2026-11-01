@@ -210,6 +210,7 @@ fun TelaDetalhes(
             try {
                 val intent = contexto.packageManager.getLaunchIntentForPackage(pacoteApp)
                 if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     contexto.startActivity(intent)
                     appAberto = true
                 }
@@ -219,12 +220,40 @@ fun TelaDetalhes(
         }
 
         if (!appAberto) {
-            val query = Uri.encode("assistir $nomeProvedor online")
-            val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=$query"))
-            try {
-                contexto.startActivity(intentWeb)
-            } catch (e: Exception) {
-                Toast.makeText(contexto, "Não foi possível abrir o link.", Toast.LENGTH_SHORT).show()
+            // Se o app não estiver instalado, redireciona diretamente para a Google Play Store para download
+            if (pacoteApp != null) {
+                try {
+                    val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pacoteApp")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    contexto.startActivity(marketIntent)
+                } catch (e: Exception) {
+                    try {
+                        val webPlayStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pacoteApp")).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        contexto.startActivity(webPlayStoreIntent)
+                    } catch (e2: Exception) {
+                        Toast.makeText(contexto, "Não foi possível abrir a Play Store.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                try {
+                    val query = Uri.encode(nomeProvedor)
+                    val searchPlayStore = Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=$query&c=apps")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    contexto.startActivity(searchPlayStore)
+                } catch (e: Exception) {
+                    try {
+                        val webSearch = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=${Uri.encode(nomeProvedor)}&c=apps")).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        contexto.startActivity(webSearch)
+                    } catch (e2: Exception) {
+                        Toast.makeText(contexto, "Não foi possível abrir a Play Store.", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
@@ -2206,7 +2235,7 @@ fun TelaDetalhes(
                                                         status = StatusMidia.QUERO_ASSISTIR.valor,
                                                         sinopse = "",
                                                         imagemCapa = urlPoster,
-                                                        genero = "Recomendação",
+                                                        genero = if (recomendacao.generoTexto.isNotBlank() && recomendacao.generoTexto != "Geral") recomendacao.generoTexto else (detalhesApi?.generoTexto ?: "Geral"),
                                                         plataforma = plataformaFinalRec,
                                                         favorito = false,
                                                         listaCustomizada = "Geral",

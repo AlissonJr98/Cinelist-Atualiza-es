@@ -1636,5 +1636,15 @@ object I18nDicionarioIt {
         "ACESSAR THEMOVIEDB.ORG" to "VISIT THEMOVIEDB.ORG",
         "NOVO" to "NUOVO",
         "E-mail copiado para a área de transferência! 📋" to "Email copied to clipboard! 📋",
+        "Amigos para chamar" to "Amici da chiamare",
+        "BEM-VINDO AO CINELIST" to "BENVENUTO SU CINELIST",
+        "Para sua total segurança e transparência, nosso aplicativo opera em estrita conformidade com a LGPD e GDPR. Antes de continuar, solicitamos que leia e aceite nossos Termos de Uso e Política de Privacidade." to "Per la tua sicurezza e trasparenza totale, la nostra app opera in stretta conformità con LGPD e GDPR. Prima di continuare, leggi e accetta i nostri Termini di utilizzo e l'Informativa sulla privacy.",
+        "LI E CONCORDO COM OS TERMOS" to "HO LETTO E ACCETTO I TERMINI",
+        "✓ Dados 100% criptografados e confidenciais" to "✓ Dati 100% crittografati e riservati",
+        "✓ Direito garantido de exclusão integral de conta e dados" to "✓ Diritto garantito alla cancellazione integrale dell'account e dei dati",
+        "✓ Sem venda ou repasse a intermediários de anúncios" to "✓ Nessuna vendita o cessione a intermediari pubblicitari",
+        "estreia hoje!" to "debutta oggi!",
+        "estreia dia" to "debutta il",
+        "CineParty // Ao Vivo 🍿" to "CineParty // Dal Vivo 🍿",
 )
 }

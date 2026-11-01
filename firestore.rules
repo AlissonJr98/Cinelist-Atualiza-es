@@ -20,6 +20,7 @@ service cloud.firestore {
     //   - notificacoes_chat/{remetenteUid}: In-app chat notifications
     //   - notificacoes/{notificacaoId}: System and group notifications
     //   - radar_lancamentos/{alertaId}: Streaming launch radar and premiere alerts
+    //   - chamada_cineparty/{docId}: Incoming/outgoing CineParty call signals
     //
     // Collection: usuarios_publicos/{uid}
     // Document ID: Firebase Auth UID
@@ -53,7 +54,9 @@ service cloud.firestore {
     //   - chat_mensagens/{mensagemId}: Group chat messages
     //   - matches/{matchDoc}: Group movie roulette matches
     //   - enquetes/{enqueteId}: Group quick polls and votes
-    //   - cineparty/{docId}: Group CineParty synchronized watch party session
+    //   - cineparty/{sessaoId}: Group CineParty synchronized watch party session
+    //     - chamada_voz/{docId}: WebRTC voice signaling offer/answer
+    //       - lista/{candId}: ICE candidates signaling
     //   - cineblind/{blindId}: Group CineBlind secret movie session with cryptic clues
     //   - match_coletivo/{sessaoId}: Group CineMatch collective movie swipe session
     //
@@ -139,6 +142,10 @@ service cloud.firestore {
     //   - ultimaReacaoAutor: string (optional, <= 100 chars)
     //   - ultimaReacaoTimestamp: number (optional)
     //   - canalVozAtivo: bool (optional)
+    //   - prontosParaPlay: map or list (optional, <= 1000 items)
+    // Subcollections:
+    //   - chamada_voz/{docId}: WebRTC voice signaling offer/answer
+    //     - lista/{candId}: ICE candidates signaling
     //
     // Collection: grupos/{grupoId}/cineblind/{blindId}
     // Document ID: Blind session ID (<= 128 chars)
@@ -391,6 +398,7 @@ service cloud.firestore {
         (!('tempoReproducaoSegundos' in data) || data.tempoReproducaoSegundos is number) &&
         (!('ultimaAtualizacaoTimestamp' in data) || data.ultimaAtualizacaoTimestamp is number) &&
         (!('participantes' in data) || (data.participantes is map && data.participantes.size() <= 1000)) &&
+        (!('prontosParaPlay' in data) || ((data.prontosParaPlay is map || data.prontosParaPlay is list) && data.prontosParaPlay.size() <= 1000)) &&
         (!('ultimaReacaoEmoji' in data) || (data.ultimaReacaoEmoji is string && data.ultimaReacaoEmoji.size() <= 20)) &&
         (!('ultimaReacaoAutor' in data) || (data.ultimaReacaoAutor is string && data.ultimaReacaoAutor.size() <= 100)) &&
         (!('ultimaReacaoTimestamp' in data) || data.ultimaReacaoTimestamp is number) &&
@@ -481,6 +489,13 @@ service cloud.firestore {
       match /radar_lancamentos/{alertaId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /chamada_cineparty/{docId} {
+        allow read: if isOwner(uid);
+        allow create: if isAuthenticated() &&
+          (!('chamadorUid' in request.resource.data) || request.resource.data.chamadorUid == request.auth.uid);
+        allow update, delete: if isOwner(uid) || (isAuthenticated() && resource.data.chamadorUid == request.auth.uid);
+      }
     }
 
     // 2. USUÁRIOS PÚBLICOS (Perfis sociais e presença)
@@ -555,7 +570,7 @@ service cloud.firestore {
           (request.auth.uid == resource.data.criadorUid || isGroupAdmin(grupoId));
       }
 
-      match /cineparty/{docId} {
+      match /cineparty/{sessaoId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() &&
           (isGroupMember(grupoId) || request.auth.uid == request.resource.data.anfitriaoUid) &&
@@ -570,6 +585,13 @@ service cloud.firestore {
           areImmutableFieldsUnchanged(['anfitriaoUid']);
         allow delete: if isAuthenticated() &&
           (isGroupAdmin(grupoId) || request.auth.uid == resource.data.get('anfitriaoUid', ''));
+
+        match /chamada_voz/{docId} {
+          allow read, write: if isAuthenticated();
+          match /lista/{candId} {
+            allow read, write: if isAuthenticated();
+          }
+        }
       }
 
       match /cineblind/{blindId} {
@@ -694,6 +716,13 @@ service cloud.firestore {
         areImmutableFieldsUnchanged(['anfitriaoUid']);
       allow delete: if isAuthenticated() &&
         (request.auth.uid == resource.data.anfitriaoUid || request.auth.uid == resource.data.get('anfitriaoUid', ''));
+
+      match /chamada_voz/{docId} {
+        allow read, write: if isAuthenticated();
+        match /lista/{candId} {
+          allow read, write: if isAuthenticated();
+        }
+      }
     }
 
     // 8. DENÚNCIAS DE MODERAÇÃO E AUDITORIA DE CONTEÚDO

@@ -420,6 +420,19 @@ if (chamadaCinePartyParaEntrar != null) {
     )
 }
 
+// 🛡️ Consentimento obrigatório de Termos de Uso e Política de Privacidade no primeiro acesso
+val prefsConsentimento = remember { contexto.getSharedPreferences("ConfiguracoesPerfil", Context.MODE_PRIVATE) }
+var termosAceitos by remember { mutableStateOf(prefsConsentimento.getBoolean("termos_politicas_aceitos_v1", false)) }
+
+if (!termosAceitos) {
+    DialogoConsentimentoInicialTermosEPolitica(
+        onAceitar = {
+            prefsConsentimento.edit().putBoolean("termos_politicas_aceitos_v1", true).apply()
+            termosAceitos = true
+        }
+    )
+}
+
 
 // Se o usuário tocou na notificação do sistema para abrir a atualização
 

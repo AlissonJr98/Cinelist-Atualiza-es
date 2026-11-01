@@ -1634,5 +1634,15 @@ object I18nDicionarioKo {
         "ACESSAR THEMOVIEDB.ORG" to "VISIT THEMOVIEDB.ORG",
         "NOVO" to "신규",
         "E-mail copiado para a área de transferência! 📋" to "Email copied to clipboard! 📋",
+        "Amigos para chamar" to "초대할 친구",
+        "BEM-VINDO AO CINELIST" to "CINELIST에 오신 것을 환영합니다",
+        "Para sua total segurança e transparência, nosso aplicativo opera em estrita conformidade com a LGPD e GDPR. Antes de continuar, solicitamos que leia e aceite nossos Termos de Uso e Política de Privacidade." to "사용자의 완벽한 보안과 투명성을 위해 당사 앱은 LGPD 및 GDPR을 엄격히 준수하여 운영됩니다. 계속하기 전에 이용약관 및 개인정보 처리방침을 읽고 동의해 주세요.",
+        "LI E CONCORDO COM OS TERMOS" to "약관을 읽었으며 동의합니다",
+        "✓ Dados 100% criptografados e confidenciais" to "✓ 100% 암호화된 기밀 데이터",
+        "✓ Direito garantido de exclusão integral de conta e dados" to "✓ 계정 및 데이터 전체 삭제 권리 보장",
+        "✓ Sem venda ou repasse a intermediários de anúncios" to "✓ 광고 중개업체에 판매하거나 전달하지 않습니다",
+        "estreia hoje!" to "오늘 첫 공개!",
+        "estreia dia" to "첫 공개 날짜:",
+        "CineParty // Ao Vivo 🍿" to "CineParty // 라이브 🍿",
 )
 }

@@ -1983,13 +1983,22 @@ fun TelaPerfil(
 
 
 
-    val estatisticasGenero = remember(midiasContextoAtual) {
+    val estatisticasGenero = remember(midiasContextoAtual, I18n.idiomaAtivo) {
 
         midiasContextoAtual
 
-            .filter { it.genero.isNotBlank() && it.genero != "Geral" }
+            .filter { it.genero.isNotBlank() && it.genero != "Geral" && it.genero != "Não Informado" }
 
-            .groupingBy { it.genero }
+            .flatMap { midia ->
+                midia.genero.split(",", ";", "/", "•", "|")
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() && it != "Geral" }
+                    .map { GeneroLocalizationHelper.traduzirGeneroIndividual(it, I18n.idiomaAtivo) }
+            }
+
+            .filter { it.isNotBlank() }
+
+            .groupingBy { it }
 
             .eachCount()
 
@@ -4174,17 +4183,23 @@ fun ModalPerfilAmigo(
 
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEC4899)),
 
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
 
-                modifier = Modifier.weight(1f)
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+
+                modifier = Modifier.weight(1f).height(38.dp).bounceOnClick()
 
             ) {
 
-                Text("👥", fontSize = 13.sp)
+                Text("👥", fontSize = 12.sp)
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(3.dp))
 
-                Text("CineMatch".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+                Text("CineMatch".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
 
             }
 
@@ -4194,37 +4209,49 @@ fun ModalPerfilAmigo(
 
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
 
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
 
-                modifier = Modifier.weight(1f)
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+
+                modifier = Modifier.weight(1f).height(38.dp).bounceOnClick()
 
             ) {
 
-                Text("🍿", fontSize = 13.sp)
+                Text("🍿", fontSize = 12.sp)
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(3.dp))
 
-                Text("CineParty".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Black)
+                Text("CineParty".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.Black, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
 
             }
 
-
-
-            OutlinedButton(
+            Button(
 
                 onClick = { mostrarDuelo = true },
 
-                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6)),
 
-                modifier = Modifier.weight(1f)
+                shape = RoundedCornerShape(12.dp),
+
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+
+                modifier = Modifier.weight(1f).height(38.dp).bounceOnClick()
 
             ) {
 
-                Icon(Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.CompareArrows, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(3.dp))
 
-                Text("Duelo".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("Duelo".t(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
 
             }
 
@@ -5353,7 +5380,7 @@ fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
 
             ) {
 
-                Text(text = genero, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(90.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = genero, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(0.42f), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
 
                 val porcentagem = if (total > 0) quantidade.toFloat() / total else 0f
 
@@ -5361,7 +5388,7 @@ fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
 
                     progress = { porcentagem },
 
-                    modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.weight(0.48f).height(8.dp).clip(RoundedCornerShape(4.dp)),
 
                     color = MaterialTheme.colorScheme.secondary,
 
@@ -5369,7 +5396,7 @@ fun ListaGenerosMaisAssistidos(dados: Map<String, Int>) {
 
                 )
 
-                Text(text = quantidade.toString(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.width(24.dp))
+                Text(text = quantidade.toString(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(0.10f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
 
             }
 
@@ -5911,7 +5938,7 @@ fun CardEstatistica(
 
     Card(
 
-        modifier = modifier.height(100.dp),
+        modifier = modifier.defaultMinSize(minHeight = 94.dp),
 
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
 
@@ -5921,23 +5948,46 @@ fun CardEstatistica(
 
         Column(
 
-            modifier = Modifier.fillMaxSize().padding(CineListTokens.EspacoM),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
 
             verticalArrangement = Arrangement.Center
 
         ) {
 
-            Text(text = titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = titulo,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Spacer(modifier = Modifier.height(CineListTokens.EspacoXXS))
 
-            Text(text = valor, fontSize = 22.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Text(
+                text = valor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
 
             if (subtitulo != null) {
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Text(text = subtitulo, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = subtitulo,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
 
             }
 

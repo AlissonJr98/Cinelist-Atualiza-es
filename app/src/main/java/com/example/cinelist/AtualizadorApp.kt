@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -450,6 +451,8 @@ fun DialogoAtualizacaoGitHub(
     // Normalização e extração profunda dos itens do changelog
     val linhasNovidades = remember(info.notas) {
         info.notas
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
             .split("\n", ";")
             .map { it.trim().removePrefix("-").removePrefix("•").removePrefix("*").trim() }
             .filter { it.isNotBlank() && !it.startsWith("v2.", ignoreCase = true) }
@@ -500,10 +503,22 @@ fun DialogoAtualizacaoGitHub(
         label = "rotacao_anel"
     )
 
-    Dialog(onDismissRequest = { if (!baixando) onFechar() }) {
+    val config = androidx.compose.ui.platform.LocalConfiguration.current
+    val maxDialogHeight = (config.screenHeightDp * 0.88f).dp
+    val maxChangelogHeight = (config.screenHeightDp * 0.36f).coerceIn(160f, 340f).dp
+
+    Dialog(
+        onDismissRequest = { if (!baixando) onFechar() },
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = !baixando,
+            dismissOnClickOutside = false
+        )
+    ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.92f)
+                .heightIn(max = maxDialogHeight)
                 .padding(vertical = 12.dp)
                 .graphicsLayer {
                     scaleX = escalaEntrada.value
@@ -629,7 +644,7 @@ fun DialogoAtualizacaoGitHub(
                     Column(
                         modifier = Modifier
                             .padding(14.dp)
-                            .heightIn(max = 220.dp)
+                            .heightIn(min = 90.dp, max = maxChangelogHeight)
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -762,7 +777,10 @@ fun DialogoAtualizacaoGitHub(
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp,
                         letterSpacing = 0.5.sp,
-                        color = androidx.compose.ui.graphics.Color.Black
+                        color = androidx.compose.ui.graphics.Color.Black,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 

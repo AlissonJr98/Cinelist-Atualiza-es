@@ -165,8 +165,9 @@ class CinePartyVoiceManager(private val context: Context) {
 
     private fun configurarAudioModoComunicacao() {
         try {
+            _autoFalanteLigado.value = true
             audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-            audioManager.isSpeakerphoneOn = _autoFalanteLigado.value
+            audioManager.isSpeakerphoneOn = true
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -179,6 +180,9 @@ class CinePartyVoiceManager(private val context: Context) {
             .collection("chamada_voz")
 
         if (souCriadorOferta) {
+            try {
+                docSinalizacao.document("answer").delete()
+            } catch (e: Exception) { e.printStackTrace() }
             // Cria a Oferta SDP
             val constraints = MediaConstraints().apply {
                 mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"))

@@ -1,5 +1,13 @@
 package com.example.cinelist
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -655,5 +663,195 @@ private fun SecaoLegalItem(numero: String, titulo: String, corpo: String) {
             lineHeight = 16.sp,
             modifier = Modifier.padding(start = 28.dp)
         )
+    }
+}
+
+
+@Composable
+fun DialogoConsentimentoInicialTermosEPolitica(
+    onAceitar: () -> Unit
+) {
+    var exibirTermosDetalhe by remember { mutableStateOf(false) }
+    var exibirPoliticaDetalhe by remember { mutableStateOf(false) }
+
+    if (exibirTermosDetalhe) {
+        DialogoTermosUso(onDispensar = { exibirTermosDetalhe = false })
+    }
+    if (exibirPoliticaDetalhe) {
+        DialogoPoliticaPrivacidade(onDispensar = { exibirPoliticaDetalhe = false })
+    }
+
+    Dialog(
+        onDismissRequest = { /* Bloqueante no primeiro acesso */ },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        val config = androidx.compose.ui.platform.LocalConfiguration.current
+        val maxDialogHeight = (config.screenHeightDp * 0.88f).dp
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .heightIn(max = maxDialogHeight)
+                .padding(vertical = 12.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+            border = BorderStroke(
+                1.8.dp,
+                Brush.linearGradient(listOf(Color(0xFF00E5FF), Color(0xFF8B5CF6), Color(0xFF10B981)))
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(Color(0xFF00E5FF).copy(alpha = 0.35f), Color(0xFF00E5FF).copy(alpha = 0.08f))
+                            )
+                        )
+                        .border(1.5.dp, Color(0xFF00E5FF), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🛡️", fontSize = 28.sp)
+                }
+
+                Text(
+                    text = "BEM-VINDO AO CINELIST".t(),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    letterSpacing = 0.8.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = "Para sua total segurança e transparência, nosso aplicativo opera em estrita conformidade com a LGPD e GDPR. Antes de continuar, solicitamos que leia e aceite nossos Termos de Uso e Política de Privacidade.".t(),
+                    fontSize = 13.sp,
+                    color = Color(0xFFCBD5E1),
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Botões de consulta aos documentos completos
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { exibirTermosDetalhe = true },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFF00E5FF)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF00E5FF)),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Gavel, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Termos de Uso".t(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { exibirPoliticaDetalhe = true },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFF10B981)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF10B981)),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.PrivacyTip, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Privacidade".t(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFF1E293B),
+                    border = BorderStroke(1.dp, Color(0xFF334155)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "✓ Dados 100% criptografados e confidenciais".t(),
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "✓ Direito garantido de exclusão integral de conta e dados".t(),
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "✓ Sem venda ou repasse a intermediários de anúncios".t(),
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Button(
+                    onClick = onAceitar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .bounceOnClick(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                ) {
+                    Text(
+                        text = "LI E CONCORDO COM OS TERMOS".t(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
     }
 }
