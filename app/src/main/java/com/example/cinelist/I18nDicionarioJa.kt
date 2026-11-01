@@ -1574,5 +1574,10 @@ object I18nDicionarioJa {
         "ENTRAR NA CINEPARTY ➔" to "シネパーティーに参加 ➔",
         "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "ライブカウントダウン開始 (3, 2, 1...) 🚀",
         "Iniciar Contagem (3, 2, 1...) 🚀" to "カウントダウン開始 (3, 2, 1...) 🚀",
+
+        "Correção crítica ao abrir mídias na seção 'Quem assistiu a este título também gostou': agora abre a mídia exata clicada" to "おすすめ作品のタップ時にお目当ての作品が正しく開くよう修正",
+        "Padronização e identificação correta de tipos (Séries e Filmes) nas recomendações do TMDB" to "TMDBおすすめにおける映画・ドラマ種別の判定を最適化",
+        "Eliminação de conflito de IDs numéricos entre banco de dados local e catálogo online" to "ローカルデータベースとオンラインカタログのID競合を解消",
+        "Navegação refinada em obras de atores, sagas de filmes e carrosséis" to "出演者作品一覧、シリーズ作品、カルーセル全体のナビゲーション改善",
 )
 }

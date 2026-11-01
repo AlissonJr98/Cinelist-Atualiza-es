@@ -1596,5 +1596,10 @@ object I18nDicionarioDe {
         "ENTRAR NA CINEPARTY ➔" to "CINEPARTY BEITRETEN ➔",
         "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Live-Countdown Starten (3, 2, 1...) 🚀",
         "Iniciar Contagem (3, 2, 1...) 🚀" to "Countdown Starten (3, 2, 1...) 🚀",
+
+        "Correção crítica ao abrir mídias na seção 'Quem assistiu a este título também gostou': agora abre a mídia exata clicada" to "Korrektur beim Öffnen von Empfehlungen: Öffnet nun genau den ausgewählten Titel",
+        "Padronização e identificação correta de tipos (Séries e Filmes) nas recomendações do TMDB" to "Präzise Typenerkennung (Serien vs. Filme) bei Empfehlungen",
+        "Eliminação de conflito de IDs numéricos entre banco de dados local e catálogo online" to "ID-Konflikte zwischen lokaler Datenbank und Online-Katalog behoben",
+        "Navegação refinada em obras de atores, sagas de filmes e carrosséis" to "Verbesserte Navigation in Schauspieler-Filmografien, Sagas und Karussells",
 )
 }

@@ -112,9 +112,18 @@ fun TelaDetalhes(
         gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada" } ?: "Sala Compartilhada"
     }
 
-    val midiaSalva = remember(listaAtualBanco, todasAsMidiasbyBanco, id, isModoCasal) {
-        listaAtualBanco.find { it.idTmdb == id } ?: listaAtualBanco.find { it.id == id }
-        ?: todasAsMidiasbyBanco.find { it.idTmdb == id && it.isCasal == isModoCasal }
+    val ehSerieInicial = tipoInicial.contains("serie", ignoreCase = true) ||
+            tipoInicial.contains("série", ignoreCase = true) ||
+            tipoInicial.equals("tv", ignoreCase = true) ||
+            tipoInicial.equals("anime", ignoreCase = true)
+
+    val midiaSalva = remember(listaAtualBanco, todasAsMidiasbyBanco, id, isModoCasal, tipoInicial) {
+        val listaFiltrada = if (isModoCasal) listaAtualBanco else listaAtualBanco
+        listaFiltrada.find { it.idTmdb == id && ((it.tipo.contains("série", true) || it.tipo.contains("serie", true) || it.tipo.equals("tv", true)) == ehSerieInicial) }
+            ?: listaFiltrada.find { it.idTmdb == id }
+            ?: todasAsMidiasbyBanco.find { it.idTmdb == id && it.isCasal == isModoCasal && ((it.tipo.contains("série", true) || it.tipo.contains("serie", true) || it.tipo.equals("tv", true)) == ehSerieInicial) }
+            ?: todasAsMidiasbyBanco.find { it.idTmdb == id && it.isCasal == isModoCasal }
+            ?: listaFiltrada.find { it.id == id && it.idTmdb == 0 }
     }
 
     val idRealBuscaApi = remember(midiaSalva, id) {
@@ -257,11 +266,9 @@ fun TelaDetalhes(
     }
 
     val ehSerieOuAnime = remember(tipoRealUtilizado) {
-        tipoRealUtilizado.equals("Série", ignoreCase = true) ||
-                tipoRealUtilizado.equals("Anime", ignoreCase = true) ||
-                tipoRealUtilizado.equals("Novela", ignoreCase = true) ||
-                tipoRealUtilizado.equals("Dorama", ignoreCase = true) ||
-                tipoRealUtilizado.equals("tv", ignoreCase = true)
+        val t = tipoRealUtilizado.trim().lowercase()
+        t.contains("série") || t.contains("serie") || t == "anime" ||
+        t == "novela" || t == "dorama" || t == "tv"
     }
 
     LaunchedEffect(midiaSalva) {
@@ -1986,7 +1993,8 @@ fun TelaDetalhes(
                                             recomendacao.mediaType.equals("tv", ignoreCase = true) -> "Série"
                                             recomendacao.mediaType.equals("movie", ignoreCase = true) -> "Filme"
                                             recomendacao.ehSerie -> "Série"
-                                            tipoRealUtilizado.equals("Série", ignoreCase = true) -> "Série"
+                                            ehSerieOuAnime -> "Série"
+                                            tipoRealUtilizado.contains("serie", ignoreCase = true) || tipoRealUtilizado.contains("série", ignoreCase = true) || tipoRealUtilizado.equals("tv", ignoreCase = true) -> "Série"
                                             else -> "Filme"
                                         }
 

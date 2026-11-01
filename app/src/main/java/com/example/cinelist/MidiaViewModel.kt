@@ -1574,9 +1574,9 @@ val tipo2 = midiaAmigoItem.tipo.trim().lowercase()
 
 val mesmoTipo = tipo1 == tipo2 ||
 
-((tipo1 in listOf("série", "anime", "novela", "dorama")) &&
+((tipo1 in listOf("série", "serie", "anime", "novela", "dorama", "tv")) &&
 
-(tipo2 in listOf("série", "anime", "novela", "dorama")))
+(tipo2 in listOf("série", "serie", "anime", "novela", "dorama", "tv")))
 
 if (!mesmoTipo) return@any false
 
@@ -2314,11 +2314,9 @@ private val _galeriaImagens = MutableStateFlow<List<TmdbImagemItem>>(emptyList()
 val galeriaImagens: StateFlow<List<TmdbImagemItem>> = _galeriaImagens
 
 private fun verificarSeEhSerie(tipo: String): Boolean {
-
-return tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true) ||
-
-tipo.equals("Novela", ignoreCase = true) || tipo.equals("Dorama", ignoreCase = true) || tipo.equals("tv", ignoreCase = true)
-
+    val t = tipo.trim().lowercase()
+    return t.contains("série") || t.contains("serie") || t == "anime" ||
+           t == "novela" || t == "dorama" || t == "tv"
 }
 
 fun buscarEpisodiosTemporada(idTmdb: Int, numeroTemporada: Int) {
@@ -2443,7 +2441,9 @@ val trailer = videosResposta?.videos?.firstOrNull { it.sitePlataforma.equals("Yo
 
 _chaveTrailerYoutube.value = trailer?.chaveYoutube
 
-_recomendacoesMidia.value = recomendacoesResposta?.recomendacoes ?: emptyList()
+_recomendacoesMidia.value = (recomendacoesResposta?.recomendacoes ?: emptyList()).map {
+    it.copy(mediaType = if (ehRealmenteSerie) "tv" else "movie")
+}
 
 _galeriaImagens.value = ((imagensResposta?.backdrops ?: emptyList()) + (imagensResposta?.posters ?: emptyList())).distinctBy { it.caminhoArquivo }
 

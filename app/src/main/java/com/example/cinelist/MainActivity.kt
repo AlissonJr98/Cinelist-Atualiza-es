@@ -853,7 +853,14 @@ CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
 
 val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
 
-val tipo = backStackEntry.arguments?.getString("tipo") ?: "Filme"
+val tipoParam = backStackEntry.arguments?.getString("tipo") ?: "Filme"
+val ehSerieParam = tipoParam.contains("serie", ignoreCase = true) ||
+        tipoParam.contains("série", ignoreCase = true) ||
+        tipoParam.equals("tv", ignoreCase = true) ||
+        tipoParam.equals("anime", ignoreCase = true) ||
+        tipoParam.equals("novela", ignoreCase = true) ||
+        tipoParam.equals("dorama", ignoreCase = true)
+val tipo = if (ehSerieParam) "Série" else "Filme"
 
 TelaDetalhes(
 
@@ -867,7 +874,13 @@ onVoltar = { navController.popBackStack() },
 
 onRecomendacaoClique = { novoId, novoTipo ->
     if (novoId > 0) {
-        val tipoSanitizado = if (novoTipo.contains("serie", ignoreCase = true) || novoTipo.contains("série", ignoreCase = true) || novoTipo.contains("tv", ignoreCase = true)) "Serie" else "Filme"
+        val ehNovaSerie = novoTipo.contains("serie", ignoreCase = true) ||
+                novoTipo.contains("série", ignoreCase = true) ||
+                novoTipo.contains("tv", ignoreCase = true) ||
+                novoTipo.contains("anime", ignoreCase = true) ||
+                novoTipo.contains("novela", ignoreCase = true) ||
+                novoTipo.contains("dorama", ignoreCase = true)
+        val tipoSanitizado = if (ehNovaSerie) "Serie" else "Filme"
         try {
             navController.navigate("detalhes/$novoId/$tipoSanitizado")
         } catch (e: Exception) {

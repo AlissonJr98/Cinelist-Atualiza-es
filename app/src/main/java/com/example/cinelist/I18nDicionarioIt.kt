@@ -1576,5 +1576,10 @@ object I18nDicionarioIt {
         "ENTRAR NA CINEPARTY ➔" to "ENTRA IN CINEPARTY ➔",
         "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "Avvia Conto alla Rovescia dal Vivo (3, 2, 1...) 🚀",
         "Iniciar Contagem (3, 2, 1...) 🚀" to "Avvia Conto alla Rovescia (3, 2, 1...) 🚀",
+
+        "Correção crítica ao abrir mídias na seção 'Quem assistiu a este título também gostou': agora abre a mídia exata clicada" to "Correzione all'apertura dei consigliati: ora apre esattamente il titolo cliccato",
+        "Padronização e identificação correta de tipos (Séries e Filmes) nas recomendações do TMDB" to "Identificazione accurata del tipo (Serie vs Film) nei consigliati",
+        "Eliminação de conflito de IDs numéricos entre banco de dados local e catálogo online" to "Eliminato il conflitto di ID tra database locale e catalogo online",
+        "Navegação refinada em obras de atores, sagas de filmes e carrosséis" to "Navigazione migliorata nelle filmografie degli attori, saghe e caroselli",
 )
 }

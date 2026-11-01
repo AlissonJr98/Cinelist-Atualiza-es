@@ -1574,5 +1574,10 @@ object I18nDicionarioKo {
         "ENTRAR NA CINEPARTY ➔" to "씨네파티 입장 ➔",
         "Disparar Contagem ao Vivo (3, 2, 1...) 🚀" to "라이브 카운트다운 시작 (3, 2, 1...) 🚀",
         "Iniciar Contagem (3, 2, 1...) 🚀" to "카운트다운 시작 (3, 2, 1...) 🚀",
+
+        "Correção crítica ao abrir mídias na seção 'Quem assistiu a este título também gostou': agora abre a mídia exata clicada" to "추천 콘텐츠 클릭 시 선택한 작품이 정확히 열리도록 수정",
+        "Padronização e identificação correta de tipos (Séries e Filmes) nas recomendações do TMDB" to "TMDB 추천에서 영화 및 시리즈 유형 구분 최적화",
+        "Eliminação de conflito de IDs numéricos entre banco de dados local e catálogo online" to "로컬 데이터베이스와 온라인 카탈로그 간의 ID 충돌 문제 해결",
+        "Navegação refinada em obras de atores, sagas de filmes e carrosséis" to "출연진 작품 목록, 시리즈 프랜차이즈 및 캐러셀 탐색 기능 개선",
 )
 }
