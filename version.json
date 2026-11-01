@@ -2,5 +2,5 @@
   "versionCode": 107,
   "versionName": "2.0.67",
   "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.67/CineList-v2.0.67.apk",
-  "changelog": "Correção crítica ao abrir mídias na seção 'Quem assistiu a este título também gostou': agora abre a mídia exata clicada\nPadronização e identificação correta de tipos (Séries e Filmes) nas recomendações do TMDB\nEliminação de conflito de IDs numéricos entre banco de dados local e catálogo online\nNavegação refinada em obras de atores, sagas de filmes e carrosséis"
+  "changelog": "Melhorias gerais e correções de desempenho."
 }
