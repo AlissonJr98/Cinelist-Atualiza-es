@@ -59,12 +59,12 @@ fun DialogoPerfilAtor(
         try {
             withContext(Dispatchers.IO) {
                 var det = try {
-                    RetrofitClient.apiService.obterDetalhesPessoa(idAtor, "pt-BR")
+                    RetrofitClient.apiService.obterDetalhesPessoa(idAtor, I18n.idiomaAtivo)
                 } catch (e: Exception) {
                     null
                 }
 
-                // Se não tem biografia em português, tenta buscar em inglês
+                // Se não tem biografia no idioma selecionado, tenta buscar em inglês
                 if (det != null && det.biografia.isBlank()) {
                     val detEn = try {
                         RetrofitClient.apiService.obterDetalhesPessoa(idAtor, "en-US")
@@ -76,8 +76,19 @@ fun DialogoPerfilAtor(
                     }
                 }
 
+                if (det != null && det.biografia.isNotBlank() && !I18n.idiomaAtivo.startsWith("en", ignoreCase = true)) {
+                    val bioTraduzida = try {
+                        TradutorHelper.traduzir(det.biografia, TradutorHelper.obterPrefixoIdiomaDestino())
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (!bioTraduzida.isNullOrBlank()) {
+                        det = det.copy(biografia = bioTraduzida)
+                    }
+                }
+
                 val cred = try {
-                    RetrofitClient.apiService.obterCreditosPessoa(idAtor, "pt-BR").atuacoes ?: emptyList()
+                    RetrofitClient.apiService.obterCreditosPessoa(idAtor, I18n.idiomaAtivo).atuacoes ?: emptyList()
                 } catch (e: Exception) {
                     emptyList()
                 }
@@ -157,7 +168,7 @@ fun DialogoPerfilAtor(
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
-                                "Carregando perfil e filmografia...",
+                                "Carregando perfil e filmografia...".t(),
                                 color = MaterialTheme.colorScheme.secondary,
                                 fontSize = 13.sp
                             )
@@ -230,7 +241,7 @@ fun DialogoPerfilAtor(
                                 detalhes?.dataNascimento?.let {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Data de nascimento: ${detalhes?.dataNascimentoFormatada}",
+                                        text = "${"Data de nascimento:".t()} ${detalhes?.dataNascimentoFormatada}",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.secondary
                                     )
@@ -238,7 +249,7 @@ fun DialogoPerfilAtor(
 
                                 detalhes?.localNascimento?.takeIf { it.isNotBlank() }?.let { local ->
                                     Text(
-                                        text = "Local: $local",
+                                        text = "${"Local:".t()} $local",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
                                     )
@@ -280,7 +291,7 @@ fun DialogoPerfilAtor(
                                         .animateContentSize()
                                 ) {
                                     Text(
-                                        text = "Biografia",
+                                        text = "Biografia".t(),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -319,7 +330,7 @@ fun DialogoPerfilAtor(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "FILMOGRAFIA E TRABALHOS",
+                                    text = "FILMOGRAFIA E TRABALHOS".t(),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.secondary,
@@ -343,7 +354,7 @@ fun DialogoPerfilAtor(
                                     FilterChip(
                                         selected = selecionado,
                                         onClick = { filtroTipo = rotulo },
-                                        label = { Text(rotulo, fontSize = 11.sp, fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal) },
+                                        label = { Text(rotulo.t(), fontSize = 11.sp, fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Normal) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = MaterialTheme.colorScheme.primary,
@@ -365,7 +376,7 @@ fun DialogoPerfilAtor(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "Nenhum trabalho encontrado para o filtro selecionado.",
+                                        text = "Nenhum trabalho encontrado para o filtro selecionado.".t(),
                                         color = MaterialTheme.colorScheme.secondary,
                                         fontSize = 13.sp,
                                         textAlign = TextAlign.Center
@@ -482,7 +493,7 @@ fun DialogoPerfilAtor(
 
                                             obra.personagem?.takeIf { it.isNotBlank() }?.let { char ->
                                                 Text(
-                                                    text = "Papel: $char",
+                                                    text = "${"Papel:".t()} $char",
                                                     fontSize = 11.sp,
                                                     color = MaterialTheme.colorScheme.primary,
                                                     maxLines = 1,
@@ -506,7 +517,7 @@ fun DialogoPerfilAtor(
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
                                                 Text(
-                                                    text = "Ver detalhes",
+                                                    text = "Ver detalhes".t(),
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = MaterialTheme.colorScheme.primary

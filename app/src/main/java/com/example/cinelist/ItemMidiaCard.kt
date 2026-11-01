@@ -218,7 +218,7 @@ private fun ConteudoItemMidiaCard(
                 if (onAlternarStatusConcluido != null && !ehPendente && !ehRecusado) {
                     val isConcluido = statusEnum == StatusMidia.CONCLUIDO
                     DropdownMenuItem(
-                        text = { Text(if (isConcluido) "Reabrir Título" else "Marcar como Concluído", fontWeight = FontWeight.Bold) },
+                        text = { Text(if (isConcluido) "Reabrir Título".t() else "Marcar como Concluído".t(), fontWeight = FontWeight.Bold) },
                         onClick = {
                             mostrarOpcoes = false
                             onAlternarStatusConcluido.invoke()
@@ -234,7 +234,7 @@ private fun ConteudoItemMidiaCard(
                 }
                 if (onDeletar != null) {
                     DropdownMenuItem(
-                        text = { Text("Excluir Mídia", color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold) },
+                        text = { Text("Excluir Mídia".t(), color = Color(0xFFFF4C4C), fontWeight = FontWeight.Bold) },
                         onClick = {
                             mostrarOpcoes = false
                             onDeletar.invoke()
@@ -580,9 +580,9 @@ private fun ConteudoItemMidiaCard(
                                 val dataStr = sdf.format(Date(midia.dataConclusao))
 
                                 val textoFinal = if (midia.isCasal && midia.concluidoPor.isNotBlank()) {
-                                    "Em $dataStr por ${midia.concluidoPor}"
+                                    "${"Em".t()} $dataStr ${"por".t()} ${midia.concluidoPor}"
                                 } else {
-                                    "Finalizado em $dataStr"
+                                    "${"Finalizado em".t()} $dataStr"
                                 }
 
                                 Text(
@@ -1094,9 +1094,9 @@ private fun ConteudoItemMidiaCardHorizontal(
                                 val dataStr = sdf.format(Date(midia.dataConclusao))
 
                                 val textoFinal = if (midia.isCasal && midia.concluidoPor.isNotBlank()) {
-                                    "Em $dataStr por ${midia.concluidoPor}"
+                                    "${"Em".t()} $dataStr ${"por".t()} ${midia.concluidoPor}"
                                 } else {
-                                    "Finalizado em $dataStr"
+                                    "${"Finalizado em".t()} $dataStr"
                                 }
 
                                 Text(

@@ -1173,7 +1173,7 @@ fun TelaPrincipal(
                             Column(horizontalAlignment = if (souEu) Alignment.End else Alignment.Start) {
                                 if (!souEu && !mesmoAutorDaAnterior) {
                                     val bandeira = remember(msg.autorUid) {
-                                        TradutorHelper.obterEmojiBandeira(if (msg.autorUid == meuUid) java.util.Locale.getDefault().country else null)
+                                        PaisRegiaoHelper.obterEmojiBandeira(if (msg.autorUid == meuUid) PaisRegiaoHelper.obterPaisUsuario(contextoLocal) else null)
                                     }
                                     val autorNomeFinal = if (bandeira.isNotBlank()) "$bandeira ${msg.autorNome}" else msg.autorNome
                                     Text(autorNomeFinal, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 2.dp, start = 4.dp))

@@ -708,6 +708,134 @@ fun BottomSheetConfiguracoesFuturista(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "País / Região no Feed e Comunidade:".t(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+
+                var menuPaisExpandido by remember { mutableStateOf(false) }
+                var paisSelecionadoIso by remember { mutableStateOf(PaisRegiaoHelper.obterPaisConfigurado(contexto)) }
+                val itemPaisSelecionado = remember(paisSelecionadoIso) {
+                    PaisRegiaoHelper.PAISES_DISPONIVEIS.find { it.codigoIso.equals(paisSelecionadoIso, ignoreCase = true) }
+                        ?: PaisRegiaoHelper.PAISES_DISPONIVEIS.first()
+                }
+                val bandeiraRealAtual = remember(paisSelecionadoIso) {
+                    val realIso = if (paisSelecionadoIso == "AUTO") PaisRegiaoHelper.detectarPaisAutomaticamente(contexto) else paisSelecionadoIso
+                    PaisRegiaoHelper.obterEmojiBandeira(realIso)
+                }
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { menuPaisExpandido = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF131B2E),
+                        border = BorderStroke(
+                            width = 1.5.dp,
+                            color = if (menuPaisExpandido) Color(0xFF00E5FF) else Color(0xFF00E5FF).copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(text = if (paisSelecionadoIso == "AUTO") "$bandeiraRealAtual 🌐" else itemPaisSelecionado.bandeiraEmoji, fontSize = 24.sp)
+                                Column {
+                                    Text(
+                                        text = PaisRegiaoHelper.obterNomeTraduzido(itemPaisSelecionado.codigoIso),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFF00E5FF)
+                                    )
+                                    Text(
+                                        text = if (paisSelecionadoIso == "AUTO") "${"Automático".t()} (${"Detectado".t()}: $bandeiraRealAtual)" else "${"Código ISO".t()}: ${itemPaisSelecionado.codigoIso}",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF94A3B8)
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = if (menuPaisExpandido) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                contentDescription = "Abrir caixa de seleção de país",
+                                tint = Color(0xFF00E5FF),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = menuPaisExpandido,
+                        onDismissRequest = { menuPaisExpandido = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .background(Color(0xFF0C101B))
+                            .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                    ) {
+                        PaisRegiaoHelper.PAISES_DISPONIVEIS.forEach { opcao ->
+                            val isAtivo = opcao.codigoIso.equals(paisSelecionadoIso, ignoreCase = true)
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(text = opcao.bandeiraEmoji, fontSize = 20.sp)
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = PaisRegiaoHelper.obterNomeTraduzido(opcao.codigoIso),
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isAtivo) FontWeight.ExtraBold else FontWeight.Medium,
+                                                color = if (isAtivo) Color(0xFF00E5FF) else Color.White
+                                            )
+                                            if (opcao.codigoIso == "AUTO") {
+                                                Text(
+                                                    text = "Identifica o país do aparelho ou operadora".t(),
+                                                    fontSize = 10.sp,
+                                                    color = Color(0xFF94A3B8)
+                                                )
+                                            }
+                                        }
+                                        if (isAtivo) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = "Selecionado",
+                                                tint = Color(0xFF00E5FF),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    menuPaisExpandido = false
+                                    paisSelecionadoIso = opcao.codigoIso
+                                    PaisRegiaoHelper.salvarPaisConfigurado(contexto, opcao.codigoIso)
+                                    val nomeToast = PaisRegiaoHelper.obterNomeTraduzido(opcao.codigoIso)
+                                    Toast.makeText(
+                                        contexto,
+                                        "${"País".t()}: ${opcao.bandeiraEmoji} $nomeToast",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             // ========================================================

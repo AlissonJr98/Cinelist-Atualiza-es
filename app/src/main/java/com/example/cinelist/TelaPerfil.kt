@@ -3197,9 +3197,29 @@ fun TelaPerfil(
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoS)) {
 
-                            CardEstatistica(titulo = "Filmes".t(), valor = filmesConcluidos.toString(), subtitulo = "${"De".t()} $totalFilmes ${"na lista".t()}", modifier = Modifier.weight(1f))
+                            val subtituloFilmes = when {
+                                I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "Out of $totalFilmes on list"
+                                I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "De $totalFilmes en la lista"
+                                I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "Sur $totalFilmes sur la liste"
+                                I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "Von $totalFilmes auf der Liste"
+                                I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "Su $totalFilmes in lista"
+                                I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "全${totalFilmes}作品中"
+                                I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "목록 ${totalFilmes}개 중"
+                                else -> "De $totalFilmes na lista"
+                            }
+                            val subtituloSeries = when {
+                                I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "From $seriesConcluidas series"
+                                I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "De $seriesConcluidas series"
+                                I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "Sur $seriesConcluidas séries"
+                                I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "Aus $seriesConcluidas Serien"
+                                I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "Da $seriesConcluidas serie"
+                                I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "${seriesConcluidas}シリーズ中"
+                                I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "${seriesConcluidas}개 시리즈 중"
+                                else -> "De $seriesConcluidas séries"
+                            }
+                            CardEstatistica(titulo = "Filmes".t(), valor = filmesConcluidos.toString(), subtitulo = subtituloFilmes, modifier = Modifier.weight(1f))
 
-                            CardEstatistica(titulo = "Episódios".t(), valor = totalEpisodiosAssistidos.toString(), subtitulo = "${"De".t()} $seriesConcluidas ${"séries".t()}", modifier = Modifier.weight(1f))
+                            CardEstatistica(titulo = "Episódios".t(), valor = totalEpisodiosAssistidos.toString(), subtitulo = subtituloSeries, modifier = Modifier.weight(1f))
 
                         }
 

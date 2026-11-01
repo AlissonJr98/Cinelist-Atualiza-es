@@ -872,15 +872,15 @@ fun TelaDetalhes(
                                     val notaPublico = if (detalhesApi != null) String.format("%.1f ★", detalhesApi?.notaCritica) else "..."
 
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Lançamento", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text("Lançamento".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                         Text(ano, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Duração Real", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text("Duração Real".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                         Text(duracao, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Média Crítica", color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                        Text("Média Crítica".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                         Text(notaPublico, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
@@ -890,7 +890,7 @@ fun TelaDetalhes(
                             val horaTerminoTexto = if (duracaoTotalMin > 0) {
                                 val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoTotalMin) }
                                 val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                "Se começar agora, termina às ${sdf.format(cal.time)}"
+                                "${"Se começar agora, termina às".t()} ${sdf.format(cal.time)}"
                             } else ""
 
                             if (horaTerminoTexto.isNotBlank()) {
@@ -919,7 +919,7 @@ fun TelaDetalhes(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                            Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                         }
                                     }
                                 } else {
@@ -934,7 +934,7 @@ fun TelaDetalhes(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
-                                            Text("✅ Sem cenas pós-créditos — Pode desligar a TV!", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                            Text("✅ Sem cenas pós-créditos — Pode desligar a TV!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                                         }
                                     }
                                 }
@@ -963,7 +963,7 @@ fun TelaDetalhes(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = statusTextoSelado,
+                                            text = statusTextoSelado.t(),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -2043,19 +2043,19 @@ fun TelaDetalhes(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Column {
-                                                Text("Visto ${rewatchContador + 1}x 🍿", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                                Text("${"Visto".t()} ${rewatchContador + 1}x 🍿", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                                 if (rewatchContador > 0) {
-                                                    Text("Reassistido $rewatchContador vez(es)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
+                                                    Text("${"Reassistido".t()} $rewatchContador ${"vez(es)".t()}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
                                                 }
                                             }
                                             Button(
                                                 onClick = {
                                                     rewatchContador++
-                                                    Toast.makeText(contexto, "Reassistido! (${rewatchContador + 1}x) 🍿", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(contexto, "${"Reassistido!".t()} (${rewatchContador + 1}x) 🍿", Toast.LENGTH_SHORT).show()
                                                 },
                                                 shape = RoundedCornerShape(8.dp)
                                             ) {
-                                                Text("🔄 Reassisti (+1)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                Text("🔄 ${"Reassisti (+1)".t()}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                             }
                                         }
                                     }

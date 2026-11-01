@@ -2,8 +2,8 @@ package com.example.cinelist
 
 /**
  * Utilitário global para normalizar e traduzir títulos e corpos de notificações
- * (especialmente notificações de novas versões, estreias e lembretes com dados dinâmicos)
- * de acordo com o idioma atualmente selecionado pelo usuário.
+ * (notificações de salas compartilhadas, atualizações, lançamentos, lembretes e conexões sociais)
+ * rigorosamente no idioma ativo do usuário.
  */
 object NotificacaoLocalizationHelper {
 
@@ -37,7 +37,7 @@ object NotificacaoLocalizationHelper {
         if (tituloRaw.contains("títulos esperando", ignoreCase = true) ||
             tituloRaw.contains("titulos esperando", ignoreCase = true) ||
             tituloRaw.contains("titles waiting", ignoreCase = true) ||
-            tituloRaw.contains("títulos esperando", ignoreCase = true)) {
+            tituloRaw.contains("títulos en espera", ignoreCase = true)) {
             return "Você tem títulos esperando 🎬".t()
         }
 
@@ -54,6 +54,30 @@ object NotificacaoLocalizationHelper {
         }
         if (tituloRaw.contains("CineMatch", ignoreCase = true)) {
             return "CineMatch 🍿".t()
+        }
+
+        // 7. Lista / Sala compartilhada (ex: "Novo item na lista compartilhada" ou "Novo item na sala compartilhada")
+        if (tituloRaw.contains("lista compartilhada", ignoreCase = true) ||
+            tituloRaw.contains("sala compartilhada", ignoreCase = true) ||
+            tituloRaw.contains("shared list", ignoreCase = true) ||
+            tituloRaw.contains("shared room", ignoreCase = true) ||
+            notificacao.tipo == "NOVO_GRUPO") {
+            return "Novo item na lista compartilhada".t()
+        }
+
+        // 8. Pedido de amizade
+        if (tituloRaw.contains("pedido de amizade", ignoreCase = true) ||
+            tituloRaw.contains("solicitação de amizade", ignoreCase = true) ||
+            tituloRaw.contains("solicitacao de amizade", ignoreCase = true) ||
+            tituloRaw.contains("friend request", ignoreCase = true) ||
+            notificacao.tipo == "SOLICITACAO_AMIZADE") {
+            return "Novo pedido de amizade! 🍿".t()
+        }
+
+        // 9. Amigo concluiu obra
+        if (tituloRaw.contains("terminou de assistir", ignoreCase = true) ||
+            tituloRaw.contains("finished watching", ignoreCase = true)) {
+            return "Alguém terminou de assistir! 🎉".t()
         }
 
         return tituloRaw.t()
@@ -82,7 +106,105 @@ object NotificacaoLocalizationHelper {
                 return@map "${"Uma nova versão".t()} ($versao) ${"com melhorias e correções está disponível.".t()}"
             }
 
-            // 3. Estreia de novo episódio de série (ex: "T1:E5 ("Nome") estreia hoje!" ou "T2:E1 estreia dia 15/11")
+            // 3. Item adicionado à lista compartilhada pelo parceiro/grupo
+            val matchGrupo = Regex("""(?i)^(.+?)\s+(?:adicionou|added|agregó|a ajouté|hat hinzugefügt|ha aggiunto|が追加しました|추가했습니다)\s+"([^"]+)"\s+(?:para o grupo|ao grupo|to the group|al grupo|au groupe|zur Gruppe|al gruppo|グループに|그룹에)!?$""").find(linhaTrim)
+            if (matchGrupo != null) {
+                val autor = matchGrupo.groupValues[1].trim()
+                val midia = matchGrupo.groupValues[2].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "$autor added \"$midia\" to the group!"
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "¡$autor agregó \"$midia\" al grupo!"
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "$autor a ajouté \"$midia\" au groupe !"
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "$autor hat \"$midia\" zur Gruppe hinzugefügt!"
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "$autor ha aggiunto \"$midia\" al gruppo!"
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "$autor が「$midia」をグループに追加しました！"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "$autor 님이 그룹에 \"$midia\" 항목을 추가했습니다!"
+                    else -> "$autor adicionou \"$midia\" para o grupo!"
+                }
+            }
+
+            // 4. Amigo concluiu obra compartilhada
+            val matchConclusao = Regex("""(?i)^(.+?)\s+(?:acabou de marcar|just marked|acaba de marcar)\s+"([^"]+)"\s+(?:como conclu[íi]do|as completed|como completado).*$""").find(linhaTrim)
+            if (matchConclusao != null) {
+                val autor = matchConclusao.groupValues[1].trim()
+                val midia = matchConclusao.groupValues[2].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "$autor just marked \"$midia\" as completed. Want to watch it too?"
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "$autor acaba de marcar \"$midia\" como completado. ¿Te gustaría verlo también?"
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "$autor vient de marquer \"$midia\" comme terminé. Et si vous le regardiez aussi ?"
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "$autor hat \"$midia\" gerade als abgeschlossen markiert. Möchtest du es auch sehen?"
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "$autor ha appena contrassegnato \"$midia\" come completato. Ti va di vederlo?"
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "$autor が「$midia」を視聴完了にしました。あなたも観てみませんか？"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "$autor 님이 \"$midia\" 시청을 완료했습니다. 함께 보시겠습니까?"
+                    else -> "$autor acabou de marcar \"$midia\" como concluído. Que tal ver também?"
+                }
+            }
+
+            // 5. Pedido de amizade
+            val matchAmizade = Regex("""(?i)^(.+?)\s+(?:quer se conectar com voc[êe] no CineList|wants to connect with you on CineList|quiere conectarse contigo en CineList).*$""").find(linhaTrim)
+            if (matchAmizade != null) {
+                val autor = matchAmizade.groupValues[1].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "$autor wants to connect with you on CineList."
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "$autor quiere conectarse contigo en CineList."
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "$autor souhaite se connecter avec vous sur CineList."
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "$autor möchte sich mit dir auf CineList verbinden."
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "$autor vuole connettersi con te su CineList."
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "$autor が CineList であなたとつながりたがっています。"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "$autor 님이 CineList에서 친구 연결을 요청했습니다."
+                    else -> "$autor quer se conectar com você no CineList."
+                }
+            }
+
+            // 6. Título em Quero Assistir
+            val matchQueroAssistir = Regex("""(?i)^"([^"]+)"\s+(?:est[áa] na sua lista de Quero Assistir|is on your Watchlist|est[áa] en tu lista de Querer Ver).*$""").find(linhaTrim)
+            if (matchQueroAssistir != null) {
+                val tit = matchQueroAssistir.groupValues[1].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "\"$tit\" is on your Watchlist."
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "\"$tit\" está en tu lista de Querer Ver."
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "\"$tit\" est dans votre liste À voir."
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "\"$tit\" ist auf deiner Merkliste."
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "\"$tit\" è nella tua lista Da vedere."
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "「$tit」が観たい作品リストに入っています。"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "\"$tit\" 작품이 보고 싶은 목록에 있습니다."
+                    else -> "\"$tit\" está na sua lista de Quero Assistir."
+                }
+            }
+
+            // 7. Múltiplos títulos esperando
+            val matchMultiplosEsperando = Regex("""(?i)^(\d+)\s+(?:t[íi]tulos est[ãa]o parados na sua lista de Quero Assistir|titles are waiting on your Watchlist).*$""").find(linhaTrim)
+            if (matchMultiplosEsperando != null) {
+                val qtd = matchMultiplosEsperando.groupValues[1].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "$qtd titles are waiting on your Watchlist."
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "$qtd títulos te esperan en tu lista de Querer Ver."
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "$qtd titres vous attendent dans votre liste À voir."
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "$qtd Titel warten auf deiner Merkliste."
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "$qtd titoli ti aspettano nella tua lista Da vedere."
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "$qtd 件の作品が観たいリストで待機中です。"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "$qtd 개의 작품이 보고 싶은 목록에서 대기 중입니다."
+                    else -> "$qtd títulos estão parados na sua lista de Quero Assistir."
+                }
+            }
+
+            // 8. Estreia já disponível
+            val matchEstreiaJaDisponivel = Regex("""(?i)^"([^"]+)"\s+(?:j[áa] estreou e est[áa] dispon[íi]vel para assistir!|has already premiered and is available to watch!|ya se estren[óo] y est[áa] disponible!).*$""").find(linhaTrim)
+            if (matchEstreiaJaDisponivel != null) {
+                val tit = matchEstreiaJaDisponivel.groupValues[1].trim()
+                return@map when {
+                    I18n.idiomaAtivo.startsWith("en", ignoreCase = true) -> "\"$tit\" has already premiered and is available to watch!"
+                    I18n.idiomaAtivo.startsWith("es", ignoreCase = true) -> "¡\"$tit\" ya se estrenó y está disponible para ver!"
+                    I18n.idiomaAtivo.startsWith("fr", ignoreCase = true) -> "\"$tit\" est déjà sorti et disponible !"
+                    I18n.idiomaAtivo.startsWith("de", ignoreCase = true) -> "\"$tit\" ist bereits erschienen und verfügbar!"
+                    I18n.idiomaAtivo.startsWith("it", ignoreCase = true) -> "\"$tit\" è già uscito ed è disponibile per la visione!"
+                    I18n.idiomaAtivo.startsWith("ja", ignoreCase = true) -> "「$tit」が公開され、視聴可能になりました！"
+                    I18n.idiomaAtivo.startsWith("ko", ignoreCase = true) -> "\"$tit\" 작품이 이미 공개되어 시청 가능합니다!"
+                    else -> "\"$tit\" já estreou e está disponível para assistir!"
+                }
+            }
+
+            // 9. Estreia de novo episódio de série (ex: "T1:E5 ("Nome") estreia hoje!" ou "T2:E1 estreia dia 15/11")
             val matchEpHoje = Regex("""(?i)T(\d+):E(\d+)(?:\s*\("([^"]+)"\))?\s+(?:estreia\s+hoje!|premieres\s+today!|se\s+estrena\s+hoy!|première\s+aujourd'hui\s*!|premiere\s+heute!|debutta\s+oggi!|本日初公開！|오늘\s*첫\s*공개!)""").find(linhaTrim)
             if (matchEpHoje != null) {
                 val temp = matchEpHoje.groupValues[1]
@@ -100,7 +222,7 @@ object NotificacaoLocalizationHelper {
                 return@map "T$temp:E$ep$nomeEp ${"estreia dia".t()} $data"
             }
 
-            // 4. Estreia no catálogo de streaming (ex: ""Duna" acabou de estrear na Max! Está na sua lista de espera.")
+            // 10. Estreia no catálogo de streaming (ex: ""Duna" acabou de estrear na Max! Está na sua lista de espera.")
             val matchStreamingCorpo = Regex("""(?i)"?([^"]+)"?\s+(?:acabou\s+de\s+estrear\s+n[ao]|just\s+arrived\s+on|acaba\s+de\s+estrenarse\s+en|vient\s+d'arriver\s+sur|ist\s+jetzt\s+auf|è\s+appena\s+arrivato\s+su)\s+([^!.]+)[!.]\s*(.*)""").find(linhaTrim)
             if (matchStreamingCorpo != null) {
                 val titulo = matchStreamingCorpo.groupValues[1].trim()
@@ -112,7 +234,7 @@ object NotificacaoLocalizationHelper {
             val ehItemLista = linhaTrim.startsWith("-") || linhaTrim.startsWith("•") || linhaTrim.startsWith("*")
             val textoLimpo = if (ehItemLista) linhaTrim.substring(1).trim() else linhaTrim
 
-            // 5. Frases conhecidas de atualizações, melhorias e changelog
+            // 11. Frases conhecidas de atualizações, melhorias e changelog
             val textoTraduzido = when {
                 textoLimpo.equals("Melhorias gerais e correções de desempenho.", ignoreCase = true) ||
                 textoLimpo.equals("Melhorias gerais e correções de desempenho", ignoreCase = true) ||

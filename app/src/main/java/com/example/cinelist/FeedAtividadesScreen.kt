@@ -508,11 +508,7 @@ fun CardTopicoForum(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             val bandeira = remember(atividade.paisIso, atividade.autorUid) {
-                                TradutorHelper.obterEmojiBandeira(
-                                    if (atividade.paisIso.isNotBlank()) atividade.paisIso
-                                    else if (atividade.autorUid == meuUid) java.util.Locale.getDefault().country
-                                    else ""
-                                )
+                                PaisRegiaoHelper.obterEmojiBandeira(if (atividade.paisIso.isNotBlank()) atividade.paisIso else if (atividade.autorUid == meuUid) PaisRegiaoHelper.obterPaisUsuario(contexto) else "")
                             }
                             val autorNomeFinal = if (bandeira.isNotBlank()) "$bandeira ${atividade.autorNome}" else atividade.autorNome
                             Text(
@@ -1062,11 +1058,7 @@ fun DialogoThreadDiscussao(
                             var cMostrarTraducao by remember(c.id) { mutableStateOf(false) }
                             val escopoComentario = rememberCoroutineScope()
                             val bandeiraC = remember(c.paisIso, c.autorUid) {
-                                TradutorHelper.obterEmojiBandeira(
-                                    if (c.paisIso.isNotBlank()) c.paisIso
-                                    else if (c.autorUid == meuUid) java.util.Locale.getDefault().country
-                                    else ""
-                                )
+                                PaisRegiaoHelper.obterEmojiBandeira(if (c.paisIso.isNotBlank()) c.paisIso else if (c.autorUid == meuUid) PaisRegiaoHelper.obterPaisUsuario(contexto) else "")
                             }
                             val autorNomeC = if (bandeiraC.isNotBlank()) "$bandeiraC ${c.autorNome}" else c.autorNome
 
