@@ -1,4 +1,4 @@
-package com.example.cinelist
+package com.example.cinelist.shared.i18n
 
 /**
  * Dicionário de tradução para I18nDicionarioIt.
