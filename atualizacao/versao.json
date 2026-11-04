@@ -1,6 +1,6 @@
-{
-  "versaoCodigo": 110,
-  "versaoNome": "2.0.70",
-  "notas": "Tradução integral e dinâmica de todo o histórico de notificações em todos os idiomas (inclusão em salas/listas compartilhadas, conclusões, amizades e lembretes)\nTradução automática da biografia de atores e perfis para o idioma ativo do usuário\nLocalização completa dos detalhes da mídia: previsão de término ('Se começar agora, termina às HH:mm'), status de exibição, lançamento, duração real e média crítica\nTradução das faixas de streaming ('Assistir Grátis em', '100% Grátis/Anúncios', 'Requer Assinatura em', 'Plano Pago' e indisponibilidade) em todos os idiomas\nTradução das opções de rewatch no concluído ('Visto', 'Reassistido', 'Reassisti (+1)', 'Reabrir Título', 'Marcar como Concluído')\nCorreção e naturalidade na contagem de filmes e séries nas estatísticas em cada idioma\nTradução nativa completa dos Termos de Uso, Políticas de Privacidade, TMDB e Suporte para todos os 8 idiomas\nSeletor e detecção automática de País/Região para o Feed e Comunidade com personalização nas Configurações",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.70/CineList-v2.0.70.apk"
+﻿{
+    "versaoCodigo":  111,
+    "versaoNome":  "2.0.71",
+    "notas":  "Detecção inteligente de episódios fillers em animes com botão para ocultar ou exibir cânone, tradutor dinâmico de sinopses com CineAI, sincronismo de novas temporadas e partes de séries (ex: Lupin Parte 4), suporte a Episode Groups e gesto de deslizar para excluir notificações.",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }
