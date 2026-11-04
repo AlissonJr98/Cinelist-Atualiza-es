@@ -1691,5 +1691,10 @@ object I18nDicionarioKo {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 방영 중 (새로운 시즌 제작 중)",
         "De" to "전체",
         "na lista" to "목록 중",
+        "Nova Temporada" to "새 시즌",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "이(가) CineList에 출시되었습니다! 새 에피소드를 확인하세요. 🍿",
+        "ASSISTIR" to "시청하기",
+        "AGORA (SALA)" to "지금 시청 (룸)",
+        "ASSISTINDO FILME AGORA (SALA)" to "영화 지금 시청 (룸)",
 )
 }

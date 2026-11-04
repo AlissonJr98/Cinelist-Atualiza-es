@@ -1691,5 +1691,10 @@ object I18nDicionarioJa {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 放送中 (新シーズン制作中)",
         "De" to "全",
         "na lista" to "作品中",
+        "Nova Temporada" to "新シーズン",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "がCineListで視聴可能になりました！新しいエピソードをチェックしましょう。🍿",
+        "ASSISTIR" to "再生",
+        "AGORA (SALA)" to "今すぐ (ルーム)",
+        "ASSISTINDO FILME AGORA (SALA)" to "映画を今すぐ再生 (ルーム)",
 )
 }

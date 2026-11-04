@@ -1724,5 +1724,10 @@ object I18nDicionarioFr {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 En cours (Nouvelles saisons en production)",
         "De" to "Sur",
         "na lista" to "sur la liste",
+        "Nova Temporada" to "Nouvelle Saison",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "est maintenant disponible sur CineList ! Venez découvrir les nouveaux épisodes. 🍿",
+        "ASSISTIR" to "REGARDER",
+        "AGORA (SALA)" to "MAINTENANT (SALON)",
+        "ASSISTINDO FILME AGORA (SALA)" to "REGARDER LE FILM MAINTENANT (SALON)",
 )
 }

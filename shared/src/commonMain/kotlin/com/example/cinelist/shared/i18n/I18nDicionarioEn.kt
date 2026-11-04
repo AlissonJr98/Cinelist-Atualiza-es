@@ -1781,5 +1781,10 @@ object I18nDicionarioEn {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 Returning Series (New seasons in production)",
         "De" to "Out of",
         "na lista" to "on list",
+        "Nova Temporada" to "New Season",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "is now available on CineList! Check out the new episodes. 🍿",
+        "ASSISTIR" to "WATCH",
+        "AGORA (SALA)" to "NOW (ROOM)",
+        "ASSISTINDO FILME AGORA (SALA)" to "WATCHING MOVIE NOW (ROOM)",
 )
 }

@@ -346,6 +346,35 @@ fun TelaDetalhes(
         val d = detalhesApi
         if (d != null && d.id > 0 && d.titulo.isNotBlank()) {
             MidiaLocalizationManager.salvarNoCache(d.id, d.titulo, d.caminhoPoster.orEmpty())
+
+            // Sincroniza automaticamente alterações da série com dados atualizados da API TMDB
+            val atual = midiaSalva
+            if (atual != null && atual.ehSerieOuAnime) {
+                var precisaAtualizar = false
+                var atualizado = atual
+
+                val novasTemporadasDisponiveis = d.totalTemporadasReais > atual.temporadaAtual
+                val statusRetornando = d.statusSerieApi.equals("Returning Series", ignoreCase = true) || d.emProducao == true
+
+                if (atual.jaEncerrou && (novasTemporadasDisponiveis || statusRetornando)) {
+                    atualizado = atualizado.copy(jaEncerrou = false)
+                    precisaAtualizar = true
+                }
+
+                if (atual.imagemCapa.isBlank() && !d.caminhoPoster.isNullOrBlank()) {
+                    atualizado = atualizado.copy(imagemCapa = d.urlPosterVertical)
+                    precisaAtualizar = true
+                }
+
+                if (atual.sinopse.isBlank() && d.sinopse.isNotBlank()) {
+                    atualizado = atualizado.copy(sinopse = d.sinopse)
+                    precisaAtualizar = true
+                }
+
+                if (precisaAtualizar) {
+                    viewModel.atualizar(atualizado)
+                }
+            }
         }
     }
 
@@ -1517,7 +1546,9 @@ fun TelaDetalhes(
                                         Text(text = "Selecione a Temporada:".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
                                         Spacer(modifier = Modifier.height(4.dp))
 
-                                        val totalTempDisponiveis = detalhesApi?.totalTemporadas ?: maxOf(temporadaAtual + 1, 1)
+                                        val listaTemporadas = detalhesApi?.temporadas?.filter { it.numeroTemporada > 0 } ?: emptyList()
+                                        val maxTempDaApi = listaTemporadas.maxOfOrNull { it.numeroTemporada } ?: (detalhesApi?.totalTemporadas ?: 1)
+                                        val totalTempDisponiveis = maxOf(maxTempDaApi, detalhesApi?.totalTemporadas ?: 1, temporadaAtual)
 
                                         Row(
                                             modifier = Modifier
@@ -1526,10 +1557,25 @@ fun TelaDetalhes(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             (1..totalTempDisponiveis).forEach { temp ->
+                                                val infoTemporada = detalhesApi?.temporadas?.firstOrNull { it.numeroTemporada == temp }
+                                                val rotuloTemporada = when {
+                                                    infoTemporada != null && infoTemporada.nome.isNotBlank() &&
+                                                    !infoTemporada.nome.equals("Season $temp", ignoreCase = true) &&
+                                                    !infoTemporada.nome.equals("Temporada $temp", ignoreCase = true) -> {
+                                                        if (infoTemporada.nome.contains("Parte", ignoreCase = true) ||
+                                                            infoTemporada.nome.contains("Part", ignoreCase = true)) {
+                                                            "${infoTemporada.nome} (T$temp)"
+                                                        } else {
+                                                            "T$temp • ${infoTemporada.nome}"
+                                                        }
+                                                    }
+                                                    else -> "${"Temporada".t()} $temp"
+                                                }
+
                                                 FilterChip(
                                                     selected = (abaTemporadaVisualizada == temp),
                                                     onClick = { abaTemporadaVisualizada = temp },
-                                                    label = { Text("${"Temporada".t()} $temp", fontSize = 12.sp) },
+                                                    label = { Text(rotuloTemporada, fontSize = 12.sp) },
                                                     colors = FilterChipDefaults.filterChipColors(
                                                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -1568,8 +1614,18 @@ fun TelaDetalhes(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
+                                                    val infoTemporadaAtiva = detalhesApi?.temporadas?.firstOrNull { it.numeroTemporada == abaTemporadaVisualizada }
+                                                    val rotuloTempAtiva = when {
+                                                        infoTemporadaAtiva != null && infoTemporadaAtiva.nome.isNotBlank() &&
+                                                        !infoTemporadaAtiva.nome.equals("Season $abaTemporadaVisualizada", ignoreCase = true) &&
+                                                        !infoTemporadaAtiva.nome.equals("Temporada $abaTemporadaVisualizada", ignoreCase = true) -> {
+                                                            "${infoTemporadaAtiva.nome} (T$abaTemporadaVisualizada)"
+                                                        }
+                                                        else -> "T$abaTemporadaVisualizada"
+                                                    }
+
                                                     Text(
-                                                        text = "${"Progresso".t()} T$abaTemporadaVisualizada: $epsAssistidosNestaTemporada/$totalEpsNestaTemporada ${"eps".t()} (${(percentualTemporada * 100).toInt()}%)",
+                                                        text = "${"Progresso".t()} $rotuloTempAtiva: $epsAssistidosNestaTemporada/$totalEpsNestaTemporada ${"eps".t()} (${(percentualTemporada * 100).toInt()}%)",
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         color = MaterialTheme.colorScheme.primary
@@ -1585,7 +1641,12 @@ fun TelaDetalhes(
                                                             if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
                                                                 statusAtual = StatusMidia.ASSISTINDO
                                                             }
-                                                            Toast.makeText(contexto, "${"Temporada".t()} $abaTemporadaVisualizada ${"marcada como concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
+                                                            val rotuloConcluida = infoTemporadaAtiva?.nome?.takeIf {
+                                                                it.isNotBlank() &&
+                                                                !it.equals("Season $abaTemporadaVisualizada", ignoreCase = true) &&
+                                                                !it.equals("Temporada $abaTemporadaVisualizada", ignoreCase = true)
+                                                            } ?: "${"Temporada".t()} $abaTemporadaVisualizada"
+                                                            Toast.makeText(contexto, "$rotuloConcluida ${"marcada como concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
                                                         }
                                                     ) {
                                                         Text(
@@ -2310,7 +2371,7 @@ fun TelaDetalhes(
                                     Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiary)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (ehSerieOuAnime) "ASSISTIR T$temporadaAtual • EP $episodioAtual AGORA (SALA)" else "ASSISTINDO FILME AGORA (SALA)",
+                                        text = if (ehSerieOuAnime) "${"ASSISTIR".t()} T$temporadaAtual • EP $episodioAtual ${"AGORA (SALA)".t()}" else "${"ASSISTINDO FILME AGORA (SALA)".t()}",
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onTertiary,
                                         fontSize = 13.sp

@@ -59,6 +59,16 @@ data class TmdbFranquiaColecaoDetalhes(
     @SerializedName("parts") val partes: List<TmdbFilme>? = emptyList()
 )
 
+data class TmdbTemporadaItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("season_number") val numeroTemporada: Int = 1,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("overview") val sinopse: String = "",
+    @SerializedName("episode_count") val quantidadeEpisodios: Int = 0,
+    @SerializedName("air_date") val dataExibicao: String? = null,
+    @SerializedName("poster_path") val posterPath: String? = null
+)
+
 data class TmdbDetalhesEstendidos(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
@@ -76,8 +86,19 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("genres") val generos: List<TmdbGenero>? = emptyList(),
     @SerializedName("belongs_to_collection") val colecaoFranquia: TmdbFranquiaColecao? = null,
     @SerializedName("status") val statusSerieApi: String? = null,
-    @SerializedName("in_production") val emProducao: Boolean? = null
+    @SerializedName("in_production") val emProducao: Boolean? = null,
+    @SerializedName("seasons") val temporadas: List<TmdbTemporadaItem>? = emptyList()
 ) {
+    val totalTemporadasReais: Int
+        get() {
+            val maxSeason = temporadas?.filter { it.numeroTemporada > 0 }?.maxOfOrNull { it.numeroTemporada } ?: 0
+            return maxOf(totalTemporadas, maxSeason)
+        }
+
+    fun obterNomeTemporada(temp: Int): String? {
+        return temporadas?.firstOrNull { it.numeroTemporada == temp }?.nome?.takeIf { it.isNotBlank() }
+    }
+
     val statusSeloTexto: String
         get() = when {
             statusSerieApi.equals("Canceled", ignoreCase = true) -> "⚠️ Esta série foi cancelada"

@@ -1693,5 +1693,10 @@ object I18nDicionarioIt {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 In onda (Nuove stagioni in produzione)",
         "De" to "Su",
         "na lista" to "in lista",
+        "Nova Temporada" to "Nuova Stagione",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "è ora disponibile su CineList! Vieni a scoprire i nuovi episodi. 🍿",
+        "ASSISTIR" to "GUARDA",
+        "AGORA (SALA)" to "ORA (STANZA)",
+        "ASSISTINDO FILME AGORA (SALA)" to "GUARDARE FILM ORA (STANZA)",
 )
 }

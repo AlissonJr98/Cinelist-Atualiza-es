@@ -1713,5 +1713,10 @@ object I18nDicionarioDe {
         "📺 Em exibição (Novas temporadas em produção)" to "📺 Laufende Serie (Neue Staffeln in Produktion)",
         "De" to "Von",
         "na lista" to "auf der Liste",
+        "Nova Temporada" to "Neue Staffel",
+        "já está disponível no CineList! Venha conferir os novos episódios. 🍿" to "ist jetzt auf CineList verfügbar! Schau dir die neuen Folgen an. 🍿",
+        "ASSISTIR" to "ANSEHEN",
+        "AGORA (SALA)" to "JETZT (RAUM)",
+        "ASSISTINDO FILME AGORA (SALA)" to "FILM JETZT ANSEHEN (RAUM)",
 )
 }

@@ -35,18 +35,61 @@ class LembreteWorker(
         return try {
             val todasMidias = midiaDao.buscarTodasAsMidias().first()
 
-            // 1. CHECAGEM DE NOVOS EPISÓDIOS (Séries / Animes em "Assistindo")
-            val seriesAssistindo = todasMidias.filter { midia ->
-                midia.status.equals("Assistindo", ignoreCase = true) &&
-                        !midia.tipo.equals("Filme", ignoreCase = true) &&
-                        midia.idTmdb > 0
+            // 1. CHECAGEM DE NOVAS TEMPORADAS E EPISODIOS (Series / Animes no catalogo do usuario)
+            val seriesParaVerificar = todasMidias.filter { midia ->
+                !midia.tipo.equals("Filme", ignoreCase = true) && midia.idTmdb > 0
             }
 
-            for (serie in seriesAssistindo) {
+            for (serie in seriesParaVerificar) {
                 try {
                     val detalhes = RetrofitClient.apiService.obterDetalhesSerieOuAnime(serie.idTmdb)
-                    val proximoEp = detalhes.proximoEpisodio
 
+                    // 1.1 Checa se ha nova temporada lancada na API que o usuario ainda nao viu ou nao concluiu
+                    val maxTempApi = detalhes.totalTemporadasReais
+                    if (maxTempApi > serie.temporadaAtual) {
+                        val idReferenciaNovaTemp = ("novatemp_${serie.idTmdb}_$maxTempApi").hashCode() and 0x7FFFFFFF
+                        val jaNotificouTemp = notificacaoDao.contarNotificacaoRecente(
+                            idRef = idReferenciaNovaTemp,
+                            tipo = "LANCAMENTO",
+                            desde = System.currentTimeMillis() - (15L * 24 * 60 * 60 * 1000)
+                        ) > 0
+
+                        if (!jaNotificouTemp) {
+                            val nomeTemp = detalhes.obterNomeTemporada(maxTempApi) ?: "${"Temporada".t()} $maxTempApi"
+                            val rotuloTemp = if (nomeTemp.contains("Parte", ignoreCase = true) || nomeTemp.contains("Part", ignoreCase = true)) {
+                                "$nomeTemp (T$maxTempApi)"
+                            } else {
+                                "T$maxTempApi • $nomeTemp"
+                            }
+                            val tituloNotif = "${"Nova Temporada".t()}: ${serie.titulo} 📺"
+                            val corpoNotif = "$rotuloTemp ${"já está disponível no CineList! Venha conferir os novos episódios. 🍿".t()}"
+
+                            notificacaoDao.inserir(
+                                NotificacaoEntity(
+                                    tipo = "LANCAMENTO",
+                                    titulo = tituloNotif,
+                                    mensagem = corpoNotif,
+                                    idReferencia = idReferenciaNovaTemp,
+                                    dataCriacao = System.currentTimeMillis()
+                                )
+                            )
+
+                            enviarNotificacaoSistema(
+                                CANAL_LANCAMENTOS,
+                                idReferenciaNovaTemp,
+                                tituloNotif,
+                                corpoNotif
+                            )
+                        }
+
+                        // Reabre a serie no banco caso ela estivesse marcada como encerrada
+                        if (serie.jaEncerrou) {
+                            midiaDao.atualizarMidia(serie.copy(jaEncerrou = false))
+                        }
+                    }
+
+                    // 1.2 Checa episodios futuros agendados
+                    val proximoEp = detalhes.proximoEpisodio
                     if (proximoEp != null && !proximoEp.dataExibicao.isNullOrBlank()) {
                         val formatoData = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         val dataEstreia = formatoData.parse(proximoEp.dataExibicao)
@@ -61,9 +104,8 @@ class LembreteWorker(
 
                             val diffDias = TimeUnit.MILLISECONDS.toDays(dataEstreia.time - hojeCalendar.timeInMillis)
 
-                            // Notifica se estreou hoje ou vai estrear nos próximos 7 dias
+                            // Notifica se estreou hoje ou vai estrear nos proximos 7 dias
                             if (diffDias in 0..7) {
-                                // Gera ID positivo de 31 bits imune a overflow numérico
                                 val idReferenciaEp = ("ep_${serie.idTmdb}_${proximoEp.numeroTemporada}_${proximoEp.numeroEpisodio}").hashCode() and 0x7FFFFFFF
 
                                 val jaNotificouEp = notificacaoDao.contarNotificacaoRecente(
@@ -76,7 +118,7 @@ class LembreteWorker(
                                     val dataBonita = SimpleDateFormat("dd/MM", Locale.getDefault()).format(dataEstreia)
                                     val quando = if (diffDias == 0L) "estreia hoje!" else "estreia dia $dataBonita"
 
-                                    val tituloNotif = "Novo Episódio: ${serie.titulo} 📺"
+                                    val tituloNotif = "${"Novo Episódio".t()}: ${serie.titulo} 📺"
                                     val nomeEpFormatado = if (!proximoEp.nome.isNullOrBlank()) " (\"${proximoEp.nome}\")" else ""
                                     val corpoNotif = "T${proximoEp.numeroTemporada}:E${proximoEp.numeroEpisodio}$nomeEpFormatado $quando"
 
@@ -101,11 +143,10 @@ class LembreteWorker(
                         }
                     }
                 } catch (e: Exception) {
-                    // Continua verificando as próximas séries mesmo se uma falhar na API
+                    // Continua verificando as proximas series mesmo se uma falhar na API
                     e.printStackTrace()
                 }
             }
-
             // 2. LEMBRETE & ESTREIAS: títulos em "Quero Assistir"
             val pendentes = todasMidias.filter { it.status == "Quero Assistir" }
             val meusStreamingsIds = StreamingManager.obterMeusStreamingsIds(applicationContext)
