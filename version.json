@@ -1,6 +1,6 @@
-﻿{
-    "versionCode":  111,
-    "versionName":  "2.0.71",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Detecção inteligente de episódios fillers em animes com botão para ocultar ou exibir cânone, tradutor dinâmico de sinopses com CineAI, sincronismo de novas temporadas e partes de séries (ex: Lupin Parte 4), suporte a Episode Groups e gesto de deslizar para excluir notificações."
+{
+  "versionCode": 111,
+  "versionName": "2.0.71",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.71/CineList-v2.0.71.apk",
+  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
 }
