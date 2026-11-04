@@ -1696,5 +1696,14 @@ object I18nDicionarioKo {
         "ASSISTIR" to "시청하기",
         "AGORA (SALA)" to "지금 시청 (룸)",
         "ASSISTINDO FILME AGORA (SALA)" to "영화 지금 시청 (룸)",
+        "fillers nesta temporada" to "이번 시즌 필러",
+        "Apenas Cânone ✓" to "원작 정사만 ✓",
+        "Ocultar Fillers" to "필러 숨기기",
+        "FILLER" to "필러",
+        "Episódio paralelo (filler), não interfere na história principal do mangá." to "원작 만화 줄거리에 영향을 주지 않는 필러(오리지널) 에피소드입니다.",
+        "✨ Traduzir sinopse com CineAI" to "✨ CineAI로 줄거리 번역",
+        "Traduzindo..." to "번역 중...",
+        "Sinopse traduzida com CineAI! ✨" to "CineAI로 줄거리를 번역했습니다! ✨",
+        "Não foi possível traduzir no momento." to "지금은 번역할 수 없습니다.",
 )
 }

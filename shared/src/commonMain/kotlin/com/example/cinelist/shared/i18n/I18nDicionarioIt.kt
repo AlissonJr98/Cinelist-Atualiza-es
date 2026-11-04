@@ -1698,5 +1698,14 @@ object I18nDicionarioIt {
         "ASSISTIR" to "GUARDA",
         "AGORA (SALA)" to "ORA (STANZA)",
         "ASSISTINDO FILME AGORA (SALA)" to "GUARDARE FILM ORA (STANZA)",
+        "fillers nesta temporada" to "filler in questa stagione",
+        "Apenas Cânone ✓" to "Solo Canone ✓",
+        "Ocultar Fillers" to "Nascondi Filler",
+        "FILLER" to "FILLER",
+        "Episódio paralelo (filler), não interfere na história principal do mangá." to "Episodio filler, non interferisce con la storia principale del manga.",
+        "✨ Traduzir sinopse com CineAI" to "✨ Traduci trama con CineAI",
+        "Traduzindo..." to "Traduzione in corso...",
+        "Sinopse traduzida com CineAI! ✨" to "Trama tradotta con CineAI! ✨",
+        "Não foi possível traduzir no momento." to "Impossibile tradurre al momento.",
 )
 }

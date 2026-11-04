@@ -284,6 +284,29 @@ fun TelaDetalhes(
         )
     }
     var ehPrivadoState by remember { mutableStateOf(false) }
+    // Suporte inteligente a Anime Fillers
+    val ehAnime = remember(tipoRealUtilizado, detalhesApi?.generoTexto, detalhesApi?.titulo, midiaSalva?.titulo) {
+        AnimeFillerManager.ehAnime(tipoRealUtilizado, detalhesApi?.generoTexto ?: midiaSalva?.genero, detalhesApi?.titulo ?: midiaSalva?.titulo)
+    }
+    var conjuntoFillers by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var ocultarFillers by remember { mutableStateOf(false) }
+
+    LaunchedEffect(idRealBuscaApi, abaTemporadaVisualizada, ehAnime, episodiosTmdb.size) {
+        if (ehAnime && episodiosTmdb.isNotEmpty()) {
+            val tituloAnime = detalhesApi?.titulo ?: midiaSalva?.titulo ?: ""
+            conjuntoFillers = AnimeFillerManager.obterEpisodiosFillers(
+                contexto,
+                tituloAnime,
+                abaTemporadaVisualizada,
+                episodiosTmdb.size
+            )
+        } else {
+            conjuntoFillers = emptySet()
+        }
+    }
+
+    var traduzindoSinopse by remember { mutableStateOf(false) }
+    var sinopseTraduzidaIa by remember { mutableStateOf<String?>(null) }
 
     val provedoresAssinaturaFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
@@ -1673,8 +1696,56 @@ fun TelaDetalhes(
                                                 modifier = Modifier.padding(bottom = 8.dp)
                                             )
 
+                                            if (ehAnime && conjuntoFillers.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Surface(
+                                                    color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f)),
+                                                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        ) {
+                                                            Text(text = "🟡", fontSize = 12.sp)
+                                                            Text(
+                                                                text = "${conjuntoFillers.size} ${"fillers nesta temporada".t()}",
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = Color(0xFFF59E0B)
+                                                            )
+                                                        }
+
+                                                        FilterChip(
+                                                            selected = ocultarFillers,
+                                                            onClick = { ocultarFillers = !ocultarFillers },
+                                                            label = {
+                                                                Text(
+                                                                    text = if (ocultarFillers) "Apenas Cânone ✓".t() else "Ocultar Fillers".t(),
+                                                                    fontSize = 10.sp,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
+                                                            },
+                                                            colors = FilterChipDefaults.filterChipColors(
+                                                                selectedContainerColor = Color(0xFFF59E0B),
+                                                                selectedLabelColor = Color.Black,
+                                                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                                            ),
+                                                            modifier = Modifier.height(28.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
                                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 episodiosTmdb.forEach { epItem ->
+                                                    val ehFiller = ehAnime && conjuntoFillers.contains(epItem.numeroEpisodio)
+                                                    if (!ocultarFillers || !ehFiller) {
                                                     val jaAssistido = (abaTemporadaVisualizada < temporadaAtual) ||
                                                             (abaTemporadaVisualizada == temporadaAtual && epItem.numeroEpisodio <= episodioAtual)
                                                     val ehOAtual = (abaTemporadaVisualizada == temporadaAtual && epItem.numeroEpisodio == episodioAtual)
@@ -1722,14 +1793,45 @@ fun TelaDetalhes(
                                                             }
 
                                                             Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = "Ep. ${epItem.numeroEpisodio} • ${epItem.nome.ifBlank { "Sem Título" }}",
-                                                                    fontSize = 13.sp,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    color = if (ehOAtual) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                                                    maxLines = 1,
-                                                                    overflow = TextOverflow.Ellipsis
-                                                                )
+                                                                Row(
+                                                                    verticalAlignment = Alignment.CenterVertically,
+                                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                                ) {
+                                                                    Text(
+                                                                        text = "Ep. ${epItem.numeroEpisodio} • ${epItem.nome.ifBlank { "Sem Título" }}",
+                                                                        fontSize = 13.sp,
+                                                                        fontWeight = FontWeight.Bold,
+                                                                        color = if (ehOAtual) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                                        maxLines = 1,
+                                                                        overflow = TextOverflow.Ellipsis,
+                                                                        modifier = Modifier.weight(1f, fill = false)
+                                                                    )
+
+                                                                    if (ehFiller) {
+                                                                        Surface(
+                                                                            color = Color(0xFFD97706),
+                                                                            shape = RoundedCornerShape(4.dp)
+                                                                        ) {
+                                                                            Text(
+                                                                                text = "FILLER".t(),
+                                                                                color = Color.White,
+                                                                                fontSize = 9.sp,
+                                                                                fontWeight = FontWeight.Black,
+                                                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+
+                                                                if (ehFiller) {
+                                                                    Text(
+                                                                        text = "⚠️ ${"Episódio paralelo (filler), não interfere na história principal do mangá.".t()}",
+                                                                        fontSize = 10.sp,
+                                                                        color = Color(0xFFF59E0B),
+                                                                        maxLines = 1,
+                                                                        overflow = TextOverflow.Ellipsis
+                                                                    )
+                                                                }
                                                                 if (epItem.sinopse.isNotBlank()) {
                                                                     Text(
                                                                         text = epItem.sinopse,
@@ -1764,6 +1866,7 @@ fun TelaDetalhes(
                                                                 }
                                                             }
                                                         }
+                                                    }
                                                     }
                                                 }
                                             }
@@ -2160,13 +2263,61 @@ fun TelaDetalhes(
                                 detalhesApi?.sinopse ?: "Carregando sinopse...".t()
                             }
 
+                            val textoSinopseExibida = sinopseTraduzidaIa ?: sinopseDinamica
+
                             OutlinedTextField(
-                                value = sinopseDinamica,
+                                value = textoSinopseExibida,
                                 onValueChange = { if (midiaSalva != null) sinopse = it },
                                 readOnly = (midiaSalva == null),
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface)
                             )
+
+                            if (textoSinopseExibida.isNotBlank() && I18n.idiomaAtivo != "en-US") {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                        modifier = Modifier.clickable(enabled = !traduzindoSinopse) {
+                                            traduzindoSinopse = true
+                                            coroutineScope.launch {
+                                                val trad = CineAiManager.traduzirSinopse(contexto, textoSinopseExibida, I18n.idiomaAtivo)
+                                                if (!trad.isNullOrBlank()) {
+                                                    sinopseTraduzidaIa = trad
+                                                    if (midiaSalva != null) {
+                                                        sinopse = trad
+                                                        viewModel.atualizar(midiaSalva.copy(sinopse = trad))
+                                                    }
+                                                    Toast.makeText(contexto, "Sinopse traduzida com CineAI! ✨".t(), Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(contexto, "Não foi possível traduzir no momento.".t(), Toast.LENGTH_SHORT).show()
+                                                }
+                                                traduzindoSinopse = false
+                                            }
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Text(
+                                                text = if (traduzindoSinopse) "Traduzindo...".t() else "✨ Traduzir sinopse com CineAI".t(),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
 
                             // 💡 ANÁLISE CINEAI (SEM SPOILERS)
                             val notaParaAi = if (midiaSalva != null && midiaSalva.nota > 0) midiaSalva.nota.toDouble() else (detalhesApi?.mediaVotos ?: 0.0)

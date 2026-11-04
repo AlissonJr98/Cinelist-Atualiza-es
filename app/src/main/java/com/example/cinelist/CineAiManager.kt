@@ -167,6 +167,78 @@ object CineAiManager {
             .apply()
     }
 
+    suspend fun consultarGeminiTexto(apiKey: String, prompt: String): String = withContext(Dispatchers.IO) {
+        val modelos = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")
+        for (modelo in modelos) {
+            try {
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelo:generateContent?key=$apiKey"
+                val jsonBody = JsonObject().apply {
+                    val contentsArray = com.google.gson.JsonArray()
+                    val contentObj = JsonObject()
+                    val partsArray = com.google.gson.JsonArray()
+                    val partObj = JsonObject()
+                    partObj.addProperty("text", prompt)
+                    partsArray.add(partObj)
+                    contentObj.add("parts", partsArray)
+                    contentsArray.add(contentObj)
+                    add("contents", contentsArray)
+                }
+
+                val request = Request.Builder()
+                    .url(url)
+                    .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                val body = httpClient.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) response.body?.string().orEmpty() else ""
+                }
+                if (body.isNotBlank()) {
+                    val jsonResp = gson.fromJson(body, JsonObject::class.java)
+                    val candidate = jsonResp.getAsJsonArray("candidates")?.get(0)?.asJsonObject
+                    val texto = candidate?.getAsJsonObject("content")
+                        ?.getAsJsonArray("parts")?.get(0)?.asJsonObject
+                        ?.get("text")?.asString.orEmpty()
+
+                    if (texto.isNotBlank()) {
+                        return@withContext texto.trim()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Tentativa Gemini $modelo falhou: ${e.message}")
+            }
+        }
+        ""
+    }
+
+    suspend fun traduzirSinopse(context: Context, sinopseOriginal: String, idiomaDestino: String): String? {
+        val chave = obterChaveGemini(context)
+        if (chave.isBlank() || sinopseOriginal.isBlank()) return null
+
+        val nomeIdioma = when (idiomaDestino.take(2).lowercase()) {
+            "pt" -> "Português do Brasil"
+            "en" -> "English"
+            "es" -> "Español"
+            "fr" -> "Français"
+            "de" -> "Deutsch"
+            "it" -> "Italiano"
+            "ja" -> "Japanese (日本語)"
+            "ko" -> "Korean (한국어)"
+            else -> "Português do Brasil"
+        }
+
+        val prompt = """
+            Traduza a seguinte sinopse de filme/série com precisão, tom cinematográfico e naturalidade para o idioma: ${'$'}nomeIdioma.
+            Mantenha o texto envolvente sem alterar o sentido nem adicionar spoilers.
+            Responda EXCLUSIVAMENTE com o texto traduzido, sem introduções ou explicações.
+
+            Sinopse:
+            "${'$'}sinopseOriginal"
+        """.trimIndent()
+
+        val traducao = consultarGeminiTexto(chave, prompt)
+        return traducao.takeIf { it.isNotBlank() }
+    }
+
     /**
      * Extrai o nome de um filme de referência quando o usuário pesquisa por termos como
      * "parecido com X", "tipo X", "semelhante a X", "estilo X", "como X", etc.

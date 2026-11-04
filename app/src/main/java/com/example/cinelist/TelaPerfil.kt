@@ -3027,25 +3027,46 @@ fun TelaPerfil(
 
                                 itemsIndexed(listaNotificacoes, key = { index, notificacao -> "${notificacao.id}_$index" }) { _, notificacao ->
 
-                                    ItemNotificacao(
-
-                                        notificacao = notificacao,
-
-                                        onClick = {
-
-                                            if (!notificacao.lida) {
-
-                                                viewModel.marcarNotificacaoComoLida(notificacao.id)
-
-                                            }
-
-                                            notificacaoDetalhada = notificacao
-
-                                        },
-
-                                        onDeletar = { notificacaoParaExcluir = notificacao }
-
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = { valor ->
+                                            if (valor == SwipeToDismissBoxValue.EndToStart || valor == SwipeToDismissBoxValue.StartToEnd) {
+                                                CineHaptics.click(contexto)
+                                                viewModel.deletarNotificacao(notificacao)
+                                                true
+                                            } else false
+                                        }
                                     )
+
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {
+                                            val corFundo = MaterialTheme.colorScheme.error.copy(alpha = 0.25f)
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(corFundo, RoundedCornerShape(12.dp))
+                                                    .padding(horizontal = 16.dp),
+                                                contentAlignment = Alignment.CenterEnd
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Excluir".t(),
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        ItemNotificacao(
+                                            notificacao = notificacao,
+                                            onClick = {
+                                                if (!notificacao.lida) {
+                                                    viewModel.marcarNotificacaoComoLida(notificacao.id)
+                                                }
+                                                notificacaoDetalhada = notificacao
+                                            },
+                                            onDeletar = { notificacaoParaExcluir = notificacao }
+                                        )
+                                    }
 
                                 }
 

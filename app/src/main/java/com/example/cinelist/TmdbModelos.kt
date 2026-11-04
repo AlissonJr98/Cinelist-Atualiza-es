@@ -287,3 +287,29 @@ data class TmdbCreditoItem(
     val urlBackdrop: String
         get() = if (!caminhoBackdrop.isNullOrBlank()) "https://image.tmdb.org/t/p/w780$caminhoBackdrop" else ""
 }
+
+data class TmdbGruposEpisodiosResposta(
+    @SerializedName("results") val resultados: List<TmdbGrupoEpisodioSumario>? = emptyList()
+)
+
+data class TmdbGrupoEpisodioSumario(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("order") val ordem: Int = 0,
+    @SerializedName("group_count") val quantidadeGrupos: Int = 0,
+    @SerializedName("type") val tipo: Int = 1
+)
+
+data class TmdbGrupoDetalhesResposta(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("groups") val grupos: List<TmdbSubgrupoEpisodio> = emptyList()
+)
+
+data class TmdbSubgrupoEpisodio(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("order") val ordem: Int = 0,
+    @SerializedName("episodes") val episodios: List<TmdbEpisodioItem> = emptyList()
+)
+

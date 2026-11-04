@@ -1696,5 +1696,14 @@ object I18nDicionarioJa {
         "ASSISTIR" to "再生",
         "AGORA (SALA)" to "今すぐ (ルーム)",
         "ASSISTINDO FILME AGORA (SALA)" to "映画を今すぐ再生 (ルーム)",
+        "fillers nesta temporada" to "今シーズンのフィラー",
+        "Apenas Cânone ✓" to "本編のみ ✓",
+        "Ocultar Fillers" to "フィラーを非表示",
+        "FILLER" to "フィラー",
+        "Episódio paralelo (filler), não interfere na história principal do mangá." to "フィラー回（アニメオリジナル）、原作のメインストーリーには影響しません。",
+        "✨ Traduzir sinopse com CineAI" to "✨ CineAIであらすじを翻訳",
+        "Traduzindo..." to "翻訳中...",
+        "Sinopse traduzida com CineAI! ✨" to "CineAIであらすじを翻訳しました！✨",
+        "Não foi possível traduzir no momento." to "現在翻訳できませんでした。",
 )
 }

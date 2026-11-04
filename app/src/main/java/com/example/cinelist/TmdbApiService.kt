@@ -74,6 +74,17 @@ interface TmdbApiService {
         @Query("language") idioma: String = "pt-BR"
     ): TmdbTemporadaDetalhes
 
+    @GET("tv/{series_id}/episode_groups")
+    suspend fun obterGruposEpisodios(
+        @Path("series_id") idSerie: Int
+    ): TmdbGruposEpisodiosResposta
+
+    @GET("tv/episode_group/{id}")
+    suspend fun obterDetalhesGrupoEpisodios(
+        @Path("id") idGrupo: String,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbGrupoDetalhesResposta
+
     @GET("movie/{movie_id}/watch/providers")
     suspend fun obterProvedoresFilme(
         @Path("movie_id") idFilme: Int

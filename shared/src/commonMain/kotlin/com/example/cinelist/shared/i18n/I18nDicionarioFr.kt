@@ -1729,5 +1729,14 @@ object I18nDicionarioFr {
         "ASSISTIR" to "REGARDER",
         "AGORA (SALA)" to "MAINTENANT (SALON)",
         "ASSISTINDO FILME AGORA (SALA)" to "REGARDER LE FILM MAINTENANT (SALON)",
+        "fillers nesta temporada" to "fillers cette saison",
+        "Apenas Cânone ✓" to "Canon uniquement ✓",
+        "Ocultar Fillers" to "Masquer les fillers",
+        "FILLER" to "FILLER",
+        "Episódio paralelo (filler), não interfere na história principal do mangá." to "Épisode filler, n'interfère pas avec l'histoire principale du manga.",
+        "✨ Traduzir sinopse com CineAI" to "✨ Traduire le synopsis avec CineAI",
+        "Traduzindo..." to "Traduction en cours...",
+        "Sinopse traduzida com CineAI! ✨" to "Synopsis traduit avec CineAI ! ✨",
+        "Não foi possível traduzir no momento." to "Impossible de traduire pour le moment.",
 )
 }
