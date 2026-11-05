@@ -1716,5 +1716,6 @@ object I18nDicionarioIt {
         "No Ar Esta Semana" to "In Onda Questa Settimana",
         "lançamentos previstos para os próximos 7 dias!" to "uscite previste per i prossimi 7 giorni!",
         "Já é seu Amigo" to "Già Amici",
+        "Você (Seu Perfil)" to "Tu (Il Tuo Profilo)",
 )
 }

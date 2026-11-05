@@ -1,6 +1,6 @@
-{
-  "versionCode": 114,
-  "versionName": "2.0.74",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.74/CineList-v2.0.74.apk",
-  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
+﻿{
+    "versionCode":  115,
+    "versionName":  "2.0.75",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog":  "Busca inteligente e resiliente de usuários no app: sincronização de estado reativa que elimina o falso positivo de \u0027nenhum usuário encontrado\u0027 antes do retorno da rede; busca inteligente por múltiplos termos, tokens, apelidos, e-mail e UID; exibição clara do perfil com crachá Você (Seu Perfil) ao buscar o próprio nome e Já é seu Amigo quando já conectado; e suporte internacional completo com traduções."
 }

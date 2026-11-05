@@ -1736,5 +1736,6 @@ object I18nDicionarioDe {
         "No Ar Esta Semana" to "Diese Woche auf Sendung",
         "lançamentos previstos para os próximos 7 dias!" to "geplante Veröffentlichungen für die nächsten 7 Tage!",
         "Já é seu Amigo" to "Bereits befreundet",
+        "Você (Seu Perfil)" to "Du (Dein Profil)",
 )
 }

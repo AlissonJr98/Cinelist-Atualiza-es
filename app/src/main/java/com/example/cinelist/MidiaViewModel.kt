@@ -1328,6 +1328,10 @@ private val _resultadosBuscaAmigos = MutableStateFlow<List<AmigoPerfil>>(emptyLi
 
 val resultadosBuscaAmigos: StateFlow<List<AmigoPerfil>> = _resultadosBuscaAmigos
 
+private val _estaBuscandoUsuarios = MutableStateFlow(false)
+
+val estaBuscandoUsuarios: StateFlow<Boolean> = _estaBuscandoUsuarios
+
 private val _listaAmigoSelecionado = MutableStateFlow<List<Midia>>(emptyList())
 
 val listaAmigoSelecionado: StateFlow<List<Midia>> = _listaAmigoSelecionado
@@ -1348,15 +1352,31 @@ val termoLimpo = termo.trim()
 
 if (termoLimpo.isEmpty()) {
 
+_estaBuscandoUsuarios.value = false
+
 _resultadosBuscaAmigos.value = emptyList()
 
 return
 
 }
 
+_estaBuscandoUsuarios.value = true
+
 jobBuscaUsuarios = viewModelScope.launch {
 
+try {
+
 _resultadosBuscaAmigos.value = socialRepository.buscarUsuarios(termoLimpo)
+
+} catch (e: Exception) {
+
+_resultadosBuscaAmigos.value = emptyList()
+
+} finally {
+
+_estaBuscandoUsuarios.value = false
+
+}
 
 }
 

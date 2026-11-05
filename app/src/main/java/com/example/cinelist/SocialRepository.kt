@@ -329,62 +329,79 @@ class SocialRepository @Inject constructor() {
 
             val documentosColetados = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
 
-            // 1. Busca por prefixo no nomeBusca (com o primeiro token)
-            val primeiroToken = tokens.firstOrNull() ?: termoLimpo
-            try {
-                val snap1 = firestore.collection("usuarios_publicos")
-                    .whereGreaterThanOrEqualTo("nomeBusca", primeiroToken)
-                    .whereLessThanOrEqualTo("nomeBusca", primeiroToken + "\uf8ff")
-                    .limit(40)
-                    .get()
-                    .await()
-                snap1.documents.forEach { documentosColetados[it.id] = it }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            // 0. Se for formato de UID direto (20 a 45 caracteres alfanuméricos sem espaço)
+            val termoTrim = termo.trim()
+            if (termoTrim.length in 20..45 && !termoTrim.contains(" ")) {
+                try {
+                    val docUid = firestore.collection("usuarios_publicos").document(termoTrim).get().await()
+                    if (docUid.exists()) {
+                        documentosColetados[docUid.id] = docUid
+                    }
+                } catch (_: Exception) {}
             }
 
-            // 2. Busca por prefixo nos demais tokens (ex: apelido entre parênteses ou sobrenome)
-            for (tok in tokens.drop(1).take(2)) {
-                if (tok.length >= 2) {
-                    try {
-                        val snapTok = firestore.collection("usuarios_publicos")
-                            .whereGreaterThanOrEqualTo("nomeBusca", tok)
-                            .whereLessThanOrEqualTo("nomeBusca", tok + "\uf8ff")
-                            .limit(30)
-                            .get()
-                            .await()
-                        snapTok.documents.forEach { documentosColetados[it.id] = it }
-                    } catch (_: Exception) {}
-                }
+            // 1. Busca ampla por prefixo no nomeBusca e nome original
+            val tokensParaBusca = (listOf(termoLimpo) + tokens).distinct().filter { it.length >= 2 }.take(4)
+            for (tok in tokensParaBusca) {
+                // Query no nomeBusca (minúsculo/normalizado)
+                try {
+                    val snapBusca = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("nomeBusca", tok)
+                        .whereLessThanOrEqualTo("nomeBusca", tok + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapBusca.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
+                // Query no campo 'nome' original (caso documento antigo não possua 'nomeBusca')
+                val tokCap = tok.replaceFirstChar { it.uppercase() }
+                try {
+                    val snapNomeCap = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("nome", tokCap)
+                        .whereLessThanOrEqualTo("nome", tokCap + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapNomeCap.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
+                try {
+                    val snapNomeLower = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("nome", tok)
+                        .whereLessThanOrEqualTo("nome", tok + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapNomeLower.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
             }
 
-            // 3. Busca por email (se contiver '@' ou tiver formato de email)
+            // 2. Busca por email (se contiver '@' ou tiver formato de email)
             if (termoLimpo.contains("@")) {
                 try {
                     val snapEmail = firestore.collection("usuarios_publicos")
                         .whereGreaterThanOrEqualTo("email", termoLimpo)
                         .whereLessThanOrEqualTo("email", termoLimpo + "\uf8ff")
-                        .limit(20)
+                        .limit(30)
                         .get()
                         .await()
                     snapEmail.documents.forEach { documentosColetados[it.id] = it }
                 } catch (_: Exception) {}
             }
 
-            // 4. Se encontrou poucos resultados, busca lote de usuários públicos para conferência em memória
-            if (documentosColetados.size < 10) {
-                try {
-                    val snapGeral = firestore.collection("usuarios_publicos")
-                        .limit(100)
-                        .get()
-                        .await()
-                    snapGeral.documents.forEach { documentosColetados[it.id] = it }
-                } catch (_: Exception) {}
-            }
+            // 3. Busca geral com limite ampliado para conferência e busca fuzzy em memória
+            try {
+                val snapGeral = firestore.collection("usuarios_publicos")
+                    .limit(200)
+                    .get()
+                    .await()
+                snapGeral.documents.forEach { documentosColetados[it.id] = it }
+            } catch (_: Exception) {}
 
-            // 5. Filtragem e Ranqueamento em memória
+            // 4. Filtragem e Ranqueamento em memória
             val candidatos = documentosColetados.values.mapNotNull { doc ->
-                if (doc.id == meuUid || doc.id in uidsBloqueados) return@mapNotNull null
+                if (doc.id in uidsBloqueados) return@mapNotNull null
 
                 val nome = doc.getString("nome") ?: "Usuário"
                 val email = doc.getString("email") ?: ""
@@ -392,20 +409,25 @@ class SocialRepository @Inject constructor() {
                 val insta = doc.getString("instagram") ?: ""
                 val tw = doc.getString("twitter") ?: ""
                 val lb = doc.getString("letterboxd") ?: ""
+                val nomeBuscaDoc = doc.getString("nomeBusca") ?: ""
 
-                val textoAgrupado = normalizarTextoBusca("$nome $email $bio $insta $tw $lb")
+                val textoAgrupado = normalizarTextoBusca("$nome $nomeBuscaDoc $email $bio $insta $tw $lb ${doc.id}")
+                val nomeNormalizado = normalizarTextoBusca(nome)
 
-                // Calcula correspondência: todas as palavras ou pelo menos uma correspondência relevante
-                val matchesAll = tokens.isNotEmpty() && tokens.all { tok -> textoAgrupado.contains(tok) }
-                val matchesAny = tokens.any { tok -> textoAgrupado.contains(tok) } || textoAgrupado.contains(termoLimpo)
+                // Match se o texto agrupado contiver o termo completo ou tokens
+                val matchesAllTokens = tokens.isNotEmpty() && tokens.all { tok -> textoAgrupado.contains(tok) }
+                val matchesAnyToken = tokens.any { tok -> tok.length >= 2 && textoAgrupado.contains(tok) }
+                val matchesTermoCompleto = textoAgrupado.contains(termoLimpo)
 
-                if (!matchesAny && !matchesAll) return@mapNotNull null
+                if (!matchesTermoCompleto && !matchesAllTokens && !matchesAnyToken) return@mapNotNull null
 
                 val score = when {
-                    normalizarTextoBusca(nome) == termoLimpo -> 100
-                    normalizarTextoBusca(nome).startsWith(termoLimpo) -> 90
-                    matchesAll -> 80
-                    normalizarTextoBusca(nome).contains(termoLimpo) -> 70
+                    doc.id == termoTrim -> 200
+                    nomeNormalizado == termoLimpo -> 150
+                    nomeNormalizado.startsWith(termoLimpo) -> 120
+                    matchesAllTokens -> 100
+                    matchesTermoCompleto -> 80
+                    nomeNormalizado.contains(termoLimpo) -> 70
                     else -> 50
                 }
 

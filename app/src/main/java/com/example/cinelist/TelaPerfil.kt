@@ -6206,32 +6206,26 @@ fun AbaAmigosPerfil(
 
     var termoBusca by remember { mutableStateOf("") }
 
-    var buscando by remember { mutableStateOf(false) }
+    val estaBuscandoUsuarios by viewModel.estaBuscandoUsuarios.collectAsState()
 
     var jaBuscouAoMenosUmaVez by remember { mutableStateOf(false) }
 
-
-
     val uidsAmigos = remember(amigos) { amigos.map { it.uid }.toSet() }
 
-
-
     LaunchedEffect(termoBusca) {
-        if (termoBusca.trim().isNotEmpty()) {
-            buscando = true
-            delay(350)
-            viewModel.pesquisarUsuarios(termoBusca.trim())
+        val termo = termoBusca.trim()
+        if (termo.isNotEmpty()) {
             jaBuscouAoMenosUmaVez = true
-            buscando = false
+            delay(350)
+            viewModel.pesquisarUsuarios(termo)
         } else {
-            viewModel.pesquisarUsuarios("")
             jaBuscouAoMenosUmaVez = false
-            buscando = false
+            viewModel.pesquisarUsuarios("")
         }
     }
 
-    val resultadosFiltrados = remember(resultadosBusca, meuUid) {
-        resultadosBusca.filter { it.uid != meuUid }
+    val resultadosFiltrados = remember(resultadosBusca) {
+        resultadosBusca
     }
 
 
@@ -6366,7 +6360,7 @@ fun AbaAmigosPerfil(
 
 
 
-                        if (buscando) {
+                        if (estaBuscandoUsuarios) {
 
                             CircularProgressIndicator(
 
@@ -6600,7 +6594,7 @@ fun AbaAmigosPerfil(
                         )
                     }
 
-                    if (!buscando && jaBuscouAoMenosUmaVez && resultadosFiltrados.isEmpty()) {
+                    if (!estaBuscandoUsuarios && jaBuscouAoMenosUmaVez && resultadosFiltrados.isEmpty()) {
                         item {
                             Text(
                                 text = "Nenhum usuário encontrado com esse nome.".t(),
@@ -6612,6 +6606,7 @@ fun AbaAmigosPerfil(
                     }
 
                     itemsIndexed(resultadosFiltrados, key = { index, usuario -> "busca_${usuario.uid}_$index" }) { _, usuario ->
+                        val ehVoce = usuario.uid == meuUid
                         val jaAmigo = uidsAmigos.contains(usuario.uid)
                         val jaPendente = solicitacoesPendentesEnviadas.contains(usuario.uid)
                         var processandoAcao by remember(usuario.uid) { mutableStateOf(false) }
@@ -6640,7 +6635,26 @@ fun AbaAmigosPerfil(
                                     }
                                 }
 
-                                if (jaAmigo) {
+                                if (ehVoce) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text("👤", fontSize = 12.sp)
+                                            Text(
+                                                text = "Você (Seu Perfil)".t(),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                } else if (jaAmigo) {
                                     Surface(
                                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                                         shape = RoundedCornerShape(10.dp)

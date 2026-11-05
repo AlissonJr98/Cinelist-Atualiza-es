@@ -1804,5 +1804,6 @@ object I18nDicionarioEn {
         "No Ar Esta Semana" to "Airing This Week",
         "lançamentos previstos para os próximos 7 dias!" to "releases scheduled for the next 7 days!",
         "Já é seu Amigo" to "Already Friends",
+        "Você (Seu Perfil)" to "You (Your Profile)",
 )
 }

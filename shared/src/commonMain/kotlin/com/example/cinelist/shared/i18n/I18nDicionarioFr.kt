@@ -1747,5 +1747,6 @@ object I18nDicionarioFr {
         "No Ar Esta Semana" to "Diffusé Cette Semaine",
         "lançamentos previstos para os próximos 7 dias!" to "sorties prévues pour les 7 prochains jours !",
         "Já é seu Amigo" to "Déjà Amis",
+        "Você (Seu Perfil)" to "Vous (Votre Profil)",
 )
 }
