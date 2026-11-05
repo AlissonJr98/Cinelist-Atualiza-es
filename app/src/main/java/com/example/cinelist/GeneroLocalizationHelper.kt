@@ -16,6 +16,10 @@ object GeneroLocalizationHelper {
         "acción" to "Action",
         "accion" to "Action",
         "azione" to "Action",
+        "アクション" to "Action",
+        "액션" to "Action",
+        "格闘" to "Action",
+        "martial arts" to "Action",
 
         // Adventure
         "adventure" to "Adventure",
@@ -23,6 +27,9 @@ object GeneroLocalizationHelper {
         "aventure" to "Adventure",
         "abenteuer" to "Adventure",
         "avventura" to "Adventure",
+        "アドベンチャー" to "Adventure",
+        "冒険" to "Adventure",
+        "모험" to "Adventure",
 
         // Action & Adventure
         "action & adventure" to "Action & Adventure",
@@ -35,6 +42,11 @@ object GeneroLocalizationHelper {
         "action & aventure" to "Action & Adventure",
         "action & abenteuer" to "Action & Adventure",
         "azione e avventura" to "Action & Adventure",
+        "アクション＆アドベンチャー" to "Action & Adventure",
+        "アクション & アドベンチャー" to "Action & Adventure",
+        "アクション/アドベンチャー" to "Action & Adventure",
+        "액션 및 모험" to "Action & Adventure",
+        "액션 & 모험" to "Action & Adventure",
 
         // Animation
         "animation" to "Animation",
@@ -44,6 +56,10 @@ object GeneroLocalizationHelper {
         "animacion" to "Animation",
         "animazione" to "Animation",
         "anime" to "Animation",
+        "アニメーション" to "Animation",
+        "アニメ" to "Animation",
+        "애니메이션" to "Animation",
+        "애니" to "Animation",
 
         // Comedy
         "comedy" to "Comedy",
@@ -54,12 +70,16 @@ object GeneroLocalizationHelper {
         "komödie" to "Comedy",
         "komodie" to "Comedy",
         "commedia" to "Comedy",
+        "コメディ" to "Comedy",
+        "코미디" to "Comedy",
 
         // Crime
         "crime" to "Crime",
         "crimen" to "Crime",
         "krimi" to "Crime",
         "crimine" to "Crime",
+        "犯罪" to "Crime",
+        "범죄" to "Crime",
 
         // Documentary
         "documentary" to "Documentary",
@@ -68,11 +88,15 @@ object GeneroLocalizationHelper {
         "documental" to "Documentary",
         "documentaire" to "Documentary",
         "dokumentarfilm" to "Documentary",
+        "ドキュメンタリー" to "Documentary",
+        "다큐멘터리" to "Documentary",
 
         // Drama
         "drama" to "Drama",
         "drame" to "Drama",
         "dramma" to "Drama",
+        "ドラマ" to "Drama",
+        "드라마" to "Drama",
 
         // Family
         "family" to "Family",
@@ -81,12 +105,19 @@ object GeneroLocalizationHelper {
         "famille" to "Family",
         "familie" to "Family",
         "famiglia" to "Family",
+        "ファミリー" to "Family",
+        "家族" to "Family",
+        "가족" to "Family",
 
         // Fantasy
         "fantasy" to "Fantasy",
         "fantasia" to "Fantasy",
         "fantasía" to "Fantasy",
         "fantastique" to "Fantasy",
+        "ファンタジー" to "Fantasy",
+        "판타지" to "Fantasy",
+        "異世界" to "Fantasy",
+        "isekai" to "Fantasy",
 
         // History
         "history" to "History",
@@ -95,11 +126,15 @@ object GeneroLocalizationHelper {
         "histoire" to "History",
         "historie" to "History",
         "storia" to "History",
+        "歴史" to "History",
+        "역사" to "History",
 
         // Horror
         "horror" to "Horror",
         "terror" to "Horror",
         "horreur" to "Horror",
+        "ホラー" to "Horror",
+        "공포" to "Horror",
 
         // Kids
         "kids" to "Kids",
@@ -107,6 +142,9 @@ object GeneroLocalizationHelper {
         "enfants" to "Kids",
         "kinder" to "Kids",
         "bambini" to "Kids",
+        "キッズ" to "Kids",
+        "子供" to "Kids",
+        "키즈" to "Kids",
 
         // Music
         "music" to "Music",
@@ -114,6 +152,8 @@ object GeneroLocalizationHelper {
         "musica" to "Music",
         "musique" to "Music",
         "musik" to "Music",
+        "音楽" to "Music",
+        "음악" to "Music",
 
         // Mystery
         "mystery" to "Mystery",
@@ -121,6 +161,9 @@ object GeneroLocalizationHelper {
         "misterio" to "Mystery",
         "mystère" to "Mystery",
         "mystere" to "Mystery",
+        "ミステリー" to "Mystery",
+        "謎" to "Mystery",
+        "미스터리" to "Mystery",
 
         // News
         "news" to "News",
@@ -129,18 +172,26 @@ object GeneroLocalizationHelper {
         "actualités" to "News",
         "nachrichten" to "News",
         "notizie" to "News",
+        "ニュース" to "News",
+        "뉴스" to "News",
 
         // Reality
         "reality" to "Reality",
         "reality show" to "Reality",
         "reality-tv" to "Reality",
         "télé-réalité" to "Reality",
+        "リアリティ番組" to "Reality",
+        "リアリティ" to "Reality",
+        "리얼리티" to "Reality",
 
         // Romance
         "romance" to "Romance",
         "romântico" to "Romance",
         "romantico" to "Romance",
         "liebesfilm" to "Romance",
+        "ロマンス" to "Romance",
+        "恋愛" to "Romance",
+        "로맨스" to "Romance",
 
         // Sci-Fi & Fantasy
         "sci-fi & fantasy" to "Sci-Fi & Fantasy",
@@ -153,43 +204,60 @@ object GeneroLocalizationHelper {
         "science-fiction & fantastique" to "Sci-Fi & Fantasy",
         "fantascienza e fantasy" to "Sci-Fi & Fantasy",
         "sci-fi" to "Sci-Fi & Fantasy",
+        "sf＆ファンタジー" to "Sci-Fi & Fantasy",
+        "sf & ファンタジー" to "Sci-Fi & Fantasy",
+        "sf 및 판타지" to "Sci-Fi & Fantasy",
+        "sf & 판타지" to "Sci-Fi & Fantasy",
         "ficção científica" to "Science Fiction",
         "ficcao cientifica" to "Science Fiction",
         "science fiction" to "Science Fiction",
         "ciencia ficción" to "Science Fiction",
         "science-fiction" to "Science Fiction",
         "fantascienza" to "Science Fiction",
+        "sf" to "Science Fiction",
+        "サイエンスフィクション" to "Science Fiction",
 
         // Soap
         "soap" to "Soap",
         "novela" to "Soap",
         "novelas" to "Soap",
         "telenovela" to "Soap",
+        "ソープオペラ" to "Soap",
+        "드라마/연속극" to "Soap",
 
         // Talk
         "talk" to "Talk",
         "talk show" to "Talk",
         "talk-show" to "Talk",
         "talkshow" to "Talk",
+        "トーク番組" to "Talk",
+        "토크쇼" to "Talk",
 
         // Thriller
         "thriller" to "Thriller",
         "suspense" to "Thriller",
+        "スリラー" to "Thriller",
+        "스릴러" to "Thriller",
 
         // TV Movie
         "tv movie" to "TV Movie",
         "cinema tv" to "TV Movie",
         "filme de tv" to "TV Movie",
+        "filme para tv" to "TV Movie",
         "película de tv" to "TV Movie",
         "téléfilm" to "TV Movie",
         "tv-film" to "TV Movie",
         "film tv" to "TV Movie",
+        "テレビ映画" to "TV Movie",
+        "tv 영화" to "TV Movie",
 
         // War
         "war" to "War",
         "guerra" to "War",
         "guerre" to "War",
         "kriegsfilm" to "War",
+        "戦争" to "War",
+        "전쟁" to "War",
 
         // War & Politics
         "war & politics" to "War & Politics",
@@ -200,11 +268,17 @@ object GeneroLocalizationHelper {
         "guerra y política" to "War & Politics",
         "guerre & politique" to "War & Politics",
         "krieg & politik" to "War & Politics",
-        "guerra e politica" to "War & Politics",
+        "戦争・政治" to "War & Politics",
+        "戦争 & 政治" to "War & Politics",
+        "전쟁 및 정치" to "War & Politics",
+        "전쟁 & 정치" to "War & Politics",
 
         // Western
         "western" to "Western",
-        "faroeste" to "Western"
+        "faroeste" to "Western",
+        "西部劇" to "Western",
+        "西洋" to "Western",
+        "서부" to "Western"
     )
 
     // Tabela completa de traduções por idioma
@@ -457,6 +531,26 @@ object GeneroLocalizationHelper {
             if (!traducao.isNullOrBlank()) return traducao
         }
 
+        // Se o idioma ativo NÃO for asiático e o termo possui caracteres japoneses, chineses ou coreanos não mapeados
+        val contemCaracteresAsiaticos = limpo.any { ch ->
+            ch in '\u3040'..'\u30ff' || ch in '\u4e00'..'\u9fff' || ch in '\uac00'..'\ud7af'
+        }
+        val idiomaAlvoEhAsiatico = tagIdioma.startsWith("ja", ignoreCase = true) || tagIdioma.startsWith("ko", ignoreCase = true)
+
+        if (contemCaracteresAsiaticos && !idiomaAlvoEhAsiatico) {
+            val l = limpo.lowercase()
+            return when {
+                l.contains("アニメ") || l.contains("애니") -> "Animação".t()
+                l.contains("アクション") || l.contains("액션") || l.contains("格闘") -> "Ação".t()
+                l.contains("冒険") || l.contains("モ험") -> "Aventura".t()
+                l.contains("コメディ") || l.contains("코미디") -> "Comédia".t()
+                l.contains("ドラマ") || l.contains("드라마") -> "Drama".t()
+                l.contains("ファンタジー") || l.contains("판타지") || l.contains("異世界") -> "Fantasia".t()
+                l.contains("sf") || l.contains("サイエンス") -> "Ficção Científica".t()
+                else -> "" // Remove termo asiático isolado para nunca contaminar texto em português ou outros idiomas
+            }
+        }
+
         // Fallback: tenta .t() ou retorna o próprio termo
         return limpo.t()
     }
@@ -465,6 +559,9 @@ object GeneroLocalizationHelper {
         if (generosBrutos.isNullOrBlank()) return ""
         val tokens = generosBrutos.split(",", ";", "/", "•", "|").map { it.trim() }.filter { it.isNotBlank() }
         if (tokens.isEmpty()) return ""
-        return tokens.map { traduzirGeneroIndividual(it, tagIdioma) }.distinct().joinToString(", ")
+        return tokens.map { traduzirGeneroIndividual(it, tagIdioma) }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(", ")
     }
 }

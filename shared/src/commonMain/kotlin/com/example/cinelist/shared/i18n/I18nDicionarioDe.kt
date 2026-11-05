@@ -1727,5 +1727,6 @@ object I18nDicionarioDe {
         "Traduzindo..." to "Übersetze...",
         "Sinopse traduzida com CineAI! ✨" to "Inhaltsangabe mit CineAI übersetzt! ✨",
         "Não foi possível traduzir no momento." to "Übersetzung derzeit nicht möglich.",
+        "Próximo episódio: se começar agora, termina às" to "Nächste Folge: Wenn du jetzt startest, endet es um",
 )
 }

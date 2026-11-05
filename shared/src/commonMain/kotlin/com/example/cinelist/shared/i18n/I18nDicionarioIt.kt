@@ -1707,5 +1707,6 @@ object I18nDicionarioIt {
         "Traduzindo..." to "Traduzione in corso...",
         "Sinopse traduzida com CineAI! ✨" to "Trama tradotta con CineAI! ✨",
         "Não foi possível traduzir no momento." to "Impossibile tradurre al momento.",
+        "Próximo episódio: se começar agora, termina às" to "Prossimo episodio: se inizi adesso, finisci alle",
 )
 }

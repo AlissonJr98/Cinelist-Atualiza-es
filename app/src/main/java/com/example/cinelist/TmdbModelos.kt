@@ -198,7 +198,8 @@ data class TmdbEpisodioItem(
     @SerializedName("name") val nome: String = "",
     @SerializedName("overview") val sinopse: String = "",
     @SerializedName("still_path") val caminhoImagem: String? = null,
-    @SerializedName("vote_average") val avaliacao: Double = 0.0
+    @SerializedName("vote_average") val avaliacao: Double = 0.0,
+    @SerializedName("runtime") val duracaoMinutos: Int? = null
 ) {
     val urlImagemHorizontal: String
         get() = if (!caminhoImagem.isNullOrBlank()) "https://image.tmdb.org/t/p/w300$caminhoImagem" else ""

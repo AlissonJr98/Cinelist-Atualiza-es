@@ -1705,5 +1705,6 @@ object I18nDicionarioJa {
         "Traduzindo..." to "翻訳中...",
         "Sinopse traduzida com CineAI! ✨" to "CineAIであらすじを翻訳しました！✨",
         "Não foi possível traduzir no momento." to "現在翻訳できませんでした。",
+        "Próximo episódio: se começar agora, termina às" to "次のエピソード: 今見始めると終了時刻は",
 )
 }

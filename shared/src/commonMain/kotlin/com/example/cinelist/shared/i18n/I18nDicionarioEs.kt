@@ -1795,5 +1795,6 @@ object I18nDicionarioEs {
         "Traduzindo..." to "Traduciendo...",
         "Sinopse traduzida com CineAI! ✨" to "¡Sinopsis traducida con CineAI! ✨",
         "Não foi possível traduzir no momento." to "No se pudo traducir en este momento.",
+        "Próximo episódio: se começar agora, termina às" to "Próximo episodio: si empiezas ahora, termina a las",
 )
 }

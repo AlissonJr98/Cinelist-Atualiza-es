@@ -291,14 +291,15 @@ fun TelaDetalhes(
     var conjuntoFillers by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var ocultarFillers by remember { mutableStateOf(false) }
 
-    LaunchedEffect(idRealBuscaApi, abaTemporadaVisualizada, ehAnime, episodiosTmdb.size) {
+    LaunchedEffect(idRealBuscaApi, abaTemporadaVisualizada, ehAnime, episodiosTmdb.size, detalhesApi?.temporadas) {
         if (ehAnime && episodiosTmdb.isNotEmpty()) {
             val tituloAnime = detalhesApi?.titulo ?: midiaSalva?.titulo ?: ""
             conjuntoFillers = AnimeFillerManager.obterEpisodiosFillers(
                 contexto,
                 tituloAnime,
                 abaTemporadaVisualizada,
-                episodiosTmdb.size
+                episodiosTmdb.size,
+                detalhesApi?.temporadas
             )
         } else {
             conjuntoFillers = emptySet()
@@ -871,7 +872,7 @@ fun TelaDetalhes(
                             Text(text = tituloDinamico, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             val generoExibicao = if (generoEhValido(midiaSalva?.genero)) midiaSalva?.genero.orEmpty() else detalhesApi?.generoTexto.orEmpty()
                             val generosTraduzidos = remember(generoExibicao, I18n.idiomaAtivo) { GeneroLocalizationHelper.formatarGeneros(generoExibicao, I18n.idiomaAtivo) }
-                            val tipoTraduzido = tipoRealUtilizado.t()
+                            val tipoTraduzido = if (ehAnime) "Anime".t() else tipoRealUtilizado.t()
                             Text(
                                 text = if (generosTraduzidos.isBlank()) tipoTraduzido else "$tipoTraduzido • $generosTraduzidos",
                                 fontSize = 15.sp,
@@ -910,6 +911,19 @@ fun TelaDetalhes(
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
 
+                            // Duração inteligente calculada (com média real de episódios para séries/animes sem duração no TMDB)
+                            val duracaoPadraoMin = remember(detalhesApi?.duracaoMinutos, ehAnime, ehSerieOuAnime, episodiosTmdb.size) {
+                                val base = detalhesApi?.duracaoMinutos ?: 0
+                                if (base > 0) return@remember base
+                                val mediaEps = episodiosTmdb.mapNotNull { it.duracaoMinutos }.filter { it > 0 }
+                                if (mediaEps.isNotEmpty()) return@remember mediaEps.average().toInt().coerceIn(15, 120)
+                                when {
+                                    ehAnime -> 24
+                                    ehSerieOuAnime -> 45
+                                    else -> 105
+                                }
+                            }
+
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -920,7 +934,11 @@ fun TelaDetalhes(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val ano = detalhesApi?.anoLancamento ?: "..."
-                                    val duracao = if ((detalhesApi?.duracaoMinutos ?: 0) > 0) "${detalhesApi?.duracaoMinutos} min" else "..."
+                                    val duracaoTexto = if (ehSerieOuAnime) {
+                                        "~$duracaoPadraoMin min/ep"
+                                    } else {
+                                        if ((detalhesApi?.duracaoMinutos ?: 0) > 0) "${detalhesApi?.duracaoMinutos} min" else "~$duracaoPadraoMin min"
+                                    }
                                     val notaPublico = if (detalhesApi != null) String.format("%.1f ★", detalhesApi?.notaCritica) else "..."
 
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -929,7 +947,7 @@ fun TelaDetalhes(
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text("Duração Real".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
-                                        Text(duracao, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text(duracaoTexto, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text("Média Crítica".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
@@ -938,12 +956,16 @@ fun TelaDetalhes(
                                 }
                             }
 
-                            val duracaoTotalMin = detalhesApi?.duracaoMinutos ?: midiaSalva?.duracaoTotal ?: 0
-                            val horaTerminoTexto = if (duracaoTotalMin > 0) {
-                                val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoTotalMin) }
+                            val horaTerminoTexto = remember(duracaoPadraoMin, ehSerieOuAnime) {
+                                val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoPadraoMin) }
                                 val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                "${"Se começar agora, termina às".t()} ${sdf.format(cal.time)}"
-                            } else ""
+                                val horaFormatada = sdf.format(cal.time)
+                                if (ehSerieOuAnime) {
+                                    "${"Próximo episódio: se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
+                                } else {
+                                    "${"Se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
+                                }
+                            }
 
                             if (horaTerminoTexto.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -2125,16 +2147,25 @@ fun TelaDetalhes(
 
                                 // 🚀 CALCULADORA DE MARATONA (Para Séries/Animes) + MODO MAIS UM E CAMA 🛌
                                 if (ehSerieOuAnime && detalhesApi != null) {
-                                    val totalEps = (detalhesApi?.totalEpisodios ?: 1).coerceAtLeast(1)
-                                    val duracao = (detalhesApi?.duracaoMinutos ?: 20).coerceAtLeast(20)
-                                    val epsFaltam = maxOf(1, totalEps - episodioAtual)
+                                    val totalEps = (detalhesApi?.totalEpisodios ?: episodiosTmdb.size).coerceAtLeast(1)
+                                    val duracao = duracaoPadraoMin
+                                    val epAtualCalculo = (midiaSalva?.episodioAtual ?: episodioAtual).coerceAtLeast(1)
+                                    val epsFaltam = maxOf(1, totalEps - epAtualCalculo)
                                     val horasTotais = (epsFaltam * duracao) / 60
-                                    val dias2Ep = (epsFaltam + 1) / 2
+                                    val dias2Ep = maxOf(1, (epsFaltam + 1) / 2)
 
-                                    val calAgora = java.util.Calendar.getInstance()
-                                    val fmtHora = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                    val horaTermino1Ep = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao) }
-                                    val horaTermino2Ep = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao * 2) }
+                                    val calculosMaratona = remember(totalEps, duracao, epAtualCalculo) {
+                                        val calAgora = java.util.Calendar.getInstance()
+                                        val fmtHora = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                        val calTermino1 = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao) }
+                                        val calTermino2 = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracao * 2) }
+                                        Triple(
+                                            fmtHora.format(calAgora.time),
+                                            fmtHora.format(calTermino1.time),
+                                            fmtHora.format(calTermino2.time)
+                                        )
+                                    }
+                                    val (horaAgoraStr, horaTermino1Str, horaTermino2Str) = calculosMaratona
 
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Card(
@@ -2153,14 +2184,14 @@ fun TelaDetalhes(
                                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 Text("🛌", fontSize = 14.sp)
                                                 Text(
-                                                    text = "${"Mais 1 e cama: Se der play agora".t()} (${fmtHora.format(calAgora.time)}), ${"você dorme às".t()} ${fmtHora.format(horaTermino1Ep.time)} ($duracao ${"min".t()}).",
+                                                    text = "${"Mais 1 e cama: Se der play agora".t()} ($horaAgoraStr), ${"você dorme às".t()} $horaTermino1Str ($duracao ${"min".t()}).",
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = Color(0xFFFBBF24)
                                                 )
                                             }
                                             Text(
-                                                text = "🌙 ${"Maratona de 2 episódios: término previsto para às".t()} ${fmtHora.format(horaTermino2Ep.time)}.",
+                                                text = "🌙 ${"Maratona de 2 episódios: término previsto para às".t()} $horaTermino2Str.",
                                                 fontSize = 10.sp,
                                                 color = MaterialTheme.colorScheme.secondary
                                             )

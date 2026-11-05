@@ -1705,5 +1705,6 @@ object I18nDicionarioKo {
         "Traduzindo..." to "번역 중...",
         "Sinopse traduzida com CineAI! ✨" to "CineAI로 줄거리를 번역했습니다! ✨",
         "Não foi possível traduzir no momento." to "지금은 번역할 수 없습니다.",
+        "Próximo episódio: se começar agora, termina às" to "다음 에피소드: 지금 시작하면 종료 시간",
 )
 }

@@ -408,8 +408,9 @@ fun TelaPrincipal(
     var mostrarDialogoSugestoes by remember { mutableStateOf(false) }
     var midiaParaDecidirRecusada by remember { mutableStateOf<Midia?>(null) }
 
-    var modoVisualizacaoMinhaLista by rememberSaveable { mutableIntStateOf(0) }
-    var modoVisualizacaoDescobrir by rememberSaveable { mutableIntStateOf(0) }
+    val prefsModo = remember(contextoLocal) { contextoLocal.getSharedPreferences("cinelist_prefs", android.content.Context.MODE_PRIVATE) }
+    var modoVisualizacaoMinhaLista by rememberSaveable { mutableIntStateOf(prefsModo.getInt("pref_modo_visualizacao_minha_lista", 0)) }
+    var modoVisualizacaoDescobrir by rememberSaveable { mutableIntStateOf(prefsModo.getInt("pref_modo_visualizacao_descobrir", 0)) }
     var mostrarDialogoSorteio by remember { mutableStateOf(false) }
     var mostrarDialogoCineBot by remember { mutableStateOf(false) }
     var mostrarDialogoMeusStreamings by remember { mutableStateOf(false) }
@@ -841,10 +842,10 @@ fun TelaPrincipal(
         count
     }
 
-    LaunchedEffect(textoPesquisa, quantidadeFiltrosAtivosMinhaLista) {
-        if ((textoPesquisa.isNotBlank() || quantidadeFiltrosAtivosMinhaLista > 0) && modoVisualizacaoMinhaLista == 0) {
-            modoVisualizacaoMinhaLista = 1
-        }
+    val modoEfetivoMinhaLista = if ((textoPesquisa.isNotBlank() || quantidadeFiltrosAtivosMinhaLista > 0) && modoVisualizacaoMinhaLista == 0) {
+        1
+    } else {
+        modoVisualizacaoMinhaLista
     }
 
     LaunchedEffect(textoPesquisa) {
@@ -1598,7 +1599,10 @@ fun TelaPrincipal(
                                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Text("${listaFiltrada.size} " + (if (listaFiltrada.size == 1) "título exibido".t() else "título(s) exibido(s)".t()), color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            IconButton(onClick = { modoVisualizacaoMinhaLista = (modoVisualizacaoMinhaLista + 1) % 3 }, modifier = Modifier.size(32.dp)) {
+                                            IconButton(onClick = {
+                                                modoVisualizacaoMinhaLista = (modoVisualizacaoMinhaLista + 1) % 3
+                                                prefsModo.edit().putInt("pref_modo_visualizacao_minha_lista", modoVisualizacaoMinhaLista).apply()
+                                            }, modifier = Modifier.size(32.dp)) {
                                                 Icon(
                                                     when (modoVisualizacaoMinhaLista) {
                                                         0 -> Icons.Default.AutoAwesome
@@ -1657,7 +1661,7 @@ fun TelaPrincipal(
                                     }
 
                                     // Conteúdo principal com os diferentes modos de visualização
-                                    when (modoVisualizacaoMinhaLista) {
+                                    when (modoEfetivoMinhaLista) {
                                         0 -> {
                                             LazyColumn(
                                                 modifier = Modifier.fillMaxSize(),
@@ -1720,10 +1724,6 @@ fun TelaPrincipal(
                 } else if (pagina == 1) {
                     // Modo Descobrir (não compartilhado)
                     Column(modifier = Modifier.fillMaxSize()) {
-                        LaunchedEffect(textoPesquisa, quantidadeFiltrosAtivosDescobrir) {
-                            if ((textoPesquisa.isNotBlank() || quantidadeFiltrosAtivosDescobrir > 0) && modoVisualizacaoDescobrir == 0) { modoVisualizacaoDescobrir = 1 }
-                        }
-
                         val mostrarLayoutNetflix = modoVisualizacaoDescobrir == 0 && textoPesquisa.isBlank() && quantidadeFiltrosAtivosDescobrir == 0
                         val modoListaDescobrir = modoVisualizacaoDescobrir == 2
 
@@ -1875,7 +1875,10 @@ fun TelaPrincipal(
                                             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                 Text(text = "Exibindo: $tipoPaginado", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                    IconButton(onClick = { modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3 }, modifier = Modifier.size(32.dp)) {
+                                                    IconButton(onClick = {
+                                                        modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3
+                                                        prefsModo.edit().putInt("pref_modo_visualizacao_descobrir", modoVisualizacaoDescobrir).apply()
+                                                    }, modifier = Modifier.size(32.dp)) {
                                                         val iconView = when (modoVisualizacaoDescobrir) {
                                                             0 -> Icons.Default.AutoAwesome
                                                             1 -> Icons.Default.GridView
@@ -1948,7 +1951,10 @@ fun TelaPrincipal(
                                             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                 Text("Exibindo: $tipoPaginado", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                    IconButton(onClick = { modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3 }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+                                                    IconButton(onClick = {
+                                                        modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3
+                                                        prefsModo.edit().putInt("pref_modo_visualizacao_descobrir", modoVisualizacaoDescobrir).apply()
+                                                    }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
                                                     if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
@@ -1976,7 +1982,10 @@ fun TelaPrincipal(
                                             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                 Text("Exibindo: $tipoPaginado", color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                    IconButton(onClick = { modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3 }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+                                                    IconButton(onClick = {
+                                                        modoVisualizacaoDescobrir = (modoVisualizacaoDescobrir + 1) % 3
+                                                        prefsModo.edit().putInt("pref_modo_visualizacao_descobrir", modoVisualizacaoDescobrir).apply()
+                                                    }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
                                                     if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }

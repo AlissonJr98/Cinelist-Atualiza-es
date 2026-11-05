@@ -180,10 +180,13 @@ object AnimeFillerManager {
 
         val g = generos.orEmpty().lowercase()
         val tit = titulo.orEmpty().lowercase()
+        val chaveNormalizada = normalizarChaveObra(tit)
 
-        val ehAnimacao = g.contains("animação") || g.contains("animacao") || g.contains("animation")
-        val termoAnime = g.contains("anime") || tit.contains("anime") ||
-                fillersCuradosAbsolutos.keys.any { tit.contains(it) }
+        // Se for um anime da base curada (ex: Naruto, Bleach, Dragon Ball, One Piece), reconhece imediatamente
+        if (fillersCuradosAbsolutos.keys.any { chaveNormalizada.contains(it) }) return true
+
+        val ehAnimacao = g.contains("animação") || g.contains("animacao") || g.contains("animation") || g.contains("anime") || g.contains("アニメ")
+        val termoAnime = g.contains("anime") || tit.contains("anime")
 
         return ehAnimacao && (termoAnime || t.contains("série") || t.contains("serie"))
     }
@@ -196,12 +199,14 @@ object AnimeFillerManager {
 
     /**
      * Obtém o conjunto de episódios fillers para uma obra e temporada.
+     * Suporta temporadas divididas pelo TMDB calculando o offset de episódios acumulados.
      */
     suspend fun obterEpisodiosFillers(
         context: Context,
         titulo: String,
         temporada: Int,
-        totalEpisodiosNestaTemporada: Int
+        totalEpisodiosNestaTemporada: Int,
+        temporadasSumario: List<TmdbTemporadaItem>? = null
     ): Set<Int> = withContext(Dispatchers.IO) {
         val chaveNormalizada = normalizarChaveObra(titulo)
         val chaveCache = "${chaveNormalizada}_t$temporada"
@@ -222,22 +227,28 @@ object AnimeFillerManager {
             return@withContext conjunto
         }
 
-        // 3. Consulta base curada offline
+        // 3. Consulta base curada offline com offset de temporadas
         val chaveCurada = fillersCuradosAbsolutos.keys.firstOrNull { chaveNormalizada.contains(it) }
         if (chaveCurada != null) {
             val todosFillers = fillersCuradosAbsolutos[chaveCurada].orEmpty()
-            
-            // Se a temporada tiver mais de 100 episódios (ex: One Piece no TMDB que coloca tudo na T1), usa número absoluto
-            val conjunto = if (totalEpisodiosNestaTemporada > 80 || temporada <= 1) {
-                todosFillers.filter { it <= totalEpisodiosNestaTemporada }.toSet()
+
+            // Calcula o número de episódios das temporadas anteriores para mapear a numeração absoluta
+            val offsetEpisodio = if (temporada > 1 && temporadasSumario != null) {
+                temporadasSumario
+                    .filter { it.numeroTemporada in 1 until temporada }
+                    .sumOf { it.quantidadeEpisodios }
             } else {
-                emptySet()
+                0
             }
 
-            if (conjunto.isNotEmpty()) {
-                salvarNoCache(prefs, chaveCache, conjunto)
-                return@withContext conjunto
-            }
+            val maxEpisodio = if (totalEpisodiosNestaTemporada > 0) totalEpisodiosNestaTemporada else 100
+            val fillersNestaTemporada = (1..maxEpisodio).filter { epNum ->
+                val epAbsoluto = offsetEpisodio + epNum
+                todosFillers.contains(epAbsoluto) || todosFillers.contains(epNum)
+            }.toSet()
+
+            salvarNoCache(prefs, chaveCache, fillersNestaTemporada)
+            return@withContext fillersNestaTemporada
         }
 
         // 4. Fallback dinâmico via CineAI (Gemini)
@@ -288,18 +299,22 @@ object AnimeFillerManager {
         context: Context,
         titulo: String,
         temporada: Int,
-        numeroEpisodio: Int
+        numeroEpisodio: Int,
+        temporadasSumario: List<TmdbTemporadaItem>? = null
     ): Boolean {
         val chaveNormalizada = normalizarChaveObra(titulo)
         val chaveCache = "${chaveNormalizada}_t$temporada"
 
         cacheMemoria[chaveCache]?.let { return it.contains(numeroEpisodio) }
 
-        // Verifica na base curada
+        // Verifica na base curada considerando numeração absoluta ou da temporada
         val chaveCurada = fillersCuradosAbsolutos.keys.firstOrNull { chaveNormalizada.contains(it) }
         if (chaveCurada != null) {
             val fillers = fillersCuradosAbsolutos[chaveCurada].orEmpty()
-            if (fillers.contains(numeroEpisodio)) return true
+            val offset = if (temporada > 1 && temporadasSumario != null) {
+                temporadasSumario.filter { it.numeroTemporada in 1 until temporada }.sumOf { it.quantidadeEpisodios }
+            } else 0
+            if (fillers.contains(numeroEpisodio) || fillers.contains(offset + numeroEpisodio)) return true
         }
 
         // Verifica no SharedPreferences

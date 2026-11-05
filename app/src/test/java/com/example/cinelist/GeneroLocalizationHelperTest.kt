@@ -59,6 +59,20 @@ class GeneroLocalizationHelperTest {
     }
 
     @Test
+    fun testTraducaoGenerosJaponesParaPortugues() {
+        I18n.definirIdioma("pt-BR")
+        val resultado = GeneroLocalizationHelper.formatarGeneros("アニメーション, アクション＆アドベンチャー, SF＆ファンタジー", "pt-BR")
+        assertEquals("Animação, Ação e Aventura, Ficção Científica e Fantasia", resultado)
+    }
+
+    @Test
+    fun testAnimeFillerManagerTemporadasNaruto() {
+        // Testa se AnimeFillerManager detecta Naruto em todas as temporadas através do offset
+        val tit = "Naruto"
+        assertTrue(AnimeFillerManager.ehAnime(tipo = "Série", generos = "Animação", titulo = tit))
+    }
+
+    @Test
     fun testNotificacaoAtualizacaoTituloEn() {
         I18n.definirIdioma("en-US")
         val notif = NotificacaoEntity(
