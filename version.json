@@ -1,6 +1,6 @@
-﻿{
-    "versionCode":  114,
-    "versionName":  "2.0.74",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Privacidade estrita no Feed Social (avaliações e mídias de listas pessoais ou grupos permanecem privadas), correção completa de layout contra quebra de linha em botões e chips em qualquer tela, e busca inteligente e resiliente de usuários para adicionar amigos por nome, apelido, token ou e-mail."
+{
+  "versionCode": 114,
+  "versionName": "2.0.74",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.74/CineList-v2.0.74.apk",
+  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
 }
