@@ -1,6 +1,6 @@
-﻿{
-    "versionCode":  113,
-    "versionName":  "2.0.73",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Filtro rápido Meus Streamings no Descobrir, ação direta +1 Ep em notificações, cálculo de tempo economizado com episódios fillers, grade No Ar Esta Semana no calendário e importador inteligente de histórico do TV Time CSV."
+{
+  "versionCode": 113,
+  "versionName": "2.0.73",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.73/CineList-v2.0.73.apk",
+  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
 }
