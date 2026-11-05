@@ -1,6 +1,6 @@
 {
   "versionCode": 112,
   "versionName": "2.0.72",
-  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.72/CineList-v2.0.72.apk",
   "changelog": "Detecção de episódios fillers em todas as temporadas de animes, tradução precisa de gêneros sem mistura de idiomas, fixação permanente do modo de visualização escolhido pelo usuário e estabilização de alta performance da calculadora de maratona e horários."
 }
