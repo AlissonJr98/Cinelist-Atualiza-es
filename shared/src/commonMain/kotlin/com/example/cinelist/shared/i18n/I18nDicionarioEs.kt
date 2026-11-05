@@ -1805,5 +1805,8 @@ object I18nDicionarioEs {
         "lançamentos previstos para os próximos 7 dias!" to "¡estrenos programados para los próximos 7 días!",
         "Já é seu Amigo" to "Ya es tu Amigo",
         "Você (Seu Perfil)" to "Tú (Tu Perfil)",
+        "Nome, e-mail ou ID da conta..." to "Nombre, correo o ID de cuenta...",
+        "Seu ID: " to "Tu ID: ",
+        "Copiar 📋" to "Copiar 📋",
 )
 }

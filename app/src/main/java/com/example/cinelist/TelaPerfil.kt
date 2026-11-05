@@ -6376,7 +6376,49 @@ fun AbaAmigosPerfil(
 
                     }
 
-                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
+                    val meuIdCurto = remember(meuUid) { meuUid.take(8).uppercase() }
+                    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = CineListTokens.EspacoXS)
+                            .clickable {
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(meuIdCurto))
+                                Toast.makeText(contexto, "Seu ID ($meuIdCurto) foi copiado!".t(), Toast.LENGTH_SHORT).show()
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("🆔", fontSize = 13.sp)
+                                Text(
+                                    text = "Seu ID: ".t(),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = meuIdCurto,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Text(
+                                text = "Copiar 📋".t(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
 
                     OutlinedTextField(
 
@@ -6384,7 +6426,7 @@ fun AbaAmigosPerfil(
 
                         onValueChange = { termoBusca = it },
 
-                        placeholder = { Text("Digite o nome do usuário...".t()) },
+                        placeholder = { Text("Nome, e-mail ou ID da conta...".t()) },
 
                         modifier = Modifier.fillMaxWidth(),
 
@@ -6631,7 +6673,24 @@ fun AbaAmigosPerfil(
                                     AvatarComIniciais(fotoUrl = usuario.fotoUrl, nome = usuario.nome, tamanho = 44.dp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(if (usuario.bio.isNotBlank()) usuario.bio else usuario.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        val infoComplementar = buildString {
+                                            if (usuario.email.isNotBlank()) {
+                                                append(usuario.email)
+                                            } else if (usuario.bio.isNotBlank()) {
+                                                append(usuario.bio)
+                                            }
+                                            if (usuario.idCurto.isNotBlank()) {
+                                                if (isNotEmpty()) append(" • ")
+                                                append("ID: ${usuario.idCurto}")
+                                            }
+                                        }
+                                        Text(
+                                            text = infoComplementar.ifBlank { "ID: ${usuario.idCurto}" },
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
                                 }
 

@@ -12,11 +12,14 @@ data class AmigoPerfil(
     val email: String = "",
     val online: Boolean = false,
     val vistoPorUltimo: Long = 0L,
-    // 🚀 NOVOS CAMPOS: Redes Sociais
+    // 🚀 NOVOS CAMPOS: Redes Sociais e Identificador de Perfil
     val instagram: String = "",
     val twitter: String = "",
-    val letterboxd: String = ""
+    val letterboxd: String = "",
+    val codigoUsuario: String = ""
 ) {
+    val idCurto: String
+        get() = if (codigoUsuario.isNotBlank()) codigoUsuario else uid.take(8).uppercase()
     // Mesma tolerância de 45 segundos da sala compartilhada: se o app fechar ou cair a net, vira offline
     val estaRealmenteOnline: Boolean
         get() {

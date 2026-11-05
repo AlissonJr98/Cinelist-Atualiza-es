@@ -1715,5 +1715,8 @@ object I18nDicionarioJa {
         "lançamentos previstos para os próximos 7 dias!" to "今後7日間に予定されているリリース！",
         "Já é seu Amigo" to "すでに友達です",
         "Você (Seu Perfil)" to "あなた（プロフィール）",
+        "Nome, e-mail ou ID da conta..." to "名前、メール、またはアカウントID...",
+        "Seu ID: " to "あなたのID: ",
+        "Copiar 📋" to "コピー 📋",
 )
 }

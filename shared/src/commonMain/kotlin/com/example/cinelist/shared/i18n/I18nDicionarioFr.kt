@@ -1748,5 +1748,8 @@ object I18nDicionarioFr {
         "lançamentos previstos para os próximos 7 dias!" to "sorties prévues pour les 7 prochains jours !",
         "Já é seu Amigo" to "Déjà Amis",
         "Você (Seu Perfil)" to "Vous (Votre Profil)",
+        "Nome, e-mail ou ID da conta..." to "Nom, e-mail ou identifiant du compte...",
+        "Seu ID: " to "Votre ID : ",
+        "Copiar 📋" to "Copier 📋",
 )
 }

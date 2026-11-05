@@ -307,11 +307,12 @@ class SocialRepository @Inject constructor() {
             .trim()
     }
 
-    // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA COM SUPORTE A TOKENS, APELIDOS E FILTRO INTELIGENTE
+    // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA COM SUPORTE A TOKENS, APELIDOS, EMAIL E ID DA CONTA
     suspend fun buscarUsuarios(termo: String): List<AmigoPerfil> = withContext(Dispatchers.IO) {
         val termoLimpo = normalizarTextoBusca(termo)
         if (termoLimpo.isEmpty()) return@withContext emptyList()
         val meuUid = auth.currentUser?.uid ?: ""
+        val termoTrim = termo.trim()
 
         // Extrai tokens limpos (ex: "Gabriel Oliveira (Gabeker)" -> ["gabriel", "oliveira", "gabeker"])
         val tokens = termoLimpo.split(Regex("[\\s\\(\\)\\[\\]\\-_,.]+"))
@@ -329,18 +330,27 @@ class SocialRepository @Inject constructor() {
 
             val documentosColetados = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
 
-            // 0. Se for formato de UID direto (20 a 45 caracteres alfanuméricos sem espaço)
-            val termoTrim = termo.trim()
-            if (termoTrim.length in 20..45 && !termoTrim.contains(" ")) {
+            // 0. Busca por ID direto (UID completo de 20 a 45 chars ou Código de Amigo curto)
+            if (termoTrim.length in 4..45 && !termoTrim.contains(" ")) {
                 try {
                     val docUid = firestore.collection("usuarios_publicos").document(termoTrim).get().await()
                     if (docUid.exists()) {
                         documentosColetados[docUid.id] = docUid
                     }
                 } catch (_: Exception) {}
+
+                // Busca pelo campo codigoUsuario
+                try {
+                    val snapCodigo = firestore.collection("usuarios_publicos")
+                        .whereEqualTo("codigoUsuario", termoTrim.uppercase())
+                        .limit(10)
+                        .get()
+                        .await()
+                    snapCodigo.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
             }
 
-            // 1. Busca ampla por prefixo no nomeBusca e nome original
+            // 1. Busca por prefixo no nomeBusca e nome original
             val tokensParaBusca = (listOf(termoLimpo) + tokens).distinct().filter { it.length >= 2 }.take(4)
             for (tok in tokensParaBusca) {
                 // Query no nomeBusca (minúsculo/normalizado)
@@ -393,7 +403,7 @@ class SocialRepository @Inject constructor() {
             // 3. Busca geral com limite ampliado para conferência e busca fuzzy em memória
             try {
                 val snapGeral = firestore.collection("usuarios_publicos")
-                    .limit(200)
+                    .limit(250)
                     .get()
                     .await()
                 snapGeral.documents.forEach { documentosColetados[it.id] = it }
@@ -403,32 +413,73 @@ class SocialRepository @Inject constructor() {
             val candidatos = documentosColetados.values.mapNotNull { doc ->
                 if (doc.id in uidsBloqueados) return@mapNotNull null
 
-                val nome = doc.getString("nome") ?: "Usuário"
-                val email = doc.getString("email") ?: ""
+                var nome = doc.getString("nome")?.trim() ?: ""
+                val email = doc.getString("email")?.trim() ?: ""
                 val bio = doc.getString("bio") ?: ""
                 val insta = doc.getString("instagram") ?: ""
                 val tw = doc.getString("twitter") ?: ""
                 val lb = doc.getString("letterboxd") ?: ""
-                val nomeBuscaDoc = doc.getString("nomeBusca") ?: ""
+                val codigoUsuario = doc.getString("codigoUsuario")?.takeIf { it.isNotBlank() } ?: doc.id.take(8).uppercase()
 
-                val textoAgrupado = normalizarTextoBusca("$nome $nomeBuscaDoc $email $bio $insta $tw $lb ${doc.id}")
+                // Se o nome no banco for "Usuário" ou estiver vazio, auto-recupera usando o prefixo do e-mail
+                if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                    if (email.contains("@")) {
+                        nome = email.substringBefore("@")
+                            .replace(".", " ")
+                            .replace("_", " ")
+                            .replace("-", " ")
+                            .split(" ")
+                            .filter { it.isNotBlank() }
+                            .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
+                    }
+                    if (nome.isBlank()) {
+                        nome = "Cinéfilo #$codigoUsuario"
+                    }
+                }
+
                 val nomeNormalizado = normalizarTextoBusca(nome)
+                val emailPrefixo = if (email.contains("@")) email.substringBefore("@") else email
+                val emailPrefixoNorm = normalizarTextoBusca(emailPrefixo)
+                val codigoNorm = codigoUsuario.lowercase()
+                val uidNorm = doc.id.lowercase()
+                val termoBaixo = termoTrim.lowercase()
 
-                // Match se o texto agrupado contiver o termo completo ou tokens
-                val matchesAllTokens = tokens.isNotEmpty() && tokens.all { tok -> textoAgrupado.contains(tok) }
-                val matchesAnyToken = tokens.any { tok -> tok.length >= 2 && textoAgrupado.contains(tok) }
-                val matchesTermoCompleto = textoAgrupado.contains(termoLimpo)
+                // Validação de correspondência precisa
+                val isExactId = uidNorm == termoBaixo || codigoNorm == termoBaixo
+                val isPrefixId = termoTrim.length >= 4 && (uidNorm.startsWith(termoBaixo) || codigoNorm.startsWith(termoBaixo))
 
-                if (!matchesTermoCompleto && !matchesAllTokens && !matchesAnyToken) return@mapNotNull null
+                val isMatch = when {
+                    isExactId || isPrefixId -> true
+                    termoLimpo.length <= 2 -> {
+                        // Busca de 1 ou 2 letras: apenas início do nome, início de alguma palavra do nome, início do e-mail ou do ID
+                        nomeNormalizado.startsWith(termoLimpo) ||
+                        nomeNormalizado.split(" ").any { it.startsWith(termoLimpo) } ||
+                        emailPrefixoNorm.startsWith(termoLimpo) ||
+                        codigoNorm.startsWith(termoLimpo)
+                    }
+                    else -> {
+                        // Busca de 3+ letras: correspondência por termo completo ou todos os tokens
+                        nomeNormalizado.contains(termoLimpo) ||
+                        emailPrefixoNorm.contains(termoLimpo) ||
+                        (termoLimpo.contains("@") && email.lowercase().contains(termoLimpo)) ||
+                        tokens.all { tok ->
+                            nomeNormalizado.contains(tok) || emailPrefixoNorm.contains(tok) || codigoNorm.contains(tok) || bio.contains(tok, ignoreCase = true)
+                        }
+                    }
+                }
+
+                if (!isMatch) return@mapNotNull null
 
                 val score = when {
-                    doc.id == termoTrim -> 200
-                    nomeNormalizado == termoLimpo -> 150
-                    nomeNormalizado.startsWith(termoLimpo) -> 120
-                    matchesAllTokens -> 100
-                    matchesTermoCompleto -> 80
-                    nomeNormalizado.contains(termoLimpo) -> 70
-                    else -> 50
+                    isExactId -> 300
+                    nomeNormalizado == termoLimpo -> 200
+                    isPrefixId -> 180
+                    nomeNormalizado.startsWith(termoLimpo) -> 150
+                    emailPrefixoNorm == termoLimpo -> 140
+                    emailPrefixoNorm.startsWith(termoLimpo) -> 120
+                    nomeNormalizado.contains(termoLimpo) -> 100
+                    tokens.isNotEmpty() && tokens.all { tok -> nomeNormalizado.contains(tok) } -> 90
+                    else -> 60
                 }
 
                 val perfil = AmigoPerfil(
@@ -441,7 +492,8 @@ class SocialRepository @Inject constructor() {
                     vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
                     instagram = insta,
                     twitter = tw,
-                    letterboxd = lb
+                    letterboxd = lb,
+                    codigoUsuario = codigoUsuario
                 )
                 Pair(perfil, score)
             }
@@ -458,21 +510,41 @@ class SocialRepository @Inject constructor() {
     suspend fun atualizarPresencaGlobal(online: Boolean) = withContext(Dispatchers.IO) {
         val user = auth.currentUser ?: return@withContext
         try {
-            val nome = user.displayName?.takeIf { it.isNotBlank() } ?: ""
-            val email = user.email ?: ""
-            val foto = user.photoUrl?.toString() ?: ""
+            val email = (user.email ?: "").trim().lowercase()
+            var nome = user.displayName?.trim() ?: ""
 
+            // Se o displayName estiver vazio ou for genérico, deriva um nome legível do email
+            if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                if (email.contains("@")) {
+                    nome = email.substringBefore("@")
+                        .replace(".", " ")
+                        .replace("_", " ")
+                        .replace("-", " ")
+                        .split(" ")
+                        .filter { it.isNotBlank() }
+                        .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
+                }
+                if (nome.isBlank()) {
+                    nome = "Cinéfilo #${user.uid.take(4).uppercase()}"
+                }
+                try {
+                    user.updateProfile(com.google.firebase.auth.userProfileChangeRequest {
+                        displayName = nome
+                    })
+                } catch (_: Exception) {}
+            }
+
+            val codigo = user.uid.take(8).uppercase()
             val dados = mutableMapOf<String, Any>(
+                "uid" to user.uid,
+                "nome" to nome,
+                "nomeBusca" to normalizarTextoBusca(nome),
+                "email" to email,
+                "codigoUsuario" to codigo,
                 "online" to online,
                 "vistoPorUltimo" to System.currentTimeMillis()
             )
-            if (nome.isNotBlank()) {
-                dados["nome"] = nome
-                dados["nomeBusca"] = normalizarTextoBusca(nome)
-            }
-            if (email.isNotBlank()) {
-                dados["email"] = email
-            }
+            val foto = user.photoUrl?.toString() ?: ""
             if (foto.isNotBlank()) {
                 dados["fotoUrl"] = foto
             }
@@ -847,14 +919,16 @@ class SocialRepository @Inject constructor() {
         val user = auth.currentUser ?: return@withContext
         try {
             val dados = mapOf(
+                "uid" to user.uid,
                 "nome" to nome,
-                "nomeBusca" to nome.trim().lowercase(),
+                "nomeBusca" to normalizarTextoBusca(nome),
                 "bio" to bio,
                 "instagram" to instagram,
                 "twitter" to twitter,
                 "letterboxd" to letterboxd,
+                "codigoUsuario" to user.uid.take(8).uppercase(),
                 "fotoUrl" to (user.photoUrl?.toString() ?: ""),
-                "email" to (user.email ?: ""),
+                "email" to (user.email ?: "").trim().lowercase(),
                 "atualizadoEm" to System.currentTimeMillis()
             )
             firestore.collection("usuarios_publicos").document(user.uid).set(dados, SetOptions.merge()).await()

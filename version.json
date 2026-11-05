@@ -1,6 +1,6 @@
 ﻿{
-    "versionCode":  115,
-    "versionName":  "2.0.75",
+    "versionCode":  116,
+    "versionName":  "2.0.76",
     "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Busca inteligente e resiliente de usuários no app: sincronização de estado reativa que elimina o falso positivo de \u0027nenhum usuário encontrado\u0027 antes do retorno da rede; busca inteligente por múltiplos termos, tokens, apelidos, e-mail e UID; exibição clara do perfil com crachá Você (Seu Perfil) ao buscar o próprio nome e Já é seu Amigo quando já conectado; e suporte internacional completo com traduções."
+    "changelog":  "Busca inteligente aprimorada com identificação unificada: resolução do bug da busca por 1 letra que casava domínios como gmail.com; sincronização obrigatória de perfil com nome legível e e-mail no login com Google e E-mail; auto-recuperação de contas salvas como \u0027Usuário\u0027; e exibição e busca rápida pelo ID da conta (CineCode) com botão de cópia de um toque."
 }

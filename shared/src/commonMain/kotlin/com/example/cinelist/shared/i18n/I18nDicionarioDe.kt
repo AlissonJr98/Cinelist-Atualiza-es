@@ -1737,5 +1737,8 @@ object I18nDicionarioDe {
         "lançamentos previstos para os próximos 7 dias!" to "geplante Veröffentlichungen für die nächsten 7 Tage!",
         "Já é seu Amigo" to "Bereits befreundet",
         "Você (Seu Perfil)" to "Du (Dein Profil)",
+        "Nome, e-mail ou ID da conta..." to "Name, E-Mail oder Konto-ID...",
+        "Seu ID: " to "Deine ID: ",
+        "Copiar 📋" to "Kopieren 📋",
 )
 }

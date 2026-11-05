@@ -1715,5 +1715,8 @@ object I18nDicionarioKo {
         "lançamentos previstos para os próximos 7 dias!" to "앞으로 7일 동안 예정된 공개작!",
         "Já é seu Amigo" to "이미 친구입니다",
         "Você (Seu Perfil)" to "나 (내 프로필)",
+        "Nome, e-mail ou ID da conta..." to "이름, 이메일 또는 계정 ID...",
+        "Seu ID: " to "내 ID: ",
+        "Copiar 📋" to "복사 📋",
 )
 }
