@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.Normalizer
 import java.util.UUID
 import javax.inject.Inject
 import com.google.firebase.storage.FirebaseStorage
@@ -299,43 +300,133 @@ class SocialRepository @Inject constructor() {
         }
     }
 
-    // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA
+    private fun normalizarTextoBusca(texto: String): String {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .lowercase()
+            .trim()
+    }
+
+    // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA COM SUPORTE A TOKENS, APELIDOS E FILTRO INTELIGENTE
     suspend fun buscarUsuarios(termo: String): List<AmigoPerfil> = withContext(Dispatchers.IO) {
-        val termoLimpo = termo.trim().lowercase()
+        val termoLimpo = normalizarTextoBusca(termo)
         if (termoLimpo.isEmpty()) return@withContext emptyList()
         val meuUid = auth.currentUser?.uid ?: ""
 
+        // Extrai tokens limpos (ex: "Gabriel Oliveira (Gabeker)" -> ["gabriel", "oliveira", "gabeker"])
+        val tokens = termoLimpo.split(Regex("[\\s\\(\\)\\[\\]\\-_,.]+"))
+            .filter { it.isNotBlank() }
+
         try {
-            val snapshotBloqueados = firestore.collection("usuarios")
-                .document(meuUid)
-                .collection("bloqueados")
-                .get()
-                .await()
-            val uidsBloqueados = snapshotBloqueados.documents.map { it.id }.toSet()
+            val snapshotBloqueados = try {
+                firestore.collection("usuarios")
+                    .document(meuUid)
+                    .collection("bloqueados")
+                    .get()
+                    .await()
+            } catch (_: Exception) { null }
+            val uidsBloqueados = snapshotBloqueados?.documents?.map { it.id }?.toSet() ?: emptySet()
 
-            val snapshot = firestore.collection("usuarios_publicos")
-                .whereGreaterThanOrEqualTo("nomeBusca", termoLimpo)
-                .whereLessThanOrEqualTo("nomeBusca", termoLimpo + "\uf8ff")
-                .get()
-                .await()
+            val documentosColetados = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
 
-            snapshot.documents.mapNotNull { doc ->
-                if (doc.id == meuUid || doc.id in uidsBloqueados) null
-                else {
-                    AmigoPerfil(
-                        uid = doc.id,
-                        nome = doc.getString("nome") ?: "Usuário",
-                        fotoUrl = doc.getString("fotoUrl") ?: "",
-                        bio = doc.getString("bio") ?: "",
-                        email = doc.getString("email") ?: "",
-                        online = doc.getBoolean("online") ?: false,
-                        vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
-                        instagram = doc.getString("instagram") ?: "",
-                        twitter = doc.getString("twitter") ?: "",
-                        letterboxd = doc.getString("letterboxd") ?: ""
-                    )
+            // 1. Busca por prefixo no nomeBusca (com o primeiro token)
+            val primeiroToken = tokens.firstOrNull() ?: termoLimpo
+            try {
+                val snap1 = firestore.collection("usuarios_publicos")
+                    .whereGreaterThanOrEqualTo("nomeBusca", primeiroToken)
+                    .whereLessThanOrEqualTo("nomeBusca", primeiroToken + "\uf8ff")
+                    .limit(40)
+                    .get()
+                    .await()
+                snap1.documents.forEach { documentosColetados[it.id] = it }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // 2. Busca por prefixo nos demais tokens (ex: apelido entre parênteses ou sobrenome)
+            for (tok in tokens.drop(1).take(2)) {
+                if (tok.length >= 2) {
+                    try {
+                        val snapTok = firestore.collection("usuarios_publicos")
+                            .whereGreaterThanOrEqualTo("nomeBusca", tok)
+                            .whereLessThanOrEqualTo("nomeBusca", tok + "\uf8ff")
+                            .limit(30)
+                            .get()
+                            .await()
+                        snapTok.documents.forEach { documentosColetados[it.id] = it }
+                    } catch (_: Exception) {}
                 }
             }
+
+            // 3. Busca por email (se contiver '@' ou tiver formato de email)
+            if (termoLimpo.contains("@")) {
+                try {
+                    val snapEmail = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("email", termoLimpo)
+                        .whereLessThanOrEqualTo("email", termoLimpo + "\uf8ff")
+                        .limit(20)
+                        .get()
+                        .await()
+                    snapEmail.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+            }
+
+            // 4. Se encontrou poucos resultados, busca lote de usuários públicos para conferência em memória
+            if (documentosColetados.size < 10) {
+                try {
+                    val snapGeral = firestore.collection("usuarios_publicos")
+                        .limit(100)
+                        .get()
+                        .await()
+                    snapGeral.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+            }
+
+            // 5. Filtragem e Ranqueamento em memória
+            val candidatos = documentosColetados.values.mapNotNull { doc ->
+                if (doc.id == meuUid || doc.id in uidsBloqueados) return@mapNotNull null
+
+                val nome = doc.getString("nome") ?: "Usuário"
+                val email = doc.getString("email") ?: ""
+                val bio = doc.getString("bio") ?: ""
+                val insta = doc.getString("instagram") ?: ""
+                val tw = doc.getString("twitter") ?: ""
+                val lb = doc.getString("letterboxd") ?: ""
+
+                val textoAgrupado = normalizarTextoBusca("$nome $email $bio $insta $tw $lb")
+
+                // Calcula correspondência: todas as palavras ou pelo menos uma correspondência relevante
+                val matchesAll = tokens.isNotEmpty() && tokens.all { tok -> textoAgrupado.contains(tok) }
+                val matchesAny = tokens.any { tok -> textoAgrupado.contains(tok) } || textoAgrupado.contains(termoLimpo)
+
+                if (!matchesAny && !matchesAll) return@mapNotNull null
+
+                val score = when {
+                    normalizarTextoBusca(nome) == termoLimpo -> 100
+                    normalizarTextoBusca(nome).startsWith(termoLimpo) -> 90
+                    matchesAll -> 80
+                    normalizarTextoBusca(nome).contains(termoLimpo) -> 70
+                    else -> 50
+                }
+
+                val perfil = AmigoPerfil(
+                    uid = doc.id,
+                    nome = nome,
+                    fotoUrl = doc.getString("fotoUrl") ?: "",
+                    bio = bio,
+                    email = email,
+                    online = doc.getBoolean("online") ?: false,
+                    vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
+                    instagram = insta,
+                    twitter = tw,
+                    letterboxd = lb
+                )
+                Pair(perfil, score)
+            }
+
+            candidatos
+                .sortedWith(compareByDescending<Pair<AmigoPerfil, Int>> { it.second }.thenByDescending { it.first.vistoPorUltimo })
+                .map { it.first }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -343,13 +434,28 @@ class SocialRepository @Inject constructor() {
     }
 
     suspend fun atualizarPresencaGlobal(online: Boolean) = withContext(Dispatchers.IO) {
-        val uid = auth.currentUser?.uid ?: return@withContext
+        val user = auth.currentUser ?: return@withContext
         try {
-            val dados = mapOf(
+            val nome = user.displayName?.takeIf { it.isNotBlank() } ?: ""
+            val email = user.email ?: ""
+            val foto = user.photoUrl?.toString() ?: ""
+
+            val dados = mutableMapOf<String, Any>(
                 "online" to online,
                 "vistoPorUltimo" to System.currentTimeMillis()
             )
-            firestore.collection("usuarios_publicos").document(uid)
+            if (nome.isNotBlank()) {
+                dados["nome"] = nome
+                dados["nomeBusca"] = normalizarTextoBusca(nome)
+            }
+            if (email.isNotBlank()) {
+                dados["email"] = email
+            }
+            if (foto.isNotBlank()) {
+                dados["fotoUrl"] = foto
+            }
+
+            firestore.collection("usuarios_publicos").document(user.uid)
                 .set(dados, SetOptions.merge())
                 .await()
         } catch (e: Exception) {

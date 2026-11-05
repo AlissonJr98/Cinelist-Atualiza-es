@@ -685,32 +685,6 @@ viewModelScope.launch {
 
 repository.salvarAvaliacaoMembro(grupoId, midia, nota, comentario, contemSpoiler)
 
-try {
-
-socialRepository.publicarAtividade(
-
-tipo = "AVALIOU",
-
-tmdbId = midia.idTmdb,
-
-tituloMidia = midia.titulo,
-
-posterPath = midia.imagemCapa,
-
-tipoMidia = midia.tipo,
-
-nota = nota.toFloat(),
-
-comentario = comentario
-
-)
-
-} catch (ePub: Exception) {
-
-ePub.printStackTrace()
-
-}
-
 }
 
 }
@@ -2192,35 +2166,7 @@ concluidoPor = if (midia.isCasal) nomeAExibir else ""
 repository.atualizar(midiaConcluida)
 
 if (midia.isCasal && midia.casalId.isNotBlank()) {
-
-repository.limparAssistindoAgora(midia.casalId)
-
-}
-
-try {
-
-socialRepository.publicarAtividade(
-
-tipo = "ASSISTIU",
-
-tmdbId = midia.idTmdb,
-
-tituloMidia = midia.titulo,
-
-posterPath = midia.imagemCapa,
-
-tipoMidia = midia.tipo,
-
-nota = midia.nota.toFloat(),
-
-comentario = ""
-
-)
-
-} catch (ePub: Exception) {
-
-ePub.printStackTrace()
-
+    repository.limparAssistindoAgora(midia.casalId)
 }
 
 }

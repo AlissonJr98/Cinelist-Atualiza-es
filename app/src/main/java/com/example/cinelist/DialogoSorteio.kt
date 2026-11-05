@@ -6,7 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -149,7 +151,9 @@ fun DialogoSorteio(
             ) {
                 // CHIPS DE STATUS
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -171,7 +175,9 @@ fun DialogoSorteio(
 
                 // CHIPS DE TEMPO
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -356,10 +362,18 @@ fun DialogoSorteio(
                         },
                     enabled = !animandoRoleta && listaCandidatos.isNotEmpty(),
                     shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
-                    Text("Girar Novamente".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Girar Novamente".t(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
                 Button(
@@ -374,7 +388,7 @@ fun DialogoSorteio(
                         },
                     enabled = !animandoRoleta && midiaSorteada != null,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    contentPadding = PaddingValues(),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Box(
@@ -388,7 +402,15 @@ fun DialogoSorteio(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Ver Detalhes".t(), fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Black)
+                        Text(
+                            text = "Ver Detalhes".t(),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            color = Color.Black,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }

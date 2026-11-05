@@ -1713,5 +1713,6 @@ object I18nDicionarioKo {
         "Esta Semana" to "이번 주",
         "No Ar Esta Semana" to "이번 주 방영/공개",
         "lançamentos previstos para os próximos 7 dias!" to "앞으로 7일 동안 예정된 공개작!",
+        "Já é seu Amigo" to "이미 친구입니다",
 )
 }

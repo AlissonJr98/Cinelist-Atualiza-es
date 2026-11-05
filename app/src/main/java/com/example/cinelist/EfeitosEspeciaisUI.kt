@@ -1011,7 +1011,10 @@ fun CyberFilterChip(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = if (selected) Color.White else Color.White.copy(alpha = 0.70f)
+                color = if (selected) Color.White else Color.White.copy(alpha = 0.70f),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

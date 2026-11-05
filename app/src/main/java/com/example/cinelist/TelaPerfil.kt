@@ -6217,37 +6217,21 @@ fun AbaAmigosPerfil(
 
 
     LaunchedEffect(termoBusca) {
-
-        if (termoBusca.trim().length >= 2) {
-
+        if (termoBusca.trim().isNotEmpty()) {
             buscando = true
-
-            delay(400)
-
+            delay(350)
             viewModel.pesquisarUsuarios(termoBusca.trim())
-
             jaBuscouAoMenosUmaVez = true
-
             buscando = false
-
         } else {
-
             viewModel.pesquisarUsuarios("")
-
             jaBuscouAoMenosUmaVez = false
-
             buscando = false
-
         }
-
     }
 
-
-
-    val resultadosFiltrados = remember(resultadosBusca, uidsAmigos, meuUid) {
-
-        resultadosBusca.filter { it.uid !in uidsAmigos && it.uid != meuUid }
-
+    val resultadosFiltrados = remember(resultadosBusca, meuUid) {
+        resultadosBusca.filter { it.uid != meuUid }
     }
 
 
@@ -6606,105 +6590,81 @@ fun AbaAmigosPerfil(
 
 
 
-                if (termoBusca.trim().length >= 2) {
-
+                if (termoBusca.trim().isNotEmpty()) {
                     item {
-
                         Text(
-
-                            text = "Resultados da busca:",
-
+                            text = "Resultados da busca:".t(),
                             fontSize = 14.sp,
-
                             fontWeight = FontWeight.Bold,
-
                             color = MaterialTheme.colorScheme.secondary
-
                         )
-
                     }
-
-
 
                     if (!buscando && jaBuscouAoMenosUmaVez && resultadosFiltrados.isEmpty()) {
-
                         item {
-
                             Text(
-
-                                text = "Nenhum usuário encontrado com esse nome.",
-
+                                text = "Nenhum usuário encontrado com esse nome.".t(),
                                 fontSize = 13.sp,
-
                                 color = MaterialTheme.colorScheme.secondary,
-
                                 modifier = Modifier.padding(vertical = CineListTokens.EspacoXS)
-
                             )
-
                         }
-
                     }
 
-
-
                     itemsIndexed(resultadosFiltrados, key = { index, usuario -> "busca_${usuario.uid}_$index" }) { _, usuario ->
-
+                        val jaAmigo = uidsAmigos.contains(usuario.uid)
                         val jaPendente = solicitacoesPendentesEnviadas.contains(usuario.uid)
-
                         var processandoAcao by remember(usuario.uid) { mutableStateOf(false) }
 
-
-
                         Card(
-
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-
                             shape = RoundedCornerShape(12.dp),
-
                             modifier = Modifier.fillMaxWidth()
-
                         ) {
-
                             Row(
-
                                 modifier = Modifier
-
                                     .fillMaxWidth()
-
                                     .padding(CineListTokens.EspacoS),
-
                                 horizontalArrangement = Arrangement.SpaceBetween,
-
                                 verticalAlignment = Alignment.CenterVertically
-
                             ) {
-
                                 Row(
-
                                     verticalAlignment = Alignment.CenterVertically,
-
                                     horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
-
                                     modifier = Modifier.weight(1f)
-
                                 ) {
-
                                     AvatarComIniciais(fotoUrl = usuario.fotoUrl, nome = usuario.nome, tamanho = 44.dp)
-
                                     Column(modifier = Modifier.weight(1f)) {
-
                                         Text(usuario.nome, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
                                         Text(if (usuario.bio.isNotBlank()) usuario.bio else usuario.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
                                     }
-
                                 }
 
-
-
-                                if (jaPendente) {
+                                if (jaAmigo) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Text(
+                                                text = "Já é seu Amigo".t(),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                } else if (jaPendente) {
 
                                     OutlinedButton(
 

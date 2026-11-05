@@ -1713,5 +1713,6 @@ object I18nDicionarioJa {
         "Esta Semana" to "今週",
         "No Ar Esta Semana" to "今週の放送・配信",
         "lançamentos previstos para os próximos 7 dias!" to "今後7日間に予定されているリリース！",
+        "Já é seu Amigo" to "すでに友達です",
 )
 }
