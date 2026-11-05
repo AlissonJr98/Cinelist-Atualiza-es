@@ -3244,6 +3244,28 @@ fun TelaPerfil(
 
                         }
 
+                        val totalFillersPoupados = remember(listaDeMidias) {
+                            listaDeMidias.sumOf { m ->
+                                if (m.status == StatusMidia.ASSISTINDO.valor || m.status == StatusMidia.CONCLUIDO.valor) {
+                                    AnimeFillerManager.obterTotalFillersObra(m.titulo)
+                                } else 0
+                            }
+                        }
+                        if (totalFillersPoupados > 0) {
+                            val (horasFillers, minFillers) = remember(totalFillersPoupados) {
+                                AnimeFillerManager.calcularEconomiaFillers(totalFillersPoupados, 24)
+                            }
+                            val tempoEconomizadoFillers = AnimeFillerManager.formatarEconomiaTempo(horasFillers, minFillers)
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                CardEstatistica(
+                                    titulo = "Economia Fillers ⚡".t(),
+                                    valor = "~$tempoEconomizadoFillers",
+                                    subtitulo = "$totalFillersPoupados ${"episódios pulados em animes".t()}",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
 
 
                         if (midiasComNota.isNotEmpty()) {

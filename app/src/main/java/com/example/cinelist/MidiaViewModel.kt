@@ -1946,33 +1946,15 @@ _provedorSelecionadoQuery.value = provedorId?.toString()
 }
 
 fun alternarFiltroMeusStreamings(queryPipe: String?) {
-
-if (_filtroMeusStreamingsAtivo.value) {
-
-_filtroMeusStreamingsAtivo.value = false
-
-_provedorSelecionadoId.value = null
-
-_provedorSelecionadoQuery.value = null
-
-_filtroMeusStreamingsAtivo.value = false
-
-_provedorSelecionadoQuery.value = null
-
-} else {
-
-_filtroMeusStreamingsAtivo.value = true
-
-_provedorSelecionadoId.value = null
-
-_provedorSelecionadoQuery.value = null
-
-_filtroMeusStreamingsAtivo.value = false
-
-_provedorSelecionadoQuery.value = queryPipe
-
-}
-
+    if (_filtroMeusStreamingsAtivo.value) {
+        _filtroMeusStreamingsAtivo.value = false
+        _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = null
+    } else {
+        _filtroMeusStreamingsAtivo.value = true
+        _provedorSelecionadoId.value = null
+        _provedorSelecionadoQuery.value = queryPipe
+    }
 }
 
 fun selecionarGenero(generoId: Int?) {

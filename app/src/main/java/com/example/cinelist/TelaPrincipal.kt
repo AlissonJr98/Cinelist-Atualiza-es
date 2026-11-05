@@ -821,14 +821,16 @@ fun TelaPrincipal(
     val generoSelecionadoId by viewModel.generoSelecionadoId.collectAsState()
     val ordenacaoSelecionada by viewModel.ordenacaoSelecionada.collectAsState()
     val tipoPaginado by viewModel.tipoPaginado.collectAsState()
+    val filtroMeusStreamingsAtivo by viewModel.filtroMeusStreamingsAtivo.collectAsState()
     val resultadosPaginadosApi = viewModel.resultadosBuscaPaginadaApi.collectAsLazyPagingItems()
 
-    val quantidadeFiltrosAtivosDescobrir = remember(tipoPaginado, provedorSelecionadoId, generoSelecionadoId, ordenacaoSelecionada) {
+    val quantidadeFiltrosAtivosDescobrir = remember(tipoPaginado, provedorSelecionadoId, generoSelecionadoId, ordenacaoSelecionada, filtroMeusStreamingsAtivo) {
         var count = 0
         if (tipoPaginado != "Todos") count++
         if (provedorSelecionadoId != null) count++
         if (generoSelecionadoId != null) count++
         if (ordenacaoSelecionada != "popularity.desc") count++
+        if (filtroMeusStreamingsAtivo) count++
         count
     }
 
@@ -970,7 +972,13 @@ fun TelaPrincipal(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Filtros de Descoberta".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosDescobrir > 0) {
-                        TextButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }) { Text("Redefinir Tudo".t(), color = Color(0xFFFF5252)) }
+                        TextButton(onClick = {
+                            viewModel.selecionarTipo("Todos")
+                            viewModel.selecionarProvedorStreaming(null)
+                            viewModel.selecionarGenero(null)
+                            viewModel.selecionarOrdenacao("popularity.desc")
+                            if (filtroMeusStreamingsAtivo) viewModel.alternarFiltroMeusStreamings(null)
+                        }) { Text("Redefinir Tudo".t(), color = Color(0xFFFF5252)) }
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -983,7 +991,6 @@ fun TelaPrincipal(
                             Text("⚙️ " + "Configurar Meus".t(), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
-                    val filtroMeusStreamingsAtivo by viewModel.filtroMeusStreamingsAtivo.collectAsState()
                     val meusStreamingsQuery = StreamingManager.obterQueryMeusStreamings(contextoLocal)
                     FilterChip(
                         selected = filtroMeusStreamingsAtivo,
@@ -1904,6 +1911,20 @@ fun TelaPrincipal(
                                                             )
                                                         }
                                                     }
+                                                    FilterChip(
+                                                        selected = filtroMeusStreamingsAtivo,
+                                                        onClick = {
+                                                            val q = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                                                            if (q != null) {
+                                                                viewModel.alternarFiltroMeusStreamings(q)
+                                                            } else {
+                                                                mostrarDialogoMeusStreamings = true
+                                                            }
+                                                        },
+                                                        label = { Text("🍿 " + "Meus Streamings".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                                        leadingIcon = if (filtroMeusStreamingsAtivo) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) } } else null,
+                                                        modifier = Modifier.height(32.dp)
+                                                    )
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
@@ -1956,6 +1977,20 @@ fun TelaPrincipal(
                                                         prefsModo.edit().putInt("pref_modo_visualizacao_descobrir", modoVisualizacaoDescobrir).apply()
                                                     }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
                                                     if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
+                                                    FilterChip(
+                                                        selected = filtroMeusStreamingsAtivo,
+                                                        onClick = {
+                                                            val q = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                                                            if (q != null) {
+                                                                viewModel.alternarFiltroMeusStreamings(q)
+                                                            } else {
+                                                                mostrarDialogoMeusStreamings = true
+                                                            }
+                                                        },
+                                                        label = { Text("🍿 " + "Meus Streamings".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                                        leadingIcon = if (filtroMeusStreamingsAtivo) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) } } else null,
+                                                        modifier = Modifier.height(32.dp)
+                                                    )
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
@@ -1987,6 +2022,20 @@ fun TelaPrincipal(
                                                         prefsModo.edit().putInt("pref_modo_visualizacao_descobrir", modoVisualizacaoDescobrir).apply()
                                                     }, modifier = Modifier.size(32.dp)) { val iconView = when (modoVisualizacaoDescobrir) { 0 -> Icons.Default.AutoAwesome; 1 -> Icons.Default.GridView; else -> Icons.AutoMirrored.Filled.ViewList }; Icon(iconView, "Alternar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
                                                     if (quantidadeFiltrosAtivosDescobrir > 0) { IconButton(onClick = { viewModel.selecionarTipo("Todos"); viewModel.selecionarProvedorStreaming(null); viewModel.selecionarGenero(null); viewModel.selecionarOrdenacao("popularity.desc") }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp)) } }
+                                                    FilterChip(
+                                                        selected = filtroMeusStreamingsAtivo,
+                                                        onClick = {
+                                                            val q = StreamingManager.obterQueryMeusStreamings(contextoLocal)
+                                                            if (q != null) {
+                                                                viewModel.alternarFiltroMeusStreamings(q)
+                                                            } else {
+                                                                mostrarDialogoMeusStreamings = true
+                                                            }
+                                                        },
+                                                        label = { Text("🍿 " + "Meus Streamings".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                                        leadingIcon = if (filtroMeusStreamingsAtivo) { { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) } } else null,
+                                                        modifier = Modifier.height(32.dp)
+                                                    )
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }

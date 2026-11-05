@@ -1731,16 +1731,29 @@ fun TelaDetalhes(
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.SpaceBetween
                                                     ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                                        ) {
-                                                            Text(text = "🟡", fontSize = 12.sp)
+                                                        val (horasEcon, minEcon) = remember(conjuntoFillers.size, duracaoPadraoMin) {
+                                                            AnimeFillerManager.calcularEconomiaFillers(conjuntoFillers.size, duracaoPadraoMin)
+                                                        }
+                                                        val tempoEconTexto = AnimeFillerManager.formatarEconomiaTempo(horasEcon, minEcon)
+
+                                                        Column {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                            ) {
+                                                                Text(text = "🟡", fontSize = 12.sp)
+                                                                Text(
+                                                                    text = "${conjuntoFillers.size} ${"fillers nesta temporada".t()}",
+                                                                    fontSize = 11.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = Color(0xFFF59E0B)
+                                                                )
+                                                            }
                                                             Text(
-                                                                text = "${conjuntoFillers.size} ${"fillers nesta temporada".t()}",
-                                                                fontSize = 11.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = Color(0xFFF59E0B)
+                                                                text = "⚡ ${"Economize".t()} ~$tempoEconTexto ${"pulando".t()}",
+                                                                fontSize = 10.sp,
+                                                                fontWeight = FontWeight.Medium,
+                                                                color = MaterialTheme.colorScheme.secondary
                                                             )
                                                         }
 

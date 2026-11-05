@@ -62,8 +62,8 @@ object BackupManager {
     }
 
     /**
-     * Importa filmes/séries a partir de arquivos CSV padrão do Letterboxd (watched.csv, watchlist.csv)
-     * ou IMDb (ratings.csv, watchlist.csv) ou do próprio CineList CSV.
+     * Importa filmes/séries a partir de arquivos CSV padrão do Letterboxd (watched.csv, watchlist.csv),
+     * IMDb (ratings.csv, watchlist.csv), TV Time (history / watched shows) ou do próprio CineList CSV.
      */
     fun importarDeCsv(context: Context, uri: Uri): List<Midia>? {
         return try {
@@ -77,6 +77,13 @@ object BackupManager {
 
                     val ehLetterboxd = cabecalho.contains("letterboxd uri") || (cabecalho.contains("name") && cabecalho.contains("year"))
                     val ehImdb = cabecalho.contains("const") || cabecalho.contains("your rating") || cabecalho.contains("imdb")
+                    val ehTvTime = cabecalho.contains("show_name") || cabecalho.contains("series_name") || cabecalho.contains("episode_number") || cabecalho.contains("tv time") || (cabecalho.contains("season") && cabecalho.contains("episode"))
+
+                    val cabecalhoColunas = parseCsvLine(cabecalho)
+                    val idxTvTimeShow = cabecalhoColunas.indexOfFirst { it.contains("show") || it.contains("series") || it.contains("name") || it.contains("title") }
+                    val idxTvTimeSeason = cabecalhoColunas.indexOfFirst { it.contains("season") }
+                    val idxTvTimeEp = cabecalhoColunas.indexOfFirst { it.contains("episode") }
+                    val mapaProgressoTvTime = mutableMapOf<String, Pair<Int, Int>>() // Nome -> (Temporada, Episodio)
 
                     linhas.drop(1).forEach { linha ->
                         if (linha.isBlank()) return@forEach
@@ -84,7 +91,18 @@ object BackupManager {
                         val colunas = parseCsvLine(linha)
                         if (colunas.isEmpty()) return@forEach
 
-                        if (ehLetterboxd) {
+                        if (ehTvTime) {
+                            val nome = colunas.getOrNull(if (idxTvTimeShow >= 0) idxTvTimeShow else 0)?.trim() ?: ""
+                            val temp = (colunas.getOrNull(if (idxTvTimeSeason >= 0) idxTvTimeSeason else 1)?.toIntOrNull() ?: 1).coerceAtLeast(1)
+                            val ep = (colunas.getOrNull(if (idxTvTimeEp >= 0) idxTvTimeEp else 2)?.toIntOrNull() ?: 1).coerceAtLeast(1)
+
+                            if (nome.isNotBlank()) {
+                                val atual = mapaProgressoTvTime[nome]
+                                if (atual == null || temp > atual.first || (temp == atual.first && ep > atual.second)) {
+                                    mapaProgressoTvTime[nome] = Pair(temp, ep)
+                                }
+                            }
+                        } else if (ehLetterboxd) {
                             // Letterboxd: Date, Name, Year, Letterboxd URI, Rating
                             val nome = colunas.getOrNull(1)?.ifBlank { colunas.getOrNull(0) } ?: ""
                             val notaStr = colunas.getOrNull(4) ?: colunas.getOrNull(3) ?: "0"
@@ -146,6 +164,21 @@ object BackupManager {
                                     )
                                 )
                             }
+                        }
+                    }
+
+                    if (ehTvTime) {
+                        mapaProgressoTvTime.forEach { (nome, progresso) ->
+                            resultado.add(
+                                Midia(
+                                    titulo = nome,
+                                    tipo = "Série",
+                                    status = StatusMidia.ASSISTINDO.valor,
+                                    temporadaAtual = progresso.first,
+                                    episodioAtual = progresso.second,
+                                    listaCustomizada = "Importados TV Time"
+                                )
+                            )
                         }
                     }
 

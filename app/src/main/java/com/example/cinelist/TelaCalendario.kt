@@ -6,12 +6,15 @@ import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Movie
@@ -139,8 +142,17 @@ fun TelaCalendario(
         carregando = false
     }
 
+    val hojeAgoraMillis = remember { System.currentTimeMillis() }
+    val umaSemanaFrenteMillis = remember(hojeAgoraMillis) { hojeAgoraMillis + (7L * 24 * 60 * 60 * 1000) }
+    val umDiaAtrasMillis = remember(hojeAgoraMillis) { hojeAgoraMillis - (24L * 60 * 60 * 1000) }
+
+    val itensEstaSemana = remember(itensCalendario) {
+        itensCalendario.filter { it.dataExibicaoMillis in umDiaAtrasMillis..umaSemanaFrenteMillis }
+    }
+
     val itensFiltrados = remember(itensCalendario, filtroSelecionado) {
         when (filtroSelecionado) {
+            "ESTA_SEMANA" -> itensEstaSemana
             "SERIE" -> itensCalendario.filter { it.tipoItem == "SERIE" }
             "FILME" -> itensCalendario.filter { it.tipoItem == "FILME" }
             else -> itensCalendario
@@ -174,13 +186,22 @@ fun TelaCalendario(
         ) {
             // Chips de Filtro
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
                     selected = filtroSelecionado == "TODOS",
                     onClick = { filtroSelecionado = "TODOS" },
                     label = { Text("${"Todos".t()} (${itensCalendario.size})") }
+                )
+                FilterChip(
+                    selected = filtroSelecionado == "ESTA_SEMANA",
+                    onClick = { filtroSelecionado = "ESTA_SEMANA" },
+                    label = { Text("⚡ " + "Esta Semana".t() + " (${itensEstaSemana.size})") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 )
                 FilterChip(
                     selected = filtroSelecionado == "SERIE",
@@ -192,6 +213,43 @@ fun TelaCalendario(
                     onClick = { filtroSelecionado = "FILME" },
                     label = { Text("🎬 Filmes".t()) }
                 )
+            }
+
+            if (filtroSelecionado != "ESTA_SEMANA" && itensEstaSemana.isNotEmpty() && !carregando) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { filtroSelecionado = "ESTA_SEMANA" },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "🗓️", fontSize = 20.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "No Ar Esta Semana".t(),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "${itensEstaSemana.size} ${"lançamentos previstos para os próximos 7 dias!".t()}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             if (carregando) {

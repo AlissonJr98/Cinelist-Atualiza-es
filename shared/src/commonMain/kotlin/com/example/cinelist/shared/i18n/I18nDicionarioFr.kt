@@ -1739,5 +1739,12 @@ object I18nDicionarioFr {
         "Sinopse traduzida com CineAI! ✨" to "Synopsis traduit avec CineAI ! ✨",
         "Não foi possível traduzir no momento." to "Impossible de traduire pour le moment.",
         "Próximo episódio: se começar agora, termina às" to "Prochain épisode : si vous commencez maintenant, fin à",
+        "Economize" to "Économisez",
+        "pulando" to "en ignorant",
+        "Economia Fillers ⚡" to "Économie de Fillers ⚡",
+        "episódios pulados em animes" to "épisodes ignorés dans les animes",
+        "Esta Semana" to "Cette Semaine",
+        "No Ar Esta Semana" to "Diffusé Cette Semaine",
+        "lançamentos previstos para os próximos 7 dias!" to "sorties prévues pour les 7 prochains jours !",
 )
 }

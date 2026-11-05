@@ -136,7 +136,9 @@ class LembreteWorker(
                                         CANAL_LANCAMENTOS,
                                         idReferenciaEp,
                                         tituloNotif,
-                                        corpoNotif
+                                        corpoNotif,
+                                        serie.id,
+                                        serie.titulo
                                     )
                                 }
                             }
@@ -325,16 +327,33 @@ class LembreteWorker(
         }
     }
 
-    private fun enviarNotificacaoSistema(canalId: String, id: Int, titulo: String, mensagem: String) {
+    private fun enviarNotificacaoSistema(
+        canalId: String,
+        id: Int,
+        titulo: String,
+        mensagem: String,
+        midiaId: Int? = null,
+        tituloSerie: String? = null
+    ) {
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notification = NotificationCompat.Builder(applicationContext, canalId)
+        val builder = NotificationCompat.Builder(applicationContext, canalId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(titulo)
             .setContentText(mensagem)
             .setStyle(NotificationCompat.BigTextStyle().bigText(mensagem))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .build()
-        manager.notify(id, notification)
+
+        if (midiaId != null) {
+            val pAvancar = AvancoEpisodioReceiver.criarPendingIntentAvancar(
+                applicationContext,
+                midiaId,
+                id,
+                tituloSerie
+            )
+            builder.addAction(R.drawable.ic_notification, "+1 Ep Concluído", pAvancar)
+        }
+
+        manager.notify(id, builder.build())
     }
 }

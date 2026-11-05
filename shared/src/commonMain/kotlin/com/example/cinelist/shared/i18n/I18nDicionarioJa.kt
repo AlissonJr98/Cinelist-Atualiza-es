@@ -1706,5 +1706,12 @@ object I18nDicionarioJa {
         "Sinopse traduzida com CineAI! ✨" to "CineAIであらすじを翻訳しました！✨",
         "Não foi possível traduzir no momento." to "現在翻訳できませんでした。",
         "Próximo episódio: se começar agora, termina às" to "次のエピソード: 今見始めると終了時刻は",
+        "Economize" to "節約",
+        "pulando" to "スキップで",
+        "Economia Fillers ⚡" to "フィラー節約時間 ⚡",
+        "episódios pulados em animes" to "アニメでスキップしたエピソード",
+        "Esta Semana" to "今週",
+        "No Ar Esta Semana" to "今週の放送・配信",
+        "lançamentos previstos para os próximos 7 dias!" to "今後7日間に予定されているリリース！",
 )
 }

@@ -328,4 +328,39 @@ object AnimeFillerManager {
 
         return false
     }
+
+    /**
+     * Calcula horas e minutos economizados ao pular determinada quantidade de episódios fillers.
+     */
+    fun calcularEconomiaFillers(
+        quantidadeFillers: Int,
+        duracaoMediaMinutos: Int = 24
+    ): Pair<Int, Int> {
+        val minutosTotais = quantidadeFillers * duracaoMediaMinutos
+        return Pair(minutosTotais / 60, minutosTotais % 60)
+    }
+
+    /**
+     * Formata horas e minutos economizados em texto legível.
+     */
+    fun formatarEconomiaTempo(horas: Int, minutos: Int): String {
+        return when {
+            horas > 0 && minutos > 0 -> "${horas}h ${minutos}m"
+            horas > 0 -> "${horas}h"
+            else -> "${minutos}m"
+        }
+    }
+
+    /**
+     * Retorna o total de fillers conhecidos na base curada para um anime.
+     */
+    fun obterTotalFillersObra(titulo: String): Int {
+        val chaveNormalizada = normalizarChaveObra(titulo)
+        val chaveCurada = fillersCuradosAbsolutos.keys.firstOrNull { chaveNormalizada.contains(it) }
+        return if (chaveCurada != null) {
+            fillersCuradosAbsolutos[chaveCurada]?.size ?: 0
+        } else {
+            0
+        }
+    }
 }

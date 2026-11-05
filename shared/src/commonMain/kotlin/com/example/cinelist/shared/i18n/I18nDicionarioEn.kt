@@ -1796,5 +1796,12 @@ object I18nDicionarioEn {
         "Sinopse traduzida com CineAI! ✨" to "Synopsis translated with CineAI! ✨",
         "Não foi possível traduzir no momento." to "Could not translate at this moment.",
         "Próximo episódio: se começar agora, termina às" to "Next episode: if you start now, ends at",
+        "Economize" to "Save",
+        "pulando" to "by skipping",
+        "Economia Fillers ⚡" to "Filler Savings ⚡",
+        "episódios pulados em animes" to "episodes skipped in anime",
+        "Esta Semana" to "This Week",
+        "No Ar Esta Semana" to "Airing This Week",
+        "lançamentos previstos para os próximos 7 dias!" to "releases scheduled for the next 7 days!",
 )
 }

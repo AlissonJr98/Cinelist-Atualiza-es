@@ -1706,5 +1706,12 @@ object I18nDicionarioKo {
         "Sinopse traduzida com CineAI! ✨" to "CineAI로 줄거리를 번역했습니다! ✨",
         "Não foi possível traduzir no momento." to "지금은 번역할 수 없습니다.",
         "Próximo episódio: se começar agora, termina às" to "다음 에피소드: 지금 시작하면 종료 시간",
+        "Economize" to "절약",
+        "pulando" to "건너뛰어",
+        "Economia Fillers ⚡" to "필러 절약 시간 ⚡",
+        "episódios pulados em animes" to "애니메이션에서 건너뛴 에피소드",
+        "Esta Semana" to "이번 주",
+        "No Ar Esta Semana" to "이번 주 방영/공개",
+        "lançamentos previstos para os próximos 7 dias!" to "앞으로 7일 동안 예정된 공개작!",
 )
 }
