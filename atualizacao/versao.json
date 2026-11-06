@@ -1,6 +1,6 @@
-﻿{
-    "versaoCodigo":  118,
-    "versaoNome":  "2.0.78",
-    "notas":  "Sincronizacao de foto de perfil do Google para novos e existentes usuarios, exibicao garantida da foto na busca de amigos e lista social, e atualizacao em tempo real do nome de perfil para todos os amigos conectados.",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
+{
+  "versaoCodigo": 118,
+  "versaoNome": "2.0.78",
+  "notas": "Novas melhorias, correções e novidades adicionadas nesta versão.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.78/CineList-v2.0.78.apk"
 }
