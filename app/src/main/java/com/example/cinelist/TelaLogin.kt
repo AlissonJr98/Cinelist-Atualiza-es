@@ -93,25 +93,44 @@ fun TelaLogin(
                             if (tarefaFirebase.isSuccessful) {
                                 val user = firebaseAuth.currentUser
                                 if (user != null) {
-                                    val gNome = conta?.displayName?.takeIf { it.isNotBlank() } ?: user.displayName ?: ""
-                                    val gEmail = (conta?.email ?: user.email ?: "").trim().lowercase()
-                                    val gFoto = conta?.photoUrl?.toString() ?: user.photoUrl?.toString() ?: ""
+                                    val gNome = conta?.displayName?.takeIf { it.isNotBlank() }
+                                        ?: user.displayName?.takeIf { it.isNotBlank() }
+                                        ?: user.providerData.firstNotNullOfOrNull { it.displayName?.takeIf { d -> d.isNotBlank() } }
+                                        ?: ""
+                                    val gEmail = (conta?.email ?: user.email ?: user.providerData.firstNotNullOfOrNull { it.email } ?: "").trim().lowercase()
+                                    val gFoto = conta?.photoUrl?.toString()?.takeIf { it.isNotBlank() }
+                                        ?: user.photoUrl?.toString()?.takeIf { it.isNotBlank() }
+                                        ?: user.providerData.firstNotNullOfOrNull { it.photoUrl?.toString()?.takeIf { p -> p.isNotBlank() } }
+                                        ?: ""
                                     val nomeFinal = if (gNome.isNotBlank()) gNome else if (gEmail.contains("@")) {
                                         gEmail.substringBefore("@").replace(".", " ").replace("_", " ").split(" ")
                                             .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
                                     } else "Cinéfilo #${user.uid.take(4).uppercase()}"
 
+                                    // Persiste imediatamente no Firebase Auth local
+                                    try {
+                                        val atualizacao = com.google.firebase.auth.userProfileChangeRequest {
+                                            displayName = nomeFinal
+                                            if (gFoto.isNotBlank()) {
+                                                photoUri = android.net.Uri.parse(gFoto)
+                                            }
+                                        }
+                                        user.updateProfile(atualizacao)
+                                    } catch (_: Exception) {}
+
                                     val codigo = user.uid.take(8).uppercase()
-                                    val dados = mapOf(
+                                    val dados = mutableMapOf<String, Any>(
                                         "uid" to user.uid,
                                         "nome" to nomeFinal,
                                         "nomeBusca" to Normalizer.normalize(nomeFinal, Normalizer.Form.NFD).replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").lowercase().trim(),
                                         "email" to gEmail,
                                         "codigoUsuario" to codigo,
-                                        "fotoUrl" to gFoto,
                                         "online" to true,
                                         "vistoPorUltimo" to System.currentTimeMillis()
                                     )
+                                    if (gFoto.isNotBlank()) {
+                                        dados["fotoUrl"] = gFoto
+                                    }
                                     try {
                                         FirebaseFirestore.getInstance().collection("usuarios_publicos").document(user.uid)
                                             .set(dados, SetOptions.merge())

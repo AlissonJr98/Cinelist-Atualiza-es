@@ -1473,44 +1473,24 @@ fun TelaPerfil(
 
 
 
-    LaunchedEffect(Unit) {
-
-        if (usuarioAtual != null) {
-
-            viewModel.atualizarMeuPerfilPublico(
-
-                nome = usuarioAtual.displayName ?: "Usuário CineList",
-
-                bio = biografia,
-
-                instagram = instagram,
-
-                twitter = twitter,
-
-                letterboxd = letterboxd
-
-            )
-
-        }
-
-    }
-
-
-
-    LaunchedEffect(Unit) {
-
-        if (usuarioAtual != null) {
-
-            viewModel.atualizarMeuPerfilPublico(
-
-                nome = usuarioAtual.displayName ?: "Usuário CineList",
-
-                bio = biografia
-
-            )
-
-        }
-
+    LaunchedEffect(usuarioAtual?.uid) {
+        val uid = usuarioAtual?.uid ?: return@LaunchedEffect
+        try {
+            val doc = com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("usuarios_publicos").document(uid).get().await()
+            val nomeBanco = doc.getString("nome")?.trim() ?: ""
+            if (nomeBanco.isNotBlank() && !nomeBanco.equals("Usuário", ignoreCase = true) && !nomeBanco.equals("Usuario", ignoreCase = true) && !nomeBanco.equals("Usuário CineList", ignoreCase = true)) {
+                nomeExibicao = nomeBanco
+                novoNome = nomeBanco
+            }
+            val bioBanco = doc.getString("bio")?.trim() ?: ""
+            if (bioBanco.isNotBlank()) biografia = bioBanco
+            val instaBanco = doc.getString("instagram")?.trim() ?: ""
+            if (instaBanco.isNotBlank()) instagram = instaBanco
+            val twBanco = doc.getString("twitter")?.trim() ?: ""
+            if (twBanco.isNotBlank()) twitter = twBanco
+            val lettBanco = doc.getString("letterboxd")?.trim() ?: ""
+            if (lettBanco.isNotBlank()) letterboxd = lettBanco
+        } catch (_: Exception) {}
     }
 
 
@@ -2269,7 +2249,9 @@ fun TelaPerfil(
 
                             ) {
 
-                                val fotoGoogleUrl = usuarioAtual?.photoUrl?.toString() ?: ""
+                                val fotoGoogleUrl = usuarioAtual?.photoUrl?.toString()?.takeIf { it.isNotBlank() }
+                                    ?: usuarioAtual?.providerData?.firstNotNullOfOrNull { it.photoUrl?.toString()?.takeIf { p -> p.isNotBlank() } }
+                                    ?: ""
 
                                 val imagemParaExibir = if (fotoPerfilUriString.isNotEmpty()) fotoPerfilUriString else fotoGoogleUrl
 
@@ -2338,19 +2320,17 @@ fun TelaPerfil(
                                         )
 
                                         IconButton(onClick = {
-
                                             if (novoNome.isNotBlank()) {
-
-                                                val atualizacao = userProfileChangeRequest { displayName = novoNome.trim() }
-
+                                                val nomeLimpo = novoNome.trim()
+                                                val atualizacao = userProfileChangeRequest { displayName = nomeLimpo }
                                                 usuarioAtual?.updateProfile(atualizacao)?.addOnCompleteListener { t ->
-
-                                                    if (t.isSuccessful) { nomeExibicao = novoNome.trim(); modoEdicaoNome = false }
-
+                                                    if (t.isSuccessful) {
+                                                        nomeExibicao = nomeLimpo
+                                                        modoEdicaoNome = false
+                                                    }
                                                 }
-
+                                                viewModel.atualizarMeuPerfilPublico(nomeLimpo, biografia, instagram, twitter, letterboxd)
                                             }
-
                                         }) { Icon(imageVector = Icons.Default.Check, contentDescription = "Salvar", tint = CineListTokens.CorSucesso) }
 
                                     }
@@ -6090,44 +6070,26 @@ fun AvatarComIniciais(
 
 
 
-        if (fotoUrl.isNotBlank()) {
-
-            AsyncImage(
-
-                model = fotoUrl,
-
-                contentDescription = nome,
-
-                modifier = baseModifier,
-
-                contentScale = ContentScale.Crop
-
+        // Camada de fundo com iniciais (fallback garantido durante carregamento ou se falhar)
+        Box(
+            modifier = baseModifier.background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = nome.trim().take(1).uppercase().ifBlank { "?" },
+                fontSize = (tamanho.value * 0.4f).sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
+        }
 
-        } else {
-
-            Box(
-
-                modifier = baseModifier.background(MaterialTheme.colorScheme.primaryContainer),
-
-                contentAlignment = Alignment.Center
-
-            ) {
-
-                Text(
-
-                    text = nome.take(1).uppercase(),
-
-                    fontSize = (tamanho.value * 0.4f).sp,
-
-                    fontWeight = FontWeight.Bold,
-
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-
-                )
-
-            }
-
+        if (fotoUrl.isNotBlank()) {
+            AsyncImage(
+                model = fotoUrl,
+                contentDescription = nome,
+                modifier = baseModifier,
+                contentScale = ContentScale.Crop
+            )
         }
 
 

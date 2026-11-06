@@ -448,6 +448,7 @@ fun TelaCadastro(
                                                                     "nome" to nomeFinal,
                                                                     "nomeBusca" to nomeFinal.lowercase(),
                                                                     "email" to email.trim().lowercase(),
+                                                                    "codigoUsuario" to uid.take(8).uppercase(),
                                                                     "fotoUrl" to "",
                                                                     "online" to true,
                                                                     "vistoPorUltimo" to System.currentTimeMillis()
@@ -501,6 +502,7 @@ fun TelaCadastro(
                                                                         "nome" to nomeFinal,
                                                                         "nomeBusca" to nomeFinal.lowercase(),
                                                                         "email" to email.trim().lowercase(),
+                                                                        "codigoUsuario" to uid.take(8).uppercase(),
                                                                         "fotoUrl" to "",
                                                                         "online" to true,
                                                                         "vistoPorUltimo" to System.currentTimeMillis()

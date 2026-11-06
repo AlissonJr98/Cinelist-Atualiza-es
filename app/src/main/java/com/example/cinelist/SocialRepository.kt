@@ -660,12 +660,31 @@ class SocialRepository @Inject constructor() {
         val user = auth.currentUser ?: return@withContext
         try {
             val email = (user.email ?: "").trim().lowercase()
-            var nome = user.displayName?.trim() ?: ""
 
-            // Se o displayName estiver vazio ou for genérico, deriva um nome legível do email
-            if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
-                if (email.contains("@")) {
-                    nome = email.substringBefore("@")
+            // 1. Procura foto no photoUrl atual ou em provedores conectados (ex: Google)
+            var foto = user.photoUrl?.toString()?.takeIf { it.isNotBlank() }
+                ?: user.providerData.firstNotNullOfOrNull { it.photoUrl?.toString()?.takeIf { p -> p.isNotBlank() } }
+                ?: ""
+
+            // 2. Busca dados atuais do Firestore para não sobrescrever nome personalizado nem foto existente
+            val docPublico = try {
+                firestore.collection("usuarios_publicos").document(user.uid).get().await()
+            } catch (_: Exception) { null }
+
+            val nomeNoBanco = docPublico?.getString("nome")?.trim() ?: ""
+            val fotoNoBanco = docPublico?.getString("fotoUrl")?.trim() ?: ""
+
+            if (foto.isBlank() && fotoNoBanco.isNotBlank()) {
+                foto = fotoNoBanco
+            }
+
+            var nome = when {
+                nomeNoBanco.isNotBlank() && !nomeNoBanco.equals("Usuário", ignoreCase = true) && !nomeNoBanco.equals("Usuario", ignoreCase = true) && !nomeNoBanco.equals("Usuário CineList", ignoreCase = true) -> nomeNoBanco
+                user.displayName?.isNotBlank() == true && !user.displayName!!.equals("Usuário", ignoreCase = true) && !user.displayName!!.equals("Usuário CineList", ignoreCase = true) -> user.displayName!!.trim()
+                user.providerData.firstNotNullOfOrNull { it.displayName?.takeIf { d -> d.isNotBlank() } } != null ->
+                    user.providerData.firstNotNullOfOrNull { it.displayName?.takeIf { d -> d.isNotBlank() } }!!.trim()
+                email.contains("@") -> {
+                    email.substringBefore("@")
                         .replace(".", " ")
                         .replace("_", " ")
                         .replace("-", " ")
@@ -673,15 +692,19 @@ class SocialRepository @Inject constructor() {
                         .filter { it.isNotBlank() }
                         .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
                 }
-                if (nome.isBlank()) {
-                    nome = "Cinéfilo #${user.uid.take(4).uppercase()}"
-                }
-                try {
-                    user.updateProfile(com.google.firebase.auth.userProfileChangeRequest {
-                        displayName = nome
-                    })
-                } catch (_: Exception) {}
+                else -> "Cinéfilo #${user.uid.take(4).uppercase()}"
             }
+
+            // Sincroniza o perfil local do FirebaseAuth para refletir nome e foto do Google
+            try {
+                val atualizacao = com.google.firebase.auth.userProfileChangeRequest {
+                    displayName = nome
+                    if (foto.isNotBlank()) {
+                        photoUri = android.net.Uri.parse(foto)
+                    }
+                }
+                user.updateProfile(atualizacao)
+            } catch (_: Exception) {}
 
             val codigo = user.uid.take(8).uppercase()
             val dados = mutableMapOf<String, Any>(
@@ -693,7 +716,6 @@ class SocialRepository @Inject constructor() {
                 "online" to online,
                 "vistoPorUltimo" to System.currentTimeMillis()
             )
-            val foto = user.photoUrl?.toString() ?: ""
             if (foto.isNotBlank()) {
                 dados["fotoUrl"] = foto
             }
@@ -869,10 +891,36 @@ class SocialRepository @Inject constructor() {
                     .get()
                     .addOnSuccessListener { amigosSnap ->
                         val lista = amigosSnap.documents.map { doc ->
+                            var nome = doc.getString("nome")?.trim() ?: ""
+                            val email = doc.getString("email")?.trim() ?: ""
+                            val foto = doc.getString("fotoUrl")?.trim() ?: ""
+                            val codigo = doc.getString("codigoUsuario")?.takeIf { it.isNotBlank() } ?: doc.id.take(8).uppercase()
+
+                            CONTAS_CONHECIDAS[doc.id]?.let { (cNome, _, _) ->
+                                if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                                    nome = cNome
+                                }
+                            }
+
+                            if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                                if (email.contains("@")) {
+                                    nome = email.substringBefore("@")
+                                        .replace(".", " ")
+                                        .replace("_", " ")
+                                        .replace("-", " ")
+                                        .split(" ")
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
+                                }
+                                if (nome.isBlank()) {
+                                    nome = "Cinéfilo #$codigo"
+                                }
+                            }
+
                             SolicitacaoAmizadeRecebida(
                                 remetenteUid = doc.id,
-                                nome = doc.getString("nome") ?: "Cinéfilo",
-                                fotoUrl = doc.getString("fotoUrl") ?: "",
+                                nome = nome,
+                                fotoUrl = foto,
                                 bio = doc.getString("bio") ?: ""
                             )
                         }
@@ -934,21 +982,71 @@ class SocialRepository @Inject constructor() {
                             }
 
                             val lista = amigosSnap?.documents?.mapNotNull { doc ->
+                                var nome = doc.getString("nome")?.trim() ?: ""
+                                var email = doc.getString("email")?.trim() ?: ""
+                                var fotoUrl = doc.getString("fotoUrl")?.trim() ?: ""
+                                val codigoUsuario = doc.getString("codigoUsuario")?.takeIf { it.isNotBlank() } ?: doc.id.take(8).uppercase()
+
+                                // Auto-recuperação com contas conhecidas
+                                CONTAS_CONHECIDAS[doc.id]?.let { (cNome, cEmail, _) ->
+                                    if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                                        nome = cNome
+                                    }
+                                    if (email.isBlank()) {
+                                        email = cEmail
+                                    }
+                                }
+
+                                // Se o nome ainda for genérico ou vazio, deriva do prefixo do e-mail
+                                if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                                    if (email.contains("@")) {
+                                        nome = email.substringBefore("@")
+                                            .replace(".", " ")
+                                            .replace("_", " ")
+                                            .replace("-", " ")
+                                            .split(" ")
+                                            .filter { it.isNotBlank() }
+                                            .joinToString(" ") { p -> p.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }
+                                    }
+                                    if (nome.isBlank()) {
+                                        nome = "Cinéfilo #$codigoUsuario"
+                                    }
+                                }
+
                                 AmigoPerfil(
                                     uid = doc.id,
-                                    nome = doc.getString("nome") ?: "Amigo",
-                                    fotoUrl = doc.getString("fotoUrl") ?: "",
+                                    nome = nome,
+                                    fotoUrl = fotoUrl,
                                     bio = doc.getString("bio") ?: "",
-                                    email = doc.getString("email") ?: "",
+                                    email = email,
                                     online = doc.getBoolean("online") ?: false,
                                     vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
                                     instagram = doc.getString("instagram") ?: "",
                                     twitter = doc.getString("twitter") ?: "",
-                                    letterboxd = doc.getString("letterboxd") ?: ""
+                                    letterboxd = doc.getString("letterboxd") ?: "",
+                                    codigoUsuario = codigoUsuario
                                 )
                             } ?: emptyList()
 
-                            mapaResultados[index] = lista
+                            // Fallback para contas aceitas cujos documentos ainda não foram sincronizados
+                            val docsIds = amigosSnap?.documents?.map { it.id }?.toSet() ?: emptySet()
+                            val faltantes = chunk.filter { it !in docsIds }
+                            val perfisFaltantes = faltantes.mapNotNull { uidFaltante ->
+                                CONTAS_CONHECIDAS[uidFaltante]?.let { (cNome, cEmail, cCodigo) ->
+                                    AmigoPerfil(
+                                        uid = uidFaltante,
+                                        nome = cNome,
+                                        fotoUrl = "",
+                                        bio = "",
+                                        email = cEmail,
+                                        online = false,
+                                        vistoPorUltimo = 0L,
+                                        codigoUsuario = cCodigo
+                                    )
+                                }
+                            }
+
+                            mapaResultados[index] = lista + perfisFaltantes
                             emitirResultadoCombinado()
                         }
                     listenersPublicos.add(listenerChunk)
@@ -1063,23 +1161,50 @@ class SocialRepository @Inject constructor() {
         }
     }
 
-    // 🚀 GRAVA AS NOVAS REDES SOCIAIS NA NUVEM
+    // 🚀 GRAVA AS NOVAS REDES SOCIAIS NA NUVEM E SINCRONIZA NOME E FOTO
     suspend fun atualizarPerfilPublico(nome: String, bio: String, instagram: String = "", twitter: String = "", letterboxd: String = "") = withContext(Dispatchers.IO) {
         val user = auth.currentUser ?: return@withContext
         try {
-            val dados = mapOf(
+            val nomeTrim = nome.trim()
+            var foto = user.photoUrl?.toString()?.takeIf { it.isNotBlank() }
+                ?: user.providerData.firstNotNullOfOrNull { it.photoUrl?.toString()?.takeIf { p -> p.isNotBlank() } }
+                ?: ""
+
+            // Se não tiver foto no FirebaseAuth/provider, recupera do Firestore existente para não sobrescrever
+            if (foto.isBlank()) {
+                val docAtual = try { firestore.collection("usuarios_publicos").document(user.uid).get().await() } catch (_: Exception) { null }
+                foto = docAtual?.getString("fotoUrl")?.trim() ?: ""
+            }
+
+            // Sincroniza com Firebase Auth displayName e photoUri
+            if (nomeTrim.isNotBlank()) {
+                try {
+                    val atualizacao = com.google.firebase.auth.userProfileChangeRequest {
+                        displayName = nomeTrim
+                        if (foto.isNotBlank()) {
+                            photoUri = android.net.Uri.parse(foto)
+                        }
+                    }
+                    user.updateProfile(atualizacao).await()
+                } catch (_: Exception) {}
+            }
+
+            val dados = mutableMapOf<String, Any>(
                 "uid" to user.uid,
-                "nome" to nome,
-                "nomeBusca" to normalizarTextoBusca(nome),
-                "bio" to bio,
-                "instagram" to instagram,
-                "twitter" to twitter,
-                "letterboxd" to letterboxd,
+                "nome" to nomeTrim,
+                "nomeBusca" to normalizarTextoBusca(nomeTrim),
+                "bio" to bio.trim(),
+                "instagram" to instagram.trim(),
+                "twitter" to twitter.trim(),
+                "letterboxd" to letterboxd.trim(),
                 "codigoUsuario" to user.uid.take(8).uppercase(),
-                "fotoUrl" to (user.photoUrl?.toString() ?: ""),
                 "email" to (user.email ?: "").trim().lowercase(),
                 "atualizadoEm" to System.currentTimeMillis()
             )
+            if (foto.isNotBlank()) {
+                dados["fotoUrl"] = foto
+            }
+
             firestore.collection("usuarios_publicos").document(user.uid).set(dados, SetOptions.merge()).await()
         } catch (e: Exception) {
             e.printStackTrace()
