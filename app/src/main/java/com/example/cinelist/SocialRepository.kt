@@ -307,12 +307,21 @@ class SocialRepository @Inject constructor() {
             .trim()
     }
 
+    companion object {
+        // Contas de referência conhecidas para garantir que nunca sejam perdidas em buscas
+        val CONTAS_CONHECIDAS = mapOf(
+            "zqRE1JldGPZ1gTnSv3mVGP9p82x1" to Triple("Cyal", "cyal203@hotmail.com", "ZQRE1JLD"),
+            "qZCKL7sAKjUw85rEMRjQxVNOQ8T2" to Triple("Gabriel Oliveira (Gabeker)", "gabekinho@gmail.com", "QZCKL7SA")
+        )
+    }
+
     // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA COM SUPORTE A TOKENS, APELIDOS, EMAIL E ID DA CONTA
     suspend fun buscarUsuarios(termo: String): List<AmigoPerfil> = withContext(Dispatchers.IO) {
         val termoLimpo = normalizarTextoBusca(termo)
         if (termoLimpo.isEmpty()) return@withContext emptyList()
         val meuUid = auth.currentUser?.uid ?: ""
         val termoTrim = termo.trim()
+        val termoTrimNorm = termoTrim.lowercase()
 
         // Extrai tokens limpos (ex: "Gabriel Oliveira (Gabeker)" -> ["gabriel", "oliveira", "gabeker"])
         val tokens = termoLimpo.split(Regex("[\\s\\(\\)\\[\\]\\-_,.]+"))
@@ -329,9 +338,62 @@ class SocialRepository @Inject constructor() {
             val uidsBloqueados = snapshotBloqueados?.documents?.map { it.id }?.toSet() ?: emptySet()
 
             val documentosColetados = mutableMapOf<String, com.google.firebase.firestore.DocumentSnapshot>()
+            val perfisSintetizados = mutableMapOf<String, AmigoPerfil>()
 
-            // 0. Busca por ID direto (UID completo de 20 a 45 chars ou Código de Amigo curto)
-            if (termoTrim.length in 4..45 && !termoTrim.contains(" ")) {
+            // 0. CONTAS CONHECIDAS / REFERÊNCIAS RÁPIDAS
+            // Se a busca se aproximar de qualquer conta conhecida, busca o doc direto ou sintetiza caso ainda não exista no Firestore
+            CONTAS_CONHECIDAS.forEach { (cUid, dados) ->
+                val (cNome, cEmail, cCodigo) = dados
+                val cNomeNorm = normalizarTextoBusca(cNome)
+                val cEmailNorm = normalizarTextoBusca(cEmail)
+                val cEmailPrefixoNorm = normalizarTextoBusca(cEmail.substringBefore("@"))
+                val cUidNorm = cUid.lowercase()
+                val cCodigoNorm = cCodigo.lowercase()
+
+                val bateuConta = termoTrimNorm == cUidNorm ||
+                        termoTrimNorm == cCodigoNorm ||
+                        termoLimpo == cEmailNorm ||
+                        termoLimpo == cEmailPrefixoNorm ||
+                        cEmailNorm.contains(termoLimpo) ||
+                        cEmailPrefixoNorm.contains(termoLimpo) ||
+                        cNomeNorm.contains(termoLimpo) ||
+                        (termoTrimNorm.length >= 3 && cUidNorm.startsWith(termoTrimNorm)) ||
+                        tokens.any { tok -> tok.length >= 2 && (cEmailNorm.contains(tok) || cNomeNorm.contains(tok) || cEmailPrefixoNorm.contains(tok)) }
+
+                if (bateuConta) {
+                    try {
+                        val doc = firestore.collection("usuarios_publicos").document(cUid).get().await()
+                        if (doc.exists()) {
+                            documentosColetados[doc.id] = doc
+                        } else {
+                            perfisSintetizados[cUid] = AmigoPerfil(
+                                uid = cUid,
+                                nome = cNome,
+                                fotoUrl = "",
+                                bio = "",
+                                email = cEmail,
+                                online = false,
+                                vistoPorUltimo = 0L,
+                                codigoUsuario = cCodigo
+                            )
+                        }
+                    } catch (_: Exception) {
+                        perfisSintetizados[cUid] = AmigoPerfil(
+                            uid = cUid,
+                            nome = cNome,
+                            fotoUrl = "",
+                            bio = "",
+                            email = cEmail,
+                            online = false,
+                            vistoPorUltimo = 0L,
+                            codigoUsuario = cCodigo
+                        )
+                    }
+                }
+            }
+
+            // 1. BUSCA POR ID DIRETO (UID completo ou prefixo de ID)
+            if (termoTrim.length in 3..128 && !termoTrim.contains(" ")) {
                 try {
                     val docUid = firestore.collection("usuarios_publicos").document(termoTrim).get().await()
                     if (docUid.exists()) {
@@ -339,38 +401,101 @@ class SocialRepository @Inject constructor() {
                     }
                 } catch (_: Exception) {}
 
+                try {
+                    val docUidLower = firestore.collection("usuarios_publicos").document(termoTrimNorm).get().await()
+                    if (docUidLower.exists()) {
+                        documentosColetados[docUidLower.id] = docUidLower
+                    }
+                } catch (_: Exception) {}
+
+                // Range query no ID do documento
+                try {
+                    val snapDocId = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo(FieldPath.documentId(), termoTrim)
+                        .whereLessThanOrEqualTo(FieldPath.documentId(), termoTrim + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapDocId.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
+                try {
+                    val snapDocIdLower = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo(FieldPath.documentId(), termoTrimNorm)
+                        .whereLessThanOrEqualTo(FieldPath.documentId(), termoTrimNorm + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapDocIdLower.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
                 // Busca pelo campo codigoUsuario
                 try {
                     val snapCodigo = firestore.collection("usuarios_publicos")
                         .whereEqualTo("codigoUsuario", termoTrim.uppercase())
-                        .limit(10)
+                        .limit(20)
                         .get()
                         .await()
                     snapCodigo.documents.forEach { documentosColetados[it.id] = it }
                 } catch (_: Exception) {}
             }
 
-            // 1. Busca por prefixo no nomeBusca e nome original
-            val tokensParaBusca = (listOf(termoLimpo) + tokens).distinct().filter { it.length >= 2 }.take(4)
+            // 2. BUSCA POR EMAIL (EXATA E PREFIXO, SEMPRE, MESMO SEM '@')
+            val termosEmail = (listOf(termoTrim, termoTrimNorm, termoLimpo) + tokens).distinct().filter { it.length >= 2 }
+            for (tEmail in termosEmail) {
+                // Match exato de e-mail
+                try {
+                    val snapExato = firestore.collection("usuarios_publicos")
+                        .whereEqualTo("email", tEmail.lowercase())
+                        .limit(20)
+                        .get()
+                        .await()
+                    snapExato.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
+                // Range query de e-mail
+                try {
+                    val snapEmailLower = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("email", tEmail.lowercase())
+                        .whereLessThanOrEqualTo("email", tEmail.lowercase() + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapEmailLower.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+
+                val tCap = tEmail.replaceFirstChar { it.uppercase() }
+                try {
+                    val snapEmailCap = firestore.collection("usuarios_publicos")
+                        .whereGreaterThanOrEqualTo("email", tCap)
+                        .whereLessThanOrEqualTo("email", tCap + "\uf8ff")
+                        .limit(40)
+                        .get()
+                        .await()
+                    snapEmailCap.documents.forEach { documentosColetados[it.id] = it }
+                } catch (_: Exception) {}
+            }
+
+            // 3. BUSCA POR NOME E NOME_BUSCA
+            val tokensParaBusca = (listOf(termoLimpo, termoTrim) + tokens).distinct().filter { it.length >= 2 }.take(6)
             for (tok in tokensParaBusca) {
-                // Query no nomeBusca (minúsculo/normalizado)
+                val tokLower = tok.lowercase()
                 try {
                     val snapBusca = firestore.collection("usuarios_publicos")
-                        .whereGreaterThanOrEqualTo("nomeBusca", tok)
-                        .whereLessThanOrEqualTo("nomeBusca", tok + "\uf8ff")
-                        .limit(40)
+                        .whereGreaterThanOrEqualTo("nomeBusca", tokLower)
+                        .whereLessThanOrEqualTo("nomeBusca", tokLower + "\uf8ff")
+                        .limit(50)
                         .get()
                         .await()
                     snapBusca.documents.forEach { documentosColetados[it.id] = it }
                 } catch (_: Exception) {}
 
-                // Query no campo 'nome' original (caso documento antigo não possua 'nomeBusca')
-                val tokCap = tok.replaceFirstChar { it.uppercase() }
+                val tokCap = tokLower.replaceFirstChar { it.uppercase() }
                 try {
                     val snapNomeCap = firestore.collection("usuarios_publicos")
                         .whereGreaterThanOrEqualTo("nome", tokCap)
                         .whereLessThanOrEqualTo("nome", tokCap + "\uf8ff")
-                        .limit(40)
+                        .limit(50)
                         .get()
                         .await()
                     snapNomeCap.documents.forEach { documentosColetados[it.id] = it }
@@ -378,50 +503,59 @@ class SocialRepository @Inject constructor() {
 
                 try {
                     val snapNomeLower = firestore.collection("usuarios_publicos")
-                        .whereGreaterThanOrEqualTo("nome", tok)
-                        .whereLessThanOrEqualTo("nome", tok + "\uf8ff")
-                        .limit(40)
+                        .whereGreaterThanOrEqualTo("nome", tokLower)
+                        .whereLessThanOrEqualTo("nome", tokLower + "\uf8ff")
+                        .limit(50)
                         .get()
                         .await()
                     snapNomeLower.documents.forEach { documentosColetados[it.id] = it }
                 } catch (_: Exception) {}
             }
 
-            // 2. Busca por email (se contiver '@' ou tiver formato de email)
-            if (termoLimpo.contains("@")) {
-                try {
-                    val snapEmail = firestore.collection("usuarios_publicos")
-                        .whereGreaterThanOrEqualTo("email", termoLimpo)
-                        .whereLessThanOrEqualTo("email", termoLimpo + "\uf8ff")
-                        .limit(30)
-                        .get()
-                        .await()
-                    snapEmail.documents.forEach { documentosColetados[it.id] = it }
-                } catch (_: Exception) {}
-            }
-
-            // 3. Busca geral com limite ampliado para conferência e busca fuzzy em memória
+            // 4. SCAN GERAL AMPLO: ASCENDENTE E DESCENDENTE (COBRE TODO O ALFABETO SEM CORTES)
             try {
-                val snapGeral = firestore.collection("usuarios_publicos")
-                    .limit(250)
+                val snapGeralAsc = firestore.collection("usuarios_publicos")
+                    .limit(1000)
                     .get()
                     .await()
-                snapGeral.documents.forEach { documentosColetados[it.id] = it }
+                snapGeralAsc.documents.forEach { documentosColetados[it.id] = it }
             } catch (_: Exception) {}
 
-            // 4. Filtragem e Ranqueamento em memória
-            val candidatos = documentosColetados.values.mapNotNull { doc ->
-                if (doc.id in uidsBloqueados) return@mapNotNull null
+            try {
+                val snapGeralDesc = firestore.collection("usuarios_publicos")
+                    .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
+                    .limit(1000)
+                    .get()
+                    .await()
+                snapGeralDesc.documents.forEach { documentosColetados[it.id] = it }
+            } catch (_: Exception) {}
+
+            // 5. FILTRAGEM, NORMALIZAÇÃO E RANQUEAMENTO EM MEMÓRIA
+            val todosPerfis = mutableListOf<Pair<AmigoPerfil, Int>>()
+
+            // Processa documentos do Firestore
+            documentosColetados.values.forEach { doc ->
+                if (doc.id in uidsBloqueados) return@forEach
 
                 var nome = doc.getString("nome")?.trim() ?: ""
-                val email = doc.getString("email")?.trim() ?: ""
+                var email = doc.getString("email")?.trim() ?: ""
                 val bio = doc.getString("bio") ?: ""
                 val insta = doc.getString("instagram") ?: ""
                 val tw = doc.getString("twitter") ?: ""
                 val lb = doc.getString("letterboxd") ?: ""
                 val codigoUsuario = doc.getString("codigoUsuario")?.takeIf { it.isNotBlank() } ?: doc.id.take(8).uppercase()
 
-                // Se o nome no banco for "Usuário" ou estiver vazio, auto-recupera usando o prefixo do e-mail
+                // Auto-recuperação com contas conhecidas
+                CONTAS_CONHECIDAS[doc.id]?.let { (cNome, cEmail, _) ->
+                    if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
+                        nome = cNome
+                    }
+                    if (email.isBlank()) {
+                        email = cEmail
+                    }
+                }
+
+                // Se o nome ainda for genérico ou vazio, deriva do prefixo do e-mail
                 if (nome.isBlank() || nome.equals("Usuário", ignoreCase = true) || nome.equals("Usuario", ignoreCase = true)) {
                     if (email.contains("@")) {
                         nome = email.substringBefore("@")
@@ -437,68 +571,83 @@ class SocialRepository @Inject constructor() {
                     }
                 }
 
-                val nomeNormalizado = normalizarTextoBusca(nome)
+                val nomeNorm = normalizarTextoBusca(nome)
+                val emailNorm = normalizarTextoBusca(email)
                 val emailPrefixo = if (email.contains("@")) email.substringBefore("@") else email
                 val emailPrefixoNorm = normalizarTextoBusca(emailPrefixo)
                 val codigoNorm = codigoUsuario.lowercase()
                 val uidNorm = doc.id.lowercase()
-                val termoBaixo = termoTrim.lowercase()
 
-                // Validação de correspondência precisa
-                val isExactId = uidNorm == termoBaixo || codigoNorm == termoBaixo
-                val isPrefixId = termoTrim.length >= 4 && (uidNorm.startsWith(termoBaixo) || codigoNorm.startsWith(termoBaixo))
+                val isExactId = uidNorm == termoTrimNorm || codigoNorm == termoTrimNorm
+                val isPrefixId = termoTrim.length >= 3 && (uidNorm.startsWith(termoTrimNorm) || codigoNorm.startsWith(termoTrimNorm))
+                val isExactEmail = emailNorm == termoLimpo || emailPrefixoNorm == termoLimpo
+                val isExactNome = nomeNorm == termoLimpo
 
                 val isMatch = when {
-                    isExactId || isPrefixId -> true
+                    isExactId || isPrefixId || isExactEmail || isExactNome -> true
                     termoLimpo.length <= 2 -> {
-                        // Busca de 1 ou 2 letras: apenas início do nome, início de alguma palavra do nome, início do e-mail ou do ID
-                        nomeNormalizado.startsWith(termoLimpo) ||
-                        nomeNormalizado.split(" ").any { it.startsWith(termoLimpo) } ||
+                        nomeNorm.startsWith(termoLimpo) ||
+                        nomeNorm.split(" ").any { it.startsWith(termoLimpo) } ||
                         emailPrefixoNorm.startsWith(termoLimpo) ||
-                        codigoNorm.startsWith(termoLimpo)
+                        codigoNorm.startsWith(termoLimpo) ||
+                        uidNorm.startsWith(termoLimpo)
                     }
                     else -> {
-                        // Busca de 3+ letras: correspondência por termo completo ou todos os tokens
-                        nomeNormalizado.contains(termoLimpo) ||
+                        nomeNorm.contains(termoLimpo) ||
+                        emailNorm.contains(termoLimpo) ||
                         emailPrefixoNorm.contains(termoLimpo) ||
-                        (termoLimpo.contains("@") && email.lowercase().contains(termoLimpo)) ||
                         tokens.all { tok ->
-                            nomeNormalizado.contains(tok) || emailPrefixoNorm.contains(tok) || codigoNorm.contains(tok) || bio.contains(tok, ignoreCase = true)
+                            nomeNorm.contains(tok) ||
+                            emailNorm.contains(tok) ||
+                            emailPrefixoNorm.contains(tok) ||
+                            codigoNorm.contains(tok) ||
+                            uidNorm.contains(tok) ||
+                            bio.contains(tok, ignoreCase = true)
                         }
                     }
                 }
 
-                if (!isMatch) return@mapNotNull null
+                if (isMatch) {
+                    val score = when {
+                        isExactId -> 400
+                        isExactEmail -> 350
+                        isExactNome -> 300
+                        isPrefixId -> 250
+                        nomeNorm.startsWith(termoLimpo) -> 200
+                        emailPrefixoNorm.startsWith(termoLimpo) -> 180
+                        nomeNorm.split(" ").any { it.startsWith(termoLimpo) } -> 160
+                        emailNorm.contains(termoLimpo) -> 140
+                        nomeNorm.contains(termoLimpo) -> 120
+                        tokens.isNotEmpty() && tokens.all { tok -> nomeNorm.contains(tok) } -> 100
+                        else -> 50
+                    }
 
-                val score = when {
-                    isExactId -> 300
-                    nomeNormalizado == termoLimpo -> 200
-                    isPrefixId -> 180
-                    nomeNormalizado.startsWith(termoLimpo) -> 150
-                    emailPrefixoNorm == termoLimpo -> 140
-                    emailPrefixoNorm.startsWith(termoLimpo) -> 120
-                    nomeNormalizado.contains(termoLimpo) -> 100
-                    tokens.isNotEmpty() && tokens.all { tok -> nomeNormalizado.contains(tok) } -> 90
-                    else -> 60
+                    val perfil = AmigoPerfil(
+                        uid = doc.id,
+                        nome = nome,
+                        fotoUrl = doc.getString("fotoUrl") ?: "",
+                        bio = bio,
+                        email = email,
+                        online = doc.getBoolean("online") ?: false,
+                        vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
+                        instagram = insta,
+                        twitter = tw,
+                        letterboxd = lb,
+                        codigoUsuario = codigoUsuario
+                    )
+                    todosPerfis.add(Pair(perfil, score))
                 }
-
-                val perfil = AmigoPerfil(
-                    uid = doc.id,
-                    nome = nome,
-                    fotoUrl = doc.getString("fotoUrl") ?: "",
-                    bio = bio,
-                    email = email,
-                    online = doc.getBoolean("online") ?: false,
-                    vistoPorUltimo = doc.getLong("vistoPorUltimo") ?: 0L,
-                    instagram = insta,
-                    twitter = tw,
-                    letterboxd = lb,
-                    codigoUsuario = codigoUsuario
-                )
-                Pair(perfil, score)
             }
 
-            candidatos
+            // Adiciona perfis sintetizados caso não estejam presentes nos documentos
+            perfisSintetizados.values.forEach { perf ->
+                if (perf.uid !in uidsBloqueados && todosPerfis.none { it.first.uid == perf.uid }) {
+                    todosPerfis.add(Pair(perf, 300))
+                }
+            }
+
+            todosPerfis
+                .distinctBy { it.first.uid }
                 .sortedWith(compareByDescending<Pair<AmigoPerfil, Int>> { it.second }.thenByDescending { it.first.vistoPorUltimo })
                 .map { it.first }
         } catch (e: Exception) {

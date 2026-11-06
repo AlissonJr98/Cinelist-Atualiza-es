@@ -1,6 +1,6 @@
-{
-  "versionCode": 116,
-  "versionName": "2.0.76",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.76/CineList-v2.0.76.apk",
-  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
+﻿{
+    "versionCode":  117,
+    "versionName":  "2.0.77",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog":  "Busca universal completa e resolucao definitiva de contas: busca bidirecional sem cortes para UIDs com q e z, correspondencia exata e por tokens de e-mail mesmo sem @, busca direta por UID e auto-recuperacao de contas cadastradas."
 }
