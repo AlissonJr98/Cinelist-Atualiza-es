@@ -1,6 +1,6 @@
 ﻿{
-    "versionCode":  118,
-    "versionName":  "2.0.78",
+    "versionCode":  119,
+    "versionName":  "2.0.79",
     "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Sincronizacao de foto de perfil do Google para novos e existentes usuarios, exibicao garantida da foto na busca de amigos e lista social, e atualizacao em tempo real do nome de perfil para todos os amigos conectados."
+    "changelog":  "Correcao na conclusao automatica de series ao finalizar episodios, remocao de botoes duplicados no dialogo de temporada, novo leitor de novidades OTA limpo e README oficial no repositorio."
 }

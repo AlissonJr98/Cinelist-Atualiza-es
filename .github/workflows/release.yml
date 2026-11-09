@@ -51,6 +51,32 @@ jobs:
         run: |
           mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/CineList-${{ github.ref_name }}.apk
 
+      - name: Extrair notas da versao
+        id: extrair_notas
+        run: |
+          python3 -c "
+          import json, os
+          notas = 'Novas melhorias, correcoes e novidades adicionadas nesta versao.'
+          try:
+              if os.path.exists('atualizacao/versao.json'):
+                  with open('atualizacao/versao.json', 'r', encoding='utf-8') as f:
+                      d = json.load(f)
+                      val = d.get('notas') or d.get('changelog')
+                      if val and val.strip():
+                          notas = val.strip()
+              elif os.path.exists('version.json'):
+                  with open('version.json', 'r', encoding='utf-8') as f:
+                      d = json.load(f)
+                      val = d.get('changelog') or d.get('notas')
+                      if val and val.strip():
+                          notas = val.strip()
+          except Exception as e:
+              print('Erro ao carregar notas:', e)
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
+              notas_clean = notas.replace('\r\n', ' // ').replace('\n', ' // ')
+              out.write(f'notas={notas_clean}\n')
+          "
+
       - name: Criar Release no GitHub
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -58,7 +84,8 @@ jobs:
           files: app/build/outputs/apk/release/CineList-${{ github.ref_name }}.apk
           tag_name: ${{ github.ref_name }}
           name: CineList ${{ github.ref_name }}
-          generate_release_notes: true
+          body: ${{ steps.extrair_notas.outputs.notas }}
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

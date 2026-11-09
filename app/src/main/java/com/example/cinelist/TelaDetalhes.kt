@@ -599,13 +599,30 @@ fun TelaDetalhes(
                     onClick = {
                         mostrarDialogFimTemporada = false
                         if (proximaTemporadaExiste) {
-                            temporadaAtual = temporadaConcluidaAlvo + 1
+                            val proxTemporada = temporadaConcluidaAlvo + 1
+                            temporadaAtual = proxTemporada
                             episodioAtual = 1
                             statusAtual = StatusMidia.ASSISTINDO
-                            Toast.makeText(contexto, "${"Avançando para a Temporada".t()} $temporadaAtual! 🚀", Toast.LENGTH_SHORT).show()
+                            val midiaAtualizada = midiaSalva.copy(
+                                temporadaAtual = proxTemporada,
+                                episodioAtual = 1,
+                                status = StatusMidia.ASSISTINDO.valor,
+                                jaEncerrou = false,
+                                atualizadoEm = System.currentTimeMillis()
+                            )
+                            viewModel.atualizar(midiaAtualizada)
+                            Toast.makeText(contexto, "${"Avançando para a Temporada".t()} $proxTemporada! 🚀", Toast.LENGTH_SHORT).show()
                         } else {
                             statusAtual = StatusMidia.CONCLUIDO
                             if (isModoCasal) viewModel.pararAssistirAgora()
+                            val midiaAtualizada = midiaSalva.copy(
+                                temporadaAtual = temporadaConcluidaAlvo,
+                                episodioAtual = episodioAtual,
+                                status = StatusMidia.CONCLUIDO.valor,
+                                jaEncerrou = true,
+                                atualizadoEm = System.currentTimeMillis()
+                            )
+                            viewModel.atualizar(midiaAtualizada)
                             Toast.makeText(contexto, "Série marcada como Concluída! 🎉".t(), Toast.LENGTH_SHORT).show()
                         }
                     },
@@ -618,11 +635,22 @@ fun TelaDetalhes(
                 TextButton(
                     onClick = {
                         mostrarDialogFimTemporada = false
-                        statusAtual = StatusMidia.CONCLUIDO
-                        if (isModoCasal) viewModel.pararAssistirAgora()
+                        if (proximaTemporadaExiste) {
+                            statusAtual = StatusMidia.CONCLUIDO
+                            if (isModoCasal) viewModel.pararAssistirAgora()
+                            val midiaAtualizada = midiaSalva.copy(
+                                temporadaAtual = temporadaConcluidaAlvo,
+                                episodioAtual = episodioAtual,
+                                status = StatusMidia.CONCLUIDO.valor,
+                                jaEncerrou = true,
+                                atualizadoEm = System.currentTimeMillis()
+                            )
+                            viewModel.atualizar(midiaAtualizada)
+                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉".t(), Toast.LENGTH_SHORT).show()
+                        }
                     }
                 ) {
-                    Text("Marcar Concluída".t(), color = MaterialTheme.colorScheme.onSurface)
+                    Text(if (proximaTemporadaExiste) "Marcar Concluída".t() else "Continuar Assistindo".t(), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         )

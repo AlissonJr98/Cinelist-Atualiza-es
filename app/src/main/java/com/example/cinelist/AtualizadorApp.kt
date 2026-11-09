@@ -131,15 +131,25 @@ object AtualizadorGitHub {
         val infoJson = runCatching { buscarPorVersaoJson() }.getOrNull()
         val infoRelease = runCatching { buscarPorGitHubRelease() }.getOrNull()
 
+        fun ehNotaInvalidaOuAutomatica(s: String?): Boolean {
+            if (s.isNullOrBlank()) return true
+            val l = s.lowercase()
+            return l.contains("full changelog") ||
+                   l.contains("what's changed") ||
+                   l.contains("github.com") ||
+                   l.startsWith("http://") ||
+                   l.startsWith("https://") ||
+                   s.trim().startsWith("v1.") ||
+                   s.trim().startsWith("v2.")
+        }
+
         val melhorInfo = when {
             infoJson != null && infoRelease != null -> {
                 val cmp = compararSemver(infoRelease.versaoNome, infoJson.versaoNome)
-                val notasEfetivas = if (infoJson.notas.isNotBlank() && (infoRelease.notas.isBlank() || infoRelease.notas.startsWith("v") || infoRelease.notas.startsWith("Nova versão"))) {
-                    infoJson.notas
-                } else if (infoRelease.notas.isNotBlank()) {
-                    infoRelease.notas
-                } else {
-                    infoJson.notas
+                val notasEfetivas = when {
+                    !ehNotaInvalidaOuAutomatica(infoJson.notas) -> infoJson.notas
+                    !ehNotaInvalidaOuAutomatica(infoRelease.notas) -> infoRelease.notas
+                    else -> "Novas melhorias de desempenho, estabilidade e correções no CineList."
                 }
                 if (cmp > 0) {
                     infoRelease.copy(notas = notasEfetivas)
@@ -147,8 +157,15 @@ object AtualizadorGitHub {
                     infoJson.copy(notas = notasEfetivas)
                 }
             }
-            infoJson != null -> infoJson
-            else -> infoRelease
+            infoJson != null -> {
+                val notasEfetivas = if (!ehNotaInvalidaOuAutomatica(infoJson.notas)) infoJson.notas else "Novas melhorias de desempenho, estabilidade e correções no CineList."
+                infoJson.copy(notas = notasEfetivas)
+            }
+            infoRelease != null -> {
+                val notasEfetivas = if (!ehNotaInvalidaOuAutomatica(infoRelease.notas)) infoRelease.notas else "Novas melhorias de desempenho, estabilidade e correções no CineList."
+                infoRelease.copy(notas = notasEfetivas)
+            }
+            else -> null
         }
 
         val temNova = melhorInfo != null && ehMaisNova(
@@ -224,9 +241,18 @@ object AtualizadorGitHub {
             val body = resp.body?.string() ?: return null
             val obj = JsonParser.parseString(body).asJsonObject
             val tag = obj.get("tag_name")?.asString?.removePrefix("v")?.trim() ?: return null
-            val notas = obj.get("body")?.asString?.trim().takeUnless { it.isNullOrBlank() }
-                ?: obj.get("name")?.asString?.trim()
-                ?: "Nova versão disponível com melhorias e correções."
+            val corpo = obj.get("body")?.asString?.trim()
+            val corpoInvalido = corpo.isNullOrBlank() ||
+                corpo.contains("Full Changelog", ignoreCase = true) ||
+                corpo.contains("github.com", ignoreCase = true) ||
+                corpo.startsWith("http://") ||
+                corpo.startsWith("https://")
+            val notas = if (!corpoInvalido && !corpo.isNullOrBlank()) {
+                corpo
+            } else {
+                obj.get("name")?.asString?.trim().takeUnless { it.isNullOrBlank() || it.startsWith("v", ignoreCase = true) }
+                    ?: "Nova versão disponível com melhorias e correções."
+            }
             val htmlUrl = obj.get("html_url")?.asString ?: "https://github.com/$DONO_REPO/$NOME_REPO/releases"
             val assets = obj.getAsJsonArray("assets")
             var apkUrl: String? = null
@@ -454,8 +480,25 @@ fun DialogoAtualizacaoGitHub(
             .replace("\r\n", "\n")
             .replace("\r", "\n")
             .split("\n", ";")
-            .map { it.trim().removePrefix("-").removePrefix("•").removePrefix("*").trim() }
-            .filter { it.isNotBlank() && !it.startsWith("v2.", ignoreCase = true) }
+            .map {
+                it.trim()
+                    .removePrefix("-")
+                    .removePrefix("•")
+                    .removePrefix("*")
+                    .trim()
+                    .trim('*', '_', '`', ' ')
+            }
+            .filter { linha ->
+                linha.isNotBlank() &&
+                !linha.startsWith("v1.", ignoreCase = true) &&
+                !linha.startsWith("v2.", ignoreCase = true) &&
+                !linha.contains("Full Changelog", ignoreCase = true) &&
+                !linha.contains("What's Changed", ignoreCase = true) &&
+                !linha.contains("github.com", ignoreCase = true) &&
+                !linha.contains("http://", ignoreCase = true) &&
+                !linha.contains("https://", ignoreCase = true)
+            }
+            .distinct()
     }
 
     // Animações de entrada com física de mola (Pop-in com Spring)
