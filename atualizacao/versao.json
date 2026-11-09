@@ -1,6 +1,6 @@
-﻿{
-    "versaoCodigo":  119,
-    "versaoNome":  "2.0.79",
-    "notas":  "Correcao na conclusao automatica de series ao finalizar episodios, remocao de botoes duplicados no dialogo de temporada, novo leitor de novidades OTA limpo e README oficial no repositorio.",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
+{
+  "versaoCodigo": 119,
+  "versaoNome": "2.0.79",
+  "notas": "Novas melhorias, correções e novidades adicionadas nesta versão.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.79/CineList-v2.0.79.apk"
 }
