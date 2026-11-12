@@ -30,7 +30,7 @@ interface TmdbApiService {
     @GET("movie/now_playing")
     suspend fun obterFilmesEmCartaz(
         @Query("page") pagina: Int = 1,
-        @Query("region") regiao: String = "BR",
+        @Query("region") regiao: String? = "BR",
         @Query("language") idioma: String = "pt-BR"
     ): TmdbResposta
 

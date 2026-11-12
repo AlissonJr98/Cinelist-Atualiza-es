@@ -22,6 +22,9 @@ data class TmdbFilme(
     val generoTexto: String = "Geral",
     var plataformaDetectada: String = ""
 ) {
+    val id: Int
+        get() = idTmdb
+
     val ehSerie: Boolean
         get() = mediaType.equals("tv", ignoreCase = true)
 

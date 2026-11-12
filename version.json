@@ -1,6 +1,6 @@
-{
-  "versionCode": 119,
-  "versionName": "2.0.79",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.79/CineList-v2.0.79.apk",
-  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
+﻿{
+    "versionCode":  120,
+    "versionName":  "2.0.80",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog":  "Botao de ingressos/sessoes restrito a filmes em cartaz e conclusao de temporadas na barra de progresso com avanco automatico e envio ao historico."
 }

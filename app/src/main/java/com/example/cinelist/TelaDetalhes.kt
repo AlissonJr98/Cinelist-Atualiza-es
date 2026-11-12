@@ -156,6 +156,12 @@ fun TelaDetalhes(
     val carregandoEpisodios by viewModel.carregandoEpisodios.collectAsState()
     val galeriaImagens by viewModel.galeriaImagens.collectAsState()
 
+    val filmesEmCartaz by viewModel.filmesEmCartaz.collectAsState()
+    var estaEmCartazApi by remember { mutableStateOf(false) }
+    val estaEmCartaz = remember(idRealBuscaApi, filmesEmCartaz, estaEmCartazApi) {
+        estaEmCartazApi || filmesEmCartaz.any { it.idTmdb == idRealBuscaApi }
+    }
+
     val comentariosPublicos by viewModel.comentariosPublicosAtivos.collectAsState(initial = emptyList())
 
     val tituloDinamico = remember(I18n.idiomaAtivo, detalhesApi?.titulo, midiaSalva?.titulo, midiaSalva?.idTmdb) {
@@ -422,6 +428,7 @@ fun TelaDetalhes(
             viewModel.carregarComentariosMidia(idRealBuscaApi)
 
             if (!ehSerieOuAnime) {
+                estaEmCartazApi = viewModel.verificarSeFilmeEstaEmCartaz(idRealBuscaApi)
                 try {
                     val kw = withContext(Dispatchers.IO) {
                         RetrofitClient.apiService.obterKeywordsFilme(idRealBuscaApi)
@@ -615,11 +622,15 @@ fun TelaDetalhes(
                         } else {
                             statusAtual = StatusMidia.CONCLUIDO
                             if (isModoCasal) viewModel.pararAssistirAgora()
+                            val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                            val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
                             val midiaAtualizada = midiaSalva.copy(
                                 temporadaAtual = temporadaConcluidaAlvo,
                                 episodioAtual = episodioAtual,
                                 status = StatusMidia.CONCLUIDO.valor,
                                 jaEncerrou = true,
+                                dataConclusao = System.currentTimeMillis(),
+                                concluidoPor = if (isModoCasal) nomeConclusao else "",
                                 atualizadoEm = System.currentTimeMillis()
                             )
                             viewModel.atualizar(midiaAtualizada)
@@ -638,11 +649,15 @@ fun TelaDetalhes(
                         if (proximaTemporadaExiste) {
                             statusAtual = StatusMidia.CONCLUIDO
                             if (isModoCasal) viewModel.pararAssistirAgora()
+                            val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                            val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
                             val midiaAtualizada = midiaSalva.copy(
                                 temporadaAtual = temporadaConcluidaAlvo,
                                 episodioAtual = episodioAtual,
                                 status = StatusMidia.CONCLUIDO.valor,
                                 jaEncerrou = true,
+                                dataConclusao = System.currentTimeMillis(),
+                                concluidoPor = if (isModoCasal) nomeConclusao else "",
                                 atualizadoEm = System.currentTimeMillis()
                             )
                             viewModel.atualizar(midiaAtualizada)
@@ -921,7 +936,7 @@ fun TelaDetalhes(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            if (!ehSerieOuAnime) {
+                            if (!ehSerieOuAnime && estaEmCartaz) {
                                 Button(
                                     onClick = {
                                         val query = Uri.encode("cinemas e ingressos para $tituloDinamico")
@@ -934,7 +949,7 @@ fun TelaDetalhes(
                                 ) {
                                     Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = Color.White)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Consultar Sessões e Ingressos 🎟️", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text("Consultar Sessões e Ingressos 🎟️".t(), color = Color.White, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
@@ -1709,17 +1724,115 @@ fun TelaDetalhes(
                                                         color = Color(0xFF10B981).copy(alpha = 0.15f),
                                                         border = BorderStroke(1.dp, Color(0xFF10B981)),
                                                         modifier = Modifier.clickable {
-                                                            temporadaAtual = abaTemporadaVisualizada
-                                                            episodioAtual = totalEpsNestaTemporada
-                                                            if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
-                                                                statusAtual = StatusMidia.ASSISTINDO
-                                                            }
+                                                            val proximaTempExiste = (abaTemporadaVisualizada < totalTempDisponiveis)
+                                                            val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                                                            val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
+                                                            val streamingAtualizado = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                                                ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
+                                                                ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                                                ?: (midiaSalva?.plataforma ?: "TV / Original")
+
+                                                            CineHaptics.confirm(contexto)
+
                                                             val rotuloConcluida = infoTemporadaAtiva?.nome?.takeIf {
                                                                 it.isNotBlank() &&
                                                                 !it.equals("Season $abaTemporadaVisualizada", ignoreCase = true) &&
                                                                 !it.equals("Temporada $abaTemporadaVisualizada", ignoreCase = true)
                                                             } ?: "${"Temporada".t()} $abaTemporadaVisualizada"
-                                                            Toast.makeText(contexto, "$rotuloConcluida ${"marcada como concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
+
+                                                            if (proximaTempExiste) {
+                                                                val proxTemporada = abaTemporadaVisualizada + 1
+                                                                temporadaAtual = proxTemporada
+                                                                episodioAtual = 1
+                                                                abaTemporadaVisualizada = proxTemporada
+                                                                statusAtual = StatusMidia.ASSISTINDO
+
+                                                                if (midiaSalva != null) {
+                                                                    val midiaAtualizada = midiaSalva.copy(
+                                                                        temporadaAtual = proxTemporada,
+                                                                        episodioAtual = 1,
+                                                                        status = StatusMidia.ASSISTINDO.valor,
+                                                                        jaEncerrou = false,
+                                                                        atualizadoEm = System.currentTimeMillis()
+                                                                    )
+                                                                    viewModel.atualizar(midiaAtualizada)
+                                                                    if (isModoCasal) {
+                                                                        viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
+                                                                    }
+                                                                } else {
+                                                                    val novaMidia = Midia(
+                                                                        id = 0,
+                                                                        idTmdb = idRealBuscaApi,
+                                                                        titulo = detalhesApi?.titulo ?: "Série",
+                                                                        tipo = tipoRealUtilizado,
+                                                                        nota = 0,
+                                                                        temporadaAtual = proxTemporada,
+                                                                        episodioAtual = 1,
+                                                                        minutoParado = 0,
+                                                                        jaEncerrou = false,
+                                                                        status = StatusMidia.ASSISTINDO.valor,
+                                                                        sinopse = detalhesApi?.sinopse ?: "",
+                                                                        imagemCapa = detalhesApi?.urlPosterVertical ?: "",
+                                                                        genero = detalhesApi?.generoTexto ?: "",
+                                                                        plataforma = streamingAtualizado,
+                                                                        favorito = false,
+                                                                        listaCustomizada = "Geral",
+                                                                        isCasal = isModoCasal,
+                                                                        casalId = casalIdAtivo,
+                                                                        atualizadoEm = System.currentTimeMillis()
+                                                                    )
+                                                                    viewModel.inserir(novaMidia)
+                                                                }
+
+                                                                Toast.makeText(contexto, "$rotuloConcluida ${"marcada como concluída! 🎉".t()} ${"Avançando para a Temporada".t()} $proxTemporada! 🚀", Toast.LENGTH_SHORT).show()
+                                                            } else {
+                                                                temporadaAtual = abaTemporadaVisualizada
+                                                                episodioAtual = totalEpsNestaTemporada
+                                                                statusAtual = StatusMidia.CONCLUIDO
+                                                                if (isModoCasal) {
+                                                                    viewModel.pararAssistirAgora()
+                                                                }
+
+                                                                if (midiaSalva != null) {
+                                                                    val midiaAtualizada = midiaSalva.copy(
+                                                                        temporadaAtual = abaTemporadaVisualizada,
+                                                                        episodioAtual = totalEpsNestaTemporada,
+                                                                        status = StatusMidia.CONCLUIDO.valor,
+                                                                        jaEncerrou = true,
+                                                                        dataConclusao = System.currentTimeMillis(),
+                                                                        concluidoPor = if (isModoCasal) nomeConclusao else "",
+                                                                        atualizadoEm = System.currentTimeMillis()
+                                                                    )
+                                                                    viewModel.atualizar(midiaAtualizada)
+                                                                } else {
+                                                                    val novaMidia = Midia(
+                                                                        id = 0,
+                                                                        idTmdb = idRealBuscaApi,
+                                                                        titulo = detalhesApi?.titulo ?: "Série",
+                                                                        tipo = tipoRealUtilizado,
+                                                                        nota = 0,
+                                                                        temporadaAtual = abaTemporadaVisualizada,
+                                                                        episodioAtual = totalEpsNestaTemporada,
+                                                                        minutoParado = 0,
+                                                                        jaEncerrou = true,
+                                                                        status = StatusMidia.CONCLUIDO.valor,
+                                                                        dataConclusao = System.currentTimeMillis(),
+                                                                        concluidoPor = if (isModoCasal) nomeConclusao else "",
+                                                                        sinopse = detalhesApi?.sinopse ?: "",
+                                                                        imagemCapa = detalhesApi?.urlPosterVertical ?: "",
+                                                                        genero = detalhesApi?.generoTexto ?: "",
+                                                                        plataforma = streamingAtualizado,
+                                                                        favorito = false,
+                                                                        listaCustomizada = "Geral",
+                                                                        isCasal = isModoCasal,
+                                                                        casalId = casalIdAtivo,
+                                                                        atualizadoEm = System.currentTimeMillis()
+                                                                    )
+                                                                    viewModel.inserir(novaMidia)
+                                                                }
+
+                                                                Toast.makeText(contexto, "$rotuloConcluida ${"marcada como concluída! 🎉".t()} ${"Série marcada como Concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
+                                                            }
                                                         }
                                                     ) {
                                                         Text(
@@ -2614,19 +2727,25 @@ fun TelaDetalhes(
                                         val concluido = statusAtual == StatusMidia.CONCLUIDO
                                         val querAssistir = statusAtual == StatusMidia.QUERO_ASSISTIR
 
+                                        val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                                        val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
+
                                         val midiaAtualizada = midiaSalva.copy(
                                             nota = nota,
                                             temporadaAtual = temporadaAtual,
                                             episodioAtual = episodioAtual,
                                             jaEncerrou = concluido,
                                             status = statusAtual.valor,
+                                            dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
+                                            concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor,
                                             sinopse = sinopse,
                                             favorito = ehFavorito,
                                             listaCustomizada = listaCustomizada.ifBlank { "Geral" },
                                             plataforma = streamingAtualizado,
                                             isCasal = isModoCasal,
                                             casalId = casalIdAtivo,
-                                            comentarioPessoal = comentarioPessoalInput
+                                            comentarioPessoal = comentarioPessoalInput,
+                                            atualizadoEm = System.currentTimeMillis()
                                         )
                                         viewModel.atualizar(midiaAtualizada)
 

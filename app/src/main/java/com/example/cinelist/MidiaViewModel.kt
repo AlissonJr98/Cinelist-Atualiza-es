@@ -614,24 +614,58 @@ fun carregarNovidadesPorStreaming(context: Context, forcar: Boolean = false) {
     }
 
     fun carregarFilmesEmCartaz() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val acumulados = mutableListOf<TmdbFilme>()
+                val resposta = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = 1, regiao = "BR")
+                acumulados.addAll(resposta.resultados)
+                val totalPags = minOf(resposta.totalPaginas, 4)
+                for (pag in 2..totalPags) {
+                    try {
+                        val resp = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = pag, regiao = "BR")
+                        acumulados.addAll(resp.resultados)
+                    } catch (_: Exception) {}
+                }
+                try {
+                    val respGlobal = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = 1, regiao = null)
+                    acumulados.addAll(respGlobal.resultados)
+                } catch (_: Exception) {}
 
-viewModelScope.launch {
+                _filmesEmCartaz.value = acumulados.distinctBy { it.idTmdb }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
-try {
+    suspend fun verificarSeFilmeEstaEmCartaz(idFilme: Int): Boolean = withContext(Dispatchers.IO) {
+        if (idFilme <= 0) return@withContext false
+        if (_filmesEmCartaz.value.any { it.idTmdb == idFilme }) return@withContext true
 
-val resposta = RetrofitClient.apiService.obterFilmesEmCartaz()
-
-_filmesEmCartaz.value = resposta.resultados
-
-} catch (e: Exception) {
-
-e.printStackTrace()
-
-}
-
-}
-
-}
+        try {
+            val p1 = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = 1, regiao = "BR")
+            if (p1.resultados.any { it.idTmdb == idFilme }) {
+                _filmesEmCartaz.value = (_filmesEmCartaz.value + p1.resultados).distinctBy { it.idTmdb }
+                return@withContext true
+            }
+            val totalPags = minOf(p1.totalPaginas, 5)
+            for (pag in 2..totalPags) {
+                val p = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = pag, regiao = "BR")
+                if (p.resultados.any { it.idTmdb == idFilme }) {
+                    _filmesEmCartaz.value = (_filmesEmCartaz.value + p.resultados).distinctBy { it.idTmdb }
+                    return@withContext true
+                }
+            }
+            val global = RetrofitClient.apiService.obterFilmesEmCartaz(pagina = 1, regiao = null)
+            if (global.resultados.any { it.idTmdb == idFilme }) {
+                _filmesEmCartaz.value = (_filmesEmCartaz.value + global.resultados).distinctBy { it.idTmdb }
+                return@withContext true
+            }
+            false
+        } catch (_: Exception) {
+            false
+        }
+    }
 
 fun iniciarAssistirMidiaAgora(midia: Midia) {
 
