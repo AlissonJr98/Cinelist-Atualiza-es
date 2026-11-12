@@ -36,6 +36,14 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Detecção de Episódios Filler**: Alertas e identificação clara de fillers em animes clássicos e modernos, garantindo que você nunca perca tempo com episódios desnecessários.
 - **Calculadora de Maratona e Horário Real**: Saiba com precisão quantas horas restam para concluir uma série e veja o horário exato de término baseado no seu ritmo atual.
 
+### 🎬 Detalhes Estendidos & Dados Oficiais do Cinema
+- **Classificação Indicativa Oficial**: Exibição dos selos oficiais por faixa etária (Livre, 10, 12, 14, 16 e 18 anos) com a padronização oficial de cores e descritores detalhados de conteúdo (violência, conteúdo sensível, drogas).
+- **Bilheteria Mundial & Orçamento**: Painel estatístico com custo de produção (budget), arrecadação global nas bilheterias (revenue) e cálculo inteligente de rentabilidade (*🏆 Blockbuster*, *✨ Sucesso Comercial*, *📊 Lucrativo*).
+- **Equipe Criativa & Direção**: Conheça os Diretores, Roteiristas, Criadores da Série e Compositores da trilha sonora através de chips interativos.
+- **Onde Assistir Completo**: Saiba onde assistir em streaming por assinatura (Netflix, Max, Disney+, Prime Video, Apple TV+), plataformas 100% grátis (Pluto TV, NetMovies, Runtime) e catálogo de **Aluguel e Compra Digital**.
+- **Vídeos Extras, Teasers e Bastidores**: Assista a trailers, teasers promocionais, featurettes e vídeos de bastidores diretamente no app.
+- **Cinemas: Em Cartaz & Em Breve**: Acompanhe os filmes em exibição nas salas de cinema e confira as próximas estreias agendadas.
+
 ### 🎲 Decisão Rápida: Roleta & CineMatch
 - **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, HBO Max, Prime Video) ou status, e deixe o CineList sortear para você.
 - **CineMatch (Modo Casal / Amigos)**: Conecte-se com um amigo ou parceiro(a), deslize pelos títulos sugeridos e descubra o que ambos têm em comum para assistir juntos hoje.

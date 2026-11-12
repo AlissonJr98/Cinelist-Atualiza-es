@@ -90,6 +90,11 @@ data class TmdbDetalhesEstendidos(
     @SerializedName("belongs_to_collection") val colecaoFranquia: TmdbFranquiaColecao? = null,
     @SerializedName("status") val statusSerieApi: String? = null,
     @SerializedName("in_production") val emProducao: Boolean? = null,
+    @SerializedName("budget") val orcamento: Long? = 0L,
+    @SerializedName("revenue") val bilheteria: Long? = 0L,
+    @SerializedName("production_companies") val produtoras: List<TmdbProdutora>? = emptyList(),
+    @SerializedName("networks") val emissoras: List<TmdbProdutora>? = emptyList(),
+    @SerializedName("created_by") val criadoresSerie: List<TmdbCriadorItem>? = emptyList(),
     @SerializedName("seasons") val temporadas: List<TmdbTemporadaItem>? = emptyList()
 ) {
     val totalTemporadasReais: Int
@@ -132,6 +137,38 @@ data class TmdbDetalhesEstendidos(
 
     val duracaoMinutos: Int
         get() = duracaoFilme ?: duracaoEpisodios?.firstOrNull() ?: 0
+
+    val orcamentoFormatado: String?
+        get() {
+            val valor = orcamento ?: 0L
+            if (valor <= 0L) return null
+            return when {
+                valor >= 1_000_000_000L -> "$${String.format(java.util.Locale.US, "%.1f", valor / 1_000_000_000.0)}B"
+                valor >= 1_000_000L -> "$${String.format(java.util.Locale.US, "%.1f", valor / 1_000_000.0)}M"
+                valor >= 1_000L -> "$${String.format(java.util.Locale.US, "%.1f", valor / 1_000.0)}K"
+                else -> "$$valor"
+            }
+        }
+
+    val bilheteriaFormatada: String?
+        get() {
+            val valor = bilheteria ?: 0L
+            if (valor <= 0L) return null
+            return when {
+                valor >= 1_000_000_000L -> "$${String.format(java.util.Locale.US, "%.2f", valor / 1_000_000_000.0)}B"
+                valor >= 1_000_000L -> "$${String.format(java.util.Locale.US, "%.1f", valor / 1_000_000.0)}M"
+                valor >= 1_000L -> "$${String.format(java.util.Locale.US, "%.1f", valor / 1_000.0)}K"
+                else -> "$$valor"
+            }
+        }
+
+    val multiplicadorBilheteria: Double?
+        get() {
+            val o = orcamento ?: 0L
+            val b = bilheteria ?: 0L
+            if (o <= 0L || b <= 0L) return null
+            return b.toDouble() / o.toDouble()
+        }
 }
 
 data class TmdbProvedoresResposta(
@@ -155,9 +192,37 @@ data class ItemProvedor(
         get() = if (!logoPath.isNullOrBlank()) "https://image.tmdb.org/t/p/w200$logoPath" else ""
 }
 
-data class TmdbCreditosResposta(
-    @SerializedName("cast") val elenco: List<TmdbAtor>? = null
+data class TmdbProdutora(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("logo_path") val logoPath: String? = null,
+    @SerializedName("origin_country") val paisOrigem: String? = null
+) {
+    val urlLogo: String
+        get() = if (!logoPath.isNullOrBlank()) "https://image.tmdb.org/t/p/w200$logoPath" else ""
+}
+
+data class TmdbCriadorItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("profile_path") val fotoPerfil: String? = null
 )
+
+data class TmdbCreditosResposta(
+    @SerializedName("cast") val elenco: List<TmdbAtor>? = null,
+    @SerializedName("crew") val equipe: List<TmdbMembroEquipe>? = null
+)
+
+data class TmdbMembroEquipe(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("job") val funcao: String = "",
+    @SerializedName("department") val departamento: String = "",
+    @SerializedName("profile_path") val fotoPerfil: String? = null
+) {
+    val urlFotoPerfil: String
+        get() = if (!fotoPerfil.isNullOrBlank()) "https://image.tmdb.org/t/p/w185$fotoPerfil" else ""
+}
 
 data class TmdbAtor(
     @SerializedName("id") val idAtor: Int = 0,
@@ -180,9 +245,51 @@ data class TmdbVideosResposta(
 )
 
 data class TmdbVideoItem(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val nome: String = "",
     @SerializedName("key") val chaveYoutube: String = "",
     @SerializedName("site") val sitePlataforma: String = "",
-    @SerializedName("type") val tipoVideo: String = ""
+    @SerializedName("type") val tipoVideo: String = "",
+    @SerializedName("official") val oficial: Boolean = false
+) {
+    val ehYoutube: Boolean
+        get() = sitePlataforma.equals("YouTube", ignoreCase = true)
+    val urlThumbnail: String
+        get() = if (chaveYoutube.isNotBlank()) "https://img.youtube.com/vi/$chaveYoutube/mqdefault.jpg" else ""
+}
+
+data class TmdbReleaseDatesResposta(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("results") val resultados: List<TmdbPaisReleaseDate>? = null
+)
+
+data class TmdbPaisReleaseDate(
+    @SerializedName("iso_3166_1") val codigoPais: String = "",
+    @SerializedName("release_dates") val datasLancamento: List<TmdbReleaseDateItem>? = null
+)
+
+data class TmdbReleaseDateItem(
+    @SerializedName("certification") val classificacao: String = "",
+    @SerializedName("descriptors") val descritores: List<String>? = null,
+    @SerializedName("type") val tipoLancamento: Int = 0
+)
+
+data class TmdbContentRatingsResposta(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("results") val resultados: List<TmdbRatingSerieItem>? = null
+)
+
+data class TmdbRatingSerieItem(
+    @SerializedName("iso_3166_1") val codigoPais: String = "",
+    @SerializedName("rating") val classificacao: String = "",
+    @SerializedName("descriptors") val descritores: List<String>? = null
+)
+
+data class ClassificacaoIndicativaInfo(
+    val faixaEtaria: String,
+    val corFundo: Long,
+    val descricao: String,
+    val descritores: List<String> = emptyList()
 )
 
 data class TmdbRecomendacoesResposta(

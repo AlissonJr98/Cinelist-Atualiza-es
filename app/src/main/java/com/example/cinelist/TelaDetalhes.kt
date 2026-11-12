@@ -149,8 +149,13 @@ fun TelaDetalhes(
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
     val provedoresGratis by viewModel.provedoresGratis.collectAsState()
+    val provedoresAluguel by viewModel.provedoresAluguel.collectAsState()
+    val provedoresCompra by viewModel.provedoresCompra.collectAsState()
     val elencoAtivo by viewModel.elencoMidia.collectAsState()
+    val equipeMidia by viewModel.equipeMidia.collectAsState()
     val chaveTrailer by viewModel.chaveTrailerYoutube.collectAsState()
+    val videosExtras by viewModel.videosExtras.collectAsState()
+    val classificacaoIndicativa by viewModel.classificacaoIndicativa.collectAsState()
     val recomendacoesAtivas by viewModel.recomendacoesMidia.collectAsState()
     val episodiosTmdb by viewModel.episodiosTemporada.collectAsState()
     val carregandoEpisodios by viewModel.carregandoEpisodios.collectAsState()
@@ -348,6 +353,14 @@ fun TelaDetalhes(
     }
 
     val provedoresFiltrados = provedoresAssinaturaFiltrados
+
+    val provedoresAluguelFiltrados = remember(provedoresAluguel) {
+        provedoresAluguel.distinctBy { it.idProvedor }
+    }
+
+    val provedoresCompraFiltrados = remember(provedoresCompra) {
+        provedoresCompra.distinctBy { it.idProvedor }
+    }
 
     val ehSerieOuAnime = remember(tipoRealUtilizado) {
         val t = tipoRealUtilizado.trim().lowercase()
@@ -996,7 +1009,36 @@ fun TelaDetalhes(
                                         Text("Média Crítica".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
                                         Text(notaPublico, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                     }
+                                    if (classificacaoIndicativa != null) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text("Classificação".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
+                                            val cInfo = classificacaoIndicativa!!
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Color(cInfo.corFundo),
+                                                modifier = Modifier.padding(top = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = cInfo.faixaEtaria.t(),
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 11.sp,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
+                            }
+
+                            if (!classificacaoIndicativa?.descricao.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "⚠️ ${"Conteúdo:".t()} ${classificacaoIndicativa?.descricao}",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
                             }
 
                             val horaTerminoTexto = remember(duracaoPadraoMin, ehSerieOuAnime) {
@@ -1085,6 +1127,105 @@ fun TelaDetalhes(
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
+                                    }
+                                }
+                            }
+
+                            // 📊 ORÇAMENTO, BILHETERIA E RENTABILIDADE
+                            if (detalhesApi != null && ((detalhesApi?.orcamento ?: 0L) > 0L || (detalhesApi?.bilheteria ?: 0L) > 0L)) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "💰 Bilheteria Mundial".t(),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            val multiplicador = detalhesApi?.multiplicadorBilheteria ?: 0.0
+                                            if (multiplicador > 0.0) {
+                                                val seloRoi = when {
+                                                    multiplicador >= 3.0 -> "🏆 Blockbuster"
+                                                    multiplicador >= 2.0 -> "✨ Sucesso Comercial"
+                                                    multiplicador >= 1.0 -> "📊 Lucrativo"
+                                                    else -> "📉 Alto Custo"
+                                                }
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = if (multiplicador >= 2.0) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFF59E0B).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = seloRoi.t(),
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (multiplicador >= 2.0) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceAround
+                                        ) {
+                                            if ((detalhesApi?.orcamento ?: 0L) > 0L) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Orçamento".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(detalhesApi?.orcamentoFormatado ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                }
+                                            }
+                                            if ((detalhesApi?.bilheteria ?: 0L) > 0L) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Bilheteria".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(detalhesApi?.bilheteriaFormatada ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                                }
+                                            }
+                                            if ((detalhesApi?.multiplicadorBilheteria ?: 0.0) > 0.0) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Rentabilidade".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(String.format(java.util.Locale.US, "%.1fx", detalhesApi?.multiplicadorBilheteria), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 🏢 ESTÚDIOS E PRODUTORAS
+                            val produtoras = detalhesApi?.produtoras ?: emptyList()
+                            val emissoras = detalhesApi?.emissoras ?: emptyList()
+                            if (produtoras.isNotEmpty() || emissoras.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Estúdios:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
+                                    (produtoras.take(4).map { it.nome } + emissoras.take(3).map { it.nome }).distinct().forEach { nomeEstudio ->
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                        ) {
+                                            Text(
+                                                text = nomeEstudio,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1184,6 +1325,82 @@ fun TelaDetalhes(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
                                     )
+                                }
+                            }
+
+                            if (videosExtras.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "🎞️ Mais Vídeos, Teasers e Bastidores:".t(),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    videosExtras.take(8).forEach { videoItem ->
+                                        Column(
+                                            modifier = Modifier
+                                                .width(170.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .clickable {
+                                                    val url = "https://www.youtube.com/watch?v=${videoItem.chaveYoutube}"
+                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                    contexto.startActivity(intent)
+                                                }
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(96.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color.Black),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                AsyncImage(
+                                                    model = videoItem.urlThumbnail,
+                                                    contentDescription = videoItem.nome,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                                Surface(
+                                                    shape = CircleShape,
+                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.PlayArrow,
+                                                        contentDescription = "Reproduzir",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.padding(6.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = videoItem.nome,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            if (videoItem.tipoVideo.isNotBlank()) {
+                                                Text(
+                                                    text = videoItem.tipoVideo,
+                                                    fontSize = 10.sp,
+                                                    color = MaterialTheme.colorScheme.secondary,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -1401,8 +1618,150 @@ fun TelaDetalhes(
                                 }
                             }
 
+                            // SEÇÃO: DISPONÍVEL PARA ALUGUEL DIGITAL
+                            if (provedoresAluguelFiltrados.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "🎟️ Disponível para Aluguel Digital:".t(),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                                        border = BorderStroke(0.6.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
+                                    ) {
+                                        Text(
+                                            text = "ALUGUEL".t(),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFF59E0B),
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    provedoresAluguelFiltrados.forEach { streaming ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(52.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                AsyncImage(
+                                                    model = streaming.urlLogo,
+                                                    contentDescription = streaming.nomeProvedor,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = streaming.nomeProvedor,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.width(60.dp),
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // SEÇÃO: DISPONÍVEL PARA COMPRA DIGITAL
+                            if (provedoresCompraFiltrados.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "🛍️ Disponível para Compra Digital:".t(),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFA855F7).copy(alpha = 0.15f),
+                                        border = BorderStroke(0.6.dp, Color(0xFFA855F7).copy(alpha = 0.5f))
+                                    ) {
+                                        Text(
+                                            text = "COMPRA".t(),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFA855F7),
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    provedoresCompraFiltrados.forEach { streaming ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(52.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                AsyncImage(
+                                                    model = streaming.urlLogo,
+                                                    contentDescription = streaming.nomeProvedor,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = streaming.nomeProvedor,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.secondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.width(60.dp),
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             // SEÇÃO: INDISPONÍVEL EM STREAMING
-                            if (provedoresGratisFiltrados.isEmpty() && provedoresAssinaturaFiltrados.isEmpty() && detalhesApi != null) {
+                            if (provedoresGratisFiltrados.isEmpty() && provedoresAssinaturaFiltrados.isEmpty() && provedoresAluguelFiltrados.isEmpty() && provedoresCompraFiltrados.isEmpty() && detalhesApi != null) {
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Row(
                                     modifier = Modifier
@@ -1537,6 +1896,67 @@ fun TelaDetalhes(
                                                 textAlign = TextAlign.Center,
                                                 modifier = Modifier.fillMaxWidth()
                                             )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (equipeMidia.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Text(
+                                    text = "🎬 Equipe Criativa & Direção:".t(),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    equipeMidia.forEach { membro ->
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                            modifier = Modifier.width(135.dp)
+                                        ) {
+                                            Column(modifier = Modifier.padding(10.dp)) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = when {
+                                                        membro.funcao.contains("Diretor", ignoreCase = true) || membro.funcao.contains("Direct", ignoreCase = true) -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                                                        membro.funcao.contains("Roteiro", ignoreCase = true) || membro.funcao.contains("Writ", ignoreCase = true) || membro.funcao.contains("Screen", ignoreCase = true) -> Color(0xFF3B82F6).copy(alpha = 0.2f)
+                                                        membro.funcao.contains("Criador", ignoreCase = true) || membro.funcao.contains("Creator", ignoreCase = true) -> Color(0xFF8B5CF6).copy(alpha = 0.2f)
+                                                        else -> Color(0xFF10B981).copy(alpha = 0.2f)
+                                                    }
+                                                ) {
+                                                    Text(
+                                                        text = membro.funcao.t(),
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = when {
+                                                            membro.funcao.contains("Diretor", ignoreCase = true) || membro.funcao.contains("Direct", ignoreCase = true) -> Color(0xFFF87171)
+                                                            membro.funcao.contains("Roteiro", ignoreCase = true) || membro.funcao.contains("Writ", ignoreCase = true) || membro.funcao.contains("Screen", ignoreCase = true) -> Color(0xFF60A5FA)
+                                                            membro.funcao.contains("Criador", ignoreCase = true) || membro.funcao.contains("Creator", ignoreCase = true) -> Color(0xFFA78BFA)
+                                                            else -> Color(0xFF34D399)
+                                                        },
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Text(
+                                                    text = membro.nome,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
                                         }
                                     }
                                 }

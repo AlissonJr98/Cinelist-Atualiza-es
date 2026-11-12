@@ -34,6 +34,23 @@ interface TmdbApiService {
         @Query("language") idioma: String = "pt-BR"
     ): TmdbResposta
 
+    @GET("movie/upcoming")
+    suspend fun obterProximosLancamentos(
+        @Query("page") pagina: Int = 1,
+        @Query("region") regiao: String? = "BR",
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbResposta
+
+    @GET("movie/{movie_id}/release_dates")
+    suspend fun obterClassificacaoFilme(
+        @Path("movie_id") idFilme: Int
+    ): TmdbReleaseDatesResposta
+
+    @GET("tv/{series_id}/content_ratings")
+    suspend fun obterClassificacaoSerie(
+        @Path("series_id") idSerie: Int
+    ): TmdbContentRatingsResposta
+
     @GET("discover/movie")
     suspend fun descobrirFilmes(
         @Query("page") pagina: Int = 1,

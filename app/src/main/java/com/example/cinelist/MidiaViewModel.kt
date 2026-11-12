@@ -410,6 +410,7 @@ iniciarSincronizacaoSilenciosaNuvem()
 carregarMaisPopularesMatch()
 
 carregarFilmesEmCartaz()
+carregarFilmesEmBreve()
 
 carregarCarrosseisDescobrir()
 
@@ -2268,20 +2269,34 @@ private val _detalhesEstendidosApi = MutableStateFlow<TmdbDetalhesEstendidos?>(n
 val detalhesEstendidosApi: StateFlow<TmdbDetalhesEstendidos?> = _detalhesEstendidosApi
 
 private val _provedoresStreaming = MutableStateFlow<List<ItemProvedor>>(emptyList())
-
 val provedoresStreaming: StateFlow<List<ItemProvedor>> = _provedoresStreaming
 
 private val _provedoresGratis = MutableStateFlow<List<ItemProvedor>>(emptyList())
-
 val provedoresGratis: StateFlow<List<ItemProvedor>> = _provedoresGratis
 
-private val _elencoMidia = MutableStateFlow<List<TmdbAtor>>(emptyList())
+private val _provedoresAluguel = MutableStateFlow<List<ItemProvedor>>(emptyList())
+val provedoresAluguel: StateFlow<List<ItemProvedor>> = _provedoresAluguel
 
+private val _provedoresCompra = MutableStateFlow<List<ItemProvedor>>(emptyList())
+val provedoresCompra: StateFlow<List<ItemProvedor>> = _provedoresCompra
+
+private val _elencoMidia = MutableStateFlow<List<TmdbAtor>>(emptyList())
 val elencoMidia: StateFlow<List<TmdbAtor>> = _elencoMidia
 
-private val _chaveTrailerYoutube = MutableStateFlow<String?>(null)
+private val _equipeMidia = MutableStateFlow<List<TmdbMembroEquipe>>(emptyList())
+val equipeMidia: StateFlow<List<TmdbMembroEquipe>> = _equipeMidia
 
+private val _chaveTrailerYoutube = MutableStateFlow<String?>(null)
 val chaveTrailerYoutube: StateFlow<String?> = _chaveTrailerYoutube
+
+private val _videosExtras = MutableStateFlow<List<TmdbVideoItem>>(emptyList())
+val videosExtras: StateFlow<List<TmdbVideoItem>> = _videosExtras
+
+private val _classificacaoIndicativa = MutableStateFlow<ClassificacaoIndicativaInfo?>(null)
+val classificacaoIndicativa: StateFlow<ClassificacaoIndicativaInfo?> = _classificacaoIndicativa
+
+private val _filmesEmBreve = MutableStateFlow<List<TmdbFilme>>(emptyList())
+val filmesEmBreve: StateFlow<List<TmdbFilme>> = _filmesEmBreve
 
 private val _recomendacoesMidia = MutableStateFlow<List<TmdbFilme>>(emptyList())
 
@@ -2410,10 +2425,28 @@ try {
 _detalhesEstendidosApi.value = detalhes
 
 _elencoMidia.value = creditos?.elenco ?: emptyList()
+_equipeMidia.value = creditos?.equipe ?: emptyList()
 
-val trailer = videosResposta?.videos?.firstOrNull { it.sitePlataforma.equals("YouTube", ignoreCase = true) && (it.tipoVideo.equals("Trailer", ignoreCase = true) || it.tipoVideo.equals("Teaser", ignoreCase = true)) }
+val listaVideos = videosResposta?.videos?.filter { it.ehYoutube } ?: emptyList()
+_videosExtras.value = listaVideos
+
+val trailer = listaVideos.firstOrNull { it.tipoVideo.equals("Trailer", ignoreCase = true) }
+    ?: listaVideos.firstOrNull { it.tipoVideo.equals("Teaser", ignoreCase = true) }
+    ?: listaVideos.firstOrNull()
 
 _chaveTrailerYoutube.value = trailer?.chaveYoutube
+
+try {
+    if (ehRealmenteSerie) {
+        val cr = RetrofitClient.apiService.obterClassificacaoSerie(idTmdb)
+        _classificacaoIndicativa.value = extrairClassificacaoSerie(cr)
+    } else {
+        val rd = RetrofitClient.apiService.obterClassificacaoFilme(idTmdb)
+        _classificacaoIndicativa.value = extrairClassificacaoFilme(rd)
+    }
+} catch (e: Exception) {
+    _classificacaoIndicativa.value = null
+}
 
 _recomendacoesMidia.value = (recomendacoesResposta?.recomendacoes ?: emptyList()).map {
     it.copy(mediaType = if (ehRealmenteSerie) "tv" else "movie")
@@ -2445,11 +2478,86 @@ val dadosPais = resposta.resultados?.get("BR") ?: resposta.resultados?.get("US")
 _provedoresStreaming.value = (dadosPais?.streamingAssinatura ?: emptyList()).distinctBy { it.idProvedor }
 val listaGratis = ((dadosPais?.streamingGratis ?: emptyList()) + (dadosPais?.streamingComAnuncios ?: emptyList())).distinctBy { it.idProvedor }
 _provedoresGratis.value = listaGratis
+_provedoresAluguel.value = (dadosPais?.aluguel ?: emptyList()).distinctBy { it.idProvedor }
+_provedoresCompra.value = (dadosPais?.compra ?: emptyList()).distinctBy { it.idProvedor }
 
-} catch (e: Exception) { e.printStackTrace(); _provedoresStreaming.value = emptyList(); _provedoresGratis.value = emptyList() }
+} catch (e: Exception) {
+    e.printStackTrace()
+    _provedoresStreaming.value = emptyList()
+    _provedoresGratis.value = emptyList()
+    _provedoresAluguel.value = emptyList()
+    _provedoresCompra.value = emptyList()
+}
 
 }
 
+}
+
+private fun extrairClassificacaoFilme(res: TmdbReleaseDatesResposta?): ClassificacaoIndicativaInfo? {
+    if (res?.resultados == null) return null
+    val br = res.resultados.firstOrNull { it.codigoPais.equals("BR", ignoreCase = true) }
+    val certBr = br?.datasLancamento?.mapNotNull { it.classificacao.takeIf { c -> c.isNotBlank() } }?.firstOrNull()
+    val descritoresBr = br?.datasLancamento?.flatMap { it.descritores ?: emptyList() }?.distinct() ?: emptyList()
+
+    if (!certBr.isNullOrBlank()) {
+        return mapearClassificacao(certBr, descritoresBr)
+    }
+
+    val us = res.resultados.firstOrNull { it.codigoPais.equals("US", ignoreCase = true) }
+    val certUs = us?.datasLancamento?.mapNotNull { it.classificacao.takeIf { c -> c.isNotBlank() } }?.firstOrNull()
+    val descritoresUs = us?.datasLancamento?.flatMap { it.descritores ?: emptyList() }?.distinct() ?: emptyList()
+    return certUs?.let { mapearClassificacao(it, descritoresUs) }
+}
+
+private fun extrairClassificacaoSerie(res: TmdbContentRatingsResposta?): ClassificacaoIndicativaInfo? {
+    if (res?.resultados == null) return null
+    val br = res.resultados.firstOrNull { it.codigoPais.equals("BR", ignoreCase = true) }
+    if (!br?.classificacao.isNullOrBlank()) {
+        return mapearClassificacao(br.classificacao, br.descritores ?: emptyList())
+    }
+
+    val us = res.resultados.firstOrNull { it.codigoPais.equals("US", ignoreCase = true) }
+    return us?.classificacao?.let { mapearClassificacao(it, us.descritores ?: emptyList()) }
+}
+
+private fun mapearClassificacao(ratingBruto: String, descritores: List<String>): ClassificacaoIndicativaInfo? {
+    val r = ratingBruto.trim().uppercase()
+    return when {
+        r == "L" || r == "LIVRE" || r == "G" || r == "TV-Y" || r == "TV-Y7" || r == "TV-G" -> {
+            ClassificacaoIndicativaInfo("L", 0xFF00A859, "Livre para todos os públicos", descritores)
+        }
+        r == "10" || r == "PG" || r == "TV-PG" -> {
+            ClassificacaoIndicativaInfo("10", 0xFF007BC0, "Não recomendado para menores de 10 anos", descritores)
+        }
+        r == "12" || r == "PG-13" -> {
+            ClassificacaoIndicativaInfo("12", 0xFFFFCC00, "Não recomendado para menores de 12 anos", descritores)
+        }
+        r == "14" || r == "TV-14" -> {
+            ClassificacaoIndicativaInfo("14", 0xFFF37021, "Não recomendado para menores de 14 anos", descritores)
+        }
+        r == "16" || r == "R" -> {
+            ClassificacaoIndicativaInfo("16", 0xFFE31B23, "Não recomendado para menores de 16 anos", descritores)
+        }
+        r == "18" || r == "NC-17" || r == "TV-MA" -> {
+            ClassificacaoIndicativaInfo("18", 0xFF1D1D1B, "Não recomendado para menores de 18 anos", descritores)
+        }
+        else -> {
+            ClassificacaoIndicativaInfo(ratingBruto, 0xFF475569, "Classificação: $ratingBruto", descritores)
+        }
+    }
+}
+
+fun carregarFilmesEmBreve() {
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val resp = RetrofitClient.apiService.obterProximosLancamentos(pagina = 1, regiao = "BR")
+            val p2 = runCatching { RetrofitClient.apiService.obterProximosLancamentos(pagina = 2, regiao = "BR") }.getOrNull()
+            val total = (resp.resultados + (p2?.resultados ?: emptyList())).distinctBy { it.idTmdb }
+            _filmesEmBreve.value = total.filter { !it.dataLancamento.isNullOrBlank() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
 fun limparDetalhesEstendidos() {
@@ -2460,9 +2568,19 @@ _provedoresStreaming.value = emptyList()
 
 _provedoresGratis.value = emptyList()
 
+_provedoresAluguel.value = emptyList()
+
+_provedoresCompra.value = emptyList()
+
 _elencoMidia.value = emptyList()
 
+_equipeMidia.value = emptyList()
+
 _chaveTrailerYoutube.value = null
+
+_videosExtras.value = emptyList()
+
+_classificacaoIndicativa.value = null
 
 _recomendacoesMidia.value = emptyList()
 

@@ -1758,6 +1758,8 @@ fun TelaPrincipal(
                                 val carrosselSeriesAlta by viewModel.carrosselSeriesAlta.collectAsState()
                                 val carrosselComedias by viewModel.carrosselComedias.collectAsState()
                                 val carrosselAcao by viewModel.carrosselAcao.collectAsState()
+                                val filmesEmCartaz by viewModel.filmesEmCartaz.collectAsState()
+                                val filmesEmBreve by viewModel.filmesEmBreve.collectAsState()
                                 val lancamentosStreaming by viewModel.secoesLancamentosStreaming.collectAsState()
                                 val carrosseisGenerosFav by viewModel.carrosseisGenerosFavoritos.collectAsState()
                                 val carregandoCarrosseis by viewModel.carregandoCarrosseis.collectAsState()
@@ -1956,6 +1958,13 @@ fun TelaPrincipal(
                                                     )
                                                 }
                                             }
+                                        }
+
+                                        if (filmesEmCartaz.isNotEmpty()) {
+                                            item { CarrosselSessao(titulo = "🍿 Em Cartaz nos Cinemas".t(), listaTmdb = filmesEmCartaz, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
+                                        }
+                                        if (filmesEmBreve.isNotEmpty()) {
+                                            item { CarrosselSessao(titulo = "📅 Em Breve nos Cinemas".t(), listaTmdb = filmesEmBreve, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
                                         }
 
                                         item { CarrosselSessao(titulo = "🎬 Filmes Populares".t(), listaTmdb = listaPopularesEmbaralhada, listaDeMidiasLocal = listaDeMidias, onTmdbItemClique = { item, tipo -> focusManager.clearFocus(); onTmdbItemClique(item, tipo) }, onAdicionarClique = onAdicionarClique) }
