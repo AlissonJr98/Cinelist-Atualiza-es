@@ -1797,5 +1797,17 @@ object I18nDicionarioFr {
         "Apenas Dublados" to "Doublés uniquement",
         "🎙️ Apenas Dublados" to "🎙️ Doublés uniquement",
         "Consultando dublagem..." to "Vérification du doublage...",
+        "Outros Papéis Marcantes no Brasil:" to "Autres rôles marquants au Brésil :",
+        "Dá voz a:" to "Prête sa voix à :",
+        "Ator/Atriz original:" to "Acteur/Actrice d'origine :",
+        "Buscar Trabalhos no CineList" to "Rechercher des œuvres dans CineList",
+        "Voz Brasileira" to "Voix brésilienne",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 ADN Cinématographique (Genres)",
+        "gêneros dominantes" to "genres dominants",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "Série terminée avec succès et déplacée dans l'Historique ! 🏆",
+        "Concluir Série 🏆" to "Terminer la Série 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "C'était le dernier épisode disponible de la série. Souhaitez-vous la marquer comme Terminée et la déplacer dans l'Historique ?",
+        "Dublados" to "Doublés",
+        "Dublador" to "Doubleur"
 )
 }

@@ -1786,5 +1786,17 @@ object I18nDicionarioDe {
         "Apenas Dublados" to "Nur Synchronisiert",
         "🎙️ Apenas Dublados" to "🎙️ Nur Synchronisiert",
         "Consultando dublagem..." to "Synchronisation wird geprüft...",
+        "Outros Papéis Marcantes no Brasil:" to "Weitere bemerkenswerte Rollen in Brasilien:",
+        "Dá voz a:" to "Spricht:",
+        "Ator/Atriz original:" to "Original-Schauspieler/in:",
+        "Buscar Trabalhos no CineList" to "Werke in CineList suchen",
+        "Voz Brasileira" to "Brasilianische Synchronstimme",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 Film-DNA (Genres)",
+        "gêneros dominantes" to "dominante Genres",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "Serie erfolgreich abgeschlossen und in den Verlauf verschoben! 🏆",
+        "Concluir Série 🏆" to "Serie abschließen 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "Dies war die letzte verfügbare Folge der Serie. Möchten Sie sie als Abgeschlossen markieren und in den Verlauf verschieben?",
+        "Dublados" to "Synchronisiert",
+        "Dublador" to "Synchronsprecher"
 )
 }

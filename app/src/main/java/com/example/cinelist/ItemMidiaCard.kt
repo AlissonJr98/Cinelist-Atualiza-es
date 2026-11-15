@@ -310,6 +310,28 @@ private fun ConteudoItemMidiaCard(
                         }
                     }
 
+                    val ehDubladoSelo = remember(midia.idTmdb, midia.titulo) {
+                        DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null)
+                    }
+                    if (ehDubladoSelo && (statusEnum != StatusMidia.ASSISTINDO || !ehSerieOuAnime)) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(6.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF0F1526).copy(alpha = 0.88f),
+                            border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                        ) {
+                            Text(
+                                text = "🎙️ PT-BR",
+                                color = Color(0xFF10B981),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
                     if (!ehPendente && !ehRecusado) {
                         if (onAlternarFavorito != null && statusEnum != StatusMidia.DESCOBRIR) {
                             BotaoFavoritoAnimado(
@@ -368,53 +390,76 @@ private fun ConteudoItemMidiaCard(
                                 )
                             }
                         } else if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
+                            var ultimoCliqueEpisodio by remember { mutableStateOf(0L) }
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .align(Alignment.BottomCenter),
                                 color = Color(0xEE000000)
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual),
-                                        color = Color(0xFFFFD700),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-
-                                    Button(
-                                        onClick = {
-                                            CineHaptics.click(contexto)
-                                            onIncrementarEpisodio()
-                                        },
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                        modifier = Modifier.height(30.dp)
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        Text(
+                                            text = formatarTemporadaEpisodio(midia.temporadaAtual, midia.episodioAtual),
+                                            color = Color(0xFFFFD700),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+
+                                        Button(
+                                            onClick = {
+                                                val agora = System.currentTimeMillis()
+                                                if (agora - ultimoCliqueEpisodio > 450L) {
+                                                    ultimoCliqueEpisodio = agora
+                                                    CineHaptics.click(contexto)
+                                                    onIncrementarEpisodio()
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                            modifier = Modifier.height(30.dp)
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add,
-                                                contentDescription = "Avançar Episódio".t(),
-                                                tint = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                            Text(
-                                                text = "+1 Ep".t(),
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.ExtraBold
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Add,
+                                                    contentDescription = "Avançar Episódio".t(),
+                                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Text(
+                                                    text = "+1 Ep".t(),
+                                                    color = MaterialTheme.colorScheme.onPrimary,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.ExtraBold
+                                                )
+                                            }
                                         }
+                                    }
+
+                                    // Barra de progresso visual da temporada
+                                    val progressoEstimado = if (midia.episodioAtual > 0) ((midia.episodioAtual % 24).toFloat() / 24f).coerceIn(0.06f, 1f) else 0.06f
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(2.5.dp)
+                                            .background(Color.White.copy(alpha = 0.15f))
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(progressoEstimado)
+                                                .fillMaxHeight()
+                                                .background(Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF00E5FF))))
+                                        )
                                     }
                                 }
                             }
@@ -1188,10 +1233,15 @@ private fun ConteudoItemMidiaCardHorizontal(
                             }
 
                             if (ehSerieOuAnime && onIncrementarEpisodio != null && statusEnum == StatusMidia.ASSISTINDO) {
+                                var ultimoCliqueEpisodioH by remember { mutableStateOf(0L) }
                                 Button(
                                     onClick = {
-                                        CineHaptics.click(contexto)
-                                        onIncrementarEpisodio()
+                                        val agora = System.currentTimeMillis()
+                                        if (agora - ultimoCliqueEpisodioH > 450L) {
+                                            ultimoCliqueEpisodioH = agora
+                                            CineHaptics.click(contexto)
+                                            onIncrementarEpisodio()
+                                        }
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),

@@ -3306,6 +3306,90 @@ fun TelaPerfil(
 
                         }
 
+                        val distribuicaoGeneros = remember(listaDeMidias) {
+                            val contagem = mutableMapOf<String, Int>()
+                            listaDeMidias.forEach { m ->
+                                val gens = m.genero.split(",", "/", "•", "-").map { it.trim() }.filter { it.isNotBlank() }
+                                gens.forEach { g ->
+                                    contagem[g] = (contagem[g] ?: 0) + 1
+                                }
+                            }
+                            contagem.toList().sortedByDescending { it.second }.take(6)
+                        }
+
+                        if (distribuicaoGeneros.isNotEmpty()) {
+                            val totalGeralGeneros = distribuicaoGeneros.sumOf { it.second }.coerceAtLeast(1)
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(CineListTokens.EspacoM)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🧬 DNA Cinematográfico (Gêneros)".t(),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${distribuicaoGeneros.size} ${"gêneros dominantes".t()}",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        distribuicaoGeneros.forEachIndexed { idx, (generoNome, qtd) ->
+                                            val pct = (qtd.toFloat() / totalGeralGeneros.toFloat()).coerceIn(0.04f, 1f)
+                                            val corBarra = when (idx % 5) {
+                                                0 -> Color(0xFF00E5FF)
+                                                1 -> Color(0xFF8B5CF6)
+                                                2 -> Color(0xFF10B981)
+                                                3 -> Color(0xFFFFD700)
+                                                else -> Color(0xFFFF4C4C)
+                                            }
+                                            Column(modifier = Modifier.fillMaxWidth()) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = generoNome.t(),
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Text(
+                                                        text = "$qtd (${(pct * 100).toInt()}%)",
+                                                        fontSize = 11.sp,
+                                                        color = MaterialTheme.colorScheme.secondary
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                LinearProgressIndicator(
+                                                    progress = { pct },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(6.dp)
+                                                        .clip(RoundedCornerShape(3.dp)),
+                                                    color = corBarra,
+                                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     }
 
                 }

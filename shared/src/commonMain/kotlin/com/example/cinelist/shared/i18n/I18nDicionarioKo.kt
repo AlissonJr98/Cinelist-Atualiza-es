@@ -1764,5 +1764,17 @@ object I18nDicionarioKo {
         "Apenas Dublados" to "더빙만 보기",
         "🎙️ Apenas Dublados" to "🎙️ 더빙만 보기",
         "Consultando dublagem..." to "더빙 정보 확인 중...",
+        "Outros Papéis Marcantes no Brasil:" to "브라질 대표 더빙작:",
+        "Dá voz a:" to "더빙 배역:",
+        "Ator/Atriz original:" to "원작 배우:",
+        "Buscar Trabalhos no CineList" to "CineList에서 작품 검색",
+        "Voz Brasileira" to "브라질 성우",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 시네마 DNA (장르)",
+        "gêneros dominantes" to "주요 장르",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "시리즈를 성공적으로 완료하고 기록으로 이동했습니다! 🏆",
+        "Concluir Série 🏆" to "시리즈 완료 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "시리즈의 마지막 에피소드입니다. 완료로 표시하고 기록으로 이동하시겠습니까?",
+        "Dublados" to "더빙판",
+        "Dublador" to "성우"
 )
 }

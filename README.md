@@ -45,15 +45,26 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Cinemas: Em Cartaz & Em Breve**: Acompanhe os filmes em exibição nas salas de cinema e confira as próximas estreias agendadas.
 
 ### 🎙️ Áudio & Dublagem Brasileira (PT-BR)
-- **Identificação Visual Instantânea**: Saiba imediatamente se a obra possui dublagem com selos dinâmicos (`🎙️ Dublado PT-BR`, `🇧🇷 Áudio Original`, `💬 Legendado` ou `❓ A Confirmar`).
+- **Identificação Visual Instantânea**: Saiba imediatamente se a obra possui dublagem com selos dinâmicos (`🎙️ PT-BR`, `🇧🇷 Áudio Original`, `💬 Legendado` ou `❓ A Confirmar`) diretamente nos cards e detalhes.
 - **Ficha de Dublagem Brasileira Completa**: Consulte os estúdios oficiais (*Delart, TV Group, Wan Macher, Dublavídeo, Universal Cinergia, Álamo, Unidub*), a direção de dublagem e o elenco completo com os dubladores brasileiros de cada personagem, integrado à API da **Dublapédia (MediaWiki)** e **CineAI (Gemini)**.
+- **Perfil Interativo de Vozes Brasileiras**: Toque em qualquer dublador para abrir sua ficha profissional completa com avatar, papel no título atual, personagens mais icônicos em animações/filmes e botão de busca instantânea no catálogo.
 - **Validação Colaborativa em Nuvem**: Contribuição comunitária com 1 toque (`✓ Dublado` / `💬 Legendado`) sincronizada em tempo real via **Firestore**.
-- **Filtro na Roleta Cibernética**: Sorteie exclusivamente títulos que possuem dublagem em português.
+- **Filtro na Roleta Cibernética & CineMatch**: Sorteie ou vote exclusivamente em títulos que possuem dublagem em português.
 
 ### 🎲 Decisão Rápida: Roleta & CineMatch
-- **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, HBO Max, Prime Video), status ou **apenas títulos dublados**, e deixe o CineList sortear para você.
-- **CineMatch (Modo Casal / Amigos)**: Conecte-se com um amigo ou parceiro(a), deslize pelos títulos sugeridos e descubra o que ambos têm em comum para assistir juntos hoje.
+- **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, Max, Prime Video), status ou **apenas títulos dublados**, e deixe o CineList sortear para você.
+- **CineMatch (Modo Casal & Amigos)**: Conecte-se com um amigo ou parceiro(a), filtre por dublagem, filmes ou séries, deslize pelos títulos sugeridos e descubra o que ambos têm em comum para assistir juntos hoje.
+- **Álbum de Matches & Torneio 1v1**: Reviva todos os títulos decididos em conjunto ou dispute mata-mata direto entre duas obras favoritas da sala.
 - **CineParty Ao Vivo**: Assista conteúdos e sincronize seu status e reações em tempo real com amigos conectados.
+
+### 📊 Estatísticas Avançadas & DNA Cinematográfico
+- **DNA Cinematográfico (Gêneros Dominantes)**: Gráfico interativo no perfil com a distribuição percentual dos seus gêneros favoritos e barras de progresso neon personalizadas.
+- **Economia de Tempo em Fillers**: Contador exclusivo de tempo economizado pulando episódios fillers em animes clássicos e sazonais.
+- **Importação e Exportação Flexível**: Suporte a backups em JSON e importação/exportação via **CSV compatível com Letterboxd, IMDb, TV Time e CineList**.
+
+### 📱 Experiência Visual & Temas Futuristas
+- **Modo AMOLED Void (#000000)**: Preto puro absoluto que desliga os pixels de telas OLED para máxima economia de bateria e imersão total.
+- **Paletas Cinematográficas**: Temas personalizados com tons de Deep Space Blue, Titanium Slate, Cyberpunk Neon e Light Clean.
 
 ### 🌐 Feed Social & Comunidade
 - **Feed Comunitário**: Compartilhe suas análises, avaliações (1 a 5 estrelas), teorias e recomendações.

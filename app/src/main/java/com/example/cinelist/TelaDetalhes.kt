@@ -145,6 +145,7 @@ fun TelaDetalhes(
     var mostrarDialogoPlaylists by remember { mutableStateOf(false) }
 
     var atorSelecionadoParaPerfil by remember { mutableStateOf<TmdbAtor?>(null) }
+    var vozDubladorSelecionadoParaPerfil by remember { mutableStateOf<VozDublador?>(null) }
 
     val detalhesApi by viewModel.detalhesEstendidosApi.collectAsState()
     val provedoresStreaming by viewModel.provedoresStreaming.collectAsState()
@@ -629,6 +630,17 @@ fun TelaDetalhes(
         )
     }
 
+    vozDubladorSelecionadoParaPerfil?.let { voz ->
+        DialogoPerfilDublador(
+            voz = voz,
+            onDispensar = { vozDubladorSelecionadoParaPerfil = null },
+            onBuscarNoApp = { nome ->
+                vozDubladorSelecionadoParaPerfil = null
+                onRecomendacaoClique(-1, nome)
+            }
+        )
+    }
+
     if (mostrarDialogFimTemporada && midiaSalva != null) {
         AlertDialog(
             onDismissRequest = { mostrarDialogFimTemporada = false },
@@ -637,7 +649,7 @@ fun TelaDetalhes(
                 val textoMsg = if (proximaTemporadaExiste) {
                     "${"Este era o último episódio da Temporada".t()} $temporadaConcluidaAlvo. ${"Deseja avançar para a próxima temporada e manter o status como Assistindo, ou marcar a série inteira como Concluída?".t()}"
                 } else {
-                    "Este era o último episódio disponível da série. Deseja marcar a série como Concluída?".t()
+                    "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?".t()
                 }
                 Text(textoMsg)
             },
@@ -649,6 +661,7 @@ fun TelaDetalhes(
                             val proxTemporada = temporadaConcluidaAlvo + 1
                             temporadaAtual = proxTemporada
                             episodioAtual = 1
+                            abaTemporadaVisualizada = proxTemporada
                             statusAtual = StatusMidia.ASSISTINDO
                             val midiaAtualizada = midiaSalva.copy(
                                 temporadaAtual = proxTemporada,
@@ -673,8 +686,8 @@ fun TelaDetalhes(
                                 concluidoPor = if (isModoCasal) nomeConclusao else "",
                                 atualizadoEm = System.currentTimeMillis()
                             )
-                            viewModel.atualizar(midiaAtualizada)
-                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉".t(), Toast.LENGTH_SHORT).show()
+                            viewModel.concluirMidia(midiaAtualizada)
+                            Toast.makeText(contexto, "Série concluída com sucesso e movida para o Histórico! 🏆".t(), Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -700,12 +713,12 @@ fun TelaDetalhes(
                                 concluidoPor = if (isModoCasal) nomeConclusao else "",
                                 atualizadoEm = System.currentTimeMillis()
                             )
-                            viewModel.atualizar(midiaAtualizada)
-                            Toast.makeText(contexto, "Série marcada como Concluída! 🎉".t(), Toast.LENGTH_SHORT).show()
+                            viewModel.concluirMidia(midiaAtualizada)
+                            Toast.makeText(contexto, "Série concluída com sucesso e movida para o Histórico! 🏆".t(), Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text(if (proximaTemporadaExiste) "Marcar Concluída".t() else "Continuar Assistindo".t(), color = MaterialTheme.colorScheme.onSurface)
+                    Text(if (proximaTemporadaExiste) "Marcar Concluída".t() else "Cancelar".t(), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         )
@@ -2141,6 +2154,10 @@ fun TelaDetalhes(
                                                 ) {
                                                     info.vozesPrincipais.forEach { voz ->
                                                         Surface(
+                                                            onClick = {
+                                                                CineHaptics.click(contexto)
+                                                                vozDubladorSelecionadoParaPerfil = voz
+                                                            },
                                                             shape = RoundedCornerShape(8.dp),
                                                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                                                             border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
@@ -2410,12 +2427,9 @@ fun TelaDetalhes(
                                                         color = MaterialTheme.colorScheme.primary
                                                     )
 
+                                                    val proximaTempExiste = (abaTemporadaVisualizada < totalTempDisponiveis)
                                                     Surface(
-                                                        shape = RoundedCornerShape(6.dp),
-                                                        color = Color(0xFF10B981).copy(alpha = 0.15f),
-                                                        border = BorderStroke(1.dp, Color(0xFF10B981)),
-                                                        modifier = Modifier.clickable {
-                                                            val proximaTempExiste = (abaTemporadaVisualizada < totalTempDisponiveis)
+                                                        onClick = {
                                                             val usuarioLogado = FirebaseAuth.getInstance().currentUser
                                                             val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
                                                             val streamingAtualizado = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
@@ -2494,7 +2508,7 @@ fun TelaDetalhes(
                                                                         concluidoPor = if (isModoCasal) nomeConclusao else "",
                                                                         atualizadoEm = System.currentTimeMillis()
                                                                     )
-                                                                    viewModel.atualizar(midiaAtualizada)
+                                                                    viewModel.concluirMidia(midiaAtualizada)
                                                                 } else {
                                                                     val novaMidia = Midia(
                                                                         id = 0,
@@ -2520,14 +2534,18 @@ fun TelaDetalhes(
                                                                         atualizadoEm = System.currentTimeMillis()
                                                                     )
                                                                     viewModel.inserir(novaMidia)
+                                                                    viewModel.concluirMidia(novaMidia)
                                                                 }
 
-                                                                Toast.makeText(contexto, "$rotuloConcluida ${"marcada como concluída! 🎉".t()} ${"Série marcada como Concluída! 🎉".t()}", Toast.LENGTH_SHORT).show()
+                                                                Toast.makeText(contexto, "Série concluída com sucesso e movida para o Histórico! 🏆".t(), Toast.LENGTH_SHORT).show()
                                                             }
-                                                        }
+                                                        },
+                                                        shape = RoundedCornerShape(6.dp),
+                                                        color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                                        border = BorderStroke(1.dp, Color(0xFF10B981))
                                                     ) {
                                                         Text(
-                                                            text = "Concluir Temporada ✓".t(),
+                                                            text = if (proximaTempExiste) "Concluir Temporada ✓".t() else "Concluir Série 🏆".t(),
                                                             fontSize = 10.sp,
                                                             fontWeight = FontWeight.Bold,
                                                             color = Color(0xFF10B981),
@@ -2626,6 +2644,9 @@ fun TelaDetalhes(
                                                                 CineHaptics.click(contexto)
                                                                 if (statusAtual == StatusMidia.QUERO_ASSISTIR || statusAtual == StatusMidia.DESCOBRIR) {
                                                                     statusAtual = StatusMidia.ASSISTINDO
+                                                                }
+                                                                midiaSalva?.let {
+                                                                    viewModel.definirProgressoEpisodio(it.id, abaTemporadaVisualizada, epItem.numeroEpisodio)
                                                                 }
 
                                                                 val ultimoEpisodioDaLista = episodiosTmdb.maxOfOrNull { it.numeroEpisodio } ?: epItem.numeroEpisodio

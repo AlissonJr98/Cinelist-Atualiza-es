@@ -1854,5 +1854,17 @@ object I18nDicionarioEs {
         "Apenas Dublados" to "Solo Doblados",
         "🎙️ Apenas Dublados" to "🎙️ Solo Doblados",
         "Consultando dublagem..." to "Consultando doblaje...",
+        "Outros Papéis Marcantes no Brasil:" to "Otros papeles destacados en Brasil:",
+        "Dá voz a:" to "Da voz a:",
+        "Ator/Atriz original:" to "Actor/Actriz original:",
+        "Buscar Trabalhos no CineList" to "Buscar trabajos en CineList",
+        "Voz Brasileira" to "Voz brasileña",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 ADN Cinematográfico (Géneros)",
+        "gêneros dominantes" to "géneros dominantes",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "¡Serie completada con éxito y movida al Historial! 🏆",
+        "Concluir Série 🏆" to "Completar Serie 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "Este era el último episodio disponible de la serie. ¿Deseas marcarla como Completada y moverla al Historial?",
+        "Dublados" to "Doblados",
+        "Dublador" to "Actor de voz"
 )
 }

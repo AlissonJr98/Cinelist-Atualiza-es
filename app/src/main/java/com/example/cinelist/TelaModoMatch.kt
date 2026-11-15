@@ -70,19 +70,35 @@ fun TelaModoMatch(
     var mostrarAlbumRecordacoes by remember { mutableStateOf(false) }
 
     // 1. Títulos da própria sala
-    val midiasDaSalaParaVotar = remember(listaDeMidiasDaSala, chavesJaDeramMatch, votosSessaoLocal) {
+    var filtroApenasDublados by remember { mutableStateOf(false) }
+    var filtroApenasFilmes by remember { mutableStateOf(false) }
+    var filtroApenasSeries by remember { mutableStateOf(false) }
+
+    val midiasDaSalaParaVotar = remember(listaDeMidiasDaSala, chavesJaDeramMatch, votosSessaoLocal, filtroApenasDublados, filtroApenasFilmes, filtroApenasSeries) {
         listaDeMidiasDaSala.filter { midia ->
             val chaveDoc = if (midia.idTmdb != 0) "match_tmdb_${midia.idTmdb}" else "match_local_${midia.uuid}"
             val naoConcluido = !midia.status.equals("Concluído", ignoreCase = true) && !midia.status.equals("Concluido", ignoreCase = true)
-            naoConcluido && !chavesJaDeramMatch.contains(chaveDoc) && !votosSessaoLocal.contains(chaveDoc)
+            val matchDub = !filtroApenasDublados || DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null)
+            val matchTipo = when {
+                filtroApenasFilmes -> midia.tipo.contains("filme", true) || midia.tipo.contains("movie", true)
+                filtroApenasSeries -> midia.tipo.contains("série", true) || midia.tipo.contains("serie", true) || midia.tipo.contains("tv", true) || midia.tipo.contains("anime", true)
+                else -> true
+            }
+            naoConcluido && !chavesJaDeramMatch.contains(chaveDoc) && !votosSessaoLocal.contains(chaveDoc) && matchDub && matchTipo
         }
     }
 
     // 2. Títulos populares do TMDB para quando a sala acabar
-    val popularesParaVotar = remember(popularesTmdb, chavesJaDeramMatch, votosSessaoLocal) {
+    val popularesParaVotar = remember(popularesTmdb, chavesJaDeramMatch, votosSessaoLocal, filtroApenasDublados, filtroApenasFilmes, filtroApenasSeries) {
         popularesTmdb.filter { midia ->
             val chaveDoc = "match_tmdb_${midia.idTmdb}"
-            !chavesJaDeramMatch.contains(chaveDoc) && !votosSessaoLocal.contains(chaveDoc)
+            val matchDub = !filtroApenasDublados || DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null)
+            val matchTipo = when {
+                filtroApenasFilmes -> midia.tipo.contains("filme", true) || midia.tipo.contains("movie", true)
+                filtroApenasSeries -> midia.tipo.contains("série", true) || midia.tipo.contains("serie", true) || midia.tipo.contains("tv", true) || midia.tipo.contains("anime", true)
+                else -> true
+            }
+            !chavesJaDeramMatch.contains(chaveDoc) && !votosSessaoLocal.contains(chaveDoc) && matchDub && matchTipo
         }
     }
 
@@ -329,6 +345,34 @@ fun TelaModoMatch(
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilterChip(
+                            selected = filtroApenasDublados,
+                            onClick = { filtroApenasDublados = !filtroApenasDublados },
+                            label = { Text("🎙️ " + "Dublados".t(), fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = filtroApenasFilmes,
+                            onClick = {
+                                filtroApenasFilmes = !filtroApenasFilmes
+                                if (filtroApenasFilmes) filtroApenasSeries = false
+                            },
+                            label = { Text("🎬 " + "Filmes".t(), fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = filtroApenasSeries,
+                            onClick = {
+                                filtroApenasSeries = !filtroApenasSeries
+                                if (filtroApenasSeries) filtroApenasFilmes = false
+                            },
+                            label = { Text("📺 " + "Séries".t(), fontSize = 11.sp) }
+                        )
+                    }
+
                     // Deck de Cards Sobrepostos
                     Box(
                         modifier = Modifier

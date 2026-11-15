@@ -1764,5 +1764,17 @@ object I18nDicionarioJa {
         "Apenas Dublados" to "吹き替え版のみ",
         "🎙️ Apenas Dublados" to "🎙️ 吹き替え版のみ",
         "Consultando dublagem..." to "吹き替え情報を確認中...",
+        "Outros Papéis Marcantes no Brasil:" to "ブラジルでの主な代表作:",
+        "Dá voz a:" to "担当キャラクター:",
+        "Ator/Atriz original:" to "オリジナル俳優:",
+        "Buscar Trabalhos no CineList" to "CineListで出演作を検索",
+        "Voz Brasileira" to "ブラジルの声優",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 シネマDNA（ジャンル）",
+        "gêneros dominantes" to "主なジャンル",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "シリーズが完了し、履歴に移動しました！🏆",
+        "Concluir Série 🏆" to "シリーズ完了 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "これがシリーズの最終エピソードです。完了として履歴に移動しますか？",
+        "Dublados" to "吹替版",
+        "Dublador" to "声優"
 )
 }

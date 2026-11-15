@@ -1766,5 +1766,17 @@ object I18nDicionarioIt {
         "Apenas Dublados" to "Solo Doppiati",
         "🎙️ Apenas Dublados" to "🎙️ Solo Doppiati",
         "Consultando dublagem..." to "Controllo doppiaggio...",
+        "Outros Papéis Marcantes no Brasil:" to "Altri ruoli importanti in Brasile:",
+        "Dá voz a:" to "Presta la voce a:",
+        "Ator/Atriz original:" to "Attore/Attrice originale:",
+        "Buscar Trabalhos no CineList" to "Cerca opere in CineList",
+        "Voz Brasileira" to "Voce brasiliana",
+        "🧬 DNA Cinematográfico (Gêneros)" to "🧬 DNA Cinematografico (Generi)",
+        "gêneros dominantes" to "generi dominanti",
+        "Série concluída com sucesso e movida para o Histórico! 🏆" to "Serie completata con successo e spostata nella Cronologia! 🏆",
+        "Concluir Série 🏆" to "Completa Serie 🏆",
+        "Este era o último episódio disponível da série. Deseja marcar como Concluída e mover para o Histórico?" to "Questo era l'ultimo episodio disponibile della serie. Vuoi segnarla come Completata e spostarla nella Cronologia?",
+        "Dublados" to "Doppiati",
+        "Dublador" to "Doppiatore"
 )
 }
