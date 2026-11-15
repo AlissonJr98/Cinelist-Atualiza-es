@@ -34,38 +34,54 @@ class CineListWidget : AppWidgetProvider() {
         const val ACAO_TROCAR_SERIE = "com.example.cinelist.ACAO_TROCAR_SERIE"
 
         fun forcarAtualizacaoWidgets(context: Context) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val widgetComponent = ComponentName(context, CineListWidget::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
+            try {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val widgetComponent = ComponentName(context, CineListWidget::class.java)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent)
 
-            val intent = Intent(context, CineListWidget::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                if (appWidgetIds == null || appWidgetIds.isEmpty()) return
+
+                val intent = Intent(context, CineListWidget::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                }
+                context.sendBroadcast(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            context.sendBroadcast(intent)
         }
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val pendingResult = goAsync()
+        if (appWidgetIds.isEmpty()) return
+        val pendingResult = try { goAsync() } catch (_: Exception) { null }
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
             try {
                 for (appWidgetId in appWidgetIds) {
                     atualizarWidgetInterno(context, appWidgetManager, appWidgetId)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                pendingResult?.finish()
             }
         }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        // Ações padrão de widget (ex: ACTION_APPWIDGET_UPDATE) são tratadas por super.onReceive e onUpdate
+        if (action != ACAO_TROCAR_SERIE && action != ACAO_MAIS_UM_EP) {
+            super.onReceive(context, intent)
+            return
+        }
+
         super.onReceive(context, intent)
         val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         val prefs = context.getSharedPreferences("CineListWidgetPrefs", Context.MODE_PRIVATE)
 
-        val pendingResult = goAsync()
+        val pendingResult = try { goAsync() } catch (_: Exception) { null }
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
             try {
@@ -80,17 +96,17 @@ class CineListWidget : AppWidgetProvider() {
                     val chavePref = "indice_serie_$appWidgetId"
                     var indiceAtual = prefs.getInt(chavePref, 0)
 
-                    if (intent.action == ACAO_TROCAR_SERIE) {
+                    if (action == ACAO_TROCAR_SERIE) {
                         indiceAtual = (indiceAtual + 1) % listaAssistindo.size
                         prefs.edit().putInt(chavePref, indiceAtual).apply()
-                    } else if (intent.action == ACAO_MAIS_UM_EP) {
+                    } else if (action == ACAO_MAIS_UM_EP) {
                         if (indiceAtual >= listaAssistindo.size) indiceAtual = 0
                         val serieAlvo = listaAssistindo[indiceAtual]
                         repository.incrementarEpisodio(serieAlvo.id)
                     }
                 }
 
-                // Atualiza todos os widgets após a ação
+                // Atualiza todos os widgets após a ação customizada
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val esteWidget = ComponentName(context, CineListWidget::class.java)
                 val ids = appWidgetManager.getAppWidgetIds(esteWidget)
@@ -100,7 +116,7 @@ class CineListWidget : AppWidgetProvider() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                pendingResult?.finish()
             }
         }
     }

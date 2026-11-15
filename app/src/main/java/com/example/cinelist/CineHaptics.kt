@@ -32,10 +32,9 @@ object CineHaptics {
      * Micro-clique tátil sutil (ex: seleção de estrelas de avaliação, rotação, troca de abas).
      */
     fun tick(context: Context) {
-        val vibrator = obterVibrator(context) ?: return
-        if (!vibrator.hasVibrator()) return
-
         try {
+            val vibrator = obterVibrator(context) ?: return
+            if (!vibrator.hasVibrator()) return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
             } else {
@@ -49,10 +48,9 @@ object CineHaptics {
      * Clique tátil nítido de confirmação (ex: marcar +1 episódio, favoritar título).
      */
     fun click(context: Context) {
-        val vibrator = obterVibrator(context) ?: return
-        if (!vibrator.hasVibrator()) return
-
         try {
+            val vibrator = obterVibrator(context) ?: return
+            if (!vibrator.hasVibrator()) return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
             } else {
@@ -66,10 +64,9 @@ object CineHaptics {
      * Confirmação com impacto mais firme (ex: conclusão de swipe horizontal, marcar como concluído).
      */
     fun confirm(context: Context) {
-        val vibrator = obterVibrator(context) ?: return
-        if (!vibrator.hasVibrator()) return
-
         try {
+            val vibrator = obterVibrator(context) ?: return
+            if (!vibrator.hasVibrator()) return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK))
             } else {

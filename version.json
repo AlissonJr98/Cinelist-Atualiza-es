@@ -1,6 +1,6 @@
 {
-  "versionCode": 121,
-  "versionName": "2.0.81",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.81/CineList-v2.0.81.apk",
-  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
+  "versionCode": 122,
+  "versionName": "2.0.82",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Correcao de travamento/fechamento ao clicar repetidamente em avancar episodio (+1 Ep), estabilizacao de sincronizacao concorrente e widgets."
 }

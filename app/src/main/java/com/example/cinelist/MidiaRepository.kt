@@ -40,6 +40,7 @@ class MidiaRepository @Inject constructor(
 
     private val mutexSincronizacao = Mutex()
     private val mutexSyncGrupo = Mutex()
+    private val mutexProgressoEpisodio = Mutex()
     private var uidSincronizado: String? = null
 
     val todasAsMidias: Flow<List<Midia>> = midiaDao.buscarTodasAsMidias()
@@ -307,24 +308,36 @@ class MidiaRepository @Inject constructor(
         sincronizarItemIndividualFirestore(midiaMaisRecente)
     }
 
-    suspend fun incrementarEpisodio(idMidia: Int) {
-        midiaDao.incrementarEpisodio(idMidia)
-        val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
-        if (midiaAtualizada != null) {
-            midiaDao.atualizarMidia(midiaAtualizada)
-            sincronizarItemIndividualFirestore(midiaAtualizada)
+    suspend fun incrementarEpisodio(idMidia: Int) = withContext(Dispatchers.IO) {
+        mutexProgressoEpisodio.withLock {
+            try {
+                midiaDao.incrementarEpisodio(idMidia)
+                val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
+                if (midiaAtualizada != null) {
+                    midiaDao.atualizarMidia(midiaAtualizada)
+                    sincronizarItemIndividualFirestore(midiaAtualizada)
+                }
+                CineListWidget.forcarAtualizacaoWidgets(context)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-        CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
-    suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
-        midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
-        val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
-        if (midiaAtualizada != null) {
-            midiaDao.atualizarMidia(midiaAtualizada)
-            sincronizarItemIndividualFirestore(midiaAtualizada)
+    suspend fun atualizarProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) = withContext(Dispatchers.IO) {
+        mutexProgressoEpisodio.withLock {
+            try {
+                midiaDao.atualizarProgressoEpisodio(idMidia, temporada, episodio)
+                val midiaAtualizada = midiaDao.buscarPorId(idMidia)?.copy(atualizadoEm = System.currentTimeMillis())
+                if (midiaAtualizada != null) {
+                    midiaDao.atualizarMidia(midiaAtualizada)
+                    sincronizarItemIndividualFirestore(midiaAtualizada)
+                }
+                CineListWidget.forcarAtualizacaoWidgets(context)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-        CineListWidget.forcarAtualizacaoWidgets(context)
     }
 
     private suspend fun sincronizarItemIndividualFirestore(midia: Midia) = withContext(Dispatchers.IO) {

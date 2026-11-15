@@ -2596,9 +2596,25 @@ viewModelScope.launch { novasMidias.forEach { repository.inserir(it.copy(id = 0)
 
 }
 
-fun incrementarEpisodioRapido(midia: Midia) { viewModelScope.launch { repository.incrementarEpisodio(midia.id) } }
+fun incrementarEpisodioRapido(midia: Midia) {
+    viewModelScope.launch {
+        try {
+            repository.incrementarEpisodio(midia.id)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
 
-fun definirProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) { viewModelScope.launch { repository.atualizarProgressoEpisodio(idMidia, temporada, episodio) } }
+fun definirProgressoEpisodio(idMidia: Int, temporada: Int, episodio: Int) {
+    viewModelScope.launch {
+        try {
+            repository.atualizarProgressoEpisodio(idMidia, temporada, episodio)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
 
 fun sincronizarNuvemManual(onResultado: (Int) -> Unit) { viewModelScope.launch { onResultado(repository.restaurarDoFirestore()) } }
 

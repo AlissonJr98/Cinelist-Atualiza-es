@@ -89,6 +89,7 @@ import androidx.paging.compose.itemContentType
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -439,24 +440,33 @@ fun TelaPrincipal(
 
     // ===== FEEDBACK PROFISSIONAL (Snackbar) =====
     val snackbarHostState = remember { SnackbarHostState() }
+    var snackbarJob by remember { mutableStateOf<Job?>(null) }
 
     val mostrarSucesso: (String) -> Unit = { mensagem ->
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar(
-                message = mensagem,
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
+        snackbarJob?.cancel()
+        snackbarJob = coroutineScope.launch {
+            try {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message = mensagem,
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Short
+                )
+            } catch (_: Exception) {}
         }
     }
 
     val mostrarErro: (String) -> Unit = { mensagem ->
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar(
-                message = mensagem,
-                withDismissAction = true,
-                duration = SnackbarDuration.Long
-            )
+        snackbarJob?.cancel()
+        snackbarJob = coroutineScope.launch {
+            try {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message = mensagem,
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Long
+                )
+            } catch (_: Exception) {}
         }
     }
 
