@@ -3,9 +3,22 @@ package com.example.cinelist
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -66,6 +79,11 @@ object DublagemManager {
     private val gson = Gson()
     private val cacheMemoria = ConcurrentHashMap<String, InfoDublagem>()
 
+    val cacheVersao = MutableStateFlow(0L)
+    private val escopoIo = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val jobsEmAndamento = ConcurrentHashMap<String, Deferred<Boolean>>()
+    private val semaphoreDublapedia = Semaphore(3)
+
     private val httpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(12, TimeUnit.SECONDS)
@@ -106,6 +124,172 @@ object DublagemManager {
             salvo.temDublagem
         } catch (_: Exception) {
             false
+        }
+    }
+
+    /**
+     * Verifica de forma assíncrona se um título é dublado (Firestore + Dublapédia) com deduplicação de requisições.
+     */
+    suspend fun verificarDubladoAsync(
+        context: Context,
+        idTmdb: Int,
+        titulo: String,
+        idiomaOriginal: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        if (idiomaOriginal?.lowercase() in listOf("pt", "por", "pt-br", "pt-pt")) return@withContext true
+        if (titulo.isBlank()) return@withContext false
+        val chave = gerarChave(idTmdb, titulo)
+
+        // 1. Já está em memória
+        val emMemoria = cacheMemoria[chave]
+        if (emMemoria != null) return@withContext emMemoria.temDublagem
+
+        // 2. Já está em SharedPreferences
+        val json = getPrefs(context).getString("$KEY_CACHE_PREFIX$chave", null)
+        if (!json.isNullOrBlank()) {
+            try {
+                val salvo = gson.fromJson(json, InfoDublagem::class.java)
+                if (salvo != null) {
+                    cacheMemoria[chave] = salvo
+                    return@withContext salvo.temDublagem
+                }
+            } catch (_: Exception) {}
+        }
+
+        // 3. Deduplicação de jobs em andamento para a mesma mídia
+        val jobExistente = jobsEmAndamento[chave]
+        if (jobExistente != null) {
+            return@withContext jobExistente.await()
+        }
+
+        val deferred = async(Dispatchers.IO) {
+            try {
+                // A. Consulta no Firestore em nuvem
+                if (idTmdb > 0) {
+                    try {
+                        val db = FirebaseFirestore.getInstance()
+                        val doc = db.collection("midias_dublagem").document("tmdb_$idTmdb").get().await()
+                        if (doc.exists()) {
+                            val temDub = doc.getBoolean("temDublagem") ?: false
+                            val infoFs = InfoDublagem(
+                                status = if (temDub) StatusDublagem.DUBLADO else StatusDublagem.APENAS_LEGENDADO,
+                                temDublagem = temDub,
+                                fonte = "Comunidade CineList",
+                                votosDublado = doc.getLong("votosDublado")?.toInt() ?: 0,
+                                votosLegendado = doc.getLong("votosLegendado")?.toInt() ?: 0
+                            )
+                            salvarEmCache(context, chave, infoFs)
+                            return@async temDub
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Falha na leitura do Firestore para $chave: ${e.message}")
+                    }
+                }
+
+                // B. Consulta na Dublapédia com controle de semáforo
+                semaphoreDublapedia.withPermit {
+                    val resultadoWiki = consultarDublapedia(titulo, null)
+                    if (resultadoWiki != null && (resultadoWiki.temDublagem || !resultadoWiki.estudio.isNullOrBlank() || resultadoWiki.vozesPrincipais.isNotEmpty())) {
+                        salvarEmCache(context, chave, resultadoWiki)
+                        if (idTmdb > 0) {
+                            try {
+                                val db = FirebaseFirestore.getInstance()
+                                db.collection("midias_dublagem").document("tmdb_$idTmdb").set(
+                                    mapOf(
+                                        "idTmdb" to idTmdb,
+                                        "titulo" to titulo,
+                                        "temDublagem" to true,
+                                        "votosDublado" to 1L,
+                                        "votosLegendado" to 0L,
+                                        "atualizadoEm" to System.currentTimeMillis()
+                                    ),
+                                    SetOptions.merge()
+                                )
+                            } catch (_: Exception) {}
+                        }
+                        return@async true
+                    }
+                }
+
+                // C. Marca como sem dublagem no cache local para evitar reconsultas sucessivas
+                val naoDublado = InfoDublagem(
+                    status = StatusDublagem.APENAS_LEGENDADO,
+                    temDublagem = false,
+                    fonte = "Dublapédia / TMDB"
+                )
+                salvarEmCache(context, chave, naoDublado)
+                return@async false
+            } finally {
+                jobsEmAndamento.remove(chave)
+            }
+        }
+
+        jobsEmAndamento[chave] = deferred
+        deferred.await()
+    }
+
+    /**
+     * Precarrega em segundo plano a dublagem de uma lista inteira de mídias (Batch Firestore + Worker).
+     */
+    fun precarregarLista(context: Context, midias: List<Midia>) {
+        if (midias.isEmpty()) return
+        escopoIo.launch {
+            try {
+                val naoVerificadas = midias.filter { m ->
+                    if (m.titulo.isBlank()) return@filter false
+                    val chave = gerarChave(m.idTmdb, m.titulo)
+                    !cacheMemoria.containsKey(chave) && !getPrefs(context).contains("$KEY_CACHE_PREFIX$chave")
+                }
+                if (naoVerificadas.isEmpty()) return@launch
+
+                // 1. Busca em lote no Firestore por ID do TMDB
+                val comIdTmdb = naoVerificadas.filter { it.idTmdb > 0 }
+                if (comIdTmdb.isNotEmpty()) {
+                    val db = FirebaseFirestore.getInstance()
+                    comIdTmdb.chunked(30).forEach { lote ->
+                        try {
+                            val docIds = lote.map { "tmdb_${it.idTmdb}" }
+                            val snapshot = db.collection("midias_dublagem")
+                                .whereIn(FieldPath.documentId(), docIds)
+                                .get()
+                                .await()
+
+                            for (doc in snapshot.documents) {
+                                val idTmdbDoc = doc.getLong("idTmdb")?.toInt() ?: continue
+                                val midiaCorresp = lote.firstOrNull { it.idTmdb == idTmdbDoc } ?: continue
+                                val temDub = doc.getBoolean("temDublagem") ?: false
+                                val chave = gerarChave(midiaCorresp.idTmdb, midiaCorresp.titulo)
+                                val infoFs = InfoDublagem(
+                                    status = if (temDub) StatusDublagem.DUBLADO else StatusDublagem.APENAS_LEGENDADO,
+                                    temDublagem = temDub,
+                                    fonte = "Comunidade CineList",
+                                    votosDublado = doc.getLong("votosDublado")?.toInt() ?: 0,
+                                    votosLegendado = doc.getLong("votosLegendado")?.toInt() ?: 0
+                                )
+                                salvarEmCache(context, chave, infoFs)
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Erro no batch precarregarLista do Firestore: ${e.message}")
+                        }
+                    }
+                }
+
+                // 2. Para as mídias restantes, dispara a verificação assíncrona
+                val aindaNaoResolvidas = naoVerificadas.filter { m ->
+                    val chave = gerarChave(m.idTmdb, m.titulo)
+                    !cacheMemoria.containsKey(chave)
+                }
+
+                aindaNaoResolvidas.take(30).forEach { m ->
+                    launch {
+                        verificarDubladoAsync(context, m.idTmdb, m.titulo)
+                    }
+                }
+
+                cacheVersao.value++
+            } catch (e: Exception) {
+                Log.w(TAG, "Erro ao precarregar lista de dublagem: ${e.message}")
+            }
         }
     }
 
@@ -152,14 +336,52 @@ object DublagemManager {
             return@withContext nacional
         }
 
-        // 4. Consulta ao acervo Dublapédia (MediaWiki Pública)
+        // 4. Consulta ao Firestore em nuvem
+        if (idTmdb > 0) {
+            try {
+                val db = FirebaseFirestore.getInstance()
+                val doc = db.collection("midias_dublagem").document("tmdb_$idTmdb").get().await()
+                if (doc.exists()) {
+                    val temDub = doc.getBoolean("temDublagem") ?: false
+                    val infoFs = InfoDublagem(
+                        status = if (temDub) StatusDublagem.DUBLADO else StatusDublagem.APENAS_LEGENDADO,
+                        temDublagem = temDub,
+                        fonte = "Comunidade CineList",
+                        votosDublado = doc.getLong("votosDublado")?.toInt() ?: 0,
+                        votosLegendado = doc.getLong("votosLegendado")?.toInt() ?: 0
+                    )
+                    salvarEmCache(context, chave, infoFs)
+                    return@withContext infoFs
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Falha na leitura do Firestore em obterInfoDublagem para $chave: ${e.message}")
+            }
+        }
+
+        // 5. Consulta ao acervo Dublapédia (MediaWiki Pública)
         val resultadoWiki = consultarDublapedia(titulo, tituloOriginal)
         if (resultadoWiki != null && resultadoWiki.temDublagem) {
             salvarEmCache(context, chave, resultadoWiki)
+            if (idTmdb > 0) {
+                try {
+                    val db = FirebaseFirestore.getInstance()
+                    db.collection("midias_dublagem").document("tmdb_$idTmdb").set(
+                        mapOf(
+                            "idTmdb" to idTmdb,
+                            "titulo" to titulo,
+                            "temDublagem" to true,
+                            "votosDublado" to 1L,
+                            "votosLegendado" to 0L,
+                            "atualizadoEm" to System.currentTimeMillis()
+                        ),
+                        SetOptions.merge()
+                    )
+                } catch (_: Exception) {}
+            }
             return@withContext resultadoWiki
         }
 
-        // 5. Fallback via CineAI (Gemini) se disponível
+        // 6. Fallback via CineAI (Gemini) se disponível
         val resultadoAi = consultarCineAi(titulo, ano.orEmpty(), idiomaOriginal)
         if (resultadoAi != null) {
             salvarEmCache(context, chave, resultadoAi)

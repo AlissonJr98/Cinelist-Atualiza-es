@@ -1,6 +1,6 @@
 {
-  "versionCode": 124,
-  "versionName": "2.0.84",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.84/CineList-v2.0.84.apk",
-  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
+    "versionCode": 125,
+    "versionName": "2.0.85",
+    "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog": "Resolucao automatica em segundo plano de selos de dublagem PT-BR nos cards, precarregamento em lote e suporte a cards horizontais."
 }

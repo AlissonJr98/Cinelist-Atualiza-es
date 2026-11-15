@@ -1579,6 +1579,12 @@ fun TelaPrincipal(
                         }
                     }
 
+                    LaunchedEffect(listaFiltrada) {
+                        if (listaFiltrada.isNotEmpty()) {
+                            DublagemManager.precarregarLista(contextoLocal, listaFiltrada.take(45))
+                        }
+                    }
+
                     var isRefreshing by remember { mutableStateOf(false) }
 
                     PullToRefreshBox(

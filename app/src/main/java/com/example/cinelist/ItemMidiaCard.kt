@@ -310,14 +310,27 @@ private fun ConteudoItemMidiaCard(
                         }
                     }
 
-                    val ehDubladoSelo = remember(midia.idTmdb, midia.titulo) {
-                        DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null)
+                    val cacheVersao by DublagemManager.cacheVersao.collectAsState()
+                    var ehDubladoSelo by remember(midia.idTmdb, midia.titulo, cacheVersao) {
+                        mutableStateOf(DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null))
                     }
-                    if (ehDubladoSelo && (statusEnum != StatusMidia.ASSISTINDO || !ehSerieOuAnime)) {
+                    LaunchedEffect(midia.idTmdb, midia.titulo) {
+                        if (!ehDubladoSelo) {
+                            val dub = DublagemManager.verificarDubladoAsync(contexto, midia.idTmdb, midia.titulo)
+                            if (dub) ehDubladoSelo = true
+                        }
+                    }
+
+                    if (ehDubladoSelo) {
+                        val alinharNoTopo = statusEnum == StatusMidia.ASSISTINDO && ehSerieOuAnime
                         Surface(
                             modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(6.dp),
+                                .align(if (alinharNoTopo) Alignment.TopStart else Alignment.BottomStart)
+                                .padding(
+                                    start = 6.dp,
+                                    bottom = if (alinharNoTopo) 0.dp else 6.dp,
+                                    top = if (alinharNoTopo) 28.dp else 0.dp
+                                ),
                             shape = RoundedCornerShape(4.dp),
                             color = Color(0xFF0F1526).copy(alpha = 0.88f),
                             border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.6f))
@@ -891,6 +904,17 @@ private fun ConteudoItemMidiaCardHorizontal(
     val colecaoExibicao = if (midia.listaCustomizada.isBlank()) "Geral" else midia.listaCustomizada
 
     val contexto = LocalContext.current
+    val cacheVersao by DublagemManager.cacheVersao.collectAsState()
+    var ehDubladoSeloH by remember(midia.idTmdb, midia.titulo, cacheVersao) {
+        mutableStateOf(DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null))
+    }
+    LaunchedEffect(midia.idTmdb, midia.titulo) {
+        if (!ehDubladoSeloH) {
+            val dub = DublagemManager.verificarDubladoAsync(contexto, midia.idTmdb, midia.titulo)
+            if (dub) ehDubladoSeloH = true
+        }
+    }
+
     var corCapa by remember { mutableStateOf(Color.Transparent) }
     val corFundoAnimada by animateColorAsState(targetValue = corCapa, animationSpec = tween(800), label = "corPaletteHorizontal")
 
@@ -1013,6 +1037,25 @@ private fun ConteudoItemMidiaCardHorizontal(
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
+                        }
+                    }
+
+                    if (ehDubladoSeloH) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(4.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFF0F1526).copy(alpha = 0.90f),
+                            border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                        ) {
+                            Text(
+                                text = "🎙️ PT-BR",
+                                color = Color(0xFF10B981),
+                                fontSize = 7.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp)
+                            )
                         }
                     }
                 }

@@ -45,7 +45,7 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Cinemas: Em Cartaz & Em Breve**: Acompanhe os filmes em exibição nas salas de cinema e confira as próximas estreias agendadas.
 
 ### 🎙️ Áudio & Dublagem Brasileira (PT-BR)
-- **Identificação Visual Instantânea**: Saiba imediatamente se a obra possui dublagem com selos dinâmicos (`🎙️ PT-BR`, `🇧🇷 Áudio Original`, `💬 Legendado` ou `❓ A Confirmar`) diretamente nos cards e detalhes.
+- **Identificação Visual Instantânea & Resolução em Segundo Plano**: Saiba imediatamente se a obra possui dublagem com selos dinâmicos (`🎙️ PT-BR`, `🇧🇷 Áudio Original`, `💬 Legendado` ou `❓ A Confirmar`). Pré-carregamento em lote via Firestore e verificação assíncrona automática em segundo plano para todos os cards da lista (verticais e horizontais) sem precisar entrar nos detalhes.
 - **Ficha de Dublagem Brasileira Completa**: Consulte os estúdios oficiais (*Delart, TV Group, Wan Macher, Dublavídeo, Universal Cinergia, Álamo, Unidub*), a direção de dublagem e o elenco completo com os dubladores brasileiros de cada personagem, integrado à API da **Dublapédia (MediaWiki)** e **CineAI (Gemini)**.
 - **Perfil Interativo de Vozes Brasileiras**: Toque em qualquer dublador para abrir sua ficha profissional completa com avatar, papel no título atual, personagens mais icônicos em animações/filmes e botão de busca instantânea no catálogo.
 - **Validação Colaborativa em Nuvem**: Contribuição comunitária com 1 toque (`✓ Dublado` / `💬 Legendado`) sincronizada em tempo real via **Firestore**.
