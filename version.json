@@ -1,6 +1,6 @@
 {
-  "versionCode": 122,
-  "versionName": "2.0.82",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.82/CineList-v2.0.82.apk",
-  "changelog": "Correcao de travamento/fechamento ao clicar repetidamente em avancar episodio (+1 Ep), estabilizacao de sincronizacao concorrente e widgets."
+  "versionCode": 123,
+  "versionName": "2.0.83",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Identificacao de dublagem PT-BR, ficha completa de dubladores e estudios com Dublapedia e CineAI, validacao comunitaria e filtro de titulos dublados na Roleta."
 }

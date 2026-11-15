@@ -12,6 +12,7 @@ data class TmdbFilme(
     @SerializedName("id") val idTmdb: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
     @SerializedName(value = "original_title", alternate = ["original_name"]) val tituloOriginal: String? = null,
+    @SerializedName("original_language") val idiomaOriginal: String? = null,
     @SerializedName("overview") val sinopse: String = "",
     @SerializedName("poster_path") val caminhoPoster: String? = null,
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
@@ -75,6 +76,8 @@ data class TmdbTemporadaItem(
 data class TmdbDetalhesEstendidos(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
+    @SerializedName(value = "original_title", alternate = ["original_name"]) val tituloOriginal: String? = null,
+    @SerializedName("original_language") val idiomaOriginal: String? = null,
     @SerializedName("overview") val sinopse: String = "",
     @SerializedName("poster_path") val caminhoPoster: String? = null,
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,
@@ -378,6 +381,8 @@ data class TmdbPessoaCreditosResposta(
 data class TmdbCreditoItem(
     @SerializedName("id") val id: Int = 0,
     @SerializedName(value = "title", alternate = ["name"]) val titulo: String = "",
+    @SerializedName(value = "original_title", alternate = ["original_name"]) val tituloOriginal: String? = null,
+    @SerializedName("original_language") val idiomaOriginal: String? = null,
     @SerializedName("overview") val sinopse: String = "",
     @SerializedName("poster_path") val caminhoPoster: String? = null,
     @SerializedName("backdrop_path") val caminhoBackdrop: String? = null,

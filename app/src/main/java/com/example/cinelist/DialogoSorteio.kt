@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -44,13 +45,15 @@ fun DialogoSorteio(
 ) {
     var filtroStatus by remember { mutableStateOf("Quero Assistir") }
     var filtroDuracao by remember { mutableStateOf("Qualquer") }
+    var filtroApenasDublados by remember { mutableStateOf(false) }
     var midiaSorteada by remember { mutableStateOf<Midia?>(null) }
     var sortearNovamente by remember { mutableIntStateOf(0) }
     var animandoRoleta by remember { mutableStateOf(false) }
 
+    val contexto = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
-    val listaCandidatos = remember(listaDeMidias, filtroStatus, filtroDuracao, sortearNovamente) {
+    val listaCandidatos = remember(listaDeMidias, filtroStatus, filtroDuracao, filtroApenasDublados, sortearNovamente) {
         listaDeMidias.filter { midia ->
             val bateStatus = if (filtroStatus == "Todos") true else midia.status.equals(filtroStatus, ignoreCase = true)
             val bateDuracao = when (filtroDuracao) {
@@ -58,7 +61,10 @@ fun DialogoSorteio(
                 "Séries" -> !midia.tipo.equals("Filme", ignoreCase = true)
                 else -> true
             }
-            bateStatus && bateDuracao
+            val bateDublagem = if (!filtroApenasDublados) true else {
+                DublagemManager.isDubladoRapido(contexto, midia.idTmdb, midia.titulo, null)
+            }
+            bateStatus && bateDuracao && bateDublagem
         }
     }
 
@@ -195,6 +201,26 @@ fun DialogoSorteio(
                             modifier = Modifier.padding(horizontal = 3.dp)
                         )
                     }
+                }
+
+                // CHIP DE FILTRO DE DUBLAGEM
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CyberFilterChip(
+                        selected = filtroApenasDublados,
+                        onClick = {
+                            if (!animandoRoleta) {
+                                filtroApenasDublados = !filtroApenasDublados
+                                sortearNovamente++
+                            }
+                        },
+                        label = "🎙️ Apenas Dublados".t(),
+                        corDestaque = Color(0xFF10B981),
+                        modifier = Modifier.padding(horizontal = 3.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))

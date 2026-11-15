@@ -44,8 +44,14 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Vídeos Extras, Teasers e Bastidores**: Assista a trailers, teasers promocionais, featurettes e vídeos de bastidores diretamente no app.
 - **Cinemas: Em Cartaz & Em Breve**: Acompanhe os filmes em exibição nas salas de cinema e confira as próximas estreias agendadas.
 
+### 🎙️ Áudio & Dublagem Brasileira (PT-BR)
+- **Identificação Visual Instantânea**: Saiba imediatamente se a obra possui dublagem com selos dinâmicos (`🎙️ Dublado PT-BR`, `🇧🇷 Áudio Original`, `💬 Legendado` ou `❓ A Confirmar`).
+- **Ficha de Dublagem Brasileira Completa**: Consulte os estúdios oficiais (*Delart, TV Group, Wan Macher, Dublavídeo, Universal Cinergia, Álamo, Unidub*), a direção de dublagem e o elenco completo com os dubladores brasileiros de cada personagem, integrado à API da **Dublapédia (MediaWiki)** e **CineAI (Gemini)**.
+- **Validação Colaborativa em Nuvem**: Contribuição comunitária com 1 toque (`✓ Dublado` / `💬 Legendado`) sincronizada em tempo real via **Firestore**.
+- **Filtro na Roleta Cibernética**: Sorteie exclusivamente títulos que possuem dublagem em português.
+
 ### 🎲 Decisão Rápida: Roleta & CineMatch
-- **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, HBO Max, Prime Video) ou status, e deixe o CineList sortear para você.
+- **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, HBO Max, Prime Video), status ou **apenas títulos dublados**, e deixe o CineList sortear para você.
 - **CineMatch (Modo Casal / Amigos)**: Conecte-se com um amigo ou parceiro(a), deslize pelos títulos sugeridos e descubra o que ambos têm em comum para assistir juntos hoje.
 - **CineParty Ao Vivo**: Assista conteúdos e sincronize seu status e reações em tempo real com amigos conectados.
 
@@ -55,7 +61,7 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Perfis Conectados com Google**: Sincronização automática da foto do perfil da conta Google e atualizações de nome em tempo real.
 - **CineCode (QR Code)**: Compartilhe seu perfil ou mídias favoritas instantaneamente gerando e escaneando QR Codes personalizados.
 
-### 🌍 Internacionalização (7 Idiomas)
+### 🌍 Internacionalização (8 Idiomas)
 O CineList detecta e se adapta dinamicamente ao idioma do dispositivo, oferecendo suporte nativo para:
 - 🇧🇷 Português (Brasil)
 - 🇺🇸 Inglês (English)
@@ -64,6 +70,7 @@ O CineList detecta e se adapta dinamicamente ao idioma do dispositivo, oferecend
 - 🇩🇪 Alemão (Deutsch)
 - 🇮🇹 Italiano (Italiano)
 - 🇯🇵 Japonês (日本語)
+- 🇰🇷 Coreano (한국어)
 
 ---
 

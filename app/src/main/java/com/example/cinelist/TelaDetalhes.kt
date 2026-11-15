@@ -197,6 +197,33 @@ fun TelaDetalhes(
     val contexto = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    var infoDublagem by remember { mutableStateOf<InfoDublagem?>(null) }
+    var carregandoDublagem by remember { mutableStateOf(false) }
+
+    LaunchedEffect(idRealBuscaApi, detalhesApi?.titulo, midiaSalva?.titulo, detalhesApi?.idiomaOriginal) {
+        val idTmdb = if (idRealBuscaApi > 0) idRealBuscaApi else (midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0)
+        val tit = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+        val titOrig = detalhesApi?.tituloOriginal
+        val ano = detalhesApi?.dataLancamento?.take(4) ?: midiaSalva?.dataLancamento?.take(4)
+        val idiomaOrig = detalhesApi?.idiomaOriginal
+
+        if (tit.isNotBlank()) {
+            carregandoDublagem = true
+            val resultado = withContext(Dispatchers.IO) {
+                DublagemManager.obterInfoDublagem(
+                    context = contexto,
+                    titulo = tit,
+                    tituloOriginal = titOrig,
+                    ano = ano,
+                    idiomaOriginal = idiomaOrig,
+                    idTmdb = idTmdb
+                )
+            }
+            infoDublagem = resultado
+            carregandoDublagem = false
+        }
+    }
+
     fun abrirAplicativoStreaming(contexto: Context, nomeProvedor: String) {
         val pacoteApp = when {
             nomeProvedor.contains("Netflix", ignoreCase = true) -> "com.netflix.mediaclient"
@@ -1039,6 +1066,65 @@ fun TelaDetalhes(
                                     color = MaterialTheme.colorScheme.secondary,
                                     modifier = Modifier.padding(horizontal = 4.dp)
                                 )
+                            }
+
+                            // 🎙️ TAG VISUAL DE DUBLAGEM & ÁUDIO
+                            val statusDub = infoDublagem?.status ?: StatusDublagem.DESCONHECIDO
+                            val corFundoDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.15f)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.15f)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.15f)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            }
+                            val corTextoDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.secondary
+                            }
+                            val bordaCorDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.5f)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.5f)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.5f)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            }
+                            val textoTagDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> "🎙️ Dublado PT-BR"
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> "🇧🇷 Áudio Original"
+                                StatusDublagem.APENAS_LEGENDADO -> "💬 Legendado"
+                                StatusDublagem.DESCONHECIDO -> if (carregandoDublagem) "Consultando dublagem..." else "🎙️ Dublagem a confirmar"
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = corFundoDub,
+                                border = BorderStroke(1.dp, bordaCorDub),
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = textoTagDub.t(),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = corTextoDub
+                                    )
+                                    val est = infoDublagem?.estudio
+                                    if (!est.isNullOrBlank() && statusDub != StatusDublagem.AUDIO_ORIGINAL_PT) {
+                                        Text(
+                                            text = "• $est",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = corTextoDub.copy(alpha = 0.85f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
                             }
 
                             val horaTerminoTexto = remember(duracaoPadraoMin, ehSerieOuAnime) {
@@ -1956,6 +2042,191 @@ fun TelaDetalhes(
                                                     maxLines = 2,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 🎙️ SEÇÃO EXPANSÍVEL / CARD DE DUBLAGEM BRASILEIRA
+                            if (infoDublagem != null) {
+                                val info = infoDublagem!!
+                                val ehDub = info.temDublagem || info.status == StatusDublagem.DUBLADO || info.status == StatusDublagem.AUDIO_ORIGINAL_PT
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "🎙️ Ficha de Dublagem Brasileira".t(),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (ehDub) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFF60A5FA).copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = (if (ehDub) "Dublagem Confirmada" else "Apenas Legendado").t(),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (ehDub) Color(0xFF10B981) else Color(0xFF60A5FA),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        if (info.status == StatusDublagem.AUDIO_ORIGINAL_PT) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text("🇧🇷", fontSize = 18.sp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Produção Nacional Brasileira (Áudio Original em Português)".t(),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color(0xFFFFD700)
+                                                )
+                                            }
+                                        } else {
+                                            if (!info.estudio.isNullOrBlank()) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text("Estúdio de Dublagem:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(info.estudio, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                }
+                                            }
+
+                                            if (info.diretores.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text("Direção de Dublagem:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(info.diretores.joinToString(", "), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+
+                                            if (info.vozesPrincipais.isNotEmpty()) {
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                Text(
+                                                    text = "Vozes Brasileiras:".t(),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.secondary
+                                                )
+                                                Spacer(modifier = Modifier.height(6.dp))
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .horizontalScroll(rememberScrollState()),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    info.vozesPrincipais.forEach { voz ->
+                                                        Surface(
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                                                            modifier = Modifier.widthIn(min = 125.dp, max = 190.dp)
+                                                        ) {
+                                                            Column(modifier = Modifier.padding(8.dp)) {
+                                                                Text(
+                                                                    text = voz.personagem,
+                                                                    fontSize = 11.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = "➔ ${voz.dublador}",
+                                                                    fontSize = 11.sp,
+                                                                    fontWeight = FontWeight.Medium,
+                                                                    color = Color(0xFF10B981),
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                if (voz.atorOriginal.isNotBlank()) {
+                                                                    Text(
+                                                                        text = "(${voz.atorOriginal})",
+                                                                        fontSize = 9.sp,
+                                                                        color = MaterialTheme.colorScheme.secondary,
+                                                                        maxLines = 1,
+                                                                        overflow = TextOverflow.Ellipsis
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Fonte e Ações Comunitárias
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), thickness = 0.5.dp)
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "${"Fonte:".t()} ${info.fonte}",
+                                                fontSize = 9.sp,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+
+                                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        CineHaptics.click(contexto)
+                                                        val id = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0
+                                                        val tit = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+                                                        DublagemManager.registrarVotoComunidade(contexto, id, tit, ehDublado = true)
+                                                        infoDublagem = info.copy(status = StatusDublagem.DUBLADO, temDublagem = true)
+                                                        Toast.makeText(contexto, "Obrigado! Dublagem confirmada pela comunidade.".t(), Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(28.dp),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text("✓ Dublado".t(), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                }
+
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        CineHaptics.click(contexto)
+                                                        val id = midiaSalva?.idTmdb ?: detalhesApi?.id ?: 0
+                                                        val tit = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+                                                        DublagemManager.registrarVotoComunidade(contexto, id, tit, ehDublado = false)
+                                                        infoDublagem = info.copy(status = StatusDublagem.APENAS_LEGENDADO, temDublagem = false)
+                                                        Toast.makeText(contexto, "Obrigado! Registrado como legendado.".t(), Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(28.dp),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text("💬 Legendado".t(), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                }
                                             }
                                         }
                                     }

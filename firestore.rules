@@ -200,6 +200,18 @@ service cloud.firestore {
     //   - denuncianteEmail: string (optional, <= 150 chars)
     //   - timestamp: number
     //
+    // Collection: midias_dublagem/{docId}
+    // Document ID: TMDB ID or formatted identifier (<= 128 chars)
+    // Fields:
+    //   - id: string (optional, <= 128 chars)
+    //   - idTmdb: number (optional, > 0)
+    //   - tmdbId: number or string (optional)
+    //   - titulo: string (optional, <= 200 chars)
+    //   - temDublagem: bool (optional)
+    //   - votosDublado: number (optional, >= 0)
+    //   - votosLegendado: number (optional, >= 0)
+    //   - atualizadoEm: number or timestamp (optional)
+    //
     // ===============================================================
 
     // Default deny for any unhandled path
@@ -440,6 +452,17 @@ service cloud.firestore {
         (!('motivo' in data) || (data.motivo is string && data.motivo.size() <= 200)) &&
         (!('denuncianteEmail' in data) || (data.denuncianteEmail is string && data.denuncianteEmail.size() <= 150)) &&
         (!('timestamp' in data) || data.timestamp is number);
+    }
+
+    function isValidMidiaDublagem(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('idTmdb' in data) || (data.idTmdb is number && data.idTmdb > 0)) &&
+        (!('tmdbId' in data) || (data.tmdbId is number && data.tmdbId > 0) || (data.tmdbId is string && data.tmdbId.size() <= 50)) &&
+        (!('titulo' in data) || (data.titulo is string && data.titulo.size() <= 200)) &&
+        (!('temDublagem' in data) || data.temDublagem is bool) &&
+        (!('votosDublado' in data) || (data.votosDublado is number && data.votosDublado >= 0)) &&
+        (!('votosLegendado' in data) || (data.votosLegendado is number && data.votosLegendado >= 0)) &&
+        (!('atualizadoEm' in data) || data.atualizadoEm is number || data.atualizadoEm is timestamp);
     }
 
     // ===============================================================
@@ -732,6 +755,16 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.denuncianteUid &&
         isValidDenuncia(request.resource.data);
       allow update: if false;
+      allow delete: if false;
+    }
+
+    // 9. STATUS E VOTAÇÃO DE DUBLAGEM DA COMUNIDADE (PT-BR)
+    match /midias_dublagem/{docId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidMidiaDublagem(request.resource.data);
+      allow update: if isAuthenticated() &&
+        isValidMidiaDublagem(request.resource.data) &&
+        areImmutableFieldsUnchanged(['id', 'idTmdb']);
       allow delete: if false;
     }
   }

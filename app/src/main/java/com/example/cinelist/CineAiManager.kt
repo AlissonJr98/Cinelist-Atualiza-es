@@ -891,5 +891,92 @@ object CineAiManager {
             embaralharOpcoes(p.pergunta, p.opcoes, p.respostaCorretaIndex, p.curiosidade)
         }
     }
+
+    /**
+     * Consulta inteligente via CineAI (Gemini) para identificar se uma obra possui
+     * dublagem em Português do Brasil (PT-BR), seu estúdio e dubladores principais.
+     */
+    suspend fun consultarDublagemAi(titulo: String, ano: String, idiomaOriginal: String?): InfoDublagem? = withContext(Dispatchers.IO) {
+        val contexto = CineListApplication.instance ?: return@withContext null
+        val apiKey = obterChaveGemini(contexto)
+        if (apiKey.isBlank()) return@withContext null
+
+        val prompt = """
+            Você é um especialista enciclopédico em dublagem de filmes, séries e animes no Brasil.
+            Analise detalhadamente a obra:
+            Título: "$titulo"
+            Ano de lançamento: "$ano"
+            Idioma original: "${idiomaOriginal ?: "Desconhecido"}"
+
+            Responda EXCLUSIVAMENTE em formato JSON (sem formatação markdown ```json, apenas as chaves):
+            {
+              "temDublagem": true,
+              "estudio": "Nome do Estúdio de Dublagem Brasileiro (ex: Delart, TV Group, Unidub, Cinevídeo, Dublavídeo, Herbert Richers, Álamo, etc.) ou null",
+              "diretores": ["Nome de diretores de dublagem brasileiros conhecidos"],
+              "vozes": [
+                {
+                  "personagem": "Nome do personagem",
+                  "atorOriginal": "Nome do ator ou voz original",
+                  "dublador": "Nome do dublador brasileiro"
+                }
+              ]
+            }
+
+            Caso o filme seja estrangeiro e comprovadamente NUNCA tenha recebido dublagem oficial em português brasileiro (apenas legendado no Brasil), retorne:
+            {
+              "temDublagem": false,
+              "estudio": null,
+              "diretores": [],
+              "vozes": []
+            }
+        """.trimIndent()
+
+        try {
+            val respostaBruta = consultarGeminiTexto(apiKey, prompt)
+            if (respostaBruta.isBlank()) return@withContext null
+            val textoLimpo = respostaBruta.replace("```json", "").replace("```", "").trim()
+            val json = gson.fromJson(textoLimpo, JsonObject::class.java) ?: return@withContext null
+
+            val temDub = json.get("temDublagem")?.asBoolean ?: false
+            val estudio = json.get("estudio")?.takeIf { !it.isJsonNull }?.asString
+            val diretores = json.getAsJsonArray("diretores")?.mapNotNull { it.asString } ?: emptyList()
+
+            val vozes = mutableListOf<VozDublador>()
+            json.getAsJsonArray("vozes")?.forEach { el ->
+                if (el.isJsonObject) {
+                    val obj = el.asJsonObject
+                    val pers = obj.get("personagem")?.asString.orEmpty()
+                    val ator = obj.get("atorOriginal")?.asString.orEmpty()
+                    val dub = obj.get("dublador")?.asString.orEmpty()
+                    if (pers.isNotBlank() && dub.isNotBlank()) {
+                        vozes.add(VozDublador(personagem = pers, atorOriginal = ator, dublador = dub))
+                    }
+                }
+            }
+
+            if (temDub) {
+                InfoDublagem(
+                    status = StatusDublagem.DUBLADO,
+                    temDublagem = true,
+                    estudio = estudio ?: "Estúdio Brasileiro (IA)",
+                    diretores = diretores,
+                    vozesPrincipais = vozes.take(8),
+                    fonte = "CineAI (Gemini) / Acervo BR"
+                )
+            } else {
+                InfoDublagem(
+                    status = StatusDublagem.APENAS_LEGENDADO,
+                    temDublagem = false,
+                    estudio = null,
+                    diretores = emptyList(),
+                    vozesPrincipais = emptyList(),
+                    fonte = "CineAI (Gemini)"
+                )
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Erro ao analisar dublagem com CineAI: ${e.message}")
+            null
+        }
+    }
 }
 
