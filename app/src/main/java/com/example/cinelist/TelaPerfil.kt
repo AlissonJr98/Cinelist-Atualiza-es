@@ -3816,6 +3816,12 @@ fun ModalPerfilAmigo(
 
     var mostrarMatchColetivoAmigo by remember { mutableStateOf(false) }
 
+    val permissaoMicAmigoLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        mostrarCineParty = true
+    }
+
 
 
     val estaOnline = amigo.estaRealmenteOnline
@@ -4332,7 +4338,17 @@ fun ModalPerfilAmigo(
 
             Button(
 
-                onClick = { mostrarCineParty = true },
+                onClick = {
+                    val temMic = androidx.core.content.ContextCompat.checkSelfPermission(
+                        contexto,
+                        android.Manifest.permission.RECORD_AUDIO
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (temMic) {
+                        mostrarCineParty = true
+                    } else {
+                        permissaoMicAmigoLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                    }
+                },
 
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
 
@@ -4384,127 +4400,324 @@ fun ModalPerfilAmigo(
 
         }
 
-
-
-        Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
-
-
-
-        ScrollableTabRow(selectedTabIndex = abaAmigoSelecionada, edgePadding = 0.dp) {
-
-            Tab(
-
-                selected = abaAmigoSelecionada == 0,
-
-                onClick = { abaAmigoSelecionada = 0 },
-
-                text = { Text("${"Favoritos".t()} (${midiasAmigo.size})") }
-
-            )
-
-            Tab(
-
-                selected = abaAmigoSelecionada == 1,
-
-                onClick = { abaAmigoSelecionada = 1 },
-
-                text = { Text("🤝 ${"Em Comum".t()} (${midiasEmComum.size})") }
-
-            )
-
-            Tab(
-
-                selected = abaAmigoSelecionada == 2,
-
-                onClick = { abaAmigoSelecionada = 2 },
-
-                text = { Text("💬 ${"Chat Rápido".t()}") }
-
-            )
-
+        val midiasFavoritasDoAmigo = remember(midiasAmigo) {
+            midiasAmigo.filter { it.favorito }
         }
 
+        val afinidadePercentual = remember(minhasMidias, midiasAmigo, midiasEmComum) {
+            if (minhasMidias.isEmpty() || midiasAmigo.isEmpty()) 0
+            else {
+                val totalUnico = (minhasMidias.map { it.titulo.lowercase().trim() } + midiasAmigo.map { it.titulo.lowercase().trim() }).distinct().size
+                val emComumCount = midiasEmComum.size
+                val favsMinhas = minhasMidias.filter { it.favorito }.map { it.titulo.lowercase().trim() }.toSet()
+                val favsAmigo = midiasFavoritasDoAmigo.map { it.titulo.lowercase().trim() }.toSet()
+                val favsEmComum = favsMinhas.intersect(favsAmigo).size
+                val scoreBase = if (totalUnico > 0) (emComumCount.toFloat() / totalUnico.toFloat()) * 85f else 0f
+                val scoreFav = favsEmComum * 12f
+                ((scoreBase + scoreFav).coerceIn(20f, 99f)).toInt()
+            }
+        }
 
+        if (midiasAmigo.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(CineListTokens.EspacoXS))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF151D30),
+                border = BorderStroke(1.dp, Color(0xFF26324D)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("🔥", fontSize = 16.sp)
+                        Column {
+                            Text(
+                                text = "${afinidadePercentual}% ${"de Afinidade Cinematográfica".t()}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF00E5FF)
+                            )
+                            Text(
+                                text = "${midiasEmComum.size} ${"em comum".t()} • ${midiasFavoritasDoAmigo.size} ${"favoritos".t()}",
+                                fontSize = 10.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+                    LinearProgressIndicator(
+                        progress = { (afinidadePercentual / 100f).coerceIn(0f, 1f) },
+                        modifier = Modifier.width(70.dp).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        color = Color(0xFF00E5FF),
+                        trackColor = Color(0xFF1E293B)
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
+        var subFiltroFavoritos by remember { mutableStateOf("Todos") }
+        var subFiltroCatalogo by remember { mutableStateOf("Todos") }
 
+        val ehSerieOuAnimeFn: (Midia) -> Boolean = { m ->
+            m.tipo.equals("Série", ignoreCase = true) ||
+            m.tipo.equals("Anime", ignoreCase = true) ||
+            m.tipo.equals("Dorama", ignoreCase = true) ||
+            m.tipo.equals("Novela", ignoreCase = true)
+        }
+
+        ScrollableTabRow(selectedTabIndex = abaAmigoSelecionada, edgePadding = 0.dp) {
+            Tab(
+                selected = abaAmigoSelecionada == 0,
+                onClick = { abaAmigoSelecionada = 0 },
+                text = { Text("⭐ ${"Favoritos".t()} (${midiasFavoritasDoAmigo.size})") }
+            )
+            Tab(
+                selected = abaAmigoSelecionada == 1,
+                onClick = { abaAmigoSelecionada = 1 },
+                text = { Text("📺 ${"Catálogo".t()} (${midiasAmigo.size})") }
+            )
+            Tab(
+                selected = abaAmigoSelecionada == 2,
+                onClick = { abaAmigoSelecionada = 2 },
+                text = { Text("🤝 ${"Em Comum".t()} (${midiasEmComum.size})") }
+            )
+            Tab(
+                selected = abaAmigoSelecionada == 3,
+                onClick = { abaAmigoSelecionada = 3 },
+                text = { Text("💬 ${"Chat Rápido".t()}") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(CineListTokens.EspacoS))
 
         when (abaAmigoSelecionada) {
-
             0 -> {
-
-                if (midiasAmigo.isEmpty()) {
-
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-
-                        Text("Este amigo ainda não sincronizou mídias públicas.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
-
+                if (midiasFavoritasDoAmigo.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF151D30),
+                        border = BorderStroke(1.dp, Color(0xFF26324D)),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("⭐", fontSize = 28.sp)
+                            Text(
+                                text = "${amigo.nome} ${"ainda não marcou mídias como favoritas.".t()}",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Explore todos os títulos salvos na aba Catálogo!".t(),
+                                color = Color(0xFF94A3B8),
+                                fontSize = 11.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Button(
+                                onClick = { abaAmigoSelecionada = 1 },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Ver Catálogo Completo".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                } else {
+                    val favoritasFiltradas = remember(midiasFavoritasDoAmigo, subFiltroFavoritos) {
+                        when (subFiltroFavoritos) {
+                            "Séries" -> midiasFavoritasDoAmigo.filter { ehSerieOuAnimeFn(it) }
+                            "Filmes" -> midiasFavoritasDoAmigo.filter { it.tipo.equals("Filme", ignoreCase = true) }
+                            "Animes" -> midiasFavoritasDoAmigo.filter { it.tipo.equals("Anime", ignoreCase = true) }
+                            else -> midiasFavoritasDoAmigo
+                        }
                     }
 
-                } else {
-
-                    LazyVerticalGrid(
-
-                        columns = GridCells.Fixed(2),
-
-                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
-
-                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
-
-                        modifier = Modifier.fillMaxSize()
-
-                    ) {
-
-                        itemsIndexed(midiasAmigo, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_${midia.idTmdb}_$index" }) { _, midia ->
-
-                            ItemMidiaCard(midia = midia, onClick = { onMidiaClique?.invoke(midia) })
-
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("Todos", "Séries", "Filmes", "Animes").forEach { categoria ->
+                                val count = when (categoria) {
+                                    "Séries" -> midiasFavoritasDoAmigo.count { ehSerieOuAnimeFn(it) }
+                                    "Filmes" -> midiasFavoritasDoAmigo.count { it.tipo.equals("Filme", ignoreCase = true) }
+                                    "Animes" -> midiasFavoritasDoAmigo.count { it.tipo.equals("Anime", ignoreCase = true) }
+                                    else -> midiasFavoritasDoAmigo.size
+                                }
+                                val selecionado = subFiltroFavoritos == categoria
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (selecionado) Color(0xFF00E5FF).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    border = BorderStroke(1.dp, if (selecionado) Color(0xFF00E5FF) else Color.Transparent),
+                                    modifier = Modifier.clickable { subFiltroFavoritos = categoria }
+                                ) {
+                                    Text(
+                                        text = "${categoria.t()} ($count)",
+                                        fontSize = 11.sp,
+                                        fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (selecionado) Color(0xFF00E5FF) else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
                         }
 
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                            verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(favoritasFiltradas, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_${midia.idTmdb}_$index" }) { _, midia ->
+                                val jaAdicionado = remember(minhasMidias, midia.idTmdb, midia.titulo) {
+                                    minhasMidias.any { minha ->
+                                        (midia.idTmdb > 0 && minha.idTmdb == midia.idTmdb) ||
+                                        (minha.titulo.equals(midia.titulo, ignoreCase = true) && minha.tipo.equals(midia.tipo, ignoreCase = true))
+                                    }
+                                }
+                                ItemMidiaCard(
+                                    midia = midia,
+                                    onClick = { onMidiaClique?.invoke(midia) },
+                                    jaAdicionado = jaAdicionado,
+                                    onAdicionarRapido = {
+                                        if (!jaAdicionado) {
+                                            val novaMidia = midia.copy(
+                                                id = 0,
+                                                uuid = java.util.UUID.randomUUID().toString(),
+                                                status = "Quero Assistir",
+                                                statusSugestao = "APROVADO",
+                                                favorito = false,
+                                                atualizadoEm = System.currentTimeMillis()
+                                            )
+                                            viewModel.inserir(novaMidia)
+                                            CineHaptics.confirm(contexto)
+                                            Toast.makeText(contexto, "\"${midia.titulo}\" ${"adicionada à sua lista!".t()}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
-
                 }
-
             }
 
             1 -> {
-
-                if (midiasEmComum.isEmpty()) {
-
+                if (midiasAmigo.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-
-                        Text("Vocês ainda não têm títulos em comum na lista.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
-
+                        Text("Este amigo ainda não sincronizou mídias públicas.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    }
+                } else {
+                    val catalogoFiltrado = remember(midiasAmigo, subFiltroCatalogo) {
+                        when (subFiltroCatalogo) {
+                            "Séries" -> midiasAmigo.filter { ehSerieOuAnimeFn(it) }
+                            "Filmes" -> midiasAmigo.filter { it.tipo.equals("Filme", ignoreCase = true) }
+                            "Animes" -> midiasAmigo.filter { it.tipo.equals("Anime", ignoreCase = true) }
+                            else -> midiasAmigo
+                        }
                     }
 
-                } else {
-
-                    LazyVerticalGrid(
-
-                        columns = GridCells.Fixed(2),
-
-                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
-
-                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
-
-                        modifier = Modifier.fillMaxSize()
-
-                    ) {
-
-                        itemsIndexed(midiasEmComum, key = { index, midiaComum -> "${midiaComum.uuid.ifBlank { midiaComum.id.toString() }}_${midiaComum.idTmdb}_$index" }) { _, midiaComum ->
-
-                            ItemMidiaCard(midia = midiaComum, onClick = { onMidiaClique?.invoke(midiaComum) })
-
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("Todos", "Séries", "Filmes", "Animes").forEach { categoria ->
+                                val count = when (categoria) {
+                                    "Séries" -> midiasAmigo.count { ehSerieOuAnimeFn(it) }
+                                    "Filmes" -> midiasAmigo.count { it.tipo.equals("Filme", ignoreCase = true) }
+                                    "Animes" -> midiasAmigo.count { it.tipo.equals("Anime", ignoreCase = true) }
+                                    else -> midiasAmigo.size
+                                }
+                                val selecionado = subFiltroCatalogo == categoria
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (selecionado) Color(0xFF00E5FF).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    border = BorderStroke(1.dp, if (selecionado) Color(0xFF00E5FF) else Color.Transparent),
+                                    modifier = Modifier.clickable { subFiltroCatalogo = categoria }
+                                ) {
+                                    Text(
+                                        text = "${categoria.t()} ($count)",
+                                        fontSize = 11.sp,
+                                        fontWeight = if (selecionado) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (selecionado) Color(0xFF00E5FF) else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
                         }
 
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                            verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(catalogoFiltrado, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_${midia.idTmdb}_$index" }) { _, midia ->
+                                val jaAdicionado = remember(minhasMidias, midia.idTmdb, midia.titulo) {
+                                    minhasMidias.any { minha ->
+                                        (midia.idTmdb > 0 && minha.idTmdb == midia.idTmdb) ||
+                                        (minha.titulo.equals(midia.titulo, ignoreCase = true) && minha.tipo.equals(midia.tipo, ignoreCase = true))
+                                    }
+                                }
+                                ItemMidiaCard(
+                                    midia = midia,
+                                    onClick = { onMidiaClique?.invoke(midia) },
+                                    jaAdicionado = jaAdicionado,
+                                    onAdicionarRapido = {
+                                        if (!jaAdicionado) {
+                                            val novaMidia = midia.copy(
+                                                id = 0,
+                                                uuid = java.util.UUID.randomUUID().toString(),
+                                                status = "Quero Assistir",
+                                                statusSugestao = "APROVADO",
+                                                favorito = false,
+                                                atualizadoEm = System.currentTimeMillis()
+                                            )
+                                            viewModel.inserir(novaMidia)
+                                            CineHaptics.confirm(contexto)
+                                            Toast.makeText(contexto, "\"${midia.titulo}\" ${"adicionada à sua lista!".t()}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
-
                 }
-
             }
 
             2 -> {
+                if (midiasEmComum.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Vocês ainda não têm títulos em comum na lista.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp, textAlign = TextAlign.Center)
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        horizontalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                        verticalArrangement = Arrangement.spacedBy(CineListTokens.EspacoXS),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        itemsIndexed(midiasEmComum, key = { index, midiaComum -> "${midiaComum.uuid.ifBlank { midiaComum.id.toString() }}_${midiaComum.idTmdb}_$index" }) { _, midiaComum ->
+                            ItemMidiaCard(midia = midiaComum, onClick = { onMidiaClique?.invoke(midiaComum) }, jaAdicionado = true)
+                        }
+                    }
+                }
+            }
+
+            3 -> {
 
                 Column(modifier = Modifier.fillMaxSize()) {
 

@@ -468,13 +468,21 @@ fun DialogoWatchParty(
                                         modifier = Modifier
                                             .size(28.dp)
                                             .clickable {
-                                                val mut = voiceManager.alternarMudo()
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                Toast.makeText(
+                                                val temPermissaoAudio = androidx.core.content.ContextCompat.checkSelfPermission(
                                                     contexto,
-                                                    if (mut) "Microfone mutado 🔇".t() else "Microfone aberto 🎙️".t(),
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                                    android.Manifest.permission.RECORD_AUDIO
+                                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                                if (!temPermissaoAudio) {
+                                                    permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                                } else {
+                                                    val mut = voiceManager.alternarMudo()
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    Toast.makeText(
+                                                        contexto,
+                                                        if (mut) "Microfone mutado 🔇".t() else "Microfone aberto 🎙️".t(),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
                                             }
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
@@ -503,6 +511,7 @@ fun DialogoWatchParty(
                                 items(participantesLista, key = { it.uid.ifBlank { it.nome } }) { part ->
                                     val souEsse = part.uid == meuUid
                                     val ehHost = sessaoAtiva?.anfitriaoUid == part.uid || (sessaoAtiva == null && souEsse)
+                                    val estaFalando = if (souEsse) (!microfoneMutado && voiceConectado) else (falandoRemoto && part.online)
 
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -514,8 +523,8 @@ fun DialogoWatchParty(
                                                 shape = CircleShape,
                                                 color = Color(0xFF1F2937),
                                                 border = BorderStroke(
-                                                    2.dp,
-                                                    if (part.online) Color(0xFF10B981) else Color(0xFF4B5563)
+                                                    if (estaFalando) 2.5.dp else 2.dp,
+                                                    if (estaFalando) Color(0xFF00E5FF) else if (part.online) Color(0xFF10B981) else Color(0xFF4B5563)
                                                 ),
                                                 modifier = Modifier.size(44.dp)
                                             ) {
@@ -537,7 +546,17 @@ fun DialogoWatchParty(
                                                 }
                                             }
 
-                                            if (ehHost) {
+                                            if (estaFalando) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF00E5FF)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("🎙️", fontSize = 8.sp)
+                                                }
+                                            } else if (ehHost) {
                                                 Box(
                                                     modifier = Modifier
                                                         .size(16.dp)

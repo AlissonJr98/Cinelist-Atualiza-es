@@ -196,23 +196,22 @@ override fun onCreate(savedInstanceState: Bundle?) {
 super.onCreate(savedInstanceState)
 IdiomaAppManager.inicializar(this)
 
-if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-
-try {
-
-if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-
-requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-
-}
-
-} catch (e: Throwable) {
-
-e.printStackTrace()
-
-}
-
-}
+        try {
+            val permissoesParaPedir = mutableListOf<String>()
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    permissoesParaPedir.add(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+            if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                permissoesParaPedir.add(android.Manifest.permission.RECORD_AUDIO)
+            }
+            if (permissoesParaPedir.isNotEmpty()) {
+                requestPermissions(permissoesParaPedir.toTypedArray(), 101)
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
 
 try {
     enableEdgeToEdge()

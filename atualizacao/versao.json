@@ -1,6 +1,6 @@
-{
-  "versaoCodigo": 125,
-  "versaoNome": "2.0.85",
-  "notas": "Resolucao automatica em segundo plano de selos de dublagem PT-BR nos cards, precarregamento em lote e suporte a cards horizontais.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.85/CineList-v2.0.85.apk"
+﻿{
+    "versaoCodigo":  126,
+    "versaoNome":  "2.0.86",
+    "notas":  "Permissoes unificadas na inicializacao (notificacoes e microfone para CineParty), vitrine de series e favoritos de amigos com adicao rapida e medidor de afinidade.",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

@@ -68,6 +68,9 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 
 ### 🌐 Feed Social & Comunidade
 - **Feed Comunitário**: Compartilhe suas análises, avaliações (1 a 5 estrelas), teorias e recomendações.
+- **Vitrine de Favoritos & Séries do Amigo**: Acesse o perfil público de qualquer amigo conectado e explore suas séries, filmes e animes favoritos com filtros rápidos. Cada título exibe o status na sua lista e um botão de adição rápida com 1 toque (`+ Adicionar à Minha Lista`) com feedback háptico.
+- **Afinidade Cinematográfica (% Match de Gosto)**: Medidor visual inteligente que calcula a compatibilidade de gosto entre você e seu amigo baseado em obras e gêneros em comum.
+- **CineParty Live com Voz & Permissões Unificadas**: Chamadas de áudio ao vivo com verificação proativa de microfone, anel holográfico pulsante para indicar participantes falando e solicitação unificada de permissões essenciais ao iniciar o app.
 - **Busca Global de Amigos**: Encontre amigos e cinéfilos instantaneamente por nome, e-mail ou código de usuário.
 - **Perfis Conectados com Google**: Sincronização automática da foto do perfil da conta Google e atualizações de nome em tempo real.
 - **CineCode (QR Code)**: Compartilhe seu perfil ou mídias favoritas instantaneamente gerando e escaneando QR Codes personalizados.

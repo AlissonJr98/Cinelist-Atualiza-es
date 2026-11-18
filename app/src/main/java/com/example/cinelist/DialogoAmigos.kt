@@ -81,80 +81,18 @@ fun DialogoAmigos(
     }
 
     if (amigoVisualizando != null) {
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { amigoVisualizando = null },
-            title = {
-                Text(
-                    text = "${"Lista de".t()} ${amigoVisualizando?.nome}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 350.dp)
-                ) {
-                    if (listaAmigoSelecionado.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                            Text("Este usuário ainda não adicionou mídias publicamente.".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp)
-                        }
-                    } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            itemsIndexed(listaAmigoSelecionado, key = { index, midia -> "${midia.uuid.ifBlank { midia.id.toString() }}_$index" }) { _, midia ->
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(text = MidiaLocalizationManager.obterTituloLocalizado(midia), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-                                            Text(text = "${midia.tipo.t()} • ${midia.status.t()}", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = { mostrarCineParty = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF00E5FF))
-                        ) {
-                            Text("🍿", fontSize = 12.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("CineParty".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Black)
-                        }
-
-                        Button(
-                            onClick = { mostrarDuelo = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(imageVector = Icons.Default.CompareArrows, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Duelo".t(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                    }
-
-                    TextButton(onClick = { amigoVisualizando = null }) {
-                        Text("Fechar".t())
-                    }
-                }
-            }
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            ModalPerfilAmigo(
+                amigo = amigoVisualizando!!,
+                minhasMidias = minhaLista,
+                midiasAmigo = listaAmigoSelecionado,
+                viewModel = viewModel,
+                onFechar = { amigoVisualizando = null }
+            )
+        }
     }
 
     AlertDialog(

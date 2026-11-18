@@ -418,6 +418,24 @@ fun TelaPrincipal(
     var mostrarDialogoEnquetes by remember { mutableStateOf(false) }
     var mostrarCinePartySala by remember { mutableStateOf(false) }
 
+    val micSalaLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        mostrarCinePartySala = true
+    }
+
+    val abrirCinePartyComMic: () -> Unit = {
+        val temMic = androidx.core.content.ContextCompat.checkSelfPermission(
+            contextoLocal,
+            android.Manifest.permission.RECORD_AUDIO
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (temMic) {
+            mostrarCinePartySala = true
+        } else {
+            micSalaLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
     var mostrarMatchColetivoSala by remember { mutableStateOf(false) }
     var mostrarDialogoRadarEstreias by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylistsPrincipal by remember { mutableStateOf(false) }
@@ -633,7 +651,7 @@ fun TelaPrincipal(
                 Button(
                     onClick = {
                         ultimaChamadaProcessadaId = ultimaMsgSala.id
-                        mostrarCinePartySala = true
+                        abrirCinePartyComMic()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF))
                 ) {
@@ -672,7 +690,7 @@ fun TelaPrincipal(
             viewModel = viewModel,
             onIniciarCineParty = { titulo, poster ->
                 mostrarMatchColetivoSala = false
-                mostrarCinePartySala = true
+                abrirCinePartyComMic()
             },
             onDispensar = { mostrarMatchColetivoSala = false }
         )
@@ -1078,7 +1096,7 @@ fun TelaPrincipal(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { mostrarCinePartySala = true }) {
+                        IconButton(onClick = { abrirCinePartyComMic() }) {
                             Text("🍿", fontSize = 18.sp)
                         }
                         IconButton(onClick = { mostrarMatchColetivoSala = true }) {
@@ -1209,7 +1227,7 @@ fun TelaPrincipal(
                                                 msg.tipoMensagem == "INDICAÇÃO" -> ConteudoCardIndicacao(msg, souEu, onTmdbItemClique)
                                                 msg.tipoMensagem == "DEBATE" -> ConteudoCardDebate(msg, souEu)
                                                 msg.tipoMensagem == "CINEMATCH_CONVITE" || msg.texto.contains("CineMatch", ignoreCase = true) -> ConteudoCardCinema(msg, souEu, onClique = { mostrarMatchColetivoSala = true })
-                                                msg.tipoMensagem == "CINEPARTY_CHAMADA" || msg.texto.contains("CineParty", ignoreCase = true) -> ConteudoCardCinema(msg, souEu, onClique = { mostrarCinePartySala = true })
+                                                msg.tipoMensagem == "CINEPARTY_CHAMADA" || msg.texto.contains("CineParty", ignoreCase = true) -> ConteudoCardCinema(msg, souEu, onClique = { abrirCinePartyComMic() })
                                                 else -> ConteudoMensagemTexto(msg, souEu)
                                             }
                                             Row(modifier = Modifier.align(Alignment.End).padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
