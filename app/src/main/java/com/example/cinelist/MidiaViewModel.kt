@@ -2861,7 +2861,7 @@ socialRepository.enviarReacaoCineParty(salaId, emoji)
 }
 
 val chamadaCinePartyAtiva: StateFlow<ChamadaCineParty?> = socialRepository.observarChamadaCinePartyRecebida()
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
 fun alternarProntoParaPlayCineParty(salaId: String) {
     viewModelScope.launch {

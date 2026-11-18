@@ -187,6 +187,11 @@ class MainActivity : ComponentActivity() {
         PipHelper.isInPipMode = isInPictureInPictureMode
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
 override fun attachBaseContext(newBase: Context) {
     val contextComLocale = IdiomaAppManager.aplicarContextLocale(newBase)
     super.attachBaseContext(contextComLocale)
@@ -394,14 +399,60 @@ onFechar = { viewModel.fecharDialogoAtualizacao() }
 val chamadaCinePartyRecebida by viewModel.chamadaCinePartyAtiva.collectAsState()
 var chamadaCinePartyParaEntrar by remember { mutableStateOf<ChamadaCineParty?>(null) }
 
+LaunchedEffect(chamadaCinePartyRecebida?.id, chamadaCinePartyRecebida?.status) {
+    val ch = chamadaCinePartyRecebida
+    if (ch != null && ch.status == "PENDENTE") {
+        NotificacaoHelper.dispararNotificacaoChamadaCineParty(contexto, ch)
+    } else {
+        NotificacaoHelper.cancelarNotificacaoChamadaCineParty(contexto)
+    }
+}
+
+val acaoCinePartyExtra = remember(intentRecebida) { intentRecebida?.getStringExtra("cineparty_acao") }
+val salaCinePartyExtra = remember(intentRecebida) { intentRecebida?.getStringExtra("cineparty_sala_id") }
+
+LaunchedEffect(acaoCinePartyExtra, salaCinePartyExtra) {
+    if (acaoCinePartyExtra == "ATENDER" && !salaCinePartyExtra.isNullOrBlank()) {
+        val tit = intentRecebida?.getStringExtra("cineparty_titulo") ?: "CineParty"
+        val post = intentRecebida?.getStringExtra("cineparty_poster") ?: ""
+        val grp = intentRecebida?.getStringExtra("cineparty_grupo_id") ?: ""
+        val chamador = intentRecebida?.getStringExtra("cineparty_chamador_nome") ?: "Amigo"
+
+        intentRecebida?.removeExtra("cineparty_acao")
+        intentRecebida?.removeExtra("cineparty_sala_id")
+        intentRecebida?.removeExtra("cineparty_titulo")
+        intentRecebida?.removeExtra("cineparty_poster")
+        intentRecebida?.removeExtra("cineparty_grupo_id")
+        intentRecebida?.removeExtra("cineparty_chamador_nome")
+
+        NotificacaoHelper.cancelarNotificacaoChamadaCineParty(contexto)
+        viewModel.responderChamadaCineParty(aceitar = true)
+
+        chamadaCinePartyParaEntrar = ChamadaCineParty(
+            salaId = salaCinePartyExtra,
+            tituloMidia = tit,
+            posterMidia = post,
+            grupoId = grp,
+            chamadorNome = chamador,
+            status = "ACEITA"
+        )
+    } else if (acaoCinePartyExtra == "RECUSAR") {
+        intentRecebida?.removeExtra("cineparty_acao")
+        NotificacaoHelper.cancelarNotificacaoChamadaCineParty(contexto)
+        viewModel.responderChamadaCineParty(aceitar = false)
+    }
+}
+
 chamadaCinePartyRecebida?.let { chamada ->
     DialogoChamadaCinePartyRecebida(
         chamada = chamada,
         onAceitar = {
+            NotificacaoHelper.cancelarNotificacaoChamadaCineParty(contexto)
             viewModel.responderChamadaCineParty(aceitar = true)
             chamadaCinePartyParaEntrar = chamada
         },
         onRecusar = {
+            NotificacaoHelper.cancelarNotificacaoChamadaCineParty(contexto)
             viewModel.responderChamadaCineParty(aceitar = false)
         }
     )
@@ -603,52 +654,49 @@ quantidadeAnterior = lista.size
 
 }
 
+var appEstaVisivel by remember { mutableStateOf(true) }
+
 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-
-viewModel.atualizarPresencaGlobal(true)
-
-if (casalIdAtivoGlobal.isNotBlank()) {
-
-viewModel.atualizarStatusPresenca(true)
-
-}
-
+    appEstaVisivel = true
+    viewModel.atualizarPresencaGlobal(true)
+    if (casalIdAtivoGlobal.isNotBlank()) {
+        viewModel.atualizarStatusPresenca(true)
+    }
 }
 
 LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
-
-viewModel.atualizarPresencaGlobal(false)
-
-if (casalIdAtivoGlobal.isNotBlank()) {
-
-viewModel.atualizarStatusPresenca(false)
-
-}
-
+    appEstaVisivel = false
+    viewModel.atualizarPresencaGlobal(false)
+    if (casalIdAtivoGlobal.isNotBlank()) {
+        viewModel.atualizarStatusPresenca(false)
+    }
 }
 
 LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-
-viewModel.atualizarPresencaGlobal(false)
-
-if (casalIdAtivoGlobal.isNotBlank()) {
-
-viewModel.atualizarStatusPresenca(false)
-
+    appEstaVisivel = false
+    viewModel.atualizarPresencaGlobal(false)
+    if (casalIdAtivoGlobal.isNotBlank()) {
+        viewModel.atualizarStatusPresenca(false)
+    }
 }
 
+// 💓 Heartbeat periódico a cada 25 segundos enquanto o app estiver ativo em primeiro plano
+LaunchedEffect(appEstaVisivel, casalIdAtivoGlobal) {
+    while (appEstaVisivel) {
+        viewModel.atualizarPresencaGlobal(true)
+        if (casalIdAtivoGlobal.isNotBlank()) {
+            viewModel.atualizarStatusPresenca(true)
+        }
+        delay(25_000L)
+    }
 }
 
 DisposableEffect(Unit) {
-
-onDispose {
-
-viewModel.atualizarPresencaGlobal(false)
-
-viewModel.atualizarStatusPresenca(false)
-
-}
-
+    onDispose {
+        appEstaVisivel = false
+        viewModel.atualizarPresencaGlobal(false)
+        viewModel.atualizarStatusPresenca(false)
+    }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)

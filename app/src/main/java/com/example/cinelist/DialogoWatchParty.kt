@@ -639,46 +639,58 @@ fun DialogoWatchParty(
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                 ) {
+                                                    val amigoOnline = amigo.estaRealmenteOnline
                                                     Box(
                                                         modifier = Modifier
                                                             .size(8.dp)
                                                             .clip(CircleShape)
-                                                            .background(Color(0xFF10B981))
+                                                            .background(if (amigoOnline) Color(0xFF10B981) else Color(0xFF64748B))
                                                     )
-                                                    Text(
-                                                        text = amigo.nome,
-                                                        color = Color.White,
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.Medium
-                                                    )
+                                                    Column {
+                                                        Text(
+                                                            text = amigo.nome,
+                                                            color = Color.White,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                        Text(
+                                                            text = if (amigoOnline) "Online agora".t() else amigo.obterTextoVistoPorUltimo(),
+                                                            color = if (amigoOnline) Color(0xFF10B981) else Color(0xFF94A3B8),
+                                                            fontSize = 9.sp
+                                                        )
+                                                    }
                                                 }
 
                                                 Button(
                                                     onClick = {
-                                                        if (viewModel != null) {
-                                                            viewModel.chamarAmigoParaCineParty(
-                                                                amigoUid = amigo.uid,
-                                                                salaId = salaId,
-                                                                tituloMidia = tituloMidia,
-                                                                posterMidia = posterMidia,
-                                                                grupoId = grupoId
-                                                            )
-                                                            val titLocalizado = tituloMidia.t()
-                                                            if (grupoId.isNotBlank()) {
-                                                                viewModel.enviarMensagemParaSala(
-                                                                    texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
-                                                                    tipoMensagem = "CINEPARTY_CHAMADA",
-                                                                    mediaUrl = salaId
-                                                                )
-                                                            } else {
-                                                                viewModel.enviarMensagemAmigo(
+                                                        try {
+                                                            if (viewModel != null && amigo.uid.isNotBlank()) {
+                                                                viewModel.chamarAmigoParaCineParty(
                                                                     amigoUid = amigo.uid,
-                                                                    texto = "🍿 Te chamei para a CineParty de '$titLocalizado'! Entre na sala:",
-                                                                    tipoMensagem = "CINEPARTY_CHAMADA",
-                                                                    mediaUrl = salaId
+                                                                    salaId = salaId,
+                                                                    tituloMidia = tituloMidia,
+                                                                    posterMidia = posterMidia,
+                                                                    grupoId = grupoId
                                                                 )
+                                                                val titLocalizado = tituloMidia.t()
+                                                                if (grupoId.isNotBlank()) {
+                                                                    viewModel.enviarMensagemParaSala(
+                                                                        texto = "🍿 " + "Chamando".t() + " ${amigo.nome} " + "para a chamada CineParty de".t() + " '$titLocalizado'!",
+                                                                        tipoMensagem = "CINEPARTY_CHAMADA",
+                                                                        mediaUrl = salaId
+                                                                    )
+                                                                } else {
+                                                                    viewModel.enviarMensagemAmigo(
+                                                                        amigoUid = amigo.uid,
+                                                                        texto = "🍿 Te chamei para a CineParty de '$titLocalizado'! Entre na sala:",
+                                                                        tipoMensagem = "CINEPARTY_CHAMADA",
+                                                                        mediaUrl = salaId
+                                                                    )
+                                                                }
+                                                                Toast.makeText(contexto, "${"Chamando".t()} ${amigo.nome}...", Toast.LENGTH_SHORT).show()
                                                             }
-                                                            Toast.makeText(contexto, "${"Chamando".t()} ${amigo.nome}...", Toast.LENGTH_SHORT).show()
+                                                        } catch (t: Throwable) {
+                                                            t.printStackTrace()
                                                         }
                                                     },
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),

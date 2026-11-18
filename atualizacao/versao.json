@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 126,
-  "versaoNome": "2.0.86",
-  "notas": "Novas melhorias, correções e novidades adicionadas nesta versão.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.86/CineList-v2.0.86.apk"
+    "versaoCodigo": 127,
+    "versaoNome": "2.0.87",
+    "notas": "Correção de travamento ao chamar amigo no CineParty, notificação de chamada em tempo real com ações diretas e sincronização contínua de status online de amigos.",
+    "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

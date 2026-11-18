@@ -20,12 +20,12 @@ data class AmigoPerfil(
 ) {
     val idCurto: String
         get() = if (codigoUsuario.isNotBlank()) codigoUsuario else uid.take(8).uppercase()
-    // Mesma tolerância de 45 segundos da sala compartilhada: se o app fechar ou cair a net, vira offline
+    // Tolerância com suporte a drift/dessincronização de relógio (-60s) e heartbeat a cada 30s (até 150s)
     val estaRealmenteOnline: Boolean
         get() {
             if (!online) return false
             val diferenca = System.currentTimeMillis() - vistoPorUltimo
-            return diferenca in 0..90_000L
+            return diferenca in -60_000L..150_000L
         }
 
     fun obterTextoVistoPorUltimo(): String {

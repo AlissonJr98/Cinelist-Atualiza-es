@@ -233,4 +233,90 @@ object NotificacaoHelper {
             e.printStackTrace()
         }
     }
+
+    private const val CANAL_CINEPARTY_CHAMADA_ID = "canal_cineparty_chamadas"
+    const val ID_NOTIFICACAO_CINEPARTY = 7777
+
+    fun dispararNotificacaoChamadaCineParty(context: Context, chamada: ChamadaCineParty) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val canal = NotificationChannel(
+                CANAL_CINEPARTY_CHAMADA_ID,
+                "Chamadas CineParty ao Vivo".t(),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Toque e avisos de chamadas em tempo real para assistir filmes e séries juntos".t()
+                enableLights(true)
+                lightColor = Color.CYAN
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 250, 500, 250, 500)
+            }
+            notificationManager.createNotificationChannel(canal)
+        }
+
+        // Intent para abrir o app diretamente na chamada (ao tocar na notificação ou clicar em Atender)
+        val intentAtender = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("cineparty_acao", "ATENDER")
+            putExtra("cineparty_sala_id", chamada.salaId)
+            putExtra("cineparty_titulo", chamada.tituloMidia)
+            putExtra("cineparty_poster", chamada.posterMidia)
+            putExtra("cineparty_grupo_id", chamada.grupoId)
+            putExtra("cineparty_chamador_nome", chamada.chamadorNome)
+        }
+
+        val pendingIntentAtender = PendingIntent.getActivity(
+            context,
+            ID_NOTIFICACAO_CINEPARTY,
+            intentAtender,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent para recusar a chamada diretamente
+        val intentRecusar = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("cineparty_acao", "RECUSAR")
+        }
+
+        val pendingIntentRecusar = PendingIntent.getActivity(
+            context,
+            ID_NOTIFICACAO_CINEPARTY + 1,
+            intentRecusar,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val titulo = "Chamada CineParty! 🍿📞".t()
+        val corpo = "${chamada.chamadorNome} ${"está te chamando para assistir".t()} \"${chamada.tituloMidia}\" ${"no CineParty!".t()}"
+
+        val notificacao = NotificationCompat.Builder(context, CANAL_CINEPARTY_CHAMADA_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(titulo)
+            .setContentText(corpo)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(corpo))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVibrate(longArrayOf(0, 500, 250, 500, 250, 500))
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntentAtender)
+            .addAction(0, "🍿 " + "Entrar".t(), pendingIntentAtender)
+            .addAction(0, "❌ " + "Recusar".t(), pendingIntentRecusar)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(ID_NOTIFICACAO_CINEPARTY, notificacao)
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
+    }
+
+    fun cancelarNotificacaoChamadaCineParty(context: Context) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(ID_NOTIFICACAO_CINEPARTY)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

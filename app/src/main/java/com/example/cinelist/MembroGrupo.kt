@@ -13,13 +13,12 @@ data class MembroGrupo(
     val assistindoAgoraTitulo: String = "",
     val assistindoAgoraEpisodio: String = ""
 ) {
-    // Tolerância reduzida para 45 segundos. Se o aplicativo fechar forçado,
-    // o status passa para offline automaticamente em 45s.
+    // Tolerância com suporte a drift/dessincronização de relógio (-60s) e heartbeat a cada 30s (até 150s)
     val estaRealmenteOnline: Boolean
         get() {
             if (!online) return false
             val diferenca = System.currentTimeMillis() - vistoPorUltimo
-            return diferenca in 0..90_000L
+            return diferenca in -60_000L..150_000L
         }
 
     val estaAssistindoAlgo: Boolean

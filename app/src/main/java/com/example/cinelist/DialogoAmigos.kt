@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CompareArrows
@@ -187,8 +190,11 @@ fun DialogoAmigos(
                         Text("Nenhum amigo adicionado ainda. Busque acima!".t(), fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
                     }
                 } else {
+                    val amigosOrdenados = remember(amigos) {
+                        amigos.sortedWith(compareByDescending<AmigoPerfil> { it.estaRealmenteOnline }.thenBy { it.nome.lowercase() })
+                    }
                     LazyColumn(modifier = Modifier.heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items(amigos) { amigo ->
+                        items(amigosOrdenados) { amigo ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -201,9 +207,24 @@ fun DialogoAmigos(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = amigo.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(text = amigo.bio.ifBlank { "Sem biografia".t() }, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val estaOn = amigo.estaRealmenteOnline
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(if (estaOn) Color(0xFF10B981) else Color(0xFF64748B))
+                                    )
+                                    Column {
+                                        Text(text = amigo.nome, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text(
+                                            text = if (estaOn) "Online agora".t() else amigo.bio.ifBlank { amigo.obterTextoVistoPorUltimo() },
+                                            fontSize = 11.sp,
+                                            color = if (estaOn) Color(0xFF10B981) else MaterialTheme.colorScheme.secondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                                 Icon(imageVector = Icons.Default.Visibility, contentDescription = "Ver Lista".t(), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             }

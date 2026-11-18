@@ -659,6 +659,16 @@ class SocialRepository @Inject constructor() {
     suspend fun atualizarPresencaGlobal(online: Boolean) = withContext(Dispatchers.IO) {
         val user = auth.currentUser ?: return@withContext
         try {
+            // Atualização rápida de presença / heartbeat (evita leituras desnecessárias repetidas)
+            try {
+                firestore.collection("usuarios_publicos").document(user.uid)
+                    .update("online", online, "vistoPorUltimo", System.currentTimeMillis())
+                    .await()
+                return@withContext
+            } catch (_: Exception) {
+                // Se o documento ainda não existir, prossegue com o provisionamento completo abaixo
+            }
+
             val email = (user.email ?: "").trim().lowercase()
 
             // 1. Procura foto no photoUrl atual ou em provedores conectados (ex: Google)
@@ -1130,20 +1140,20 @@ class SocialRepository @Inject constructor() {
     suspend fun enviarMensagemChat(amigoUid: String, texto: String, tipoMensagem: String = "TEXTO", mediaUrl: String = "") = withContext(Dispatchers.IO) {
         val meuUid = auth.currentUser?.uid ?: return@withContext
         if (texto.isBlank() && mediaUrl.isBlank()) return@withContext
-        val chatId = obterIdChat(meuUid, amigoUid)
-
-        val msg = MensagemChat(
-            id = firestore.collection("chats").document(chatId).collection("mensagens").document().id,
-            remetenteUid = meuUid,
-            texto = texto.trim(),
-            timestamp = System.currentTimeMillis(),
-            tipoMensagem = tipoMensagem,
-            mediaUrl = mediaUrl
-        )
-
-        firestore.collection("chats").document(chatId).collection("mensagens").document(msg.id).set(msg).await()
-
         try {
+            val chatId = obterIdChat(meuUid, amigoUid)
+
+            val msg = MensagemChat(
+                id = firestore.collection("chats").document(chatId).collection("mensagens").document().id,
+                remetenteUid = meuUid,
+                texto = texto.trim(),
+                timestamp = System.currentTimeMillis(),
+                tipoMensagem = tipoMensagem,
+                mediaUrl = mediaUrl
+            )
+
+            firestore.collection("chats").document(chatId).collection("mensagens").document(msg.id).set(msg).await()
+
             val docUsuario = firestore.collection("usuarios_publicos").document(meuUid).get().await()
             val meuNome = docUsuario.getString("nome") ?: "Usuário"
             val notificacaoChat = mapOf(
@@ -2165,6 +2175,7 @@ class SocialRepository @Inject constructor() {
                 "posterMidia" to posterMidia,
                 "chamadorUid" to meuUid,
                 "chamadorNome" to meuNome,
+                "grupoId" to grupoId,
                 "timestamp" to System.currentTimeMillis(),
                 "status" to "PENDENTE"
             )
@@ -2204,6 +2215,7 @@ class SocialRepository @Inject constructor() {
                             posterMidia = snap.getString("posterMidia") ?: "",
                             chamadorUid = snap.getString("chamadorUid") ?: "",
                             chamadorNome = snap.getString("chamadorNome") ?: "Amigo",
+                            grupoId = snap.getString("grupoId") ?: "",
                             timestamp = timestamp,
                             status = status
                         )

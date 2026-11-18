@@ -67,7 +67,7 @@ service cloud.firestore {
     //   - remetenteUid: string (matches auth.uid on create, immutable)
     //   - texto: string (<= 5000 chars)
     //   - timestamp: number
-    //   - tipoMensagem: string ('TEXTO' | 'IMAGEM' | 'STICKER')
+    //   - tipoMensagem: string ('TEXTO' | 'IMAGEM' | 'STICKER' | 'CINEPARTY_CHAMADA' | 'CINEMATCH_CONVITE' | 'DEBATE')
     //   - mediaUrl: string (optional, <= 2000 chars)
     //
     // Collection: comentarios_globais/{tmdbId}/comentarios/{comentarioId}
@@ -309,7 +309,7 @@ service cloud.firestore {
         (!('autorNome' in data) || (data.autorNome is string && data.autorNome.size() <= 100)) &&
         (!('autorFotoUrl' in data) || (data.autorFotoUrl is string && data.autorFotoUrl.size() <= 2000)) &&
         (!('texto' in data) || (data.texto is string && data.texto.size() <= 5000)) &&
-        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER'])) &&
+        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER', 'CINEPARTY_CHAMADA', 'CINEMATCH_CONVITE', 'DEBATE'])) &&
         (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() <= 2000)) &&
         (!('timestamp' in data) || data.timestamp is number) &&
         (!('editada' in data) || data.editada is bool);
@@ -318,7 +318,7 @@ service cloud.firestore {
     function isValidMensagemChat(data) {
       return data.remetenteUid is string && data.remetenteUid.size() <= 128 &&
         (!('texto' in data) || (data.texto is string && data.texto.size() <= 5000)) &&
-        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER'])) &&
+        (!('tipoMensagem' in data) || (data.tipoMensagem is string && data.tipoMensagem in ['TEXTO', 'IMAGEM', 'STICKER', 'CINEPARTY_CHAMADA', 'CINEMATCH_CONVITE', 'DEBATE'])) &&
         (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() <= 2000)) &&
         (!('timestamp' in data) || data.timestamp is number);
     }
@@ -517,7 +517,8 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create: if isAuthenticated() &&
           (!('chamadorUid' in request.resource.data) || request.resource.data.chamadorUid == request.auth.uid);
-        allow update, delete: if isOwner(uid) || (isAuthenticated() && resource.data.chamadorUid == request.auth.uid);
+        allow update: if isOwner(uid) || (isAuthenticated() && (!('chamadorUid' in request.resource.data) || request.resource.data.chamadorUid == request.auth.uid));
+        allow delete: if isOwner(uid) || (isAuthenticated() && resource.data.chamadorUid == request.auth.uid);
       }
     }
 

@@ -55,7 +55,10 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
 - **Roleta Cibernética**: Não sabe o que assistir? Filtre por tempo disponível (ex: `< 90 min`), provedores de streaming (Netflix, Disney+, Max, Prime Video), status ou **apenas títulos dublados**, e deixe o CineList sortear para você.
 - **CineMatch (Modo Casal & Amigos)**: Conecte-se com um amigo ou parceiro(a), filtre por dublagem, filmes ou séries, deslize pelos títulos sugeridos e descubra o que ambos têm em comum para assistir juntos hoje.
 - **Álbum de Matches & Torneio 1v1**: Reviva todos os títulos decididos em conjunto ou dispute mata-mata direto entre duas obras favoritas da sala.
-- **CineParty Ao Vivo**: Assista conteúdos e sincronize seu status e reações em tempo real com amigos conectados.
+- **CineParty Ao Vivo & Ligação de Voz WebRTC**: Assista conteúdos sincronizados e converse por áudio em tempo real com amigos conectados.
+  - **Chamada Instantânea com Notificação de Sistema**: Chame amigos ausentes diretamente da sala CineParty; o convidado recebe uma notificação prioritária no aparelho (com toque, vibração e botões de ação rápida "Entrar 🍿" e "Recusar ❌") que abre a sessão instantaneamente.
+  - **Presença Global e Status Online em Tempo Real**: Heartbeat ativo de segundo plano a cada 25 segundos mantendo o status "Online agora" sempre fiel e sincronizado entre dispositivos conectados.
+  - **Ordenação Inteligente de Amigos**: Abas de amigos e participantes destacam no topo quem está realmente online no momento.
 
 ### 📊 Estatísticas Avançadas & DNA Cinematográfico
 - **DNA Cinematográfico (Gêneros Dominantes)**: Gráfico interativo no perfil com a distribuição percentual dos seus gêneros favoritos e barras de progresso neon personalizadas.

@@ -7181,8 +7181,7 @@ fun AbaAmigosPerfil(
                     }
 
                 } else {
-
-                    itemsIndexed(amigos, key = { index, amigo -> "${amigo.uid}_$index" }) { _, amigo ->
+                    itemsIndexed(amigos.sortedWith(compareByDescending<AmigoPerfil> { it.estaRealmenteOnline }.thenBy { it.nome.lowercase() }), key = { index, amigo -> "${amigo.uid}_$index" }) { _, amigo ->
 
                         val estaOnline = amigo.estaRealmenteOnline
 
