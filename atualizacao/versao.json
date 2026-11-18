@@ -1,6 +1,6 @@
-﻿{
-    "versaoCodigo":  126,
-    "versaoNome":  "2.0.86",
-    "notas":  "Permissoes unificadas na inicializacao (notificacoes e microfone para CineParty), vitrine de series e favoritos de amigos com adicao rapida e medidor de afinidade.",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
+{
+  "versaoCodigo": 126,
+  "versaoNome": "2.0.86",
+  "notas": "Novas melhorias, correções e novidades adicionadas nesta versão.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.86/CineList-v2.0.86.apk"
 }
