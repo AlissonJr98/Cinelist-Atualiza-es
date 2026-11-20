@@ -1,6 +1,6 @@
 {
-  "versionCode": 127,
-  "versionName": "2.0.87",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.87/CineList-v2.0.87.apk",
-  "changelog": "Correção de travamento ao chamar amigo no CineParty, notificação de chamada em tempo real com ações diretas e sincronização contínua de status online de amigos."
+  "versionCode": 128,
+  "versionName": "2.0.88",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Botao de compartilhar sempre visivel ao abrir qualquer midia e novo modal de compartilhamento multifacetado (WhatsApp, CineCard HD, Stories, Twitter/X e copiar ficha)."
 }

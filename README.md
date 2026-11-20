@@ -60,6 +60,17 @@ O **CineList** redefine a experiência de organizar e compartilhar filmes, séri
   - **Presença Global e Status Online em Tempo Real**: Heartbeat ativo de segundo plano a cada 25 segundos mantendo o status "Online agora" sempre fiel e sincronizado entre dispositivos conectados.
   - **Ordenação Inteligente de Amigos**: Abas de amigos e participantes destacam no topo quem está realmente online no momento.
 
+### 📱 Compartilhamento Multifacetado & CineCard HD
+- **Botão de Compartilhar Sempre Acessível**: Ícone visível a todo momento na TopBar moderna e nas ações rápidas ao abrir qualquer título — seja uma mídia já salva na sua lista, uma busca no catálogo TMDB ou uma recomendação de amigos.
+- **CineCard Holográfico HD (1080x1920)**: Geração de cartão de cinema estético de alta resolução pronto para Stories, com poster nítido, selo de dublagem PT-BR, gêneros, ano, nota em estrelas, plataformas onde assistir e citação de sua avaliação pessoal.
+- **Opções Versáteis de Compartilhamento**:
+  - 📱 **Compartilhar com Qualquer App**: Aciona o menu universal do Android (`ACTION_SEND`) com imagem do CineCard e texto descritivo formatado.
+  - 💬 **WhatsApp Direto**: Envia mensagem direta com link e ficha do filme/série com 1 toque.
+  - 📸 **Instagram Stories**: Integração com sticker interativo do CineCard pronto para postar nos Stories.
+  - 🐦 **X / Twitter**: Compartilhamento rápido com link e hashtags temáticas.
+  - 📋 **Copiar Ficha Completa**: Copia resumo estruturado em texto para a área de transferência com feedback háptico.
+  - 🍿 **Indicação no Chat da Sala CineParty**: Recomende o título diretamente aos amigos ou sala conectada.
+
 ### 📊 Estatísticas Avançadas & DNA Cinematográfico
 - **DNA Cinematográfico (Gêneros Dominantes)**: Gráfico interativo no perfil com a distribuição percentual dos seus gêneros favoritos e barras de progresso neon personalizadas.
 - **Economia de Tempo em Fillers**: Contador exclusivo de tempo economizado pulando episódios fillers em animes clássicos e sazonais.

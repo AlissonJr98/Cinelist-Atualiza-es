@@ -143,6 +143,7 @@ fun TelaDetalhes(
     var mostrarDialogoRadar by remember { mutableStateOf(false) }
     var mostrarDialogoWatchParty by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylists by remember { mutableStateOf(false) }
+    var mostrarModalCompartilhar by remember { mutableStateOf(false) }
 
     var atorSelecionadoParaPerfil by remember { mutableStateOf<TmdbAtor?>(null) }
     var vozDubladorSelecionadoParaPerfil by remember { mutableStateOf<VozDublador?>(null) }
@@ -575,6 +576,58 @@ fun TelaDetalhes(
         }
     }
 
+    val dadosCompartilhamento = remember(
+        tituloDinamico,
+        detalhesApi,
+        midiaSalva,
+        nota,
+        statusAtual,
+        temporadaAtual,
+        episodioAtual,
+        comentarioPessoalInput,
+        provedoresFiltrados,
+        infoDublagem,
+        sinopseTraduzidaIa
+    ) {
+        val urlPost = midiaSalva?.imagemCapa?.ifBlank { null }
+            ?: detalhesApi?.caminhoPoster?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
+            ?: detalhesApi?.caminhoBackdrop?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
+            ?: ""
+        val sinopseFinal = (sinopseTraduzidaIa ?: detalhesApi?.sinopse ?: midiaSalva?.sinopse ?: "").trim()
+        val anoFinal = detalhesApi?.dataLancamento?.take(4) ?: midiaSalva?.dataLancamento?.take(4) ?: ""
+        val generosFinal = if (generoEhValido(midiaSalva?.genero)) midiaSalva?.genero.orEmpty() else detalhesApi?.generoTexto.orEmpty()
+        val comentarioFinal = if (comentarioPessoalInput.isNotBlank()) comentarioPessoalInput
+            else (if (midiaSalva != null && midiaSalva.comentarioPessoal.isNotBlank()) midiaSalva.comentarioPessoal else "")
+
+        DadosCompartilhamentoMidia(
+            idTmdb = midiaSalva?.idTmdb ?: detalhesApi?.id ?: idRealBuscaApi,
+            titulo = tituloDinamico,
+            tituloOriginal = detalhesApi?.tituloOriginal ?: "",
+            tipo = if (ehSerieOuAnime) "Série".t() else "Filme".t(),
+            ano = anoFinal,
+            generos = GeneroLocalizationHelper.formatarGeneros(generosFinal, I18n.idiomaAtivo),
+            nota = if (nota > 0) nota else (detalhesApi?.mediaVotos?.toInt() ?: midiaSalva?.nota ?: 0),
+            notaMediaTmdb = detalhesApi?.mediaVotos ?: 0.0,
+            sinopse = sinopseFinal,
+            urlPoster = urlPost,
+            status = if (midiaSalva != null) statusAtual.valor.t() else "Descoberta no CineList 🍿".t(),
+            temporadaAtual = temporadaAtual,
+            episodioAtual = episodioAtual,
+            comentario = comentarioFinal,
+            provedores = provedoresFiltrados.map { it.nomeProvedor },
+            temDublagem = infoDublagem?.temDublagem
+        )
+    }
+
+    if (mostrarModalCompartilhar) {
+        ModalCompartilharMidia(
+            dados = dadosCompartilhamento,
+            midiaOriginal = midiaSalva,
+            viewModel = viewModel,
+            onDispensar = { mostrarModalCompartilhar = false }
+        )
+    }
+
     if (mostrarDialogoRadar) {
         val initCriterios = CriteriosAvaliacao.deStringSerializada(tagsInput) ?: CriteriosAvaliacao()
         DialogoAvaliacaoCriterios(
@@ -821,22 +874,21 @@ fun TelaDetalhes(
                                 viewModel.atualizar(midiaReal.copy(favorito = novoFavorito))
                             }
                         )
+                    }
 
-                        IconeBouncyIconButton(onClick = {
-                            compartilharCardEstilizado(
-                                contexto = contexto,
-                                coroutineScope = coroutineScope,
-                                midia = midiaReal.copy(
-                                    nota = nota,
-                                    status = statusAtual.valor,
-                                    temporadaAtual = temporadaAtual,
-                                    episodioAtual = episodioAtual
-                                )
-                            )
-                        }) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = "Compartilhar Card".t(), tint = MaterialTheme.colorScheme.primary)
-                        }
+                    // 📤 Botão de Compartilhar SEMPRE visível a todo momento ao abrir qualquer mídia
+                    IconeBouncyIconButton(onClick = {
+                        CineHaptics.click(contexto)
+                        mostrarModalCompartilhar = true
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Compartilhar Mídia".t(),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
+                    midiaSalva?.let { midiaReal ->
                         val casalIdAtivo by viewModel.casalIdAtivo.collectAsState()
                         if (casalIdAtivo.isNotBlank()) {
                             IconeBouncyIconButton(onClick = {
@@ -2898,51 +2950,14 @@ fun TelaDetalhes(
                                         }
                                     }
 
-                                    // Botão Compartilhar no Story
+                                    // Botão Compartilhar Mídia Multifacetado
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFFEC4899).copy(alpha = 0.12f),
-                                        border = BorderStroke(1.dp, Color(0xFFEC4899).copy(alpha = 0.6f)),
+                                        color = Color(0xFF00E5FF).copy(alpha = 0.15f),
+                                        border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f)),
                                         modifier = Modifier.clickable {
-                                            val t = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
-                                            val tp = if (ehSerieOuAnime) "Série" else "Filme"
-                                            val an = detalhesApi?.dataLancamento?.take(4) ?: ""
-                                            val gen = detalhesApi?.generoTexto ?: midiaSalva?.genero ?: ""
-                                            val nt = if (nota > 0) nota else 8
-                                            val cmt = if (comentarioPessoalInput.isNotBlank()) comentarioPessoalInput else "Marcado como imperdível no CineList!"
-                                            coroutineScope.launch {
-                                                android.widget.Toast.makeText(contexto, "Gerando CineCard com poster...", android.widget.Toast.LENGTH_SHORT).show()
-                                                val urlPoster = midiaSalva?.imagemCapa?.ifBlank { null }
-                                                    ?: detalhesApi?.caminhoPoster?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
-                                                    ?: detalhesApi?.caminhoBackdrop?.let { if (it.startsWith("http")) it else "https://image.tmdb.org/t/p/w780$it" }
-
-                                                var posterBitmap: android.graphics.Bitmap? = null
-                                                if (!urlPoster.isNullOrBlank()) {
-                                                    try {
-                                                        val req = coil.request.ImageRequest.Builder(contexto)
-                                                            .data(urlPoster)
-                                                            .allowHardware(false)
-                                                            .build()
-                                                        val result = coil.ImageLoader(contexto).execute(req)
-                                                        if (result is coil.request.SuccessResult) {
-                                                            posterBitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        e.printStackTrace()
-                                                    }
-                                                }
-
-                                                InstagramShareHelper.compartilharCineCardStory(
-                                                    context = contexto,
-                                                    titulo = t,
-                                                    tipo = tp,
-                                                    ano = an,
-                                                    genero = GeneroLocalizationHelper.formatarGeneros(gen, I18n.idiomaAtivo),
-                                                    nota = nt,
-                                                    comentario = cmt,
-                                                    posterBitmap = posterBitmap
-                                                )
-                                            }
+                                            CineHaptics.click(contexto)
+                                            mostrarModalCompartilhar = true
                                         }
                                     ) {
                                         Row(
@@ -2950,8 +2965,8 @@ fun TelaDetalhes(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            Text("✨", fontSize = 12.sp)
-                                            Text("Story", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEC4899))
+                                            Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(14.dp))
+                                            Text("Compartilhar".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E5FF))
                                         }
                                     }
 
@@ -3476,52 +3491,73 @@ fun TelaDetalhes(
                                     Text("SALVAR ALTERAÇÕES".t(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                                 }
                             } else {
-                                Button(
-                                    onClick = {
-                                        val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
-                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
-                                            ?: provedoresStreaming.firstOrNull()?.nomeProvedor
-                                            ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
-
-                                        val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
-                                        val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
-                                        val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
-
-                                        val novaMidia = Midia(
-                                            id = 0,
-                                            idTmdb = idRealBuscaApi,
-                                            titulo = tituloParaSalvar,
-                                            tipo = tipoRealUtilizado,
-                                            nota = 0,
-                                            temporadaAtual = 1,
-                                            episodioAtual = 1,
-                                            minutoParado = 0,
-                                            jaEncerrou = false,
-                                            status = StatusMidia.QUERO_ASSISTIR.valor,
-                                            sinopse = sinopseParaSalvar,
-                                            imagemCapa = capaParaSalvar,
-                                            genero = detalhesApi?.generoTexto ?: "",
-                                            plataforma = streamingPrincipal,
-                                            favorito = false,
-                                            listaCustomizada = "Geral",
-                                            isCasal = isModoCasal,
-                                            casalId = casalIdAtivo
-                                        )
-                                        viewModel.inserir(novaMidia)
-                                        val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
-                                        Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
-                                        onVoltar()
-                                    },
-                                    enabled = !jaExisteNaLista,
-                                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                    shape = RoundedCornerShape(12.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA".t() else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA".t() else "ADICIONAR À MINHA LISTA".t()),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Button(
+                                        onClick = {
+                                            val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                                ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
+                                                ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                                ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
+
+                                            val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
+                                            val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
+                                            val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
+
+                                            val novaMidia = Midia(
+                                                id = 0,
+                                                idTmdb = idRealBuscaApi,
+                                                titulo = tituloParaSalvar,
+                                                tipo = tipoRealUtilizado,
+                                                nota = 0,
+                                                temporadaAtual = 1,
+                                                episodioAtual = 1,
+                                                minutoParado = 0,
+                                                jaEncerrou = false,
+                                                status = StatusMidia.QUERO_ASSISTIR.valor,
+                                                sinopse = sinopseParaSalvar,
+                                                imagemCapa = capaParaSalvar,
+                                                genero = detalhesApi?.generoTexto ?: "",
+                                                plataforma = streamingPrincipal,
+                                                favorito = false,
+                                                listaCustomizada = "Geral",
+                                                isCasal = isModoCasal,
+                                                casalId = casalIdAtivo
+                                            )
+                                            viewModel.inserir(novaMidia)
+                                            val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
+                                            Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
+                                            onVoltar()
+                                        },
+                                        enabled = !jaExisteNaLista,
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA".t() else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA".t() else "ADICIONAR À MINHA LISTA".t()),
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    FilledTonalIconButton(
+                                        onClick = {
+                                            CineHaptics.click(contexto)
+                                            mostrarModalCompartilhar = true
+                                        },
+                                        modifier = Modifier.size(48.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                            containerColor = Color(0xFF00E5FF).copy(alpha = 0.2f),
+                                            contentColor = Color(0xFF00E5FF)
+                                        )
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = "Compartilhar Mídia".t())
+                                    }
                                 }
                             }
 
