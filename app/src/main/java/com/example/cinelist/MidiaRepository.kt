@@ -1003,15 +1003,38 @@ class MidiaRepository @Inject constructor(
     }
 
     suspend fun buscarNoTmdb(nome: String, tipo: String): List<TmdbFilme> {
-        return if (tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)) {
-            RetrofitClient.apiService.buscarSerieOuAnime(nome).resultados.map { it.copy(mediaType = "tv") }
+        val buscaTitulo = if (tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)) {
+            runCatching { RetrofitClient.apiService.buscarSerieOuAnime(nome).resultados.map { it.copy(mediaType = "tv") } }.getOrDefault(emptyList())
         } else if (tipo.equals("Filme", ignoreCase = true)) {
-            RetrofitClient.apiService.buscarFilme(nome).resultados.map { it.copy(mediaType = "movie") }
+            runCatching { RetrofitClient.apiService.buscarFilme(nome).resultados.map { it.copy(mediaType = "movie") } }.getOrDefault(emptyList())
         } else {
-            RetrofitClient.apiService.buscarMulti(nome).resultados.filter {
-                it.mediaType.equals("movie", ignoreCase = true) || it.mediaType.equals("tv", ignoreCase = true)
-            }
+            runCatching {
+                RetrofitClient.apiService.buscarMulti(nome).resultados.filter {
+                    it.mediaType.equals("movie", ignoreCase = true) || it.mediaType.equals("tv", ignoreCase = true)
+                }
+            }.getOrDefault(emptyList())
         }
+
+        val obrasArtista = runCatching {
+            val buscaPessoa = RetrofitClient.apiService.buscarPessoa(nome, 1)
+            val pessoa = buscaPessoa.resultados.firstOrNull { it.popularidade > 1.2 || it.nome.contains(nome, ignoreCase = true) }
+                ?: buscaPessoa.resultados.firstOrNull()
+            if (pessoa != null) {
+                val creditos = RetrofitClient.apiService.obterCreditosPessoa(pessoa.id)
+                val atuacoes = creditos.atuacoes?.map { it.paraTmdbFilme() } ?: emptyList()
+                val producoes = creditos.producoes?.map { it.paraTmdbFilme() } ?: emptyList()
+                (atuacoes + producoes)
+                    .distinctBy { it.idTmdb }
+                    .filter {
+                        if (tipo.equals("Filme", ignoreCase = true)) !it.ehSerie
+                        else if (tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true)) it.ehSerie
+                        else true
+                    }
+                    .sortedByDescending { it.mediaVotos * 20.0 + (it.dataLancamento?.take(4)?.toDoubleOrNull() ?: 1970.0) }
+            } else emptyList()
+        }.getOrDefault(emptyList())
+
+        return (obrasArtista + buscaTitulo).distinctBy { it.idTmdb }
     }
 
     fun inscreverNoTopicoDoGrupo(grupoId: String) {

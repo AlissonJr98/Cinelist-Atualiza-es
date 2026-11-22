@@ -27,6 +27,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -1942,12 +1943,32 @@ repository.buscarNoTmdbPaginado(query, tipo, provedor, genero, ordenacao)
 
 }.flatMapLatest { flow -> flow }.cachedIn(viewModelScope)
 
+private val _artistaDestaqueBusca = MutableStateFlow<TmdbPessoaItem?>(null)
+val artistaDestaqueBusca: StateFlow<TmdbPessoaItem?> = _artistaDestaqueBusca
+
+private var jobBuscaArtista: Job? = null
+
 fun atualizarQueryEFiltrarPaginado(novaQuery: String, novoTipo: String) {
+    _queryPaginada.value = novaQuery
+    _tipoPaginado.value = novoTipo
 
-_queryPaginada.value = novaQuery
-
-_tipoPaginado.value = novoTipo
-
+    jobBuscaArtista?.cancel()
+    val termo = novaQuery.trim()
+    if (termo.length >= 3) {
+        jobBuscaArtista = viewModelScope.launch {
+            delay(350)
+            try {
+                val resp = RetrofitClient.apiService.buscarPessoa(termo, 1)
+                val ator = resp.resultados.firstOrNull { it.popularidade > 1.2 || it.nome.contains(termo, ignoreCase = true) }
+                    ?: resp.resultados.firstOrNull()
+                _artistaDestaqueBusca.value = ator
+            } catch (e: Exception) {
+                _artistaDestaqueBusca.value = null
+            }
+        }
+    } else {
+        _artistaDestaqueBusca.value = null
+    }
 }
 
 fun selecionarProvedorStreaming(provedorId: Int?) {

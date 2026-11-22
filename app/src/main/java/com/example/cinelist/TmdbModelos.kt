@@ -243,6 +243,25 @@ data class TmdbAtor(
         get() = if (!fotoPerfil.isNullOrBlank()) "https://image.tmdb.org/t/p/w185$fotoPerfil" else ""
 }
 
+data class TmdbPessoaItem(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val nome: String = "",
+    @SerializedName("profile_path") val caminhoFoto: String? = null,
+    @SerializedName("known_for_department") val departamento: String? = null,
+    @SerializedName("popularity") val popularidade: Double = 0.0,
+    @SerializedName("known_for") val conhecidosPor: List<TmdbFilme>? = emptyList()
+) {
+    val urlFoto: String
+        get() = if (!caminhoFoto.isNullOrBlank()) "https://image.tmdb.org/t/p/w185$caminhoFoto" else ""
+}
+
+data class TmdbPessoaResposta(
+    @SerializedName("page") val pagina: Int = 1,
+    @SerializedName("results") val resultados: List<TmdbPessoaItem> = emptyList(),
+    @SerializedName("total_pages") val totalPaginas: Int = 1,
+    @SerializedName("total_results") val totalResultados: Int = 0
+)
+
 data class TmdbVideosResposta(
     @SerializedName("results") val videos: List<TmdbVideoItem>? = null
 )
@@ -375,7 +394,8 @@ data class TmdbPessoaDetalhes(
 }
 
 data class TmdbPessoaCreditosResposta(
-    @SerializedName("cast") val atuacoes: List<TmdbCreditoItem>? = emptyList()
+    @SerializedName("cast") val atuacoes: List<TmdbCreditoItem>? = emptyList(),
+    @SerializedName("crew") val producoes: List<TmdbCreditoItem>? = emptyList()
 )
 
 data class TmdbCreditoItem(
@@ -402,6 +422,22 @@ data class TmdbCreditoItem(
 
     val urlBackdrop: String
         get() = if (!caminhoBackdrop.isNullOrBlank()) "https://image.tmdb.org/t/p/w780$caminhoBackdrop" else ""
+
+    fun paraTmdbFilme(): TmdbFilme {
+        val ehTv = mediaType.equals("tv", ignoreCase = true)
+        return TmdbFilme(
+            idTmdb = this.id,
+            titulo = this.titulo,
+            tituloOriginal = this.tituloOriginal,
+            sinopse = this.sinopse,
+            caminhoPoster = this.caminhoPoster,
+            caminhoBackdrop = this.caminhoBackdrop,
+            mediaType = if (ehTv) "tv" else "movie",
+            mediaVotos = this.mediaVotos,
+            dataLancamento = this.dataLancamento,
+            idiomaOriginal = this.idiomaOriginal
+        )
+    }
 }
 
 data class TmdbGruposEpisodiosResposta(

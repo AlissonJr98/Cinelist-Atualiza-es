@@ -38,7 +38,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -60,6 +63,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.Modifier
@@ -144,6 +148,7 @@ fun TelaDetalhes(
     var mostrarDialogoWatchParty by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylists by remember { mutableStateOf(false) }
     var mostrarModalCompartilhar by remember { mutableStateOf(false) }
+    var abaDetalhesSelecionada by rememberSaveable { mutableIntStateOf(0) }
 
     var atorSelecionadoParaPerfil by remember { mutableStateOf<TmdbAtor?>(null) }
     var vozDubladorSelecionadoParaPerfil by remember { mutableStateOf<VozDublador?>(null) }
@@ -348,6 +353,16 @@ fun TelaDetalhes(
 
     var traduzindoSinopse by remember { mutableStateOf(false) }
     var sinopseTraduzidaIa by remember { mutableStateOf<String?>(null) }
+
+    val sinopseDinamica = remember(I18n.idiomaAtivo, detalhesApi?.sinopse, midiaSalva?.sinopse, sinopse) {
+        if (I18n.idiomaAtivo != "pt-BR" && !detalhesApi?.sinopse.isNullOrBlank()) {
+            detalhesApi?.sinopse ?: sinopse
+        } else if (midiaSalva != null && sinopse.isNotBlank()) {
+            sinopse
+        } else {
+            detalhesApi?.sinopse ?: "Carregando sinopse...".t()
+        }
+    }
 
     val provedoresAssinaturaFiltrados = remember(provedoresStreaming) {
         provedoresStreaming.distinctBy { item ->
@@ -687,6 +702,12 @@ fun TelaDetalhes(
         DialogoPerfilDublador(
             voz = voz,
             onDispensar = { vozDubladorSelecionadoParaPerfil = null },
+            onAbrirMidia = { novoId, novoTipo ->
+                vozDubladorSelecionadoParaPerfil = null
+                if (novoId > 0) {
+                    onRecomendacaoClique(novoId, novoTipo)
+                }
+            },
             onBuscarNoApp = { nome ->
                 vozDubladorSelecionadoParaPerfil = null
                 onRecomendacaoClique(-1, nome)
@@ -1133,7 +1154,364 @@ fun TelaDetalhes(
                                 )
                             }
 
+                            // 🧭 ABAS MODERNAS DE NAVEGAÇÃO TEMÁTICA
+                            val abasDetalhes = remember(ehSerieOuAnime) {
+                                listOf(
+                                    "🍿 Visão Geral",
+                                    "🎙️ Áudio & Dublagem",
+                                    "📊 Dados & Produção",
+                                    if (ehSerieOuAnime) "📺 Temporadas & Eps" else "⭐ Minha Lista & Notas",
+                                    "💬 Comunidade"
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+                            ScrollableTabRow(
+                                selectedTabIndex = abaDetalhesSelecionada,
+                                edgePadding = 0.dp,
+                                containerColor = Color.Transparent,
+                                contentColor = Color(0xFF00E5FF),
+                                divider = {},
+                                indicator = { tabPositions ->
+                                    if (tabPositions.isNotEmpty() && abaDetalhesSelecionada in tabPositions.indices) {
+                                        TabRowDefaults.SecondaryIndicator(
+                                            modifier = Modifier.tabIndicatorOffset(tabPositions[abaDetalhesSelecionada]),
+                                            color = Color(0xFF00E5FF)
+                                        )
+                                    }
+                                }
+                            ) {
+                                abasDetalhes.forEachIndexed { index, tituloAba ->
+                                    val selecionada = abaDetalhesSelecionada == index
+                                    Tab(
+                                        selected = selecionada,
+                                        onClick = {
+                                            CineHaptics.click(contexto)
+                                            abaDetalhesSelecionada = index
+                                        },
+                                        text = {
+                                            Text(
+                                                text = tituloAba.t(),
+                                                fontWeight = if (selecionada) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 12.sp,
+                                                color = if (selecionada) Color(0xFF00E5FF) else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            if (abaDetalhesSelecionada == 0 || abaDetalhesSelecionada == 1) {
                             // 🎙️ TAG VISUAL DE DUBLAGEM & ÁUDIO
+                            val statusDub = infoDublagem?.status ?: StatusDublagem.DESCONHECIDO
+                            val corFundoDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.15f)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.15f)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.15f)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            }
+                            val corTextoDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.secondary
+                            }
+                            val bordaCorDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.5f)
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.5f)
+                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.5f)
+                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            }
+                            val textoTagDub = when (statusDub) {
+                                StatusDublagem.DUBLADO -> "🎙️ Dublado PT-BR"
+                                StatusDublagem.AUDIO_ORIGINAL_PT -> "🇧🇷 Áudio Original"
+                                StatusDublagem.APENAS_LEGENDADO -> "💬 Legendado"
+                                StatusDublagem.DESCONHECIDO -> if (carregandoDublagem) "Consultando dublagem..." else "🎙️ Dublagem a confirmar"
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = corFundoDub,
+                                border = BorderStroke(1.dp, bordaCorDub),
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = textoTagDub.t(),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = corTextoDub
+                                    )
+                                    val est = infoDublagem?.estudio
+                                    if (!est.isNullOrBlank() && statusDub != StatusDublagem.AUDIO_ORIGINAL_PT) {
+                                        Text(
+                                            text = "• $est",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = corTextoDub.copy(alpha = 0.85f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+
+                            val horaTerminoTexto = remember(duracaoPadraoMin, ehSerieOuAnime) {
+                                val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoPadraoMin) }
+                                val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                val horaFormatada = sdf.format(cal.time)
+                                if (ehSerieOuAnime) {
+                                    "${"Próximo episódio: se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
+                                } else {
+                                    "${"Se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
+                                }
+                            }
+
+                            if (horaTerminoTexto.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "⏱️ $horaTerminoTexto",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
+                            }
+                            } // Fim de if (abaDetalhesSelecionada == 0 || 1)
+
+                            if (abaDetalhesSelecionada == 2) {
+                            // 🚀 SELO DE CENAS PÓS-CRÉDITOS (APENAS PARA FILMES)
+                            if (!ehSerieOuAnime && temCenaPosCreditos != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (temCenaPosCreditos == true) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                            Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        }
+                                    }
+                                } else {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
+                                            Text("✅ Sem cenas pós-créditos — Pode desligar a TV!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 🚀 SELO DE STATUS DA SÉRIE (CANCELADA / FINALIZADA)
+                            val statusTextoSelado = detalhesApi?.statusSeloTexto
+                            val statusApiStr = detalhesApi?.statusSerieApi.orEmpty()
+                            val ehCanceladaSerie = statusApiStr.equals("Canceled", ignoreCase = true)
+                            if (ehSerieOuAnime && !statusTextoSelado.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = if (ehCanceladaSerie) Color(0xFFFF4C4C).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (ehCanceladaSerie) Icons.Default.Warning else Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = if (ehCanceladaSerie) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = statusTextoSelado.t(),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+
+                            // 🚀 DADOS FINANCEIROS & ROI (ORÇAMENTO, BILHETERIA E LUCRO)
+                            if (!ehSerieOuAnime && ((detalhesApi?.orcamento ?: 0L) > 0L || (detalhesApi?.bilheteria ?: 0L) > 0L)) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "💰 Bilheteria Mundial".t(),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            val multiplicador = detalhesApi?.multiplicadorBilheteria ?: 0.0
+                                            if (multiplicador > 0.0) {
+                                                val seloRoi = when {
+                                                    multiplicador >= 3.0 -> "🏆 Blockbuster"
+                                                    multiplicador >= 2.0 -> "✨ Sucesso Comercial"
+                                                    multiplicador >= 1.0 -> "📊 Lucrativo"
+                                                    else -> "📉 Alto Custo"
+                                                }
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = if (multiplicador >= 2.0) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFF59E0B).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = seloRoi.t(),
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (multiplicador >= 2.0) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceAround
+                                        ) {
+                                            if ((detalhesApi?.orcamento ?: 0L) > 0L) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Orçamento".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(detalhesApi?.orcamentoFormatado ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                }
+                                            }
+                                            if ((detalhesApi?.bilheteria ?: 0L) > 0L) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Bilheteria".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(detalhesApi?.bilheteriaFormatada ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                                }
+                                            }
+                                            if ((detalhesApi?.multiplicadorBilheteria ?: 0.0) > 0.0) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    Text("Rentabilidade".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text(String.format(java.util.Locale.US, "%.1fx", detalhesApi?.multiplicadorBilheteria), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 🏢 ESTÚDIOS E PRODUTORAS
+                            val produtoras = detalhesApi?.produtoras ?: emptyList()
+                            val emissoras = detalhesApi?.emissoras ?: emptyList()
+                            if (produtoras.isNotEmpty() || emissoras.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Estúdios:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
+                                    (produtoras.take(4).map { it.nome } + emissoras.take(3).map { it.nome }).distinct().forEach { nomeEstudio ->
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                        ) {
+                                            Text(
+                                                text = nomeEstudio,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            } // Fim de if (abaDetalhesSelecionada == 2)
+
+                            if (abaDetalhesSelecionada == 1) {
+                            // 🚀 BOTÕES TRILHA SONORA (SPOTIFY & YOUTUBE MUSIC)
+                            val tituloParaBuscaOst = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
+                            if (tituloParaBuscaOst.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack Original OST")
+                                            val spotifyIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query")).apply {
+                                                setPackage("com.spotify.music")
+                                            }
+                                            try {
+                                                contexto.startActivity(spotifyIntent)
+                                            } catch (ex: Exception) {
+                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$query"))
+                                                contexto.startActivity(intentWeb)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f).height(38.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFF1DB954), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Spotify 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack OST")
+                                            val ytmIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query")).apply {
+                                                setPackage("com.google.android.apps.youtube.music")
+                                            }
+                                            try {
+                                                contexto.startActivity(ytmIntent)
+                                            } catch (ex: Exception) {
+                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query"))
+                                                contexto.startActivity(intentWeb)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f).height(38.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp)
+                                    ) {
+                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFFFF0000), modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("YT Music 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            } // Fim de if (abaDetalhesSelecionada == 1 - OST)
+
+                            if (abaDetalhesSelecionada == 0) {
                             val statusDub = infoDublagem?.status ?: StatusDublagem.DESCONHECIDO
                             val corFundoDub = when (statusDub) {
                                 StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.15f)
@@ -1586,6 +1964,71 @@ fun TelaDetalhes(
                                     Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text("Agendar na Agenda do Celular".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                                }
+                            }
+
+                            // 📜 SINOPSE / VISÃO GERAL
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Text(text = "Sinopse / Visão Geral:".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val textoSinopseExibida = sinopseTraduzidaIa ?: sinopseDinamica
+
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(
+                                        text = textoSinopseExibida.ifBlank { "Sem sinopse disponível.".t() },
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 20.sp
+                                    )
+                                    if (textoSinopseExibida.isNotBlank() && I18n.idiomaAtivo != "en-US") {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                            modifier = Modifier.align(Alignment.End).clickable(enabled = !traduzindoSinopse) {
+                                                traduzindoSinopse = true
+                                                coroutineScope.launch {
+                                                    val trad = CineAiManager.traduzirSinopse(contexto, textoSinopseExibida, I18n.idiomaAtivo)
+                                                    if (!trad.isNullOrBlank()) {
+                                                        sinopseTraduzidaIa = trad
+                                                        if (midiaSalva != null) {
+                                                            sinopse = trad
+                                                            viewModel.atualizar(midiaSalva.copy(sinopse = trad))
+                                                        }
+                                                        Toast.makeText(contexto, "Sinopse traduzida com CineAI! ✨".t(), Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        Toast.makeText(contexto, "Não foi possível traduzir no momento.".t(), Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    traduzindoSinopse = false
+                                                }
+                                            }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Text(
+                                                    text = if (traduzindoSinopse) "Traduzindo...".t() else "✨ Traduzir sinopse com CineAI".t(),
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -2112,7 +2555,9 @@ fun TelaDetalhes(
                                     }
                                 }
                             }
+                            } // Fim de Aba 0 (Visão Geral - Parte 1)
 
+                            if (abaDetalhesSelecionada == 1) {
                             // 🎙️ SEÇÃO EXPANSÍVEL / CARD DE DUBLAGEM BRASILEIRA
                             if (infoDublagem != null) {
                                 val info = infoDublagem!!
@@ -2301,7 +2746,10 @@ fun TelaDetalhes(
                                     }
                                 }
                             }
+                            } // Fim de Aba 1 (Ficha de Dublagem)
 
+                            if (abaDetalhesSelecionada == 3) {
+                            // 📺 SAGA, EPISÓDIOS & CONTROLES DA MINHA LISTA
                             val colecaoDetalhes = colecaoFranquiaDetalhes
                             if (colecaoDetalhes != null && !colecaoDetalhes.partes.isNullOrEmpty()) {
                                 Spacer(modifier = Modifier.height(20.dp))
@@ -3162,75 +3610,111 @@ fun TelaDetalhes(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(text = "Sinopse / Visão Geral:".t(), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            val sinopseDinamica = if (I18n.idiomaAtivo != "pt-BR" && !detalhesApi?.sinopse.isNullOrBlank()) {
-                                detalhesApi?.sinopse ?: sinopse
-                            } else if (midiaSalva != null && sinopse.isNotBlank()) {
-                                sinopse
-                            } else {
-                                detalhesApi?.sinopse ?: "Carregando sinopse...".t()
-                            }
-
-                            val textoSinopseExibida = sinopseTraduzidaIa ?: sinopseDinamica
-
-                            OutlinedTextField(
-                                value = textoSinopseExibida,
-                                onValueChange = { if (midiaSalva != null) sinopse = it },
-                                readOnly = (midiaSalva == null),
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(focusedTextColor = MaterialTheme.colorScheme.onSurface, unfocusedTextColor = MaterialTheme.colorScheme.onSurface)
-                            )
-
-                            if (textoSinopseExibida.isNotBlank() && I18n.idiomaAtivo != "en-US") {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                                        modifier = Modifier.clickable(enabled = !traduzindoSinopse) {
-                                            traduzindoSinopse = true
-                                            coroutineScope.launch {
-                                                val trad = CineAiManager.traduzirSinopse(contexto, textoSinopseExibida, I18n.idiomaAtivo)
-                                                if (!trad.isNullOrBlank()) {
-                                                    sinopseTraduzidaIa = trad
-                                                    if (midiaSalva != null) {
-                                                        sinopse = trad
-                                                        viewModel.atualizar(midiaSalva.copy(sinopse = trad))
-                                                    }
-                                                    Toast.makeText(contexto, "Sinopse traduzida com CineAI! ✨".t(), Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(contexto, "Não foi possível traduzir no momento.".t(), Toast.LENGTH_SHORT).show()
-                                                }
-                                                traduzindoSinopse = false
-                                            }
-                                        }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(13.dp)
-                                            )
-                                            Text(
-                                                text = if (traduzindoSinopse) "Traduzindo...".t() else "✨ Traduzir sinopse com CineAI".t(),
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
+                            if (midiaSalva != null && isModoCasal) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        statusAtual = StatusMidia.ASSISTINDO
+                                        val midiaAtualizada = midiaSalva.copy(
+                                            temporadaAtual = temporadaAtual,
+                                            episodioAtual = episodioAtual,
+                                            status = StatusMidia.ASSISTINDO.valor,
+                                            jaEncerrou = false
+                                        )
+                                        viewModel.atualizar(midiaAtualizada)
+                                        viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
+                                        Toast.makeText(contexto, "Transmitindo e alterando status para 'Assistindo'! 🎬", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiary)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (ehSerieOuAnime) "${"ASSISTIR".t()} T$temporadaAtual • EP $episodioAtual ${"AGORA (SALA)".t()}" else "${"ASSISTINDO FILME AGORA (SALA)".t()}",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiary,
+                                        fontSize = 13.sp
+                                    )
                                 }
                             }
 
+                            if (midiaSalva != null) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Button(
+                                    onClick = {
+                                        val streamingAtualizado = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                            ?: midiaSalva.plataforma
+
+                                        val concluido = statusAtual == StatusMidia.CONCLUIDO
+                                        val querAssistir = statusAtual == StatusMidia.QUERO_ASSISTIR
+
+                                        val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                                        val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
+
+                                        val midiaAtualizada = midiaSalva.copy(
+                                            nota = nota,
+                                            temporadaAtual = temporadaAtual,
+                                            episodioAtual = episodioAtual,
+                                            jaEncerrou = concluido,
+                                            status = statusAtual.valor,
+                                            dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
+                                            concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor,
+                                            sinopse = sinopse,
+                                            favorito = ehFavorito,
+                                            listaCustomizada = listaCustomizada.ifBlank { "Geral" },
+                                            plataforma = streamingAtualizado,
+                                            isCasal = isModoCasal,
+                                            casalId = casalIdAtivo,
+                                            comentarioPessoal = comentarioPessoalInput,
+                                            atualizadoEm = System.currentTimeMillis()
+                                        )
+                                        viewModel.atualizar(midiaAtualizada)
+
+                                        if (statusAtual == StatusMidia.ASSISTINDO && isModoCasal) {
+                                            viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
+                                        } else if (concluido || querAssistir) {
+                                            viewModel.pararAssistirAgora()
+                                        }
+
+                                        onVoltar()
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("SALVAR ALTERAÇÕES".t(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(18.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("⭐ ${"Personalize seu Acompanhamento".t()}", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "Adicione esta obra à sua lista na barra inferior para avaliar com notas e critérios, marcar episódios e temporadas assistidas e registrar suas anotações pessoais.".t(),
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 18.sp
+                                        )
+                                    }
+                                }
+                            }
+                            } // Fim de Aba 3 (Episódios & Minha Lista)
+
+                            if (abaDetalhesSelecionada == 2) {
                             // 💡 ANÁLISE CINEAI (SEM SPOILERS)
                             val notaParaAi = if (midiaSalva != null && midiaSalva.nota > 0) midiaSalva.nota.toDouble() else (detalhesApi?.mediaVotos ?: 0.0)
                             val destaquesAi = remember(detalhesApi?.id, midiaSalva?.id) {
@@ -3291,7 +3775,9 @@ fun TelaDetalhes(
                             }
                             Spacer(modifier = Modifier.height(14.dp))
                             GuiaParentalCard(info = guiaParentalInfo)
+                            } // Fim de Aba 2 (Dados & Produção)
 
+                            if (abaDetalhesSelecionada == 0) {
                             // 🚀 MUDANÇA NAS RECOMENDAÇÕES (AGORA COM CARROSSEL ELEGANTE E ADIÇÃO RÁPIDA)
                             if (recomendacoesAtivas.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
@@ -3375,9 +3861,11 @@ fun TelaDetalhes(
                                     }
                                 }
                             }
+                            } // Fim de Aba 0 (Recomendações)
 
+                            if (abaDetalhesSelecionada == 4) {
                             if (idRealBuscaApi > 0) {
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(20.dp))
                                 SecaoComunidade(
                                     tmdbId = idRealBuscaApi,
                                     comentariosPublicos = comentariosPublicos,
@@ -3410,158 +3898,219 @@ fun TelaDetalhes(
                                     }
                                 )
                             }
+                            } // Fim de Aba 4 (Comunidade)
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(96.dp))
+                        }
+                    }
 
-                            if (midiaSalva != null && isModoCasal) {
+                    // 🌟 BARRA DE AÇÃO FLUTUANTE FIXA (STICKY FLOATING ACTION BAR)
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                        border = BorderStroke(
+                            1.dp,
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xFF00E5FF).copy(alpha = 0.5f),
+                                    Color(0xFF8B5CF6).copy(alpha = 0.4f),
+                                    Color(0xFFFF007F).copy(alpha = 0.5f)
+                                )
+                            )
+                        ),
+                        shadowElevation = 14.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            if (midiaSalva == null) {
                                 Button(
                                     onClick = {
-                                        statusAtual = StatusMidia.ASSISTINDO
-                                        val midiaAtualizada = midiaSalva.copy(
-                                            temporadaAtual = temporadaAtual,
-                                            episodioAtual = episodioAtual,
-                                            status = StatusMidia.ASSISTINDO.valor,
-                                            jaEncerrou = false
-                                        )
-                                        viewModel.atualizar(midiaAtualizada)
-                                        viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
-                                        Toast.makeText(contexto, "Transmitindo e alterando status para 'Assistindo'! 🎬", Toast.LENGTH_SHORT).show()
-                                    },
-                                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiary)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = if (ehSerieOuAnime) "${"ASSISTIR".t()} T$temporadaAtual • EP $episodioAtual ${"AGORA (SALA)".t()}" else "${"ASSISTINDO FILME AGORA (SALA)".t()}",
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiary,
-                                        fontSize = 13.sp
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(12.dp))
-                            }
-
-                            if (midiaSalva != null) {
-                                Button(
-                                    onClick = {
-                                        val streamingAtualizado = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                        val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
                                             ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
                                             ?: provedoresStreaming.firstOrNull()?.nomeProvedor
-                                            ?: midiaSalva.plataforma
+                                            ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
 
-                                        val concluido = statusAtual == StatusMidia.CONCLUIDO
-                                        val querAssistir = statusAtual == StatusMidia.QUERO_ASSISTIR
+                                        val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
+                                        val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
+                                        val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
 
-                                        val usuarioLogado = FirebaseAuth.getInstance().currentUser
-                                        val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
-
-                                        val midiaAtualizada = midiaSalva.copy(
-                                            nota = nota,
-                                            temporadaAtual = temporadaAtual,
-                                            episodioAtual = episodioAtual,
-                                            jaEncerrou = concluido,
-                                            status = statusAtual.valor,
-                                            dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
-                                            concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor,
-                                            sinopse = sinopse,
+                                        val novaMidia = Midia(
+                                            id = 0,
+                                            idTmdb = idRealBuscaApi,
+                                            titulo = tituloParaSalvar,
+                                            tipo = tipoRealUtilizado,
+                                            nota = 0,
+                                            temporadaAtual = 1,
+                                            episodioAtual = 1,
+                                            minutoParado = 0,
+                                            jaEncerrou = false,
+                                            status = StatusMidia.QUERO_ASSISTIR.valor,
+                                            sinopse = sinopseParaSalvar,
+                                            imagemCapa = capaParaSalvar,
+                                            genero = detalhesApi?.generoTexto ?: "",
+                                            plataforma = streamingPrincipal,
                                             favorito = ehFavorito,
-                                            listaCustomizada = listaCustomizada.ifBlank { "Geral" },
-                                            plataforma = streamingAtualizado,
+                                            listaCustomizada = "Geral",
                                             isCasal = isModoCasal,
-                                            casalId = casalIdAtivo,
-                                            comentarioPessoal = comentarioPessoalInput,
-                                            atualizadoEm = System.currentTimeMillis()
+                                            casalId = casalIdAtivo
                                         )
-                                        viewModel.atualizar(midiaAtualizada)
-
-                                        if (statusAtual == StatusMidia.ASSISTINDO && isModoCasal) {
-                                            viewModel.iniciarAssistirMidiaAgora(midiaAtualizada)
-                                        } else if (concluido || querAssistir) {
-                                            viewModel.pararAssistirAgora()
-                                        }
-
-                                        onVoltar()
+                                        viewModel.inserir(novaMidia)
+                                        val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
+                                        Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
                                     },
-                                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    enabled = !jaExisteNaLista,
+                                    modifier = Modifier.weight(1f).height(46.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = if (jaExisteNaLista) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("SALVAR ALTERAÇÕES".t(), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                                    Icon(
+                                        imageVector = if (jaExisteNaLista) Icons.Default.Check else Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (jaExisteNaLista) "JÁ NA SUA LISTA".t() else (if (isModoCasal) "+ ADICIONAR À SALA".t() else "+ ADICIONAR À LISTA".t()),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
-                                                ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
-                                                ?: provedoresStreaming.firstOrNull()?.nomeProvedor
-                                                ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
+                                var expandirMenuStatus by remember { mutableStateOf(false) }
 
-                                            val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
-                                            val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
-                                            val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
-
-                                            val novaMidia = Midia(
-                                                id = 0,
-                                                idTmdb = idRealBuscaApi,
-                                                titulo = tituloParaSalvar,
-                                                tipo = tipoRealUtilizado,
-                                                nota = 0,
-                                                temporadaAtual = 1,
-                                                episodioAtual = 1,
-                                                minutoParado = 0,
-                                                jaEncerrou = false,
-                                                status = StatusMidia.QUERO_ASSISTIR.valor,
-                                                sinopse = sinopseParaSalvar,
-                                                imagemCapa = capaParaSalvar,
-                                                genero = detalhesApi?.generoTexto ?: "",
-                                                plataforma = streamingPrincipal,
-                                                favorito = false,
-                                                listaCustomizada = "Geral",
-                                                isCasal = isModoCasal,
-                                                casalId = casalIdAtivo
-                                            )
-                                            viewModel.inserir(novaMidia)
-                                            val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
-                                            Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
-                                            onVoltar()
+                                Box(modifier = Modifier.weight(1f)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = when (statusAtual) {
+                                            StatusMidia.CONCLUIDO -> Color(0xFF10B981).copy(alpha = 0.2f)
+                                            StatusMidia.ASSISTINDO -> Color(0xFF3B82F6).copy(alpha = 0.2f)
+                                            else -> MaterialTheme.colorScheme.surfaceVariant
                                         },
-                                        enabled = !jaExisteNaLista,
-                                        modifier = Modifier.weight(1f).height(48.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                                        shape = RoundedCornerShape(12.dp)
+                                        border = BorderStroke(
+                                            1.dp,
+                                            when (statusAtual) {
+                                                StatusMidia.CONCLUIDO -> Color(0xFF10B981)
+                                                StatusMidia.ASSISTINDO -> Color(0xFF3B82F6)
+                                                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                            }
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(46.dp)
+                                            .clickable { expandirMenuStatus = true }
                                     ) {
-                                        Text(
-                                            text = if (jaExisteNaLista) "JÁ ESTÁ NA LISTA".t() else (if (isModoCasal) "ADICIONAR À SALA COMPARTILHADA".t() else "ADICIONAR À MINHA LISTA".t()),
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                Text(
+                                                    text = when (statusAtual) {
+                                                        StatusMidia.CONCLUIDO -> "✅"
+                                                        StatusMidia.ASSISTINDO -> "▶️"
+                                                        else -> "🍿"
+                                                    },
+                                                    fontSize = 14.sp
+                                                )
+                                                Text(
+                                                    text = statusAtual.valor.t(),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = when (statusAtual) {
+                                                        StatusMidia.CONCLUIDO -> Color(0xFF10B981)
+                                                        StatusMidia.ASSISTINDO -> Color(0xFF60A5FA)
+                                                        else -> MaterialTheme.colorScheme.onSurface
+                                                    }
+                                                )
+                                            }
+                                            Icon(
+                                                imageVector = Icons.Default.ArrowDropDown,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
 
-                                    FilledTonalIconButton(
-                                        onClick = {
-                                            CineHaptics.click(contexto)
-                                            mostrarModalCompartilhar = true
-                                        },
-                                        modifier = Modifier.size(48.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                            containerColor = Color(0xFF00E5FF).copy(alpha = 0.2f),
-                                            contentColor = Color(0xFF00E5FF)
-                                        )
+                                    DropdownMenu(
+                                        expanded = expandirMenuStatus,
+                                        onDismissRequest = { expandirMenuStatus = false }
                                     ) {
-                                        Icon(Icons.Default.Share, contentDescription = "Compartilhar Mídia".t())
+                                        listOf(StatusMidia.QUERO_ASSISTIR, StatusMidia.ASSISTINDO, StatusMidia.CONCLUIDO).forEach { st ->
+                                            DropdownMenuItem(
+                                                text = { Text(st.valor.t(), fontWeight = if (st == statusAtual) FontWeight.Bold else FontWeight.Normal) },
+                                                onClick = {
+                                                    expandirMenuStatus = false
+                                                    statusAtual = st
+                                                    val concluido = st == StatusMidia.CONCLUIDO
+                                                    val usuarioLogado = FirebaseAuth.getInstance().currentUser
+                                                    val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
+                                                    val midiaAtualizada = midiaSalva.copy(
+                                                        status = st.valor,
+                                                        jaEncerrou = concluido,
+                                                        dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
+                                                        concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor
+                                                    )
+                                                    viewModel.atualizar(midiaAtualizada)
+                                                    if (st == StatusMidia.CONCLUIDO && isModoCasal) {
+                                                        viewModel.pararAssistirAgora()
+                                                    }
+                                                    CineHaptics.click(contexto)
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            FilledTonalIconButton(
+                                onClick = {
+                                    CineHaptics.click(contexto)
+                                    ehFavorito = !ehFavorito
+                                    midiaSalva?.let {
+                                        viewModel.atualizar(it.copy(favorito = ehFavorito))
+                                    }
+                                },
+                                modifier = Modifier.size(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = if (ehFavorito) Color(0xFFFF007F).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (ehFavorito) Color(0xFFFF007F) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (ehFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorito".t(),
+                                    tint = if (ehFavorito) Color(0xFFFF007F) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            FilledTonalIconButton(
+                                onClick = {
+                                    CineHaptics.click(contexto)
+                                    mostrarModalCompartilhar = true
+                                },
+                                modifier = Modifier.size(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = Color(0xFF00E5FF).copy(alpha = 0.15f),
+                                    contentColor = Color(0xFF00E5FF)
+                                )
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = "Compartilhar Mídia".t())
+                            }
                         }
                     }
                 }

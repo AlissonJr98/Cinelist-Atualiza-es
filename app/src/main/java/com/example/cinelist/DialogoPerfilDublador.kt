@@ -2,6 +2,7 @@ package com.example.cinelist
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,38 +14,48 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 
 @Composable
 fun DialogoPerfilDublador(
     voz: VozDublador,
     onDispensar: () -> Unit,
-    onBuscarNoApp: (String) -> Unit
+    onAbrirMidia: (Int, String) -> Unit = { _, _ -> },
+    onBuscarNoApp: (String) -> Unit = {}
 ) {
-    val papeisIconicos = remember(voz.dublador) {
-        obterPapeisIconicos(voz.dublador)
+    val contexto = LocalContext.current
+    var filmografia by remember { mutableStateOf<List<TrabalhoDublador>>(emptyList()) }
+    var carregandoFilmografia by remember { mutableStateOf(true) }
+
+    LaunchedEffect(voz.dublador) {
+        carregandoFilmografia = true
+        filmografia = DubladorFilmografiaManager.obterFilmografia(contexto, voz.dublador)
+        carregandoFilmografia = false
     }
 
     Dialog(onDismissRequest = onDispensar) {
         Surface(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f)),
-            tonalElevation = 8.dp,
+            border = BorderStroke(1.dp, Brush.linearGradient(listOf(Color(0xFF10B981).copy(alpha = 0.6f), Color(0xFF00E5FF).copy(alpha = 0.3f)))),
+            tonalElevation = 10.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 4.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -102,7 +113,7 @@ fun DialogoPerfilDublador(
                 // Avatar / Holograma de Dublador
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(76.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
@@ -113,7 +124,7 @@ fun DialogoPerfilDublador(
                 ) {
                     Text(
                         text = voz.dublador.take(2).uppercase(),
-                        fontSize = 26.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.Black
                     )
@@ -123,25 +134,25 @@ fun DialogoPerfilDublador(
 
                 Text(
                     text = voz.dublador,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
                 if (voz.personagem.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color(0xFF10B981).copy(alpha = 0.15f),
-                        border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                        border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.4f))
                     ) {
                         Text(
                             text = "${"Dá voz a:".t()} ${voz.personagem}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color(0xFF10B981),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -160,7 +171,7 @@ fun DialogoPerfilDublador(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Trabalhos e papéis icônicos
+                // Trabalhos e papéis icônicos com pôsteres clicáveis
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -173,39 +184,148 @@ fun DialogoPerfilDublador(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "Outros Papéis Marcantes no Brasil:".t(),
-                        fontSize = 12.sp,
+                        text = "Outros Filmes & Papéis Marcantes:".t(),
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    papeisIconicos.forEach { papel ->
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "🎭 $papel",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
+                if (carregandoFilmografia) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.size(28.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                } else if (filmografia.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Toque abaixo para buscar os filmes deste dublador no catálogo.".t(),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(12.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        filmografia.forEach { trabalho ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                border = BorderStroke(0.6.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        CineHaptics.click(contexto)
+                                        onDispensar()
+                                        if (trabalho.idTmdb > 0) {
+                                            onAbrirMidia(trabalho.idTmdb, trabalho.tipo)
+                                        } else {
+                                            onBuscarNoApp(trabalho.titulo)
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    if (trabalho.urlPoster.isNotBlank()) {
+                                        AsyncImage(
+                                            model = trabalho.urlPoster,
+                                            contentDescription = trabalho.titulo,
+                                            modifier = Modifier
+                                                .width(42.dp)
+                                                .height(62.dp)
+                                                .clip(RoundedCornerShape(6.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(42.dp)
+                                                .height(62.dp)
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(Color(0xFF10B981).copy(alpha = 0.2f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Mic,
+                                                contentDescription = null,
+                                                tint = Color(0xFF10B981),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = trabalho.titulo,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "🎭 ${trabalho.personagem}",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF10B981),
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (trabalho.ano.isNotBlank() || trabalho.tipo.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${trabalho.ano} • ${trabalho.tipo}".trim(' ', '•'),
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                                    ) {
+                                        Text(
+                                            text = "Ver 🍿".t(),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF00E5FF),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Botão de Busca
+                // Botão de Busca Geral
                 Button(
                     onClick = {
                         onDispensar()
@@ -213,7 +333,7 @@ fun DialogoPerfilDublador(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -222,136 +342,12 @@ fun DialogoPerfilDublador(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Buscar Trabalhos no CineList".t(),
+                        text = "Buscar Todas no CineList".t(),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 13.sp
                     )
                 }
             }
         }
-    }
-}
-
-private fun obterPapeisIconicos(nomeDublador: String): List<String> {
-    val n = nomeDublador.lowercase()
-    return when {
-        n.contains("guilherme briggs") -> listOf(
-            "Buzz Lightyear (Toy Story)",
-            "Superman / Clark Kent (DC)",
-            "Cosmo (Os Padrinhos Mágicos)",
-            "Freakazoid!",
-            "Mickey Mouse (Disney)"
-        )
-        n.contains("wendell bezerra") -> listOf(
-            "Goku (Dragon Ball Z / Super)",
-            "Bob Esponja Calça Quadrada",
-            "Robert Pattinson (The Batman / Crepúsculo)",
-            "Edward Norton (Clube da Luta)"
-        )
-        n.contains("márcio seixas") || n.contains("marcio seixas") -> listOf(
-            "Batman / Bruce Wayne (DC Animated)",
-            "James Bond / Sean Connery",
-            "Sr. Incrível (Os Incríveis)",
-            "Spock (Jornada nas Estrelas)"
-        )
-        n.contains("manolo rey") -> listOf(
-            "Sonic the Hedgehog",
-            "Peter Parker / Homem-Aranha (Tobey Maguire)",
-            "Michael J. Fox (De Volta Para o Futuro)",
-            "Will Smith (Um Maluco no Pedaço)"
-        )
-        n.contains("mauro ramos") -> listOf(
-            "Shrek (Shrek Terceiro e Para Sempre)",
-            "Pumba (O Rei Leão)",
-            "Sulley (Monstros S.A.)",
-            "Gary Oldman (Harry Potter / Gordon)"
-        )
-        n.contains("mário jorge") || n.contains("mario jorge") -> listOf(
-            "Eddie Murphy (Um Tira da Pesada / Dr. Dolittle)",
-            "Burro (Shrek)",
-            "Luke Skywalker (Star Wars)",
-            "John Travolta (Pulp Fiction)"
-        )
-        n.contains("marco ribeiro") -> listOf(
-            "Tony Stark / Homem de Ferro (MCU)",
-            "O Máskara (Jim Carrey)",
-            "Tom Hanks (Náufrago / Forrest Gump)",
-            "Yusuke Urameshi (Yu Yu Hakusho)"
-        )
-        n.contains("alexandre moreno") -> listOf(
-            "Gato de Botas (Shrek / Filme Solo)",
-            "Marty (Madagascar)",
-            "Adam Sandler (Click / Como Se Fosse a 1ª Vez)",
-            "Pinky (Pinky e o Cérebro)"
-        )
-        n.contains("philippe maia") -> listOf(
-            "Sam Winchester (Supernatural)",
-            "Paul Walker / Brian O'Conner (Velozes & Furiosos)",
-            "Sherlock Holmes (Robert Downey Jr.)",
-            "Chris Rock (Todo Mundo Odeia o Chris)"
-        )
-        n.contains("mabel cezar") -> listOf(
-            "Jessie (Toy Story 2, 3 e 4)",
-            "Princesa Leia (Star Wars)",
-            "Jay Kyle (Eu, a Patroa e as Crianças)",
-            "Shannon Rutherford (Lost)"
-        )
-        n.contains("miriam ficher") -> listOf(
-            "Drew Barrymore (Como Se Fosse a 1ª Vez)",
-            "Sandra Bullock (Gravidade)",
-            "Botan (Yu Yu Hakusho)",
-            "Nicole Kidman (Moulin Rouge)"
-        )
-        n.contains("úrsula bezerra") || n.contains("ursula bezerra") -> listOf(
-            "Naruto Uzumaki (Naruto / Shippuden)",
-            "Goku criança (Dragon Ball clássico)",
-            "Sailor Chibi Moon"
-        )
-        n.contains("tata guarnieri") || n.contains("tatá guarnieri") -> listOf(
-            "Seiya de Pégaso (Cavaleiros do Zodíaco)",
-            "Jackie Chan (As Aventuras de Jackie Chan)",
-            "Kenshin Himura (Samurai X)"
-        )
-        n.contains("hermes baroli") -> listOf(
-            "Seiya de Pégaso (Saga de Hades / Filmes)",
-            "Ashton Kutcher (Efeito Borboleta)",
-            "Roy Mustang (Fullmetal Alchemist)"
-        )
-        n.contains("letícia quinto") || n.contains("leticia quinto") -> listOf(
-            "Saori Kido / Atena (Cavaleiros do Zodíaco)",
-            "Sandy Bochechas (Bob Esponja)",
-            "Riza Hawkeye (Fullmetal Alchemist)"
-        )
-        n.contains("garcia júnior") || n.contains("garcia junior") -> listOf(
-            "He-Man (Mestres do Universo)",
-            "Arnold Schwarzenegger (Exterminador do Futuro)",
-            "Pica-Pau",
-            "Capitão América / Steve Rogers (Animação)"
-        )
-        n.contains("isaac bardavid") -> listOf(
-            "Wolverine / Logan (Hugh Jackman / X-Men)",
-            "Esqueleto (He-Man)",
-            "Tigrão (Ursinho Pooh)",
-            "Odin (Anthony Hopkins)"
-        )
-        n.contains("orlando drummond") -> listOf(
-            "Scooby-Doo",
-            "Alf, o ETeimoso",
-            "Popeye",
-            "Vingador (Caverna do Dragão)"
-        )
-        n.contains("selton mello") -> listOf(
-            "Kuzco (A Nova Onda do Imperador)",
-            "Daniel LaRusso (Karatê Kid clássico)",
-            "Charlie Brown"
-        )
-        n.contains("rodrigo santoro") -> listOf(
-            "Stuart Little (Voz brasileira oficial)",
-            "Klaus (A Lenda de Klaus)"
-        )
-        else -> listOf(
-            "Voz consagrada na teledramaturgia e cinema brasileiro",
-            "Trabalhos reconhecidos em séries, animes e animações"
-        )
     }
 }

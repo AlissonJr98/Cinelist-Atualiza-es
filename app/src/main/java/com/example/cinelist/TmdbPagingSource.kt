@@ -27,26 +27,62 @@ class TmdbPagingSource(
             val totalPaginas: Int
 
             if (query.isNotBlank()) {
+                val listaBuscaPadrao: List<TmdbFilme>
+                var totalPag: Int
                 when {
                     tipo.equals("Filme", ignoreCase = true) -> {
                         val resp = apiService.buscarFilme(query, paginaAtual)
-                        listaBruta = resp.resultados.map { it.copy(mediaType = "movie") }
-                        totalPaginas = resp.totalPaginas
+                        listaBuscaPadrao = resp.resultados.map { it.copy(mediaType = "movie") }
+                        totalPag = resp.totalPaginas
                     }
                     tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true) ||
                             tipo.equals("Novela", ignoreCase = true) || tipo.equals("Dorama", ignoreCase = true) -> {
                         val resp = apiService.buscarSerieOuAnime(query, paginaAtual)
-                        listaBruta = resp.resultados.map { it.copy(mediaType = "tv") }
-                        totalPaginas = resp.totalPaginas
+                        listaBuscaPadrao = resp.resultados.map { it.copy(mediaType = "tv") }
+                        totalPag = resp.totalPaginas
                     }
                     else -> {
                         val resp = apiService.buscarMulti(query, paginaAtual)
-                        listaBruta = resp.resultados.filter {
+                        listaBuscaPadrao = resp.resultados.filter {
                             it.mediaType.equals("movie", ignoreCase = true) || it.mediaType.equals("tv", ignoreCase = true)
                         }
-                        totalPaginas = resp.totalPaginas
+                        totalPag = resp.totalPaginas
                     }
                 }
+
+                // 🌟 BUSCA INTELIGENTE POR ATOR / DIRETOR (Ex: "Jackie Chan", "Keanu Reeves", etc.)
+                val obrasDoArtista = if (paginaAtual == 1) {
+                    try {
+                        val buscaPessoa = apiService.buscarPessoa(query, 1)
+                        val ator = buscaPessoa.resultados.firstOrNull { it.popularidade > 1.2 || it.nome.contains(query, ignoreCase = true) }
+                            ?: buscaPessoa.resultados.firstOrNull()
+                        if (ator != null) {
+                            val creditos = apiService.obterCreditosPessoa(ator.id)
+                            val atuacoes = creditos.atuacoes?.map { it.paraTmdbFilme() } ?: emptyList()
+                            val producoes = creditos.producoes?.map { it.paraTmdbFilme() } ?: emptyList()
+                            val combinados = (atuacoes + producoes)
+                                .distinctBy { it.idTmdb }
+                                .filter { midia ->
+                                    when {
+                                        tipo.equals("Filme", ignoreCase = true) -> !midia.ehSerie
+                                        tipo.equals("Série", ignoreCase = true) || tipo.equals("Anime", ignoreCase = true) -> midia.ehSerie
+                                        else -> true
+                                    }
+                                }
+                                .sortedByDescending { it.mediaVotos * 20.0 + (it.dataLancamento?.take(4)?.toDoubleOrNull() ?: 1970.0) }
+                            combinados
+                        } else emptyList()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                } else emptyList()
+
+                listaBruta = if (obrasDoArtista.isNotEmpty()) {
+                    (obrasDoArtista + listaBuscaPadrao).distinctBy { it.idTmdb }
+                } else {
+                    listaBuscaPadrao
+                }
+                totalPaginas = if (obrasDoArtista.isNotEmpty()) maxOf(totalPag, 1) else totalPag
             } else {
                 // Ajusta a ordenação de data para o padrão correto do TMDB dependendo se é filme ou série
                 val sortFilme = if (sortBy == "primary_release_date.desc" || sortBy.contains("date", ignoreCase = true)) "primary_release_date.desc" else sortBy

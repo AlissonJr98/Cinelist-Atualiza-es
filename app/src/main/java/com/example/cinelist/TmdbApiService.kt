@@ -27,6 +27,13 @@ interface TmdbApiService {
         @Query("language") idioma: String = "pt-BR"
     ): TmdbResposta
 
+    @GET("search/person")
+    suspend fun buscarPessoa(
+        @Query("query") query: String,
+        @Query("page") pagina: Int = 1,
+        @Query("language") idioma: String = "pt-BR"
+    ): TmdbPessoaResposta
+
     @GET("movie/now_playing")
     suspend fun obterFilmesEmCartaz(
         @Query("page") pagina: Int = 1,

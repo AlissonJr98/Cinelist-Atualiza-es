@@ -440,6 +440,7 @@ fun TelaPrincipal(
     var mostrarDialogoRadarEstreias by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylistsPrincipal by remember { mutableStateOf(false) }
     var filtroApenasMeusStreamingsMinhaLista by rememberSaveable { mutableStateOf(false) }
+    val artistaDestaqueBusca by viewModel.artistaDestaqueBusca.collectAsState()
 
     val nomeListaAtiva = if (casalIdAtivo.isBlank()) "Minha Lista Pessoal".t() else gruposSalvos.find { it.grupoId == casalIdAtivo }?.nomeGrupo?.ifBlank { "Sala Compartilhada".t() } ?: "Sala Compartilhada".t()
     val membrosSala by viewModel.membrosGrupoAtivo.collectAsState(initial = emptyList())
@@ -1964,6 +1965,10 @@ fun TelaPrincipal(
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
+                                            if (artistaDestaqueBusca != null) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                CardArtistaDestaque(artista = artistaDestaqueBusca!!)
+                                            }
                                         }
 
                                         // 🆕 Seção de Lançamentos por Streaming estilo JustWatch (Imagem 1)
@@ -2037,6 +2042,10 @@ fun TelaPrincipal(
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
                                             }
+                                            if (artistaDestaqueBusca != null) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                CardArtistaDestaque(artista = artistaDestaqueBusca!!)
+                                            }
                                         }
                                         items(count = resultadosPaginadosApi.itemCount, key = { index -> val item = resultadosPaginadosApi.peek(index); if (item != null) "${item.mediaType ?: "midia"}_${item.idTmdb}_$index" else index }, contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }) { index ->
                                             val item = resultadosPaginadosApi[index]
@@ -2081,6 +2090,10 @@ fun TelaPrincipal(
                                                     )
                                                     AssistChip(onClick = { focusManager.clearFocus(); mostrarBottomSheetFiltrosDescobrir = true }, label = { Text(if (quantidadeFiltrosAtivosDescobrir > 0) "${"Filtros".t()} ($quantidadeFiltrosAtivosDescobrir)" else "Filtros".t(), fontSize = 12.sp, fontWeight = FontWeight.Bold) }, leadingIcon = { Icon(Icons.Default.FilterList, "Filtros".t(), tint = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp)) }, colors = AssistChipDefaults.assistChipColors(containerColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, labelColor = if (quantidadeFiltrosAtivosDescobrir > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface))
                                                 }
+                                            }
+                                            if (artistaDestaqueBusca != null) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                CardArtistaDestaque(artista = artistaDestaqueBusca!!)
                                             }
                                         }
                                         items(count = resultadosPaginadosApi.itemCount, key = { index -> val item = resultadosPaginadosApi.peek(index); if (item != null) "${item.mediaType ?: "midia"}_${item.idTmdb}_$index" else index }, contentType = resultadosPaginadosApi.itemContentType { "tmdb_media" }) { index ->
@@ -3296,4 +3309,95 @@ fun DialogoCineBot(
             TextButton(onClick = onDispensar) { Text("Fechar".t()) }
         }
     )
+}
+
+@Composable
+fun CardArtistaDestaque(
+    artista: TmdbPessoaItem
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1035).copy(alpha = 0.9f)
+        ),
+        border = BorderStroke(
+            1.dp,
+            Brush.horizontalGradient(
+                listOf(Color(0xFF8B5CF6), Color(0xFF00E5FF))
+            )
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (!artista.caminhoFoto.isNullOrBlank()) {
+                AsyncImage(
+                    model = artista.urlFoto,
+                    contentDescription = artista.nome,
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFF8B5CF6), Color(0xFF00E5FF))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = artista.nome.take(2).uppercase(),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = artista.nome,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFF00E5FF).copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = if (artista.departamento.equals("Directing", ignoreCase = true)) "Direção".t() else "Ator / Artista".t(),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00E5FF),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Filmografia integrada à sua pesquisa 🎬".t(),
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.75f)
+                )
+            }
+        }
+    }
 }

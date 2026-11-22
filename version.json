@@ -1,6 +1,6 @@
 {
-  "versionCode": 128,
-  "versionName": "2.0.88",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.88/CineList-v2.0.88.apk",
-  "changelog": "Botao de compartilhar sempre visivel ao abrir qualquer midia e novo modal de compartilhamento multifacetado (WhatsApp, CineCard HD, Stories, Twitter/X e copiar ficha)."
+  "versionCode": 129,
+  "versionName": "2.0.89",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Busca inteligente por atores/diretores, filmografia interativa de dubladores com posteres e repaginacao completa da tela de detalhes em 5 abas com barra flutuante de acao fixa."
 }
