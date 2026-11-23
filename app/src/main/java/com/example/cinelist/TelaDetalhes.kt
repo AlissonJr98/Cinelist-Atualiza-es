@@ -1108,7 +1108,7 @@ fun TelaDetalhes(
                                     } else {
                                         if ((detalhesApi?.duracaoMinutos ?: 0) > 0) "${detalhesApi?.duracaoMinutos} min" else "~$duracaoPadraoMin min"
                                     }
-                                    val notaPublico = if (detalhesApi != null) String.format("%.1f ★", detalhesApi?.notaCritica) else "..."
+                                    val notaPublico = if (detalhesApi != null) String.format(java.util.Locale.US, "%.1f ★", detalhesApi?.notaCritica ?: 0.0) else "..."
 
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text("Lançamento".t(), color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)

@@ -30,10 +30,29 @@ class CineListApplication : Application(), ImageLoaderFactory {
             Log.w("CineListApplication", "Falha ao inicializar idioma do app", e)
         }
 
-        // 🛡️ Log defensivo de exceções para depuração de qualquer OEM
+        // 🛡️ Log defensivo de exceções e persistência de crash para diagnóstico e auto-recuperação
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.e("CineListFatal", "Exceção fatal capturada na thread ${thread.name}: ${throwable.message}", throwable)
+            try {
+                val sw = java.io.StringWriter()
+                val pw = java.io.PrintWriter(sw)
+                throwable.printStackTrace(pw)
+                val stackTraceStr = sw.toString()
+
+                val crashFile = java.io.File(filesDir, "ultimo_crash.txt")
+                crashFile.writeText("Thread: ${thread.name}\nTimestamp: ${System.currentTimeMillis()}\nErro: ${throwable.message}\n\n$stackTraceStr")
+
+                val prefs = getSharedPreferences("CineListCrashPrefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit()
+                    .putBoolean("houve_crash_recente", true)
+                    .putString("ultimo_erro", throwable.message ?: "Desconhecido")
+                    .putString("ultimo_stacktrace", stackTraceStr)
+                    .putLong("ultimo_timestamp", System.currentTimeMillis())
+                    .apply()
+            } catch (e: Throwable) {
+                Log.e("CineListFatal", "Falha ao gravar arquivo de crash", e)
+            }
             defaultHandler?.uncaughtException(thread, throwable)
         }
 

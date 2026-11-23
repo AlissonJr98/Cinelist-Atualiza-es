@@ -25,8 +25,8 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 130
-        versionName = "2.0.90"
+        versionCode = 131
+        versionName = "2.0.91"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -60,6 +60,8 @@ android {
                 keyPassword = localProperties.getProperty("key.password")
                     ?: System.getenv("KEY_PASSWORD")
                     ?: "#eLena2023"
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }

@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 130,
-  "versaoNome": "2.0.90",
-  "notas": "Remocao de informacoes e botoes duplicados na tela de detalhes (favorito e compartilhar unificados no topo, selo de dublagem unico) e perfil de dublador simplificado e direto.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.90/CineList-v2.0.90.apk"
+  "versaoCodigo": 131,
+  "versaoNome": "2.0.91",
+  "notas": "Correcao critica de inicializacao do aplicativo, assinatura hibrida v1+v2 para Xiaomi/MIUI, protecao contra falhas no carregamento de estado e melhorias de seguranca.",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

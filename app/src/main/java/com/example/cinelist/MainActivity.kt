@@ -198,31 +198,23 @@ override fun attachBaseContext(newBase: Context) {
 }
 
 override fun onCreate(savedInstanceState: Bundle?) {
-super.onCreate(savedInstanceState)
-IdiomaAppManager.inicializar(this)
+    val crashPrefs = getSharedPreferences("CineListCrashPrefs", Context.MODE_PRIVATE)
+    val houveCrashRecente = crashPrefs.getBoolean("houve_crash_recente", false)
+    val estadoParaRestaurar = if (houveCrashRecente) {
+        android.util.Log.w("MainActivity", "Detectado crash recente no app. Restaurando com estado limpo para evitar loop de falhas.")
+        crashPrefs.edit().putBoolean("houve_crash_recente", false).apply()
+        null
+    } else {
+        savedInstanceState
+    }
+    super.onCreate(estadoParaRestaurar)
+    IdiomaAppManager.inicializar(this)
 
-        try {
-            val permissoesParaPedir = mutableListOf<String>()
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    permissoesParaPedir.add(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-            if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                permissoesParaPedir.add(android.Manifest.permission.RECORD_AUDIO)
-            }
-            if (permissoesParaPedir.isNotEmpty()) {
-                requestPermissions(permissoesParaPedir.toTypedArray(), 101)
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-
-try {
-    enableEdgeToEdge()
-} catch (e: Throwable) {
-    android.util.Log.w("MainActivity", "EdgeToEdge indisponível: ${e.message}")
-}
+    try {
+        enableEdgeToEdge()
+    } catch (e: Throwable) {
+        android.util.Log.w("MainActivity", "EdgeToEdge indisponível: ${e.message}")
+    }
 
 agendarChecagemAtualizacaoSegundoPlano(this)
 
@@ -329,6 +321,29 @@ fun ConfiguracaoNavegacao() {
 val navController = rememberNavController()
 
 val contexto = LocalContext.current
+
+val permissionLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.RequestMultiplePermissions()
+) { /* Permissões de notificações e microfone tratadas */ }
+
+LaunchedEffect(Unit) {
+    try {
+        val permissoesParaPedir = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(contexto, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissoesParaPedir.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+        if (ContextCompat.checkSelfPermission(contexto, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            permissoesParaPedir.add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (permissoesParaPedir.isNotEmpty()) {
+            permissionLauncher.launch(permissoesParaPedir.toTypedArray())
+        }
+    } catch (e: Throwable) {
+        android.util.Log.w("MainActivity", "Falha segura ao solicitar permissões", e)
+    }
+}
 
 val usuarioLogado = remember {
     val u = FirebaseAuth.getInstance().currentUser
