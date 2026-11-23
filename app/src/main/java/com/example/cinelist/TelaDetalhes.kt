@@ -1202,158 +1202,7 @@ fun TelaDetalhes(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            if (abaDetalhesSelecionada == 0 || abaDetalhesSelecionada == 1) {
-                            // 🎙️ TAG VISUAL DE DUBLAGEM & ÁUDIO
-                            val statusDub = infoDublagem?.status ?: StatusDublagem.DESCONHECIDO
-                            val corFundoDub = when (statusDub) {
-                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.15f)
-                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.15f)
-                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.15f)
-                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            }
-                            val corTextoDub = when (statusDub) {
-                                StatusDublagem.DUBLADO -> Color(0xFF10B981)
-                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700)
-                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA)
-                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.secondary
-                            }
-                            val bordaCorDub = when (statusDub) {
-                                StatusDublagem.DUBLADO -> Color(0xFF10B981).copy(alpha = 0.5f)
-                                StatusDublagem.AUDIO_ORIGINAL_PT -> Color(0xFFFFD700).copy(alpha = 0.5f)
-                                StatusDublagem.APENAS_LEGENDADO -> Color(0xFF60A5FA).copy(alpha = 0.5f)
-                                StatusDublagem.DESCONHECIDO -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                            }
-                            val textoTagDub = when (statusDub) {
-                                StatusDublagem.DUBLADO -> "🎙️ Dublado PT-BR"
-                                StatusDublagem.AUDIO_ORIGINAL_PT -> "🇧🇷 Áudio Original"
-                                StatusDublagem.APENAS_LEGENDADO -> "💬 Legendado"
-                                StatusDublagem.DESCONHECIDO -> if (carregandoDublagem) "Consultando dublagem..." else "🎙️ Dublagem a confirmar"
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = corFundoDub,
-                                border = BorderStroke(1.dp, bordaCorDub),
-                                modifier = Modifier.padding(horizontal = 2.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = textoTagDub.t(),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = corTextoDub
-                                    )
-                                    val est = infoDublagem?.estudio
-                                    if (!est.isNullOrBlank() && statusDub != StatusDublagem.AUDIO_ORIGINAL_PT) {
-                                        Text(
-                                            text = "• $est",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = corTextoDub.copy(alpha = 0.85f),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-
-                            val horaTerminoTexto = remember(duracaoPadraoMin, ehSerieOuAnime) {
-                                val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, duracaoPadraoMin) }
-                                val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                val horaFormatada = sdf.format(cal.time)
-                                if (ehSerieOuAnime) {
-                                    "${"Próximo episódio: se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
-                                } else {
-                                    "${"Se começar agora, termina às".t()} $horaFormatada ($duracaoPadraoMin ${"min".t()})"
-                                }
-                            }
-
-                            if (horaTerminoTexto.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "⏱️ $horaTerminoTexto",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                            }
-                            } // Fim de if (abaDetalhesSelecionada == 0 || 1)
-
                             if (abaDetalhesSelecionada == 2) {
-                            // 🚀 SELO DE CENAS PÓS-CRÉDITOS (APENAS PARA FILMES)
-                            if (!ehSerieOuAnime && temCenaPosCreditos != null) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                if (temCenaPosCreditos == true) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(Icons.Default.MovieFilter, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                            Text("🍿 Cenas Pós-Créditos: Fique até o fim dos créditos!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                        }
-                                    }
-                                } else {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
-                                            Text("✅ Sem cenas pós-créditos — Pode desligar a TV!".t(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 🚀 SELO DE STATUS DA SÉRIE (CANCELADA / FINALIZADA)
-                            val statusTextoSelado = detalhesApi?.statusSeloTexto
-                            val statusApiStr = detalhesApi?.statusSerieApi.orEmpty()
-                            val ehCanceladaSerie = statusApiStr.equals("Canceled", ignoreCase = true)
-                            if (ehSerieOuAnime && !statusTextoSelado.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Surface(
-                                    color = if (ehCanceladaSerie) Color(0xFFFF4C4C).copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (ehCanceladaSerie) Icons.Default.Warning else Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = if (ehCanceladaSerie) Color(0xFFFF5252) else MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Text(
-                                            text = statusTextoSelado.t(),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
-                                }
-                            }
-
                             // 🚀 DADOS FINANCEIROS & ROI (ORÇAMENTO, BILHETERIA E LUCRO)
                             if (!ehSerieOuAnime && ((detalhesApi?.orcamento ?: 0L) > 0L || (detalhesApi?.bilheteria ?: 0L) > 0L)) {
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1660,156 +1509,63 @@ fun TelaDetalhes(
                                 }
                             }
 
-                            // 📊 ORÇAMENTO, BILHETERIA E RENTABILIDADE
-                            if (detalhesApi != null && ((detalhesApi?.orcamento ?: 0L) > 0L || (detalhesApi?.bilheteria ?: 0L) > 0L)) {
+                            // 🚀 BOTÃO ADICIONAR À LISTA (CASO NÃO SALVA)
+                            if (midiaSalva == null) {
                                 Spacer(modifier = Modifier.height(10.dp))
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                Button(
+                                    onClick = {
+                                        val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
+                                            ?: provedoresStreaming.firstOrNull()?.nomeProvedor
+                                            ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
+
+                                        val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
+                                        val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
+                                        val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
+
+                                        val novaMidia = Midia(
+                                            id = 0,
+                                            idTmdb = idRealBuscaApi,
+                                            titulo = tituloParaSalvar,
+                                            tipo = tipoRealUtilizado,
+                                            nota = 0,
+                                            temporadaAtual = 1,
+                                            episodioAtual = 1,
+                                            minutoParado = 0,
+                                            jaEncerrou = false,
+                                            status = StatusMidia.QUERO_ASSISTIR.valor,
+                                            sinopse = sinopseParaSalvar,
+                                            imagemCapa = capaParaSalvar,
+                                            genero = detalhesApi?.generoTexto ?: "",
+                                            plataforma = streamingPrincipal,
+                                            favorito = ehFavorito,
+                                            listaCustomizada = "Geral",
+                                            isCasal = isModoCasal,
+                                            casalId = casalIdAtivo
+                                        )
+                                        viewModel.inserir(novaMidia)
+                                        val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
+                                        Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
+                                    },
+                                    enabled = !jaExisteNaLista,
+                                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = if (jaExisteNaLista) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "💰 Bilheteria Mundial".t(),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            val multiplicador = detalhesApi?.multiplicadorBilheteria ?: 0.0
-                                            if (multiplicador > 0.0) {
-                                                val seloRoi = when {
-                                                    multiplicador >= 3.0 -> "🏆 Blockbuster"
-                                                    multiplicador >= 2.0 -> "✨ Sucesso Comercial"
-                                                    multiplicador >= 1.0 -> "📊 Lucrativo"
-                                                    else -> "📉 Alto Custo"
-                                                }
-                                                Surface(
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    color = if (multiplicador >= 2.0) Color(0xFF10B981).copy(alpha = 0.2f) else Color(0xFFF59E0B).copy(alpha = 0.2f)
-                                                ) {
-                                                    Text(
-                                                        text = seloRoi.t(),
-                                                        fontSize = 10.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (multiplicador >= 2.0) Color(0xFF10B981) else Color(0xFFF59E0B),
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceAround
-                                        ) {
-                                            if ((detalhesApi?.orcamento ?: 0L) > 0L) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text("Orçamento".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-                                                    Text(detalhesApi?.orcamentoFormatado ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                                }
-                                            }
-                                            if ((detalhesApi?.bilheteria ?: 0L) > 0L) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text("Bilheteria".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-                                                    Text(detalhesApi?.bilheteriaFormatada ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
-                                                }
-                                            }
-                                            if ((detalhesApi?.multiplicadorBilheteria ?: 0.0) > 0.0) {
-                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                    Text("Rentabilidade".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-                                                    Text(String.format(java.util.Locale.US, "%.1fx", detalhesApi?.multiplicadorBilheteria), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 🏢 ESTÚDIOS E PRODUTORAS
-                            val produtoras = detalhesApi?.produtoras ?: emptyList()
-                            val emissoras = detalhesApi?.emissoras ?: emptyList()
-                            if (produtoras.isNotEmpty() || emissoras.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Estúdios:".t(), fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
-                                    (produtoras.take(4).map { it.nome } + emissoras.take(3).map { it.nome }).distinct().forEach { nomeEstudio ->
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                                        ) {
-                                            Text(
-                                                text = nomeEstudio,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 🚀 BOTÕES TRILHA SONORA (SPOTIFY & YOUTUBE MUSIC)
-                            val tituloParaBuscaOst = midiaSalva?.titulo ?: detalhesApi?.titulo ?: ""
-                            if (tituloParaBuscaOst.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack Original OST")
-                                            val spotifyIntent = Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query")).apply {
-                                                setPackage("com.spotify.music")
-                                            }
-                                            try {
-                                                contexto.startActivity(spotifyIntent)
-                                            } catch (ex: Exception) {
-                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$query"))
-                                                contexto.startActivity(intentWeb)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f).height(38.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 4.dp)
-                                    ) {
-                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFF1DB954), modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Spotify 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-
-                                    OutlinedButton(
-                                        onClick = {
-                                            val query = Uri.encode("$tituloParaBuscaOst Soundtrack OST")
-                                            val ytmIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query")).apply {
-                                                setPackage("com.google.android.apps.youtube.music")
-                                            }
-                                            try {
-                                                contexto.startActivity(ytmIntent)
-                                            } catch (ex: Exception) {
-                                                val intentWeb = Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=$query"))
-                                                contexto.startActivity(intentWeb)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f).height(38.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 4.dp)
-                                    ) {
-                                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color(0xFFFF0000), modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("YT Music 🎵", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
+                                    Icon(
+                                        imageVector = if (jaExisteNaLista) Icons.Default.Check else Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (jaExisteNaLista) "JÁ NA SUA LISTA".t() else (if (isModoCasal) "+ ADICIONAR À SALA".t() else "+ ADICIONAR À LISTA".t()),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
 
@@ -3900,217 +3656,7 @@ fun TelaDetalhes(
                             }
                             } // Fim de Aba 4 (Comunidade)
 
-                            Spacer(modifier = Modifier.height(96.dp))
-                        }
-                    }
-
-                    // 🌟 BARRA DE AÇÃO FLUTUANTE FIXA (STICKY FLOATING ACTION BAR)
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                        border = BorderStroke(
-                            1.dp,
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFF00E5FF).copy(alpha = 0.5f),
-                                    Color(0xFF8B5CF6).copy(alpha = 0.4f),
-                                    Color(0xFFFF007F).copy(alpha = 0.5f)
-                                )
-                            )
-                        ),
-                        shadowElevation = 14.dp
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            if (midiaSalva == null) {
-                                Button(
-                                    onClick = {
-                                        val streamingPrincipal = provedoresGratisFiltrados.firstOrNull()?.nomeProvedor
-                                            ?: provedoresAssinaturaFiltrados.firstOrNull()?.nomeProvedor
-                                            ?: provedoresStreaming.firstOrNull()?.nomeProvedor
-                                            ?: (if (ehSerieOuAnime) "TV / Original" else "Cinema")
-
-                                        val tituloParaSalvar = detalhesApi?.titulo ?: "Título"
-                                        val capaParaSalvar = if (!detalhesApi?.urlPosterVertical.isNullOrBlank()) detalhesApi?.urlPosterVertical ?: "" else ""
-                                        val sinopseParaSalvar = detalhesApi?.sinopse ?: ""
-
-                                        val novaMidia = Midia(
-                                            id = 0,
-                                            idTmdb = idRealBuscaApi,
-                                            titulo = tituloParaSalvar,
-                                            tipo = tipoRealUtilizado,
-                                            nota = 0,
-                                            temporadaAtual = 1,
-                                            episodioAtual = 1,
-                                            minutoParado = 0,
-                                            jaEncerrou = false,
-                                            status = StatusMidia.QUERO_ASSISTIR.valor,
-                                            sinopse = sinopseParaSalvar,
-                                            imagemCapa = capaParaSalvar,
-                                            genero = detalhesApi?.generoTexto ?: "",
-                                            plataforma = streamingPrincipal,
-                                            favorito = ehFavorito,
-                                            listaCustomizada = "Geral",
-                                            isCasal = isModoCasal,
-                                            casalId = casalIdAtivo
-                                        )
-                                        viewModel.inserir(novaMidia)
-                                        val mensagemToast = if (isModoCasal) "Adicionado à sala: $nomeSalaAtiva 🍿!" else "Adicionado à sua lista!"
-                                        Toast.makeText(contexto, mensagemToast, Toast.LENGTH_SHORT).show()
-                                    },
-                                    enabled = !jaExisteNaLista,
-                                    modifier = Modifier.weight(1f).height(46.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = if (jaExisteNaLista) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (jaExisteNaLista) Icons.Default.Check else Icons.Default.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (jaExisteNaLista) "JÁ NA SUA LISTA".t() else (if (isModoCasal) "+ ADICIONAR À SALA".t() else "+ ADICIONAR À LISTA".t()),
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            } else {
-                                var expandirMenuStatus by remember { mutableStateOf(false) }
-
-                                Box(modifier = Modifier.weight(1f)) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = when (statusAtual) {
-                                            StatusMidia.CONCLUIDO -> Color(0xFF10B981).copy(alpha = 0.2f)
-                                            StatusMidia.ASSISTINDO -> Color(0xFF3B82F6).copy(alpha = 0.2f)
-                                            else -> MaterialTheme.colorScheme.surfaceVariant
-                                        },
-                                        border = BorderStroke(
-                                            1.dp,
-                                            when (statusAtual) {
-                                                StatusMidia.CONCLUIDO -> Color(0xFF10B981)
-                                                StatusMidia.ASSISTINDO -> Color(0xFF3B82F6)
-                                                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                            }
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(46.dp)
-                                            .clickable { expandirMenuStatus = true }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                Text(
-                                                    text = when (statusAtual) {
-                                                        StatusMidia.CONCLUIDO -> "✅"
-                                                        StatusMidia.ASSISTINDO -> "▶️"
-                                                        else -> "🍿"
-                                                    },
-                                                    fontSize = 14.sp
-                                                )
-                                                Text(
-                                                    text = statusAtual.valor.t(),
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = when (statusAtual) {
-                                                        StatusMidia.CONCLUIDO -> Color(0xFF10B981)
-                                                        StatusMidia.ASSISTINDO -> Color(0xFF60A5FA)
-                                                        else -> MaterialTheme.colorScheme.onSurface
-                                                    }
-                                                )
-                                            }
-                                            Icon(
-                                                imageVector = Icons.Default.ArrowDropDown,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = expandirMenuStatus,
-                                        onDismissRequest = { expandirMenuStatus = false }
-                                    ) {
-                                        listOf(StatusMidia.QUERO_ASSISTIR, StatusMidia.ASSISTINDO, StatusMidia.CONCLUIDO).forEach { st ->
-                                            DropdownMenuItem(
-                                                text = { Text(st.valor.t(), fontWeight = if (st == statusAtual) FontWeight.Bold else FontWeight.Normal) },
-                                                onClick = {
-                                                    expandirMenuStatus = false
-                                                    statusAtual = st
-                                                    val concluido = st == StatusMidia.CONCLUIDO
-                                                    val usuarioLogado = FirebaseAuth.getInstance().currentUser
-                                                    val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
-                                                    val midiaAtualizada = midiaSalva.copy(
-                                                        status = st.valor,
-                                                        jaEncerrou = concluido,
-                                                        dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
-                                                        concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor
-                                                    )
-                                                    viewModel.atualizar(midiaAtualizada)
-                                                    if (st == StatusMidia.CONCLUIDO && isModoCasal) {
-                                                        viewModel.pararAssistirAgora()
-                                                    }
-                                                    CineHaptics.click(contexto)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            FilledTonalIconButton(
-                                onClick = {
-                                    CineHaptics.click(contexto)
-                                    ehFavorito = !ehFavorito
-                                    midiaSalva?.let {
-                                        viewModel.atualizar(it.copy(favorito = ehFavorito))
-                                    }
-                                },
-                                modifier = Modifier.size(46.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = if (ehFavorito) Color(0xFFFF007F).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (ehFavorito) Color(0xFFFF007F) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = if (ehFavorito) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = "Favorito".t(),
-                                    tint = if (ehFavorito) Color(0xFFFF007F) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            FilledTonalIconButton(
-                                onClick = {
-                                    CineHaptics.click(contexto)
-                                    mostrarModalCompartilhar = true
-                                },
-                                modifier = Modifier.size(46.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = Color(0xFF00E5FF).copy(alpha = 0.15f),
-                                    contentColor = Color(0xFF00E5FF)
-                                )
-                            ) {
-                                Icon(Icons.Default.Share, contentDescription = "Compartilhar Mídia".t())
-                            }
+                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
                 }
