@@ -26,12 +26,63 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                aplicarMigracao19Para20(db)
+            }
+        }
+
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_isCasal` ON `midias` (`isCasal`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_casalId` ON `midias` (`casalId`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_status` ON `midias` (`status`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_idTmdb` ON `midias` (`idTmdb`)")
+                aplicarMigracao20Para21(db)
+            }
+        }
+
+        val MIGRATION_19_21 = object : Migration(19, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                aplicarMigracao19Para20(db)
+                aplicarMigracao20Para21(db)
+            }
+        }
+
+        private fun aplicarMigracao19Para20(db: SupportSQLiteDatabase) {
+            adicionarColunaSeNaoExistir(db, "midias", "contadorRewatch", "INTEGER NOT NULL DEFAULT 0")
+            adicionarColunaSeNaoExistir(db, "midias", "tagsPersonalizadas", "TEXT NOT NULL DEFAULT ''")
+            adicionarColunaSeNaoExistir(db, "midias", "ehPrivado", "INTEGER NOT NULL DEFAULT 0")
+        }
+
+        private fun aplicarMigracao20Para21(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_isCasal` ON `midias` (`isCasal`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_casalId` ON `midias` (`casalId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_status` ON `midias` (`status`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_idTmdb` ON `midias` (`idTmdb`)")
+        }
+
+        private fun adicionarColunaSeNaoExistir(
+            db: SupportSQLiteDatabase,
+            tabela: String,
+            coluna: String,
+            tipoSql: String
+        ) {
+            try {
+                val cursor = db.query("PRAGMA table_info(`$tabela`)")
+                var existe = false
+                while (cursor.moveToNext()) {
+                    val nomeIndex = cursor.getColumnIndex("name")
+                    if (nomeIndex >= 0) {
+                        val nomeColuna = cursor.getString(nomeIndex)
+                        if (nomeColuna.equals(coluna, ignoreCase = true)) {
+                            existe = true
+                            break
+                        }
+                    }
+                }
+                cursor.close()
+                if (!existe) {
+                    db.execSQL("ALTER TABLE `$tabela` ADD COLUMN `$coluna` $tipoSql")
+                }
+            } catch (e: Throwable) {
+                android.util.Log.w("AppDatabase", "Aviso ao verificar/adicionar coluna $coluna na tabela $tabela: ${e.message}")
             }
         }
 
@@ -47,9 +98,13 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "midia_database"
                 )
-                    .addMigrations(MIGRATION_20_21)
-                    .fallbackToDestructiveMigration()
-                    .fallbackToDestructiveMigrationOnDowngrade()
+                    .addMigrations(
+                        MIGRATION_19_20,
+                        MIGRATION_20_21,
+                        MIGRATION_19_21
+                    )
+                    .fallbackToDestructiveMigration(true)
+                    .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()
 
                 INSTANCE = instance

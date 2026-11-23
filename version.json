@@ -1,6 +1,6 @@
 {
-  "versionCode": 131,
-  "versionName": "2.0.91",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.91/CineList-v2.0.91.apk",
-  "changelog": "Correcao critica de inicializacao do aplicativo, assinatura hibrida v1+v2 para Xiaomi/MIUI, protecao contra falhas no carregamento de estado e melhorias de seguranca."
+  "versionCode": 132,
+  "versionName": "2.0.92",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Correcao definitiva de migracao Room (19 para 21) preservando dados locais do usuario sem crash de inicializacao."
 }
