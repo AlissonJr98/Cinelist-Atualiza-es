@@ -2,5 +2,5 @@
   "versaoCodigo": 131,
   "versaoNome": "2.0.91",
   "notas": "Correcao critica de inicializacao do aplicativo, assinatura hibrida v1+v2 para Xiaomi/MIUI, protecao contra falhas no carregamento de estado e melhorias de seguranca.",
-  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.91/CineList-v2.0.91.apk"
 }
