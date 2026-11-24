@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 132,
-  "versaoNome": "2.0.92",
-  "notas": "Correcao definitiva de migracao Room (19 para 21) preservando dados locais do usuario sem crash de inicializacao.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.92/CineList-v2.0.92.apk"
+  "versaoCodigo": 133,
+  "versaoNome": "2.0.93",
+  "notas": "Correcao definitiva: pre-sanitizacao SQLite do schema 19 para 21, DDL 100% compativel com Room e blindagem contra travamento.",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

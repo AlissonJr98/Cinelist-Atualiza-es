@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -44,21 +45,46 @@ class MidiaRepository @Inject constructor(
     private var uidSincronizado: String? = null
 
     val todasAsMidias: Flow<List<Midia>> = midiaDao.buscarTodasAsMidias()
+        .catch { e ->
+            android.util.Log.e("MidiaRepository", "Erro seguro ao ler todas as mídias: ${e.message}", e)
+            emit(emptyList())
+        }
     val midiasPessoais: Flow<List<Midia>> = midiaDao.buscarMidiasPessoais()
+        .catch { e ->
+            android.util.Log.e("MidiaRepository", "Erro seguro ao ler mídias pessoais: ${e.message}", e)
+            emit(emptyList())
+        }
     val gruposSalvos: Flow<List<GrupoEntity>> = midiaDao.buscarTodosOsGrupos()
+        .catch { e ->
+            android.util.Log.e("MidiaRepository", "Erro seguro ao ler grupos: ${e.message}", e)
+            emit(emptyList())
+        }
 
     fun buscarMidiasPorGrupo(grupoId: String): Flow<List<Midia>> {
         return midiaDao.buscarMidiasPorGrupo(grupoId)
+            .catch { e ->
+                android.util.Log.e("MidiaRepository", "Erro seguro ao ler mídias do grupo $grupoId: ${e.message}", e)
+                emit(emptyList())
+            }
     }
 
-    suspend fun obterGrupoAtivoLocal(): GrupoEntity? {
-        return midiaDao.buscarGrupoAtivo()
+    suspend fun obterGrupoAtivoLocal(): GrupoEntity? = withContext(Dispatchers.IO) {
+        try {
+            midiaDao.buscarGrupoAtivo()
+        } catch (e: Throwable) {
+            android.util.Log.e("MidiaRepository", "Erro seguro ao obter grupo ativo: ${e.message}", e)
+            null
+        }
     }
 
-    suspend fun ativarGrupoLocal(grupoId: String) {
-        midiaDao.desativarTodosOsGrupos()
-        if (grupoId.isNotBlank()) {
-            midiaDao.definirGrupoAtivo(grupoId)
+    suspend fun ativarGrupoLocal(grupoId: String) = withContext(Dispatchers.IO) {
+        try {
+            midiaDao.desativarTodosOsGrupos()
+            if (grupoId.isNotBlank()) {
+                midiaDao.definirGrupoAtivo(grupoId)
+            }
+        } catch (e: Throwable) {
+            android.util.Log.e("MidiaRepository", "Erro seguro ao ativar grupo local: ${e.message}", e)
         }
     }
 
