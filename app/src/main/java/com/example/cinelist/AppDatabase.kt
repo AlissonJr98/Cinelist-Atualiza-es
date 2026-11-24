@@ -62,9 +62,26 @@ abstract class AppDatabase : RoomDatabase() {
          * copiando todos os dados existentes sem perda e sem conflitos de valores padrão.
          */
         fun migrarTabelaMidiasSegura(db: SupportSQLiteDatabase) {
+            executarMigracaoMidiasInternal(
+                execSQL = { db.execSQL(it) },
+                query = { sql -> db.query(sql) }
+            )
+        }
+
+        fun migrarTabelaMidiasSegura(db: SQLiteDatabase) {
+            executarMigracaoMidiasInternal(
+                execSQL = { db.execSQL(it) },
+                query = { sql -> db.rawQuery(sql, null) }
+            )
+        }
+
+        private fun executarMigracaoMidiasInternal(
+            execSQL: (String) -> Unit,
+            query: (String) -> android.database.Cursor
+        ) {
             try {
                 // 1. Cria a tabela intermediária com o DDL exato gerado pelo Room
-                db.execSQL("""
+                execSQL("""
                     CREATE TABLE IF NOT EXISTS `midias_migracao_temp` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `uuid` TEXT NOT NULL,
@@ -104,7 +121,7 @@ abstract class AppDatabase : RoomDatabase() {
                 // 2. Verifica quais colunas já existem na tabela original `midias`
                 val colunasExistentes = mutableSetOf<String>()
                 try {
-                    val cursor = db.query("PRAGMA table_info(`midias`)")
+                    val cursor = query("PRAGMA table_info(`midias`)")
                     while (cursor.moveToNext()) {
                         val nameIndex = cursor.getColumnIndex("name")
                         if (nameIndex >= 0) {
@@ -156,22 +173,22 @@ abstract class AppDatabase : RoomDatabase() {
                         colOuPadrao("ehPrivado", "0")
                     ).joinToString(", ")
 
-                    db.execSQL("INSERT OR IGNORE INTO `midias_migracao_temp` SELECT $selectCols FROM `midias`")
-                    db.execSQL("DROP TABLE IF EXISTS `midias`")
-                    db.execSQL("ALTER TABLE `midias_migracao_temp` RENAME TO `midias`")
+                    execSQL("INSERT OR IGNORE INTO `midias_migracao_temp` SELECT $selectCols FROM `midias`")
+                    execSQL("DROP TABLE IF EXISTS `midias`")
+                    execSQL("ALTER TABLE `midias_migracao_temp` RENAME TO `midias`")
                 } else {
-                    db.execSQL("ALTER TABLE `midias_migracao_temp` RENAME TO `midias`")
+                    execSQL("ALTER TABLE `midias_migracao_temp` RENAME TO `midias`")
                 }
 
                 // 3. Recria os índices oficiais do Room
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_isCasal` ON `midias` (`isCasal`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_casalId` ON `midias` (`casalId`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_status` ON `midias` (`status`)")
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_midias_idTmdb` ON `midias` (`idTmdb`)")
+                execSQL("CREATE INDEX IF NOT EXISTS `index_midias_isCasal` ON `midias` (`isCasal`)")
+                execSQL("CREATE INDEX IF NOT EXISTS `index_midias_casalId` ON `midias` (`casalId`)")
+                execSQL("CREATE INDEX IF NOT EXISTS `index_midias_status` ON `midias` (`status`)")
+                execSQL("CREATE INDEX IF NOT EXISTS `index_midias_idTmdb` ON `midias` (`idTmdb`)")
 
                 // 4. Garante que as outras tabelas do schema 21 existam
-                db.execSQL("CREATE TABLE IF NOT EXISTS `notificacoes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tipo` TEXT NOT NULL, `titulo` TEXT NOT NULL, `mensagem` TEXT NOT NULL, `dataCriacao` INTEGER NOT NULL, `lida` INTEGER NOT NULL, `idReferencia` INTEGER NOT NULL)")
-                db.execSQL("CREATE TABLE IF NOT EXISTS `grupos_compartilhados` (`grupoId` TEXT NOT NULL, `nomeGrupo` TEXT NOT NULL, `tipoGrupo` TEXT NOT NULL, `ativo` INTEGER NOT NULL, PRIMARY KEY(`grupoId`))")
+                execSQL("CREATE TABLE IF NOT EXISTS `notificacoes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tipo` TEXT NOT NULL, `titulo` TEXT NOT NULL, `mensagem` TEXT NOT NULL, `dataCriacao` INTEGER NOT NULL, `lida` INTEGER NOT NULL, `idReferencia` INTEGER NOT NULL)")
+                execSQL("CREATE TABLE IF NOT EXISTS `grupos_compartilhados` (`grupoId` TEXT NOT NULL, `nomeGrupo` TEXT NOT NULL, `tipoGrupo` TEXT NOT NULL, `ativo` INTEGER NOT NULL, PRIMARY KEY(`grupoId`))")
             } catch (e: Throwable) {
                 Log.e("AppDatabase", "Erro durante migração segura da tabela midias: ${e.message}", e)
             }
@@ -196,8 +213,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val versaoAtual = sqliteDb.version
                 Log.i("AppDatabase", "Versão SQLite detectada no arquivo: $versaoAtual (esperado: 21)")
                 if (versaoAtual in 1..20) {
-                    val supportDb = androidx.sqlite.db.framework.FrameworkSQLiteDatabase(sqliteDb)
-                    migrarTabelaMidiasSegura(supportDb)
+                    migrarTabelaMidiasSegura(sqliteDb)
                     sqliteDb.version = 21
                     Log.i("AppDatabase", "Banco migrado e atualizado com sucesso para versão 21 via pré-sanitização.")
                 }
