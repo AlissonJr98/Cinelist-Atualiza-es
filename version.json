@@ -1,6 +1,6 @@
-﻿{
-    "versionCode":  134,
-    "versionName":  "2.0.94",
-    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
-    "changelog":  "Correcao definitiva da inicializacao do banco de dados Room (eliminado conflito fatal de Builder e sincronizado identity_hash v21)."
+{
+  "versionCode": 134,
+  "versionName": "2.0.94",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.94/CineList-v2.0.94.apk",
+  "changelog": "Novas melhorias, correções e novidades adicionadas nesta versão."
 }
