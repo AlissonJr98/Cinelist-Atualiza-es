@@ -49,12 +49,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        // Migração universal para qualquer versão antiga de 1 a 20 para 21
-        val MIGRACAO_UNIVERSAL_ATE_21 = object : Migration(1, 21) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                migrarTabelaMidiasSegura(db)
-            }
-        }
+        // Lista de migrações completas cobrindo todas as versões anteriores (1..20 -> 21)
+        val TODAS_AS_MIGRACOES: Array<Migration> = (
+            (1..20).map { startVer ->
+                object : Migration(startVer, 21) {
+                    override fun migrate(db: SupportSQLiteDatabase) {
+                        migrarTabelaMidiasSegura(db)
+                    }
+                }
+            } + MIGRATION_19_20
+        ).toTypedArray()
 
         /**
          * Recriação oficial e padronizada da tabela `midias` no SQLite.
@@ -80,6 +84,9 @@ abstract class AppDatabase : RoomDatabase() {
             query: (String) -> android.database.Cursor
         ) {
             try {
+                // 0. Remove eventual tabela temporária residual de tentativa interrompida
+                execSQL("DROP TABLE IF EXISTS `midias_migracao_temp`")
+
                 // 1. Cria a tabela intermediária com o DDL exato gerado pelo Room
                 execSQL("""
                     CREATE TABLE IF NOT EXISTS `midias_migracao_temp` (
@@ -135,11 +142,11 @@ abstract class AppDatabase : RoomDatabase() {
 
                 if (colunasExistentes.isNotEmpty()) {
                     fun colOuPadrao(col: String, padrao: String): String {
-                        return if (colunasExistentes.contains(col.lowercase())) "`$col`" else "$padrao AS `$col`"
+                        return if (colunasExistentes.contains(col.lowercase())) "COALESCE(`$col`, $padrao) AS `$col`" else "$padrao AS `$col`"
                     }
 
                     val selectCols = listOf(
-                        colOuPadrao("id", "0"),
+                        if (colunasExistentes.contains("id")) "`id`" else "0 AS `id`",
                         colOuPadrao("uuid", "''"),
                         colOuPadrao("idTmdb", "0"),
                         colOuPadrao("titulo", "''"),
@@ -189,6 +196,10 @@ abstract class AppDatabase : RoomDatabase() {
                 // 4. Garante que as outras tabelas do schema 21 existam
                 execSQL("CREATE TABLE IF NOT EXISTS `notificacoes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tipo` TEXT NOT NULL, `titulo` TEXT NOT NULL, `mensagem` TEXT NOT NULL, `dataCriacao` INTEGER NOT NULL, `lida` INTEGER NOT NULL, `idReferencia` INTEGER NOT NULL)")
                 execSQL("CREATE TABLE IF NOT EXISTS `grupos_compartilhados` (`grupoId` TEXT NOT NULL, `nomeGrupo` TEXT NOT NULL, `tipoGrupo` TEXT NOT NULL, `ativo` INTEGER NOT NULL, PRIMARY KEY(`grupoId`))")
+
+                // 5. Atualiza o identity_hash oficial do Room para a versão 21
+                execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+                execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1e3e7b0c24bcffb087d2e62c004d5dbb')")
             } catch (e: Throwable) {
                 Log.e("AppDatabase", "Erro durante migração segura da tabela midias: ${e.message}", e)
             }
@@ -196,9 +207,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         /**
          * Verificação e saneamento prévio do arquivo SQLite ANTES de passar ao Room.
-         * Se o banco existente tiver versão anterior à 21, executa a migração em SQLite puro
-         * e atualiza o user_version para 21. Assim, o Room nem precisa tentar calcular migrações
-         * dinâmicas que podem falhar por discrepância de versão.
+         * Se o banco existente tiver versão anterior à 21 (ou mesmo se já estiver na 21 com hash antigo),
+         * executa a migração em SQLite puro e atualiza o user_version e o identity_hash para 21.
          */
         private fun sanitizarBancoPreRoom(context: Context) {
             try {
@@ -212,10 +222,10 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 val versaoAtual = sqliteDb.version
                 Log.i("AppDatabase", "Versão SQLite detectada no arquivo: $versaoAtual (esperado: 21)")
-                if (versaoAtual in 1..20) {
+                if (versaoAtual in 1..21) {
                     migrarTabelaMidiasSegura(sqliteDb)
                     sqliteDb.version = 21
-                    Log.i("AppDatabase", "Banco migrado e atualizado com sucesso para versão 21 via pré-sanitização.")
+                    Log.i("AppDatabase", "Banco migrado e sincronizado com sucesso para versão 21 via pré-sanitização.")
                 }
                 sqliteDb.close()
             } catch (e: Throwable) {
@@ -230,38 +240,32 @@ abstract class AppDatabase : RoomDatabase() {
          */
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                sanitizarBancoPreRoom(context.applicationContext)
-                try {
-                    construirInstancia(context.applicationContext)
-                } catch (e: Throwable) {
-                    Log.e("AppDatabase", "Falha na criação do Room, acionando fallback destrutivo seguro: ${e.message}", e)
+                INSTANCE ?: run {
+                    sanitizarBancoPreRoom(context.applicationContext)
                     try {
-                        context.applicationContext.deleteDatabase(DB_NAME)
-                    } catch (_: Throwable) {}
-                    construirInstancia(context.applicationContext)
+                        construirInstancia(context.applicationContext)
+                    } catch (e: Throwable) {
+                        Log.e("AppDatabase", "Falha na criação do Room, acionando fallback destrutivo seguro: ${e.message}", e)
+                        try {
+                            context.applicationContext.deleteDatabase(DB_NAME)
+                        } catch (_: Throwable) {}
+                        construirInstancia(context.applicationContext)
+                    }
                 }
             }
         }
 
         private fun construirInstancia(context: Context): AppDatabase {
-            val builder = Room.databaseBuilder(
+            val instance = Room.databaseBuilder(
                 context,
                 AppDatabase::class.java,
                 DB_NAME
             )
-                .addMigrations(
-                    MIGRATION_19_20,
-                    MIGRATION_20_21,
-                    MIGRATION_19_21,
-                    MIGRACAO_UNIVERSAL_ATE_21
-                )
+                .addMigrations(*TODAS_AS_MIGRACOES)
                 .fallbackToDestructiveMigration(true)
                 .fallbackToDestructiveMigrationOnDowngrade(true)
+                .build()
 
-            val versoesAntigas = (1..20).toList().toIntArray()
-            builder.fallbackToDestructiveMigrationFrom(*versoesAntigas)
-
-            val instance = builder.build()
             INSTANCE = instance
             return instance
         }

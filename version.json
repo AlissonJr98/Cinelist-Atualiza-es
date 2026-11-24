@@ -1,6 +1,6 @@
-{
-  "versionCode": 133,
-  "versionName": "2.0.93",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.93/CineList-v2.0.93.apk",
-  "changelog": "Correcao definitiva: pre-sanitizacao SQLite do schema 19 para 21, DDL 100% compativel com Room e blindagem contra travamento."
+﻿{
+    "versionCode":  134,
+    "versionName":  "2.0.94",
+    "apkUrl":  "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+    "changelog":  "Correcao definitiva da inicializacao do banco de dados Room (eliminado conflito fatal de Builder e sincronizado identity_hash v21)."
 }

@@ -3,6 +3,7 @@ package com.example.cinelist
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,7 +16,15 @@ class NotificacaoRepository @Inject constructor(
     private val auth = FirebaseAuth.getInstance()
 
     val todasNotificacoes: Flow<List<NotificacaoEntity>> = notificacaoDao.buscarTodas()
+        .catch { e ->
+            android.util.Log.e("NotificacaoRepository", "Erro seguro ao buscar notificacoes: ${e.message}", e)
+            emit(emptyList())
+        }
     val quantidadeNaoLidas: Flow<Int> = notificacaoDao.contarNaoLidas()
+        .catch { e ->
+            android.util.Log.e("NotificacaoRepository", "Erro seguro ao contar notificacoes nao lidas: ${e.message}", e)
+            emit(0)
+        }
 
     suspend fun inserir(notificacao: NotificacaoEntity) = notificacaoDao.inserir(notificacao)
     suspend fun marcarComoLida(id: Int) = notificacaoDao.marcarComoLida(id)
