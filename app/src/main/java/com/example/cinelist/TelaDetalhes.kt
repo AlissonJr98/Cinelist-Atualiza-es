@@ -861,8 +861,14 @@ fun TelaDetalhes(
         return
     }
 
-    Scaffold(
-        topBar = {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        MeshBackground3D(modifier = Modifier.fillMaxSize())
+
+        Column(modifier = Modifier.fillMaxSize()) {
             TopBarModernaTranslucida(
                 title = {
                     Text(
@@ -929,15 +935,11 @@ fun TelaDetalhes(
                     }
                 }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        MeshBackground3D(
-            modifier = Modifier.fillMaxSize().padding(paddingValues)
-        ) {
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .weight(1f)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(corSuaveAnimada.copy(alpha = 0.4f), MaterialTheme.colorScheme.background.copy(alpha = 0.6f)),
@@ -1192,7 +1194,10 @@ fun TelaDetalhes(
 
                             if (abaDetalhesSelecionada == 2) {
                             // 🚀 DADOS FINANCEIROS & ROI (ORÇAMENTO, BILHETERIA E LUCRO)
-                            if (!ehSerieOuAnime && ((detalhesApi?.orcamento ?: 0L) > 0L || (detalhesApi?.bilheteria ?: 0L) > 0L)) {
+                            val orcamentoVal = detalhesApi?.orcamento ?: 0L
+                            val bilheteriaVal = detalhesApi?.bilheteria ?: 0L
+                            val temDadosFinanceiros = !ehSerieOuAnime && (orcamentoVal > 0L || bilheteriaVal > 0L)
+                            if (temDadosFinanceiros) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1239,13 +1244,13 @@ fun TelaDetalhes(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceAround
                                         ) {
-                                            if ((detalhesApi?.orcamento ?: 0L) > 0L) {
+                                            if (orcamentoVal > 0L) {
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                     Text("Orçamento".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                                                     Text(detalhesApi?.orcamentoFormatado ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                                 }
                                             }
-                                            if ((detalhesApi?.bilheteria ?: 0L) > 0L) {
+                                            if (bilheteriaVal > 0L) {
                                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                                     Text("Bilheteria".t(), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                                                     Text(detalhesApi?.bilheteriaFormatada ?: "-", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
@@ -3399,13 +3404,19 @@ fun TelaDetalhes(
                                         val usuarioLogado = FirebaseAuth.getInstance().currentUser
                                         val nomeConclusao = (usuarioLogado?.displayName?.takeIf { it.isNotBlank() } ?: usuarioLogado?.email ?: "Usuário").substringBefore("@")
 
+                                        val dataConclusaoFinal = when {
+                                            concluido && midiaSalva.dataConclusao <= 0L -> System.currentTimeMillis()
+                                            !concluido -> 0L
+                                            else -> midiaSalva.dataConclusao
+                                        }
+
                                         val midiaAtualizada = midiaSalva.copy(
                                             nota = nota,
                                             temporadaAtual = temporadaAtual,
                                             episodioAtual = episodioAtual,
                                             jaEncerrou = concluido,
                                             status = statusAtual.valor,
-                                            dataConclusao = if (concluido && midiaSalva.dataConclusao <= 0L) System.currentTimeMillis() else if (!concluido) 0L else midiaSalva.dataConclusao,
+                                            dataConclusao = dataConclusaoFinal,
                                             concluidoPor = if (concluido && isModoCasal) nomeConclusao else if (!concluido) "" else midiaSalva.concluidoPor,
                                             sinopse = sinopse,
                                             favorito = ehFavorito,

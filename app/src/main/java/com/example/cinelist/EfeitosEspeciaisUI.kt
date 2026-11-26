@@ -136,7 +136,7 @@ fun GlassmorphicCard(
 fun MeshBackground3D(
     modifier: Modifier = Modifier,
     scrollOffset: Float = 0f,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "mesh_orbs")
 

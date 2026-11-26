@@ -1,6 +1,6 @@
 {
-  "versionCode": 135,
-  "versionName": "2.0.95",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.95/CineList-v2.0.95.apk",
-  "changelog": "Correcao critica de falha do Verifier (VerifyError no Android runtime / DEX limits) em TelaDetalhes, garantindo inicializacao estavel e fluida."
+  "versionCode": 136,
+  "versionName": "2.0.96",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.96/CineList-v2.0.96.apk",
+  "changelog": "Correcao definitiva de sobrecarga de registradores D8/ART e remocao de lambdas gigantes aninhadas na Tela de Detalhes, garantindo login e navegacao estaveis."
 }
