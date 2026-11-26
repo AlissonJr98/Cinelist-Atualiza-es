@@ -190,13 +190,6 @@ fun TelaDetalhes(
         midiaSalva == null && detalhesApi == null && idRealBuscaApi > 0
     }
 
-    var conteudoVisivel by remember { mutableStateOf(false) }
-    LaunchedEffect(isLoadingSkeleton) {
-        if (!isLoadingSkeleton) {
-            conteudoVisivel = true
-        }
-    }
-
     val jaExisteNaLista = remember(idRealBuscaApi, listaAtualBanco) {
         listaAtualBanco.any { (it.idTmdb != 0 && it.idTmdb == idRealBuscaApi) || it.id == idRealBuscaApi }
     }
@@ -955,16 +948,11 @@ fun TelaDetalhes(
             if (isLoadingSkeleton) {
                 TelaDetalhesSkeleton()
             } else {
-                AnimatedVisibility(
-                    visible = conteudoVisivel,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 400)) +
-                            slideInVertically(animationSpec = tween(durationMillis = 400), initialOffsetY = { it / 8 })
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -3663,7 +3651,6 @@ fun TelaDetalhes(
             }
         }
     }
-}
 }
 
 // 🚀 FÓRUM / COMUNIDADE MANTIDO INTACTO
