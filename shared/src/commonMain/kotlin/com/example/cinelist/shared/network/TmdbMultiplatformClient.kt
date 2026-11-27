@@ -18,7 +18,7 @@ class TmdbMultiplatformClient(
 ) {
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3"
-        const val DEFAULT_TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2MDI0NDJiZTA2MGIzZWI0NjM5ZWFlOTYyNmZkYTNmNSIsIm5iZiI6MTc3OTU2NzA0NS41MDU5OTk4LCJzdWIiOiI2YTEyMDljNTE2MDRkMmYxOTg0YjRjNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.T26K9YdHxxNUXOdHkUGsXZnzZAhLl2VmvnoPz4Cj8SQ"
+        const val DEFAULT_TMDB_TOKEN = ""
     }
 
     suspend fun getTrending(

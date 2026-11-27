@@ -88,10 +88,24 @@ class MidiaRepository @Inject constructor(
         }
     }
 
-    fun gerarCodigoAleatorio(): String {
-        val numero = Random.nextInt(1000, 9999)
-        return "CINE-$numero"
+    companion object {
+        private const val POOL_CODIGO_SALA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+        fun gerarCodigoAleatorio(): String {
+            val random = java.security.SecureRandom()
+            val sufixo = (1..6).map { POOL_CODIGO_SALA[random.nextInt(POOL_CODIGO_SALA.length)] }.joinToString("")
+            return "CINE-$sufixo"
+        }
+
+        fun calcularHashSenhaSala(senha: String, grupoId: String): String {
+            if (senha.isBlank()) return ""
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            val digest = md.digest("$grupoId:${senha.trim()}".toByteArray(Charsets.UTF_8))
+            return digest.joinToString("") { "%02x".format(it) }
+        }
     }
+
+    fun gerarCodigoAleatorio(): String = Companion.gerarCodigoAleatorio()
 
     suspend fun verificarEEntrarNoGrupo(grupoId: String, nomeGrupo: String, tipo: String, senhaDigitada: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
@@ -103,8 +117,16 @@ class MidiaRepository @Inject constructor(
                 return@withContext Result.failure(Exception("Este código de grupo não existe."))
             }
 
-            val senhaSalva = snapshot.getString("senha") ?: ""
-            if (senhaSalva.isNotBlank() && senhaSalva != senhaDigitada.trim()) {
+            val senhaHashSalva = snapshot.getString("senhaHash")
+            val senhaLegadaSalva = snapshot.getString("senha")
+            val senhaDigitadaLimpa = senhaDigitada.trim()
+
+            if (!senhaHashSalva.isNullOrBlank()) {
+                val hashCalculado = calcularHashSenhaSala(senhaDigitadaLimpa, grupoLimpo)
+                if (senhaHashSalva != hashCalculado) {
+                    return@withContext Result.failure(Exception("Senha incorreta para este grupo."))
+                }
+            } else if (!senhaLegadaSalva.isNullOrBlank() && senhaLegadaSalva != senhaDigitadaLimpa) {
                 return@withContext Result.failure(Exception("Senha incorreta para este grupo."))
             }
 
@@ -115,6 +137,15 @@ class MidiaRepository @Inject constructor(
             try {
                 val uid = auth.currentUser?.uid
                 if (uid != null) {
+                    docRef.collection("membros").document(uid).set(
+                        mapOf(
+                            "uid" to uid,
+                            "adicionadoEm" to System.currentTimeMillis(),
+                            "papel" to "membro"
+                        ),
+                        SetOptions.merge()
+                    ).await()
+
                     firestore.collection("usuarios").document(uid).set(
                         mapOf("ultimoGrupoAtivo" to grupoLimpo, "ultimoNomeGrupo" to nomeGrupo),
                         SetOptions.merge()
@@ -144,15 +175,28 @@ class MidiaRepository @Inject constructor(
             val docRef = firestore.collection("grupos").document(grupoLimpo)
 
             val uid = auth.currentUser?.uid ?: ""
-            val dadosGrupo = mapOf(
+            val senhaLimpa = senha.trim()
+            val dadosGrupo = mutableMapOf<String, Any>(
                 "grupoId" to grupoLimpo,
                 "nomeGrupo" to nomeGrupo,
                 "tipoGrupo" to tipo,
-                "senha" to senha.trim(),
+                "senhaHash" to calcularHashSenhaSala(senhaLimpa, grupoLimpo),
                 "criadoEm" to System.currentTimeMillis(),
-                "criadorUid" to uid
+                "criadorUid" to uid,
+                "adminUid" to uid
             )
             docRef.set(dadosGrupo).await()
+
+            if (uid.isNotBlank()) {
+                docRef.collection("membros").document(uid).set(
+                    mapOf(
+                        "uid" to uid,
+                        "adicionadoEm" to System.currentTimeMillis(),
+                        "papel" to "criador"
+                    ),
+                    SetOptions.merge()
+                ).await()
+            }
 
             val grupo = GrupoEntity(grupoId = grupoLimpo, nomeGrupo = nomeGrupo, tipoGrupo = tipo, ativo = true)
             midiaDao.desativarTodosOsGrupos()

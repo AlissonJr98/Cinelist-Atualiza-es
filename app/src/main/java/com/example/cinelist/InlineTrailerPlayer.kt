@@ -39,6 +39,14 @@ import androidx.compose.ui.viewinterop.AndroidView
  * com suporte nativo a Picture-in-Picture (janela flutuante), controles de tela cheia e
  * redirecionamento opcional para o app oficial.
  */
+/**
+ * Valida se a chave do YouTube possui caracteres alfanuméricos estritos e comprimento válido,
+ * prevenindo ataques de Cross-Site Scripting (XSS) ou escape de atributos em WebViews.
+ */
+fun validarChaveTrailer(chave: String): Boolean {
+    return chave.trim().matches(Regex("^[a-zA-Z0-9_-]{5,24}$"))
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun InlineTrailerPlayer(
@@ -48,6 +56,35 @@ fun InlineTrailerPlayer(
 ) {
     val context = LocalContext.current
     val emModoPip = LocalPipMode.current
+    val chaveLimpa = chaveTrailer.trim()
+    val chaveValida = remember(chaveLimpa) { validarChaveTrailer(chaveLimpa) }
+
+    if (!chaveValida) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .background(Color.Black, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Trailer indisponível ou identificador inválido",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                IconButton(onClick = onFechar) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Fechar",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+        return
+    }
 
     Surface(
         shape = RoundedCornerShape(if (emModoPip) 0.dp else 16.dp),

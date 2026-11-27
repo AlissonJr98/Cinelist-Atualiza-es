@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 136,
-  "versaoNome": "2.0.96",
-  "notas": "Correcao definitiva de sobrecarga de registradores D8/ART e remocao de lambdas gigantes aninhadas na Tela de Detalhes, garantindo login e navegacao estaveis.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.96/CineList-v2.0.96.apk"
+  "versaoCodigo": 137,
+  "versaoNome": "2.0.97",
+  "notas": "Implementacao de seguranca defensiva: isolamento de segredos, regras restritas no Firestore/Storage, senhas criptografadas e blindagem de prompts.",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.97/CineList-v2.0.97.apk"
 }

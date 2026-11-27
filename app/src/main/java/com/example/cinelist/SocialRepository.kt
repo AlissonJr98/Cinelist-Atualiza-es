@@ -108,13 +108,32 @@ class SocialRepository @Inject constructor() {
         awaitClose { listener.remove() }
     }
 
-    suspend fun enviarAnexoChat(amigoUid: String, uri: android.net.Uri): Boolean = withContext(Dispatchers.IO) {
+    suspend fun enviarAnexoChat(amigoUid: String, uri: android.net.Uri, mimeType: String? = null): Boolean = withContext(Dispatchers.IO) {
         val meuUid = auth.currentUser?.uid ?: return@withContext false
         val chatId = obterIdChat(meuUid, amigoUid)
 
+        if (!validarAnexoImagem(uri.toString(), mimeType)) {
+            android.util.Log.w("SocialRepository", "Tentativa de envio de anexo rejeitada: tipo de arquivo não permitido.")
+            return@withContext false
+        }
+
         try {
-            val ref = storage.reference.child("chats_anexos/$chatId/${UUID.randomUUID()}.jpg")
-            ref.putFile(uri).await()
+            val extensao = when {
+                mimeType?.contains("png") == true || uri.toString().endsWith(".png", true) -> "png"
+                mimeType?.contains("webp") == true || uri.toString().endsWith(".webp", true) -> "webp"
+                else -> "jpg"
+            }
+            val ref = storage.reference.child("chats_anexos/$chatId/${UUID.randomUUID()}.$extensao")
+            val contentType = when (extensao) {
+                "png" -> "image/png"
+                "webp" -> "image/webp"
+                else -> "image/jpeg"
+            }
+            val metadata = com.google.firebase.storage.StorageMetadata.Builder()
+                .setContentType(contentType)
+                .build()
+
+            ref.putFile(uri, metadata).await()
             val downloadUrl = ref.downloadUrl.await().toString()
 
             enviarMensagemChat(
@@ -313,6 +332,16 @@ class SocialRepository @Inject constructor() {
             "zqRE1JldGPZ1gTnSv3mVGP9p82x1" to Triple("Cyal", "cyal203@hotmail.com", "ZQRE1JLD"),
             "qZCKL7sAKjUw85rEMRjQxVNOQ8T2" to Triple("Gabriel Oliveira (Gabeker)", "gabekinho@gmail.com", "QZCKL7SA")
         )
+
+        fun validarAnexoImagem(uriString: String, mimeType: String? = null): Boolean {
+            val mime = mimeType?.lowercase()?.trim() ?: ""
+            if (mime.isNotBlank()) {
+                return mime.startsWith("image/") && (mime.contains("jpeg") || mime.contains("jpg") || mime.contains("png") || mime.contains("webp"))
+            }
+            val lower = uriString.lowercase()
+            val extensoesValidas = listOf(".jpg", ".jpeg", ".png", ".webp")
+            return extensoesValidas.any { lower.endsWith(it) || lower.contains("$it?") }
+        }
     }
 
     // 🚀 LÊ AS NOVAS REDES SOCIAIS NA BUSCA COM SUPORTE A TOKENS, APELIDOS, EMAIL E ID DA CONTA

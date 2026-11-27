@@ -474,8 +474,7 @@ service cloud.firestore {
       allow read, write: if isOwner(uid);
 
       match /midias/{midiaDoc} {
-        allow read: if isAuthenticated();
-        allow write: if isOwner(uid);
+        allow read, write: if isOwner(uid);
       }
 
       match /amigos/{amigoUid} {
@@ -542,7 +541,10 @@ service cloud.firestore {
          request.auth.uid == resource.data.get('adminUid', '') ||
          exists(/databases/$(database)/documents/grupos/$(grupoId)/membros/$(request.auth.uid))) &&
         isValidGrupo(request.resource.data) &&
-        areImmutableFieldsUnchanged(['grupoId', 'criadorUid', 'criadoEm']);
+        areImmutableFieldsUnchanged(['grupoId', 'criadorUid', 'criadoEm']) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['adminUid']) ||
+         request.auth.uid == resource.data.get('adminUid', '') ||
+         request.auth.uid == resource.data.get('criadorUid', ''));
       allow delete: if isAuthenticated() &&
         (request.auth.uid == resource.data.get('criadorUid', '') ||
          request.auth.uid == resource.data.get('adminUid', ''));
@@ -554,16 +556,16 @@ service cloud.firestore {
       }
 
       match /midias/{midiaDoc} {
-        allow read, write: if isAuthenticated();
+        allow read, write: if isGroupMember(grupoId);
       }
 
       match /matches/{matchDoc} {
-        allow read, write: if isAuthenticated();
+        allow read, write: if isGroupMember(grupoId);
       }
 
       match /chat_mensagens/{mensagemId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated() &&
+        allow read: if isGroupMember(grupoId);
+        allow create: if isGroupMember(grupoId) &&
           request.auth.uid == request.resource.data.autorUid &&
           isValidMensagemGrupo(request.resource.data);
         allow update: if isAuthenticated() &&

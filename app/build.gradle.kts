@@ -25,18 +25,18 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 136
-        versionName = "2.0.96"
+        versionCode = 137
+        versionName = "2.0.97"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
 
-        // Lê o token do TMDB do local.properties, variável de ambiente ou usa o token padrão
+        // Lê o token do TMDB do local.properties ou variável de ambiente (sem fallback com segredo exposto)
         val tmdbToken = localProperties.getProperty("tmdb.token")?.trim()?.takeIf { it.isNotBlank() }
             ?: System.getenv("TMDB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
-            ?: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2MDI0NDJiZTA2MGIzZWI0NjM5ZWFlOTYyNmZkYTNmNSIsIm5iZiI6MTc3OTU2NzA0NS41MDU5OTk4LCJzdWIiOiI2YTEyMDljNTE2MDRkMmYxOTg0YjRjNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.T26K9YdHxxNUXOdHkUGsXZnzZAhLl2VmvnoPz4Cj8SQ"
+            ?: ""
         buildConfigField("String", "TMDB_TOKEN", "\"$tmdbToken\"")
 
         val geminiKey = localProperties.getProperty("gemini.api.key")?.trim()?.takeIf { it.isNotBlank() }
@@ -53,13 +53,13 @@ android {
                 storeFile = keystoreFile
                 storePassword = localProperties.getProperty("keystore.password")
                     ?: System.getenv("KEYSTORE_PASSWORD")
-                    ?: "#eLena2023"
+                    ?: ""
                 keyAlias = localProperties.getProperty("key.alias")
                     ?: System.getenv("KEY_ALIAS")
                     ?: "key0cinelist"
                 keyPassword = localProperties.getProperty("key.password")
                     ?: System.getenv("KEY_PASSWORD")
-                    ?: "#eLena2023"
+                    ?: ""
                 enableV1Signing = true
                 enableV2Signing = true
             }
