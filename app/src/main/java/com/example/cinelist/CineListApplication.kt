@@ -26,8 +26,9 @@ class CineListApplication : Application(), ImageLoaderFactory {
 
         try {
             IdiomaAppManager.inicializar(this)
+            RetrofitClient.inicializar(this)
         } catch (e: Throwable) {
-            Log.w("CineListApplication", "Falha ao inicializar idioma do app", e)
+            Log.w("CineListApplication", "Falha ao inicializar configurações básicas do app", e)
         }
 
         // 🛡️ Log defensivo de exceções e persistência de crash para diagnóstico e auto-recuperação

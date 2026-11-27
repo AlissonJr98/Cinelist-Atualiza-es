@@ -1,5 +1,6 @@
 package com.example.cinelist
 
+import android.content.Context
 import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -10,21 +11,55 @@ import java.util.concurrent.TimeUnit
 /**
  * Cliente Retrofit para a API do TMDB.
  *
- * O token de leitura (v4) é obtido do `BuildConfig`, que é gerado a partir
- * da propriedade `tmdb.token` no `local.properties` (ou da variável de
- * ambiente `TMDB_TOKEN` no CI).
+ * O token de leitura (v4) é obtido dinamicamente com a seguinte precedência:
+ * 1. Token salvo nas preferências locais pelo usuário no aplicativo.
+ * 2. Token de compilação do `BuildConfig.TMDB_TOKEN` (definido em `local.properties` ou `TMDB_TOKEN` no CI).
  */
 object RetrofitClient {
     private const val BASE_URL = "https://api.themoviedb.org/3/"
     private const val TAG = "RetrofitClient"
+    private const val PREFS_NAME = "cinelist_tmdb_prefs"
+    private const val KEY_TOKEN_CUSTOMIZADO = "tmdb_token_customizado"
 
-    // Token lido do BuildConfig (configurado via local.properties)
-    private val tokenBruto: String = BuildConfig.TMDB_TOKEN.trim()
+    @Volatile
+    private var tokenMemoria: String? = null
+
+    /** Inicializa o token a partir das preferências do aplicativo. */
+    fun inicializar(context: Context) {
+        runCatching {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val salvo = prefs.getString(KEY_TOKEN_CUSTOMIZADO, null)?.trim()
+            if (!salvo.isNullOrBlank() && salvo.startsWith("eyJ")) {
+                tokenMemoria = salvo
+                Log.d(TAG, "Token TMDB customizado carregado com sucesso.")
+            }
+        }.onFailure { Log.w(TAG, "Falha ao inicializar token TMDB das preferências", it) }
+    }
+
+    /** Salva um novo token TMDB (deve ser um JWT válido iniciando com 'eyJ'). */
+    fun salvarToken(context: Context, novoToken: String): Boolean {
+        val limpo = novoToken.trim()
+        if (!limpo.startsWith("eyJ")) return false
+        tokenMemoria = limpo
+        return runCatching {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_TOKEN_CUSTOMIZADO, limpo)
+                .commit()
+        }.getOrDefault(false)
+    }
+
+    /** Retorna o token TMDB ativo. */
+    fun obterToken(): String {
+        return tokenMemoria?.takeIf { it.isNotBlank() }
+            ?: BuildConfig.TMDB_TOKEN.trim().takeIf { it.isNotBlank() }
+            ?: ""
+    }
 
     /** Verdadeiro quando o token foi corretamente configurado. */
-    val tokenConfigurado: Boolean get() = tokenBruto.startsWith("eyJ")
+    val tokenConfigurado: Boolean get() = obterToken().startsWith("eyJ")
 
-    private val TOKEN_AUTENTICACAO: String = "Bearer $tokenBruto"
+    val TOKEN_AUTENTICACAO: String get() = "Bearer ${obterToken()}"
 
     /** Idioma atual ativo nas consultas ao TMDB (inicializado conforme o dispositivo ou preferência). */
     @Volatile
@@ -95,6 +130,6 @@ object RetrofitClient {
     fun diagnostico(): String = buildString {
         appendLine("TMDB base: $BASE_URL")
         appendLine("Token configurado: $tokenConfigurado")
-        appendLine("Token (início): ${if (tokenConfigurado) tokenBruto.take(12) + "..." else "VAZIO"}")
+        appendLine("Token (início): ${if (tokenConfigurado) obterToken().take(12) + "..." else "VAZIO"}")
     }
 }

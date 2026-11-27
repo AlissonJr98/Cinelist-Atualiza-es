@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 138,
-  "versaoNome": "2.0.98",
-  "notas": "Melhorias visuais: Hero Banner cinematografico com backdrop em alta resolucao e indicador interativo, cartoes de midia com curvatura moderna e badges acrilicos flutuantes, e refinamento dos icones de streaming.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.98/CineList-v2.0.98.apk"
+  "versaoCodigo": 139,
+  "versaoNome": "2.0.99",
+  "notas": "Suporte a configuracao dinamica do Token TMDB diretamente no app e correcao de inicializacao do catalogo.",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }

@@ -1887,33 +1887,89 @@ fun TelaPrincipal(
                                     val listaComediasEmbaralhada = remember(carrosselComedias, refreshKeyDescobrir) { carrosselComedias.shuffled() }
                                     val listaAcaoEmbaralhada = remember(carrosselAcao, refreshKeyDescobrir) { carrosselAcao.shuffled() }
 
-                                    // Se o token do TMDB não estiver configurado, explica o motivo
-                                    // em vez de mostrar uma aba vazia sem contexto.
-                                    if (!RetrofitClient.tokenConfigurado) {
-                                        Column(
-                                            modifier = Modifier.fillMaxSize().padding(24.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
+                                    // Se o token do TMDB não estiver configurado, permite inserir e salvar
+                                    // diretamente no app sem exigir recompilação.
+                                    var tokenConfiguradoLocal by remember { mutableStateOf(RetrofitClient.tokenConfigurado) }
+                                    if (!tokenConfiguradoLocal) {
+                                        var tokenDigitado by remember { mutableStateOf("") }
+                                        var erroToken by remember { mutableStateOf(false) }
+                                        val contextoLocalConfig = LocalContext.current
+
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(20.dp),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                                            )
                                         ) {
-                                            Icon(
-                                                Icons.Default.Warning,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(56.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(16.dp))
-                                            Text(
-                                                "Token do TMDB não configurado",
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onBackground
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                "Adicione a linha abaixo ao ficheiro local.properties na raiz do projeto e recompile:\n\ntmdb.token=SEU_TOKEN_V4_DO_TMDB",
-                                                fontSize = 13.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                            Column(
+                                                modifier = Modifier.padding(20.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Key,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(52.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Text(
+                                                    "Token do TMDB Necessário",
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    "Para exibir filmes e séries em alta, cole o seu Token de Leitura da API do TMDB abaixo:",
+                                                    fontSize = 13.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                OutlinedTextField(
+                                                    value = tokenDigitado,
+                                                    onValueChange = {
+                                                        tokenDigitado = it
+                                                        erroToken = false
+                                                    },
+                                                    label = { Text("Token TMDB (inicia com eyJ...)") },
+                                                    singleLine = false,
+                                                    maxLines = 3,
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    isError = erroToken,
+                                                    supportingText = if (erroToken) {
+                                                        { Text("Token inválido. O token v4 do TMDB deve iniciar com eyJ...", color = MaterialTheme.colorScheme.error) }
+                                                    } else null
+                                                )
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                Button(
+                                                    onClick = {
+                                                        val limpo = tokenDigitado.trim()
+                                                        if (limpo.startsWith("eyJ")) {
+                                                            val salvou = RetrofitClient.salvarToken(contextoLocalConfig, limpo)
+                                                            if (salvou) {
+                                                                tokenConfiguradoLocal = true
+                                                                Toast.makeText(contextoLocalConfig, "Token configurado com sucesso!", Toast.LENGTH_SHORT).show()
+                                                                viewModel.carregarCarrosseisDescobrir(forcar = true)
+                                                                viewModel.carregarCarrosseisGenerosFavoritos(contextoLocalConfig)
+                                                            } else {
+                                                                erroToken = true
+                                                            }
+                                                        } else {
+                                                            erroToken = true
+                                                        }
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                    shape = RoundedCornerShape(10.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Check, contentDescription = null)
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text("Salvar e Carregar Catálogo", fontWeight = FontWeight.Bold)
+                                                }
+                                            }
                                         }
                                     } else if (!carregandoCarrosseis && carrosselPopulares.isEmpty() && carrosselSeriesAlta.isEmpty()) {
                                         // Está carregado, mas tudo veio vazio → provável falha de rede/API
