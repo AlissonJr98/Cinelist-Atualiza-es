@@ -180,9 +180,9 @@ private fun ConteudoItemMidiaCard(
         modifier = Modifier
             .fillMaxWidth()
             .glassmorphic(
-                shape = RoundedCornerShape(12.dp),
-                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                shape = RoundedCornerShape(14.dp),
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
             )
             .combinedClickable(
                 onClick = { onClick() },
@@ -192,7 +192,7 @@ private fun ConteudoItemMidiaCard(
                     }
                 }
             ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
@@ -294,18 +294,21 @@ private fun ConteudoItemMidiaCard(
                     }
 
                     if (statusEnum != StatusMidia.DESCOBRIR) {
-                        Box(
+                        Surface(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .padding(6.dp)
-                                .background(corStatus, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(6.dp),
+                            shape = RoundedCornerShape(6.dp),
+                            color = corStatus.copy(alpha = 0.92f),
+                            border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.25f)),
+                            shadowElevation = 2.dp
                         ) {
                             Text(
                                 text = if (ehPendente) "⏳ PENDENTE" else if (ehRecusado) "❌ RECUSADO" else statusEnum.valor,
                                 color = Color.White,
                                 fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -331,16 +334,17 @@ private fun ConteudoItemMidiaCard(
                                     bottom = if (alinharNoTopo) 0.dp else 6.dp,
                                     top = if (alinharNoTopo) 28.dp else 0.dp
                                 ),
-                            shape = RoundedCornerShape(4.dp),
-                            color = Color(0xFF0F1526).copy(alpha = 0.88f),
-                            border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFF0F1526).copy(alpha = 0.90f),
+                            border = BorderStroke(0.6.dp, Color(0xFF10B981).copy(alpha = 0.7f)),
+                            shadowElevation = 2.dp
                         ) {
                             Text(
                                 text = "🎙️ PT-BR",
                                 color = Color(0xFF10B981),
-                                fontSize = 8.sp,
+                                fontSize = 8.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -922,12 +926,12 @@ private fun ConteudoItemMidiaCardHorizontal(
         modifier = Modifier
             .fillMaxWidth()
             .glassmorphic(
-                shape = RoundedCornerShape(12.dp),
-                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                shape = RoundedCornerShape(14.dp),
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                borderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
             )
             .bounceOnClick { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {

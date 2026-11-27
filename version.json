@@ -1,6 +1,6 @@
 {
-  "versionCode": 137,
-  "versionName": "2.0.97",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.97/CineList-v2.0.97.apk",
-  "changelog": "Implementacao de seguranca defensiva: isolamento de segredos, regras restritas no Firestore/Storage, senhas criptografadas e blindagem de prompts."
+  "versionCode": 138,
+  "versionName": "2.0.98",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Melhorias visuais: Hero Banner cinematografico com backdrop em alta resolucao e indicador interativo, cartoes de midia com curvatura moderna e badges acrilicos flutuantes, e refinamento dos icones de streaming."
 }

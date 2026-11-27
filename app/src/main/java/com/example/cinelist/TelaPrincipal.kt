@@ -192,6 +192,7 @@ fun HeroBannerDestaque(
     if (listaDestaques.isEmpty()) return
 
     val pagerState = rememberPagerState(pageCount = { listaDestaques.size })
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagerState.settledPage) {
         delay(6000L)
@@ -220,8 +221,12 @@ fun HeroBannerDestaque(
                     .fillMaxSize()
                     .clickable { onTmdbItemClique(itemTmdb, tipoReal) }
             ) {
+                val urlImagemBanner = itemTmdb.caminhoBackdrop?.takeIf { it.isNotBlank() }?.let { "https://image.tmdb.org/t/p/w1280$it" }
+                    ?: itemTmdb.caminhoPoster?.takeIf { it.isNotBlank() }?.let { "https://image.tmdb.org/t/p/w780$it" }
+                    ?: ""
+
                 AsyncImage(
-                    model = if (!itemTmdb.caminhoPoster.isNullOrBlank()) "https://image.tmdb.org/t/p/w780${itemTmdb.caminhoPoster}" else "",
+                    model = urlImagemBanner,
                     contentDescription = itemTmdb.titulo,
                     modifier = Modifier
                         .fillMaxSize()
@@ -236,7 +241,7 @@ fun HeroBannerDestaque(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
                                     0.0f to Color.Transparent,
-                                    0.5f to Color(0x66000000),
+                                    0.45f to Color(0x55000000),
                                     0.8f to MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
                                     1.0f to MaterialTheme.colorScheme.background
                                 )
@@ -252,16 +257,48 @@ fun HeroBannerDestaque(
                         .padding(bottom = 40.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Surface(
-                        color = Color(0xAA000000),
-                        shape = CircleShape,
-                        border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        Surface(
+                            color = Color(0xCC000000),
+                            shape = CircleShape,
+                            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.6f))
                         ) {
-                            Text("🔥 DESTAQUE DA SEMANA", color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text("🔥 DESTAQUE DA SEMANA", color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                            }
+                        }
+
+                        if (itemTmdb.mediaVotos > 0.0) {
+                            Surface(
+                                color = Color(0xCC000000),
+                                shape = CircleShape,
+                                border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = String.format(java.util.Locale.US, "%.1f", itemTmdb.mediaVotos),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -353,10 +390,20 @@ fun HeroBannerDestaque(
         ) {
             repeat(listaDestaques.size) { iteration ->
                 val selecionado = pagerState.currentPage == iteration
-                val color by animateColorAsState(targetValue = if (selecionado) Color.White else Color.White.copy(alpha = 0.3f), label = "corDot")
-                val width by animateDpAsState(targetValue = if (selecionado) 24.dp else 8.dp, label = "larguraDot")
+                val color by animateColorAsState(targetValue = if (selecionado) Color.White else Color.White.copy(alpha = 0.35f), label = "corDot")
+                val width by animateDpAsState(targetValue = if (selecionado) 26.dp else 8.dp, label = "larguraDot")
                 Box(
-                    modifier = Modifier.padding(horizontal = 4.dp).clip(CircleShape).background(color).height(8.dp).width(width)
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .height(8.dp)
+                        .width(width)
+                        .clickable {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(iteration)
+                            }
+                        }
                 )
             }
         }

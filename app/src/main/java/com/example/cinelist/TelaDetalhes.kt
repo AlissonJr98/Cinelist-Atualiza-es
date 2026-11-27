@@ -1830,12 +1830,12 @@ fun TelaDetalhes(
                                                         .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
                                                         .padding(vertical = 4.dp)
                                                 ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(52.dp)
-                                                            .clip(RoundedCornerShape(10.dp))
-                                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                                        contentAlignment = Alignment.Center
+                                                    Surface(
+                                                        modifier = Modifier.size(52.dp),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                                        shadowElevation = 3.dp,
+                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
                                                     ) {
                                                         AsyncImage(
                                                             model = streaming.urlLogo,
@@ -1917,12 +1917,12 @@ fun TelaDetalhes(
                                                 .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
                                                 .padding(vertical = 4.dp)
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(52.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                                contentAlignment = Alignment.Center
+                                            Surface(
+                                                modifier = Modifier.size(52.dp),
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                                shadowElevation = 3.dp,
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
                                             ) {
                                                 AsyncImage(
                                                     model = streaming.urlLogo,
@@ -2003,12 +2003,12 @@ fun TelaDetalhes(
                                                 .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
                                                 .padding(vertical = 4.dp)
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(52.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                                contentAlignment = Alignment.Center
+                                            Surface(
+                                                modifier = Modifier.size(52.dp),
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                                shadowElevation = 3.dp,
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
                                             ) {
                                                 AsyncImage(
                                                     model = streaming.urlLogo,
@@ -2074,12 +2074,12 @@ fun TelaDetalhes(
                                                 .clickable { abrirAplicativoStreaming(contexto, streaming.nomeProvedor) }
                                                 .padding(vertical = 4.dp)
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(52.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                                contentAlignment = Alignment.Center
+                                            Surface(
+                                                modifier = Modifier.size(52.dp),
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                                shadowElevation = 3.dp,
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
                                             ) {
                                                 AsyncImage(
                                                     model = streaming.urlLogo,
