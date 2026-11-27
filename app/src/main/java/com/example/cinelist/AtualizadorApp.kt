@@ -328,55 +328,67 @@ object AtualizadorGitHub {
         val destino = File(pasta, "cinelist_update.apk")
         if (destino.exists()) destino.delete()
 
-        val urlComCacheBust = if (apkUrl.contains("?")) "$apkUrl&t=${System.currentTimeMillis()}"
-        else "$apkUrl?t=${System.currentTimeMillis()}"
+        val urlsParaTentar = listOf(apkUrl, URL_APK_PADRAO).distinct().filter { it.isNotBlank() }
+        var ultimoErro: Throwable? = null
 
-        val req = Request.Builder()
-            .url(urlComCacheBust)
-            .header("User-Agent", "CineList-Android-Updater")
-            .header("Accept", "application/octet-stream, application/vnd.android.package-archive, */*")
-            .build()
+        for (urlTentativa in urlsParaTentar) {
+            val urlComCacheBust = if (urlTentativa.contains("?")) "$urlTentativa&t=${System.currentTimeMillis()}"
+            else "$urlTentativa?t=${System.currentTimeMillis()}"
 
-        http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) {
-                throw IllegalStateException("Não foi possível baixar o pacote da atualização (HTTP ${resp.code}).")
-            }
-            val body = resp.body ?: throw IllegalStateException("Resposta vazia ao baixar a atualização.")
-            val total = body.contentLength()
-            body.byteStream().use { input ->
-                FileOutputStream(destino).use { output ->
-                    val buffer = ByteArray(16 * 1024)
-                    var baixado = 0L
-                    var lidos: Int
-                    while (input.read(buffer).also { lidos = it } != -1) {
-                        output.write(buffer, 0, lidos)
-                        baixado += lidos
-                        if (total > 0) {
-                            onProgresso((baixado.toFloat() / total.toFloat()).coerceIn(0f, 1f))
+            val req = Request.Builder()
+                .url(urlComCacheBust)
+                .header("User-Agent", "CineList-Android-Updater")
+                .header("Accept", "application/octet-stream, application/vnd.android.package-archive, */*")
+                .build()
+
+            try {
+                http.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) {
+                        throw IllegalStateException("Não foi possível baixar o pacote da atualização (HTTP ${resp.code}).")
+                    }
+                    val body = resp.body ?: throw IllegalStateException("Resposta vazia ao baixar a atualização.")
+                    val total = body.contentLength()
+                    body.byteStream().use { input ->
+                        FileOutputStream(destino).use { output ->
+                            val buffer = ByteArray(16 * 1024)
+                            var baixado = 0L
+                            var lidos: Int
+                            while (input.read(buffer).also { lidos = it } != -1) {
+                                output.write(buffer, 0, lidos)
+                                baixado += lidos
+                                if (total > 0) {
+                                    onProgresso((baixado.toFloat() / total.toFloat()).coerceIn(0f, 1f))
+                                }
+                            }
+                            output.flush()
                         }
                     }
-                    output.flush()
                 }
+
+                // Verifica se é realmente um arquivo APK (formato ZIP inicia com 'P' 'K')
+                if (destino.length() < 50_000L) {
+                    destino.delete()
+                    throw IllegalStateException("Arquivo baixado corrompido ou incompleto.")
+                }
+                val cabecalho = destino.inputStream().use {
+                    val b = ByteArray(2)
+                    it.read(b)
+                    b
+                }
+                if (cabecalho[0] != 'P'.code.toByte() || cabecalho[1] != 'K'.code.toByte()) {
+                    destino.delete()
+                    throw IllegalStateException("O arquivo baixado não é um pacote de instalação válido.")
+                }
+
+                onProgresso(1f)
+                return@withContext destino
+            } catch (e: Throwable) {
+                ultimoErro = e
+                if (destino.exists()) destino.delete()
             }
         }
 
-        // Verifica se é realmente um arquivo APK (formato ZIP inicia com 'P' 'K')
-        if (destino.length() < 50_000L) {
-            destino.delete()
-            throw IllegalStateException("O arquivo baixado está corrompido ou incompleto.")
-        }
-        val cabecalho = destino.inputStream().use {
-            val b = ByteArray(2)
-            it.read(b)
-            b
-        }
-        if (cabecalho[0] != 'P'.code.toByte() || cabecalho[1] != 'K'.code.toByte()) {
-            destino.delete()
-            throw IllegalStateException("O arquivo baixado não é um pacote de instalação válido.")
-        }
-
-        onProgresso(1f)
-        destino
+        throw (ultimoErro ?: IllegalStateException("Não foi possível baixar o pacote da atualização."))
     }
 
     fun podeInstalarPacotes(context: Context): Boolean {

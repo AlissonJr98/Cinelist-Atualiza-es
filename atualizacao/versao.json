@@ -2,5 +2,5 @@
   "versaoCodigo": 137,
   "versaoNome": "2.0.97",
   "notas": "Implementacao de seguranca defensiva: isolamento de segredos, regras restritas no Firestore/Storage, senhas criptografadas e blindagem de prompts.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.97/CineList-v2.0.97.apk"
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }
