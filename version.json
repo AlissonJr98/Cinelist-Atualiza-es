@@ -1,6 +1,6 @@
 {
   "versionCode": 141,
   "versionName": "2.1.1",
-  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.1.1/CineList-v2.1.1.apk",
   "changelog": "Adicionada Busca por Voz nativa na barra de pesquisa e Filtros Inteligentes de Tempo Disponivel (duracao rapida < 90 min, 90-120 min e longos > 2h)."
 }
