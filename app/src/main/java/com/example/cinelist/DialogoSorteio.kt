@@ -58,6 +58,8 @@ fun DialogoSorteio(
             val bateStatus = if (filtroStatus == "Todos") true else midia.status.equals(filtroStatus, ignoreCase = true)
             val bateDuracao = when (filtroDuracao) {
                 "< 90 min" -> midia.duracaoTotal in 1..90
+                "90 - 120 min" -> midia.duracaoTotal in 91..120
+                "> 120 min" -> midia.duracaoTotal > 120
                 "Séries" -> !midia.tipo.equals("Filme", ignoreCase = true)
                 else -> true
             }
@@ -187,7 +189,13 @@ fun DialogoSorteio(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    listOf("Qualquer" to "Qualquer Tempo".t(), "< 90 min" to "< 90 min ⏱️".t(), "Séries" to "Séries / Ep 📺".t()).forEach { (chave, rotulo) ->
+                    listOf(
+                        "Qualquer" to "Qualquer Tempo".t(),
+                        "< 90 min" to "< 90 min ⏱️".t(),
+                        "90 - 120 min" to "90-120 min ⏳".t(),
+                        "> 120 min" to "> 2h 🍿".t(),
+                        "Séries" to "Séries / Ep 📺".t()
+                    ).forEach { (chave, rotulo) ->
                         CyberFilterChip(
                             selected = (filtroDuracao == chave),
                             onClick = {

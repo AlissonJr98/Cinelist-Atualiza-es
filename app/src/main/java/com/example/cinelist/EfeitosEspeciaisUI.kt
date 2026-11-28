@@ -757,7 +757,8 @@ fun CyberSearchHUD(
     isFocused: Boolean = false,
     corDestaque: Color = Color(0xFF00E5FF),
     onClear: () -> Unit = {},
-    onSearch: ((String) -> Unit)? = null
+    onSearch: ((String) -> Unit)? = null,
+    onVoiceSearch: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -853,6 +854,18 @@ fun CyberSearchHUD(
                         contentDescription = "Limpar busca",
                         tint = Color(0xFFFF5252),
                         modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else if (onVoiceSearch != null) {
+                IconeBouncyIconButton(
+                    onClick = onVoiceSearch,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Busca por Voz",
+                        tint = corDestaque.copy(alpha = 0.9f),
+                        modifier = Modifier.size(19.dp)
                     )
                 }
             }

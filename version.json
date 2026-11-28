@@ -1,6 +1,6 @@
 {
-  "versionCode": 140,
-  "versionName": "2.1.0",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.1.0/CineList-v2.1.0.apk",
-  "changelog": "API do TMDB pre-configurada e ativa por padrao no app. Catalogo completo de filmes e series funcional na inicializacao."
+  "versionCode": 141,
+  "versionName": "2.1.1",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "changelog": "Adicionada Busca por Voz nativa na barra de pesquisa e Filtros Inteligentes de Tempo Disponivel (duracao rapida < 90 min, 90-120 min e longos > 2h)."
 }

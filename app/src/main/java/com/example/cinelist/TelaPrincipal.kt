@@ -2,10 +2,14 @@
 
 package com.example.cinelist
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.speech.RecognizerIntent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -483,6 +487,22 @@ fun TelaPrincipal(
         }
     }
 
+    val voiceSearchLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { resultado ->
+        if (resultado.resultCode == Activity.RESULT_OK) {
+            val dados = resultado.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val textoFalado = dados?.firstOrNull()?.trim()
+            if (!textoFalado.isNullOrBlank()) {
+                textoPesquisa = textoFalado
+                historicoManager.adicionarTermo(textoFalado)
+                historicoBuscas = historicoManager.obterHistorico()
+                viewModel.atualizarQueryEFiltrarPaginado(textoFalado, viewModel.tipoPaginado.value)
+                focusManager.clearFocus()
+            }
+        }
+    }
+
     var mostrarMatchColetivoSala by remember { mutableStateOf(false) }
     var mostrarDialogoRadarEstreias by remember { mutableStateOf(false) }
     var mostrarDialogoPlaylistsPrincipal by remember { mutableStateOf(false) }
@@ -887,6 +907,7 @@ fun TelaPrincipal(
     var colecaoSelecionada by rememberSaveable { mutableStateOf("Geral") }
     var filtroPlataforma by rememberSaveable { mutableStateOf("Todas") }
     var filtroStatusMinhaLista by rememberSaveable { mutableStateOf("Ativos") }
+    var filtroDuracaoMinhaLista by rememberSaveable { mutableStateOf("Qualquer") }
     var ordenacaoMinhaLista by rememberSaveable { mutableStateOf("Padrão (Assistindo primeiro)") }
 
     var mostrarBottomSheetFiltrosDescobrir by remember { mutableStateOf(false) }
@@ -910,13 +931,14 @@ fun TelaPrincipal(
         count
     }
 
-    val quantidadeFiltrosAtivosMinhaLista = remember(categoriaSelecionada, colecaoSelecionada, filtroPlataforma, filtroStatusMinhaLista, ordenacaoMinhaLista) {
+    val quantidadeFiltrosAtivosMinhaLista = remember(categoriaSelecionada, colecaoSelecionada, filtroPlataforma, filtroStatusMinhaLista, ordenacaoMinhaLista, filtroDuracaoMinhaLista) {
         var count = 0
         if (categoriaSelecionada != "Todos") count++
         if (colecaoSelecionada != "Geral") count++
         if (filtroPlataforma != "Todas") count++
         if (filtroStatusMinhaLista != "Ativos") count++
         if (ordenacaoMinhaLista != "Padrão (Assistindo primeiro)") count++
+        if (filtroDuracaoMinhaLista != "Qualquer") count++
         count
     }
 
@@ -961,13 +983,23 @@ fun TelaPrincipal(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Filtros da Minha Lista".t(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     if (quantidadeFiltrosAtivosMinhaLista > 0) {
-                        TextButton(onClick = { categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }) { Text("Redefinir".t(), color = Color(0xFFFF5252)) }
+                        TextButton(onClick = { categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; filtroDuracaoMinhaLista = "Qualquer"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }) { Text("Redefinir".t(), color = Color(0xFFFF5252)) }
                     }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Coleção Temática:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = colecoesDisponiveis) { col -> FilterChip(selected = (colecaoSelecionada == col), onClick = { colecaoSelecionada = col }, label = { Text(col.t(), fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Categoria:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = categoriasMinhaLista) { cat -> FilterChip(selected = (categoriaSelecionada == cat), onClick = { categoriaSelecionada = cat }, label = { Text(cat.t(), fontSize = 12.sp) }) } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Exibir Status:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = listOf("Ativos", "Favoritos", "Quero Assistir", "Assistindo", "Concluído", "Todos")) { s -> FilterChip(selected = (filtroStatusMinhaLista == s), onClick = { filtroStatusMinhaLista = s }, label = { Text(s.t(), fontSize = 12.sp) }) } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Tempo Disponível / Duração:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                    FlowRowWithSpacing(items = listOf("Qualquer", "< 90 min (Rápido)", "90 - 120 min (Padrão)", "> 120 min (Longo)")) { dur ->
+                        FilterChip(
+                            selected = (filtroDuracaoMinhaLista == dur),
+                            onClick = { filtroDuracaoMinhaLista = dur },
+                            label = { Text(dur.t(), fontSize = 12.sp) }
+                        )
+                    }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("Ordenar por:".t(), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary); FlowRowWithSpacing(items = opcoesOrdenacaoMinhaLista) { opt -> FilterChip(selected = (ordenacaoMinhaLista == opt), onClick = { ordenacaoMinhaLista = opt }, label = { Text(opt.t(), fontSize = 12.sp) }) } }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1539,6 +1571,18 @@ fun TelaPrincipal(
                                     focusManager.clearFocus()
                                 }
                             },
+                            onVoiceSearch = {
+                                val intentVoz = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault())
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale o título do filme ou série...".t())
+                                }
+                                runCatching {
+                                    voiceSearchLauncher.launch(intentVoz)
+                                }.onFailure {
+                                    Toast.makeText(contextoLocal, "Reconhecimento de voz indisponível neste aparelho".t(), Toast.LENGTH_SHORT).show()
+                                }
+                            },
                             modifier = Modifier.onFocusChanged { state -> searchFocused = state.isFocused }
                         )
 
@@ -1628,7 +1672,13 @@ fun TelaPrincipal(
                             else -> true
                         }
                         val bateMeusStreamings = if (!filtroApenasMeusStreamingsMinhaLista) true else StreamingManager.midiaDisponivelNosMeusStreamings(contextoLocal, midia.plataforma)
-                        bateSugestao && bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus && bateMeusStreamings
+                        val bateDuracao = when (filtroDuracaoMinhaLista) {
+                            "< 90 min (Rápido)" -> midia.duracaoTotal in 1..90
+                            "90 - 120 min (Padrão)" -> midia.duracaoTotal in 91..120
+                            "> 120 min (Longo)" -> midia.duracaoTotal > 120
+                            else -> true
+                        }
+                        bateSugestao && bateTexto && bateCategoria && bateColecao && batePlataforma && bateStatus && bateMeusStreamings && bateDuracao
                     }.let { lista ->
                         when (ordenacaoMinhaLista) {
                             "Favoritos Primeiro" -> lista.sortedWith(compareByDescending<Midia> { it.favorito }.thenByDescending { it.obterStatusEnum() == StatusMidia.ASSISTINDO })
@@ -1704,7 +1754,7 @@ fun TelaPrincipal(
                                                 )
                                             }
                                             if (quantidadeFiltrosAtivosMinhaLista > 0 || textoPesquisa.isNotBlank()) {
-                                                IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus(); categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }, modifier = Modifier.size(32.dp)) {
+                                                IconButton(onClick = { textoPesquisa = ""; focusManager.clearFocus(); categoriaSelecionada = "Todos"; colecaoSelecionada = "Geral"; filtroPlataforma = "Todas"; filtroStatusMinhaLista = "Ativos"; filtroDuracaoMinhaLista = "Qualquer"; ordenacaoMinhaLista = "Padrão (Assistindo primeiro)" }, modifier = Modifier.size(32.dp)) {
                                                     Icon(Icons.Default.Clear, "Limpar Filtros".t(), tint = Color(0xFFFF5252), modifier = Modifier.size(18.dp))
                                                 }
                                             }
