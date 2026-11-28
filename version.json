@@ -1,6 +1,6 @@
 {
   "versionCode": 140,
   "versionName": "2.1.0",
-  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk",
+  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.1.0/CineList-v2.1.0.apk",
   "changelog": "API do TMDB pre-configurada e ativa por padrao no app. Catalogo completo de filmes e series funcional na inicializacao."
 }
