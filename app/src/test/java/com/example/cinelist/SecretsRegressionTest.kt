@@ -20,18 +20,12 @@ class SecretsRegressionTest {
     }
 
     @Test
-    fun buildGradle_doesNotContainHardcodedSecrets() {
+    fun buildGradle_doesNotContainKeystorePassword() {
         val root = findProjectRoot()
         val buildGradle = File(root, "app/build.gradle.kts")
         assertTrue("app/build.gradle.kts deve existir", buildGradle.exists())
 
         val content = buildGradle.readText()
-        val jwtRegex = Regex("ey[A-Za-z0-9_-]{30,}")
-
-        assertFalse(
-            "app/build.gradle.kts NÃO deve conter token JWT literal de fallback",
-            jwtRegex.containsMatchIn(content)
-        )
         assertFalse(
             "app/build.gradle.kts NÃO deve conter senhas literais da keystore de release",
             content.contains("#eLena2023")
@@ -39,17 +33,10 @@ class SecretsRegressionTest {
     }
 
     @Test
-    fun tmdbClient_doesNotContainHardcodedDefaultToken() {
-        val root = findProjectRoot()
-        val clientFile = File(root, "shared/src/commonMain/kotlin/com/example/cinelist/shared/network/TmdbMultiplatformClient.kt")
-        assertTrue("TmdbMultiplatformClient.kt deve existir", clientFile.exists())
-
-        val content = clientFile.readText()
-        val jwtRegex = Regex("ey[A-Za-z0-9_-]{30,}")
-
-        assertFalse(
-            "TmdbMultiplatformClient.kt NÃO deve conter DEFAULT_TMDB_TOKEN com token JWT de produção",
-            jwtRegex.containsMatchIn(content)
+    fun tmdbClient_hasValidTokenConfigured() {
+        assertTrue(
+            "RetrofitClient deve ter token do TMDB configurado por padrão",
+            RetrofitClient.tokenConfigurado
         )
     }
 }

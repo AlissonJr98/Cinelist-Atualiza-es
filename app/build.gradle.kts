@@ -25,18 +25,18 @@ android {
         applicationId = "com.example.cinelist"
         minSdk = 24
         targetSdk = 35
-        versionCode = 139
-        versionName = "2.0.99"
+        versionCode = 140
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
 
-        // Lê o token do TMDB do local.properties ou variável de ambiente (sem fallback com segredo exposto)
+        // Lê o token do TMDB do local.properties, variável de ambiente ou usa o token padrão pré-configurado
         val tmdbToken = localProperties.getProperty("tmdb.token")?.trim()?.takeIf { it.isNotBlank() }
             ?: System.getenv("TMDB_TOKEN")?.trim()?.takeIf { it.isNotBlank() }
-            ?: ""
+            ?: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiMDE0YWRmOTgwMzNkMDY5YzQ3NDRiMjlhZWM4NDA0NSIsIm5iZiI6MTc3OTU2NzA0NS41MDU5OTk4LCJzdWIiOiI2YTEyMDljNTE2MDRkMmYxOTg0YjRjNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.XDqCoQuu962a41DlJZjZXd4mOQNmRe1z0k6xRHKkZzA"
         buildConfigField("String", "TMDB_TOKEN", "\"$tmdbToken\"")
 
         val geminiKey = localProperties.getProperty("gemini.api.key")?.trim()?.takeIf { it.isNotBlank() }

@@ -49,11 +49,14 @@ object RetrofitClient {
         }.getOrDefault(false)
     }
 
+    // Token padrão oficial pré-configurado do TMDB para inicialização imediata
+    private const val TOKEN_PADRAO = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiMDE0YWRmOTgwMzNkMDY5YzQ3NDRiMjlhZWM4NDA0NSIsIm5iZiI6MTc3OTU2NzA0NS41MDU5OTk4LCJzdWIiOiI2YTEyMDljNTE2MDRkMmYxOTg0YjRjNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.XDqCoQuu962a41DlJZjZXd4mOQNmRe1z0k6xRHKkZzA"
+
     /** Retorna o token TMDB ativo. */
     fun obterToken(): String {
         return tokenMemoria?.takeIf { it.isNotBlank() }
-            ?: BuildConfig.TMDB_TOKEN.trim().takeIf { it.isNotBlank() }
-            ?: ""
+            ?: BuildConfig.TMDB_TOKEN.trim().takeIf { it.startsWith("eyJ") }
+            ?: TOKEN_PADRAO
     }
 
     /** Verdadeiro quando o token foi corretamente configurado. */

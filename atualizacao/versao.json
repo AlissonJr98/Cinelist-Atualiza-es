@@ -1,6 +1,6 @@
 {
-  "versaoCodigo": 139,
-  "versaoNome": "2.0.99",
-  "notas": "Suporte a configuracao dinamica do Token TMDB diretamente no app e correcao de inicializacao do catalogo.",
-  "apkUrl": "https://github.com/AlissonJr98/Cinelist-Atualiza-es/releases/download/v2.0.99/CineList-v2.0.99.apk"
+  "versaoCodigo": 140,
+  "versaoNome": "2.1.0",
+  "notas": "API do TMDB pre-configurada e ativa por padrao no app. Catalogo completo de filmes e series funcional na inicializacao.",
+  "apkUrl": "https://raw.githubusercontent.com/AlissonJr98/Cinelist-Atualiza-es/main/atualizacao/cinelist.apk"
 }
